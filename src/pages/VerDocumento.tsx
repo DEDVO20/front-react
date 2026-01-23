@@ -21,34 +21,17 @@ import {
 
 interface Documento {
   id: string;
-  nombreArchivo: string;
-  tipoDocumento: string;
-  codigoDocumento: string;
-  version: string;
+  nombre: string;
+  tipo_documento: string;
+  codigo: string;
+  version_actual: string;
   estado: string;
-  visibilidad: string;
-  contenidoHtml?: string;
-  proximaRevision?: string;
-  creadoEn: string;
-  actualizadoEn: string;
-  subidoPor?: {
-    id: string;
-    nombre: string;
-    primerApellido: string;
-    correoElectronico: string;
-  };
-  revisadoPor?: {
-    id: string;
-    nombre: string;
-    primerApellido: string;
-    correoElectronico: string;
-  };
-  aprobadoPor?: {
-    id: string;
-    nombre: string;
-    primerApellido: string;
-    correoElectronico: string;
-  };
+  ruta_archivo?: string;
+  descripcion?: string;
+  creado_en: string;
+  actualizado_en: string;
+  creado_por?: string;
+  aprobado_por?: string;
 }
 
 export default function VerDocumento() {
@@ -80,10 +63,7 @@ export default function VerDocumento() {
 
     try {
       // Actualizar el estado del documento
-      const formData = new FormData();
-      formData.append("estado", newState);
-
-      await documentoService.update(id, formData);
+      await documentoService.update(id, { estado: newState });
 
       // Recargar el documento para mostrar los cambios
       await fetchDocumento();
@@ -109,7 +89,7 @@ export default function VerDocumento() {
         <!DOCTYPE html>
         <html>
           <head>
-            <title>${documento.nombreArchivo}</title>
+            <title>${documento.nombre}</title>
             <style>
               body {
                 font-family: Arial, sans-serif;
@@ -175,18 +155,18 @@ export default function VerDocumento() {
           </head>
           <body>
             <div class="header">
-              <h1>${documento.nombreArchivo}</h1>
+              <h1>${documento.nombre}</h1>
             </div>
 
             <div class="metadata">
               <div class="metadata-item">
-                <span class="metadata-label">Código:</span> ${documento.codigoDocumento}
+                <span class="metadata-label">Código:</span> ${documento.codigo}
               </div>
               <div class="metadata-item">
-                <span class="metadata-label">Versión:</span> ${documento.version}
+                <span class="metadata-label">Versión:</span> ${documento.version_actual}
               </div>
               <div class="metadata-item">
-                <span class="metadata-label">Tipo:</span> ${documento.tipoDocumento}
+                <span class="metadata-label">Tipo:</span> ${documento.tipo_documento}
               </div>
               <div class="metadata-item">
                 <span class="metadata-label">Estado:</span> ${documento.estado}
@@ -194,7 +174,7 @@ export default function VerDocumento() {
             </div>
 
             <div class="content">
-              ${documento.contenidoHtml || "<p>Sin contenido</p>"}
+              ${documento.descripcion || "<p>Sin contenido</p>"}
             </div>
 
             <div class="footer">
@@ -215,7 +195,7 @@ export default function VerDocumento() {
       <div>
         <p className="font-semibold">¿Eliminar documento?</p>
         <p className="text-sm text-muted-foreground mt-1">
-          Se eliminará "{documento.nombreArchivo}"
+          Se eliminará "{documento.nombre}"
         </p>
         <div className="flex gap-2 mt-3">
           <button
@@ -344,10 +324,10 @@ export default function VerDocumento() {
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2">
-              {documento.nombreArchivo}
+              {documento.nombre}
             </h1>
             <p className="text-muted-foreground font-mono text-lg">
-              {documento.codigoDocumento}
+              {documento.codigo}
             </p>
           </div>
 
@@ -393,7 +373,7 @@ export default function VerDocumento() {
             <Hash className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">Versión</span>
           </div>
-          <p className="text-2xl font-bold">{documento.version}</p>
+          <p className="text-2xl font-bold">{documento.version_actual}</p>
         </div>
 
         {/* Tipo de Documento */}
@@ -403,182 +383,16 @@ export default function VerDocumento() {
             <span className="text-sm text-muted-foreground">Tipo</span>
           </div>
           <p className="text-xl font-semibold capitalize">
-            {documento.tipoDocumento}
+            {documento.tipo_documento}
           </p>
         </div>
       </div>
 
-      {/* Additional Info */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {/* Visibilidad */}
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <div className="flex items-center gap-2 mb-2">
-            <Shield className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Visibilidad</span>
-          </div>
-          <p className="text-lg capitalize">{documento.visibilidad}</p>
-        </div>
 
-        {/* Próxima Revisión */}
-        {documento.proximaRevision && (
-          <div className="bg-card p-4 rounded-lg border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Próxima Revisión</span>
-            </div>
-            <p className="text-lg">
-              {new Date(documento.proximaRevision).toLocaleDateString("es-ES", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
-          </div>
-        )}
-      </div>
 
-      {/* Acciones de Flujo de Trabajo */}
-      {documento && (
-        <DocumentWorkflow
-          currentState={documento.estado}
-          creadoPorId={documento.subidoPor?.id}
-          revisadoPorId={documento.revisadoPor?.id}
-          aprobadoPorId={documento.aprobadoPor?.id}
-          onStateChange={handleWorkflowStateChange}
-        />
-      )}
+      {/* Workflow removed - backend doesn't track these user relationships */}
 
-      {/* Flujo de Aprobación */}
-      <div className="bg-card p-6 rounded-lg border border-border mb-6 mt-6">
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold">Flujo de Aprobación</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Seguimiento del proceso de revisión y aprobación del documento
-          </p>
-        </div>
 
-        {/* Indicador visual del flujo */}
-        <div className="mb-6 p-4 bg-muted rounded-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col items-center flex-1">
-              <div
-                className={`w-12 h-12 rounded-full ${documento.subidoPor ? "bg-blue-500" : "bg-gray-300"
-                  } text-white flex items-center justify-center font-bold mb-2`}
-              >
-                {documento.subidoPor ? "✓" : "1"}
-              </div>
-              <p className="text-xs font-medium text-center">Creación</p>
-              <p className="text-xs text-muted-foreground text-center">
-                Borrador
-              </p>
-            </div>
-            <div
-              className={`flex-1 h-1 ${documento.revisadoPor ? "bg-orange-500" : "bg-border"
-                } mx-2`}
-            ></div>
-            <div className="flex flex-col items-center flex-1">
-              <div
-                className={`w-12 h-12 rounded-full ${documento.revisadoPor ? "bg-orange-500" : "bg-gray-300"
-                  } text-white flex items-center justify-center font-bold mb-2`}
-              >
-                {documento.revisadoPor ? "✓" : "2"}
-              </div>
-              <p className="text-xs font-medium text-center">Revisión</p>
-              <p className="text-xs text-muted-foreground text-center">
-                En Revisión
-              </p>
-            </div>
-            <div
-              className={`flex-1 h-1 ${documento.aprobadoPor ? "bg-green-500" : "bg-border"
-                } mx-2`}
-            ></div>
-            <div className="flex flex-col items-center flex-1">
-              <div
-                className={`w-12 h-12 rounded-full ${documento.aprobadoPor ? "bg-green-500" : "bg-gray-300"
-                  } text-white flex items-center justify-center font-bold mb-2`}
-              >
-                {documento.aprobadoPor ? "✓" : "3"}
-              </div>
-              <p className="text-xs font-medium text-center">Aprobación</p>
-              <p className="text-xs text-muted-foreground text-center">
-                Aprobado
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Responsables */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Creado por */}
-          <div className="bg-background p-4 rounded-lg border border-border">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm">
-                1
-              </div>
-              <span className="text-sm font-medium">Creado por</span>
-            </div>
-            {documento.subidoPor ? (
-              <div>
-                <p className="font-semibold">
-                  {documento.subidoPor.nombre}{" "}
-                  {documento.subidoPor.primerApellido}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {documento.subidoPor.correoElectronico}
-                </p>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No asignado</p>
-            )}
-          </div>
-
-          {/* Revisado por */}
-          <div className="bg-background p-4 rounded-lg border border-border">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-sm">
-                2
-              </div>
-              <span className="text-sm font-medium">Revisado por</span>
-            </div>
-            {documento.revisadoPor ? (
-              <div>
-                <p className="font-semibold">
-                  {documento.revisadoPor.nombre}{" "}
-                  {documento.revisadoPor.primerApellido}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {documento.revisadoPor.correoElectronico}
-                </p>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Pendiente</p>
-            )}
-          </div>
-
-          {/* Aprobado por */}
-          <div className="bg-background p-4 rounded-lg border border-border">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold text-sm">
-                3
-              </div>
-              <span className="text-sm font-medium">Aprobado por</span>
-            </div>
-            {documento.aprobadoPor ? (
-              <div>
-                <p className="font-semibold">
-                  {documento.aprobadoPor.nombre}{" "}
-                  {documento.aprobadoPor.primerApellido}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {documento.aprobadoPor.correoElectronico}
-                </p>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Pendiente</p>
-            )}
-          </div>
-        </div>
-      </div>
 
       {/* Fechas */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -588,7 +402,7 @@ export default function VerDocumento() {
             <span className="text-sm font-medium">Fecha de Creación</span>
           </div>
           <p className="text-lg">
-            {new Date(documento.creadoEn).toLocaleDateString("es-ES", {
+            {new Date(documento.creado_en).toLocaleDateString("es-ES", {
               year: "numeric",
               month: "long",
               day: "numeric",
@@ -604,7 +418,7 @@ export default function VerDocumento() {
             <span className="text-sm font-medium">Última Actualización</span>
           </div>
           <p className="text-lg">
-            {new Date(documento.actualizadoEn).toLocaleDateString("es-ES", {
+            {new Date(documento.actualizado_en).toLocaleDateString("es-ES", {
               year: "numeric",
               month: "long",
               day: "numeric",
@@ -624,11 +438,10 @@ export default function VerDocumento() {
           </div>
         </div>
         <div className="p-6">
-          {documento.contenidoHtml ? (
-            <div
-              className="prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: documento.contenidoHtml }}
-            />
+          {documento.descripcion ? (
+            <div className="prose prose-sm max-w-none">
+              <p>{documento.descripcion}</p>
+            </div>
           ) : (
             <div className="text-center py-12 text-muted-foreground">
               <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />

@@ -18,14 +18,13 @@ import {
 
 interface Documento {
   id: string;
-  nombreArchivo: string;
-  tipoDocumento: string;
-  codigoDocumento: string;
-  version: string;
+  nombre: string;
+  tipo_documento: string;
+  codigo: string;
+  version_actual: string;
   estado: string;
-  visibilidad: string;
-  creadoEn: string;
-  actualizadoEn: string;
+  creado_en: string;
+  actualizado_en: string;
 }
 
 export default function Documentos() {
@@ -44,7 +43,7 @@ export default function Documentos() {
     try {
       setLoading(true);
       const data = await documentoService.getAll();
-      setDocumentos(data.items || []);
+      setDocumentos(data || []);
     } catch (error) {
       console.error("Error al cargar documentos:", error);
       toast.error("Error al cargar documentos");
@@ -113,9 +112,9 @@ export default function Documentos() {
 
   const filteredDocumentos = documentos.filter((doc) => {
     const matchSearch =
-      doc.nombreArchivo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.codigoDocumento.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchTipo = filterTipo === "" || doc.tipoDocumento === filterTipo;
+      doc.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.codigo.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchTipo = filterTipo === "" || doc.tipo_documento === filterTipo;
     const matchEstado = filterEstado === "" || doc.estado === filterEstado;
 
     return matchSearch && matchTipo && matchEstado;
@@ -129,12 +128,12 @@ export default function Documentos() {
     navigate(`/documentos/${id}/editar`);
   };
 
-  const handleDelete = async (docId: string, nombreDocumento: string) => {
+  const handleDelete = async (docId: string, nombre: string) => {
     toast.warning(
       <div>
         <p className="font-semibold">¿Eliminar documento?</p>
         <p className="text-sm text-muted-foreground mt-1">
-          Se eliminará "{nombreDocumento}"
+          Se eliminará "{nombre}"
         </p>
         <div className="flex gap-2 mt-3">
           <button
@@ -341,10 +340,10 @@ export default function Documentos() {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg mb-1 line-clamp-2">
-                    {documento.nombreArchivo}
+                    {documento.nombre}
                   </h3>
                   <p className="text-sm text-muted-foreground font-mono">
-                    {documento.codigoDocumento}
+                    {documento.codigo}
                   </p>
                 </div>
                 <FileText className="w-5 h-5 text-primary flex-shrink-0 ml-2" />
@@ -354,11 +353,11 @@ export default function Documentos() {
               <div className="flex flex-wrap gap-2 mb-3">
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-medium border ${getTipoColor(
-                    documento.tipoDocumento,
+                    documento.tipo_documento,
                   )}`}
                 >
-                  {documento.tipoDocumento.charAt(0).toUpperCase() +
-                    documento.tipoDocumento.slice(1)}
+                  {documento.tipo_documento.charAt(0).toUpperCase() +
+                    documento.tipo_documento.slice(1)}
                 </span>
                 {getEstadoBadge(documento.estado)}
               </div>
@@ -367,18 +366,12 @@ export default function Documentos() {
               <div className="space-y-1 mb-4 text-sm text-muted-foreground">
                 <div className="flex justify-between">
                   <span>Versión:</span>
-                  <span className="font-medium">{documento.version}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Visibilidad:</span>
-                  <span className="font-medium capitalize">
-                    {documento.visibilidad}
-                  </span>
+                  <span className="font-medium">{documento.version_actual}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Actualizado:</span>
                   <span className="font-medium">
-                    {new Date(documento.actualizadoEn).toLocaleDateString("es-ES")}
+                    {new Date(documento.actualizado_en).toLocaleDateString("es-ES")}
                   </span>
                 </div>
               </div>
@@ -402,7 +395,7 @@ export default function Documentos() {
                 </button>
                 <button
                   onClick={() =>
-                    handleDelete(documento.id, documento.nombreArchivo)
+                    handleDelete(documento.id, documento.nombre)
                   }
                   className="flex items-center justify-center gap-2 px-3 py-2 bg-destructive/10 text-destructive rounded-md hover:bg-destructive/20 transition-colors text-sm"
                   title="Eliminar documento"

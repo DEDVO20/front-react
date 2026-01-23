@@ -10,12 +10,9 @@ interface DocumentoData {
   tipoDocumento?: string;
   codigoDocumento?: string;
   version?: string;
-  visibilidad?: string;
   estado?: string;
-  proximaRevision?: string;
   subidoPor?: string;
   aprobadoPor?: string;
-  contenidoHtml?: string;
 }
 
 export default function EditarDocumento() {
@@ -32,7 +29,19 @@ export default function EditarDocumento() {
     try {
       setLoading(true);
       const data = await documentoService.getById(id);
-      setInitialData(data);
+
+      // Convert backend field names to form field names
+      const formData: DocumentoData = {
+        nombreArchivo: data.nombre,
+        tipoDocumento: data.tipo_documento,
+        codigoDocumento: data.codigo,
+        version: data.version_actual,
+        estado: data.estado,
+        subidoPor: data.creado_por,
+        aprobadoPor: data.aprobado_por,
+      };
+
+      setInitialData(formData);
     } catch (error) {
       console.error("Error al cargar documento:", error);
       const errorMessage =
@@ -56,7 +65,29 @@ export default function EditarDocumento() {
 
     try {
       setError(null);
-      await documentoService.update(id, formData);
+
+      // Convert FormData to JSON object with backend field names
+      const documentData: any = {
+        codigo: formData.get("codigoDocumento") as string,
+        nombre: formData.get("nombreArchivo") as string,
+        descripcion: `Documento ${formData.get("nombreArchivo")}`,
+        tipo_documento: formData.get("tipoDocumento") as string,
+        version_actual: formData.get("version") as string,
+        estado: formData.get("estado") as string,
+      };
+
+      // Add optional fields
+      const creado_por = formData.get("subidoPor") as string;
+      if (creado_por) {
+        documentData.creado_por = creado_por;
+      }
+
+      const aprobado_por = formData.get("aprobadoPor") as string;
+      if (aprobado_por) {
+        documentData.aprobado_por = aprobado_por;
+      }
+
+      await documentoService.update(id, documentData);
 
       setSuccess("Documento actualizado exitosamente");
       toast.success("Documento actualizado exitosamente");

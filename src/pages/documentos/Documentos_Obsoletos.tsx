@@ -16,10 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
+import {
   Archive,
-  Clock, 
-  AlertCircle, 
+  Clock,
+  AlertCircle,
   Search,
   FileText,
   User,
@@ -42,25 +42,19 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { documentoService } from "@/services/documento.service";
+import { toast } from "sonner";
+
 interface Documento {
   id: string;
-  codigoDocumento: string;
-  nombreArchivo: string;
-  tipoDocumento: string;
-  version: string;
+  codigo: string;
+  nombre: string;
+  tipo_documento: string;
+  version_actual: string;
   estado: string;
-  creadoEn: string;
-  fechaAprobacion?: string;
-  proximaRevision?: string;
-  creadoPor?: {
-    nombre: string;
-    primerApellido: string;
-  };
-  aprobadoPor?: {
-    nombre: string;
-    primerApellido: string;
-  };
-  rutaAlmacenamiento?: string;
+  creado_en: string;
+  actualizado_en: string;
+  ruta_archivo?: string;
 }
 
 export default function DocumentosObsoletos() {
@@ -68,12 +62,12 @@ export default function DocumentosObsoletos() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  
+
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [filtroTipo, setFiltroTipo] = useState<string>("todos");
   const [filtroFecha, setFiltroFecha] = useState<string>("todos");
-  
+
   // Dialog
   const [dialogState, setDialogState] = useState<{
     open: boolean;
@@ -89,88 +83,16 @@ export default function DocumentosObsoletos() {
   const fetchDocumentosObsoletos = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      
-      const response = await fetch("/api/documentos", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Filtrar documentos con estado obsoleto
+      const data = await documentoService.getAll({ estado: "obsoleto" });
 
-      if (!response.ok) {
-        throw new Error("Error al obtener documentos obsoletos");
-      }
-
-      const data = await response.json();
-
-      const transformedData = data.items?.map((doc: any) => ({
-        id: doc.id,
-        codigoDocumento: doc.codigoDocumento || "SIN-CÓDIGO",
-        nombreArchivo: doc.nombreArchivo,
-        tipoDocumento: doc.tipoDocumento || "Documento",
-        version: doc.version || "1.0",
-        estado: doc.estado,
-        creadoEn: doc.creadoEn,
-        fechaAprobacion: doc.fechaAprobacion,
-        proximaRevision: doc.proximaRevision,
-        creadoPor: doc.autor
-          ? { nombre: doc.autor.nombre, primerApellido: doc.autor.primerApellido }
-          : undefined,
-        aprobadoPor: doc.aprobador
-          ? { nombre: doc.aprobador.nombre, primerApellido: doc.aprobador.primerApellido }
-          : undefined,
-        rutaAlmacenamiento: doc.rutaAlmacenamiento,
-      })) || [];
-
-      setDocumentos(transformedData);
-      setTotal(data.total || transformedData.length);
+      setDocumentos(data);
+      setTotal(data.length);
     } catch (error) {
       console.error("Error:", error);
-      
-      // Datos de ejemplo en caso de error
-      const ejemploData: Documento[] = [
-        {
-          id: "1",
-          codigoDocumento: "PRO-SGC-001-V1",
-          nombreArchivo: "Procedimiento de Control de Documentos v1.0",
-          tipoDocumento: "Procedimiento",
-          version: "1.0",
-          estado: "obsoleto",
-          creadoEn: "2023-01-15T10:30:00",
-          fechaAprobacion: "2023-01-20T14:00:00",
-          proximaRevision: "2024-01-20",
-          creadoPor: { nombre: "Ana", primerApellido: "Martínez" },
-          aprobadoPor: { nombre: "Carlos", primerApellido: "Rodríguez" },
-          rutaAlmacenamiento: "https://example.com/docs/procedimiento.pdf"
-        },
-        {
-          id: "2",
-          codigoDocumento: "FOR-CAL-015-V1",
-          nombreArchivo: "Formato de Auditoría Interna v1.5",
-          tipoDocumento: "Formato",
-          version: "1.5",
-          estado: "obsoleto",
-          creadoEn: "2023-03-10T09:00:00",
-          fechaAprobacion: "2023-03-15T16:00:00",
-          creadoPor: { nombre: "María", primerApellido: "González" }
-        },
-        {
-          id: "3",
-          codigoDocumento: "MAN-SGC-001-V2",
-          nombreArchivo: "Manual de Calidad ISO 9001:2015 v2.0",
-          tipoDocumento: "Manual",
-          version: "2.0",
-          estado: "obsoleto",
-          creadoEn: "2022-11-05T08:00:00",
-          fechaAprobacion: "2022-11-10T10:00:00",
-          proximaRevision: "2023-11-10",
-          creadoPor: { nombre: "Juan", primerApellido: "Pérez" },
-          aprobadoPor: { nombre: "Ana", primerApellido: "Martínez" }
-        },
-      ];
-      
-      setDocumentos(ejemploData);
-      setTotal(ejemploData.length);
+      toast.error("Error al cargar documentos obsoletos");
+      setDocumentos([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -190,26 +112,13 @@ export default function DocumentosObsoletos() {
 
     setActionLoading(documento.id);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`/api/documentos/${documento.id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ estado: "aprobado" }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al restaurar documento");
-      }
-
-      alert(`✓ Documento "${documento.nombreArchivo}" restaurado correctamente`);
+      await documentoService.update(documento.id, { estado: "aprobado" });
+      toast.success(`Documento "${documento.nombre}" restaurado correctamente`);
       await fetchDocumentosObsoletos();
       closeDialog();
     } catch (error) {
       console.error("Error:", error);
-      alert("✗ Error al restaurar el documento. Por favor intente nuevamente.");
+      toast.error("Error al restaurar el documento");
     } finally {
       setActionLoading(null);
     }
@@ -221,42 +130,27 @@ export default function DocumentosObsoletos() {
 
     setActionLoading(documento.id);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`/api/documentos/${documento.id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al eliminar documento");
-      }
-
-      alert(`✓ Documento "${documento.nombreArchivo}" eliminado permanentemente`);
+      await documentoService.delete(documento.id);
+      toast.success(`Documento "${documento.nombre}" eliminado permanentemente`);
       await fetchDocumentosObsoletos();
       closeDialog();
     } catch (error) {
       console.error("Error:", error);
-      alert("✗ Error al eliminar el documento. Por favor intente nuevamente.");
+      toast.error("Error al eliminar el documento");
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleVer = (documento: Documento) => {
-    if (documento.rutaAlmacenamiento) {
-      window.open(documento.rutaAlmacenamiento, '_blank');
-    } else {
-      alert(`Ver documento:\n${documento.nombreArchivo}\nCódigo: ${documento.codigoDocumento}\nVersión: v${documento.version}`);
-    }
+    window.location.href = `/documentos/${documento.id}`;
   };
 
   const handleDescargar = (documento: Documento) => {
-    if (documento.rutaAlmacenamiento) {
-      window.open(documento.rutaAlmacenamiento, '_blank');
+    if (documento.ruta_archivo) {
+      window.open(documento.ruta_archivo, '_blank');
     } else {
-      alert(`Descargar: ${documento.nombreArchivo}`);
+      toast.info(`Descargar: ${documento.nombre}`);
     }
   };
 
@@ -271,11 +165,11 @@ export default function DocumentosObsoletos() {
     return colores[tipo.toLowerCase()] || "bg-gray-50 text-gray-700 border-gray-200";
   };
 
-  const calcularTiempoObsoleto = (fechaAprobacion?: string): string => {
-    if (!fechaAprobacion) return "Sin fecha";
-    const fecha = new Date(fechaAprobacion);
+  const calcularTiempoObsoleto = (fecha?: string): string => {
+    if (!fecha) return "Sin fecha";
+    const fechaDate = new Date(fecha);
     const ahora = new Date();
-    const dias = Math.floor((ahora.getTime() - fecha.getTime()) / (1000 * 60 * 60 * 24));
+    const dias = Math.floor((ahora.getTime() - fechaDate.getTime()) / (1000 * 60 * 60 * 24));
     if (dias < 30) return `${dias} día${dias !== 1 ? 's' : ''}`;
     if (dias < 365) return `${Math.floor(dias / 30)} mes${Math.floor(dias / 30) !== 1 ? 'es' : ''}`;
     const años = Math.floor(dias / 365);
@@ -283,20 +177,20 @@ export default function DocumentosObsoletos() {
   };
 
   const documentosFiltrados = documentos.filter(doc => {
-    const matchSearch = searchTerm === "" || 
-      doc.nombreArchivo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.codigoDocumento.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchTipo = filtroTipo === "todos" || doc.tipoDocumento.toLowerCase() === filtroTipo.toLowerCase();
-    
+    const matchSearch = searchTerm === "" ||
+      doc.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.codigo.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchTipo = filtroTipo === "todos" || doc.tipo_documento.toLowerCase() === filtroTipo.toLowerCase();
+
     let matchFecha = true;
-    if (filtroFecha !== "todos" && doc.fechaAprobacion) {
-      const meses = (new Date().getTime() - new Date(doc.fechaAprobacion).getTime()) / (1000 * 60 * 60 * 24 * 30);
+    if (filtroFecha !== "todos") {
+      const meses = (new Date().getTime() - new Date(doc.creado_en).getTime()) / (1000 * 60 * 60 * 24 * 30);
       if (filtroFecha === "reciente") matchFecha = meses <= 6;
       if (filtroFecha === "medio") matchFecha = meses > 6 && meses <= 12;
       if (filtroFecha === "antiguo") matchFecha = meses > 12;
     }
-    
+
     return matchSearch && matchTipo && matchFecha;
   });
 
@@ -327,8 +221,8 @@ export default function DocumentosObsoletos() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={fetchDocumentosObsoletos}
             disabled={loading}
@@ -361,7 +255,7 @@ export default function DocumentosObsoletos() {
               Manuales
             </CardDescription>
             <CardTitle className="text-4xl font-bold text-purple-600">
-              {documentos.filter(d => d.tipoDocumento.toLowerCase() === "manual").length}
+              {documentos.filter(d => d.tipo_documento.toLowerCase() === "manual").length}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -378,7 +272,7 @@ export default function DocumentosObsoletos() {
               Procedimientos
             </CardDescription>
             <CardTitle className="text-4xl font-bold text-blue-600">
-              {documentos.filter(d => d.tipoDocumento.toLowerCase() === "procedimiento").length}
+              {documentos.filter(d => d.tipo_documento.toLowerCase() === "procedimiento").length}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -396,8 +290,7 @@ export default function DocumentosObsoletos() {
             </CardDescription>
             <CardTitle className="text-4xl font-bold text-orange-600">
               {documentos.filter(d => {
-                if (!d.fechaAprobacion) return false;
-                const meses = (new Date().getTime() - new Date(d.fechaAprobacion).getTime()) / (1000 * 60 * 60 * 24 * 30);
+                const meses = (new Date().getTime() - new Date(d.creado_en).getTime()) / (1000 * 60 * 60 * 24 * 30);
                 return meses > 12;
               }).length}
             </CardTitle>
@@ -514,11 +407,11 @@ export default function DocumentosObsoletos() {
               {documentosFiltrados.map((doc) => (
                 <tr key={doc.id} className="border-b transition-colors hover:bg-gray-50">
                   <td className="p-4 align-middle">
-                    <div className="font-mono text-sm font-medium">{doc.codigoDocumento}</div>
+                    <div className="font-mono text-sm font-medium">{doc.codigo}</div>
                   </td>
                   <td className="p-4 align-middle">
                     <div className="max-w-[300px]">
-                      <div className="font-medium truncate">{doc.nombreArchivo}</div>
+                      <div className="font-medium truncate">{doc.nombre}</div>
                       <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                         <XCircle className="w-3 h-3 text-red-500" />
                         Obsoleto
@@ -526,23 +419,23 @@ export default function DocumentosObsoletos() {
                     </div>
                   </td>
                   <td className="p-4 align-middle">
-                    <Badge variant="outline" className={getTipoColor(doc.tipoDocumento)}>
-                      {doc.tipoDocumento}
+                    <Badge variant="outline" className={getTipoColor(doc.tipo_documento)}>
+                      {doc.tipo_documento}
                     </Badge>
                   </td>
                   <td className="p-4 align-middle">
-                    <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">v{doc.version}</span>
+                    <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">v{doc.version_actual}</span>
                   </td>
                   <td className="p-4 align-middle">
                     <div className="text-sm flex items-center gap-1">
                       <Clock className="w-3 h-3 text-gray-400" />
-                      {calcularTiempoObsoleto(doc.fechaAprobacion)}
+                      {calcularTiempoObsoleto(doc.creado_en)}
                     </div>
                   </td>
                   <td className="p-4 align-middle">
                     <div className="text-sm flex items-center gap-1">
                       <User className="w-3 h-3 text-gray-400" />
-                      {doc.creadoPor ? `${doc.creadoPor.nombre} ${doc.creadoPor.primerApellido}` : "Desconocido"}
+                      {"Usuario"}
                     </div>
                   </td>
                   <td className="p-4 align-middle">
@@ -607,9 +500,9 @@ export default function DocumentosObsoletos() {
               {dialogState.documento && (
                 <>
                   <div className="bg-gray-50 p-3 rounded-lg space-y-1">
-                    <p className="font-semibold text-gray-900">{dialogState.documento.nombreArchivo}</p>
-                    <p className="text-sm text-gray-600">Código: {dialogState.documento.codigoDocumento}</p>
-                    <p className="text-sm text-gray-600">Versión: {dialogState.documento.version}</p>
+                    <p className="font-semibold text-gray-900">{dialogState.documento.nombre}</p>
+                    <p className="text-sm text-gray-600">Código: {dialogState.documento.codigo}</p>
+                    <p className="text-sm text-gray-600">Versión: {dialogState.documento.version_actual}</p>
                   </div>
                   {dialogState.type === 'restaurar' ? (
                     <p>El documento será restaurado a estado <strong className="text-blue-600">aprobado</strong>.</p>

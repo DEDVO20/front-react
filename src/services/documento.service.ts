@@ -1,116 +1,64 @@
-const API_URL = "http://localhost:3000/api";
+import { apiClient } from "@/lib/api";
 
 export interface DocumentoData {
-  nombreArchivo: string;
-  tipoDocumento: string;
-  codigoDocumento: string;
-  version: string;
-  visibilidad: "publico" | "privado";
-  estado: "borrador" | "en_revision" | "aprobado" | "obsoleto";
-  proximaRevision?: string;
-  subidoPor?: string;
-  creadoPor: string;
-  revisadoPor?: string;
-  aprobadoPor?: string;
-  contenidoHtml?: string;
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  tipo_documento: string;
+  ruta_archivo?: string;
+  version_actual?: string;
+  estado?: string;
+  fecha_aprobacion?: string;
+  fecha_vigencia?: string;
+  creado_por?: string;
+  aprobado_por?: string;
 }
 
 export interface DocumentoResponse {
   id: string;
-  nombreArchivo: string;
-  tipoDocumento: string;
-  codigoDocumento: string;
-  version: string;
-  visibilidad: string;
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  tipo_documento: string;
+  ruta_archivo?: string;
+  version_actual: string;
   estado: string;
-  contenidoHtml?: string;
-  creadoEn: string;
-  actualizadoEn: string;
-}
-
-export interface DocumentosListResponse {
-  items: DocumentoResponse[];
-  total: number;
-  page: number;
-  limit: number;
+  fecha_aprobacion?: string;
+  fecha_vigencia?: string;
+  creado_por?: string;
+  aprobado_por?: string;
+  creado_en: string;
+  actualizado_en: string;
 }
 
 class DocumentoService {
-  private getAuthHeader() {
-    const token = localStorage.getItem("token");
-    return {
-      Authorization: `Bearer ${token}`,
-    };
+  async create(data: DocumentoData): Promise<DocumentoResponse> {
+    const response = await apiClient.post("/documentos", data);
+    return response.data;
   }
 
-  async create(formData: FormData): Promise<DocumentoResponse> {
-    const response = await fetch(`${API_URL}/documentos`, {
-      method: "POST",
-      headers: this.getAuthHeader(),
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Error al crear documento");
-    }
-
-    return response.json();
-  }
-
-  async getAll(
-    params?: Record<string, string>,
-  ): Promise<DocumentosListResponse> {
-    const queryParams = new URLSearchParams(params);
-    const response = await fetch(`${API_URL}/documentos?${queryParams}`, {
-      headers: this.getAuthHeader(),
-    });
-
-    if (!response.ok) {
-      throw new Error("Error al obtener documentos");
-    }
-
-    return response.json();
+  async getAll(params?: Record<string, string>): Promise<DocumentoResponse[]> {
+    const response = await apiClient.get("/documentos", { params });
+    return response.data;
   }
 
   async getById(id: string): Promise<DocumentoResponse> {
-    const response = await fetch(`${API_URL}/documentos/${id}`, {
-      headers: this.getAuthHeader(),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Error al obtener documento");
-    }
-
-    return response.json();
+    const response = await apiClient.get(`/documentos/${id}`);
+    return response.data;
   }
 
-  async update(id: string, formData: FormData): Promise<DocumentoResponse> {
-    const response = await fetch(`${API_URL}/documentos/${id}`, {
-      method: "PUT",
-      headers: this.getAuthHeader(),
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Error al actualizar documento");
-    }
-
-    return response.json();
+  async update(id: string, data: Partial<DocumentoData>): Promise<DocumentoResponse> {
+    const response = await apiClient.put(`/documentos/${id}`, data);
+    return response.data;
   }
 
   async delete(id: string): Promise<void> {
-    const response = await fetch(`${API_URL}/documentos/${id}`, {
-      method: "DELETE",
-      headers: this.getAuthHeader(),
-    });
+    await apiClient.delete(`/documentos/${id}`);
+  }
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Error al eliminar documento");
-    }
+  async getVersiones(documentoId: string): Promise<any[]> {
+    const response = await apiClient.get(`/documentos/${documentoId}/versiones`);
+    return response.data;
   }
 }
 

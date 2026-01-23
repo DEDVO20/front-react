@@ -16,28 +16,44 @@ export default function CreateDocument() {
     try {
       setError(null);
 
-      // Check if there's a file to upload
-      const file = formData.get("archivo") as File | null;
+      // Convert FormData to JSON object with backend field names
+      const documentData: any = {
+        codigo: formData.get("codigoDocumento") as string,
+        nombre: formData.get("nombreArchivo") as string,
+        descripcion: `Documento ${formData.get("nombreArchivo")}`,
+        tipo_documento: formData.get("tipoDocumento") as string,
+        version_actual: formData.get("version") as string || "1.0",
+        estado: formData.get("estado") as string || "borrador",
+      };
 
+      // Add optional fields
+      const creado_por = formData.get("subidoPor") as string;
+      if (creado_por) {
+        documentData.creado_por = creado_por;
+      }
+
+      const aprobado_por = formData.get("aprobadoPor") as string;
+      if (aprobado_por) {
+        documentData.aprobado_por = aprobado_por;
+      }
+
+      // Handle file upload if present
+      const file = formData.get("archivo") as File | null;
       if (file) {
         setUploading(true);
         toast.info("Subiendo archivo a Supabase...");
 
-        // Upload file to Supabase Storage
         const timestamp = Date.now();
         const filename = `documentos/${timestamp}-${file.name}`;
 
         const { url } = await uploadFileToSupabase(file, filename, "documentos");
-
-        // Remove file from FormData and add URL instead
-        formData.delete("archivo");
-        formData.append("url", url);
+        documentData.ruta_archivo = url;
 
         toast.success("Archivo subido correctamente");
         setUploading(false);
       }
 
-      await documentoService.create(formData);
+      await documentoService.create(documentData);
 
       setSuccess("Documento creado exitosamente");
       toast.success("Documento creado exitosamente");

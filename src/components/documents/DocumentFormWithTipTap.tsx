@@ -58,6 +58,27 @@ export const DocumentFormWithTipTap = ({
 
   const [content, setContent] = useState(initialData?.contenidoHtml || "");
 
+  // Update form data when initialData changes (for edit mode)
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        nombreArchivo: initialData.nombreArchivo || "",
+        tipoDocumento: initialData.tipoDocumento || "formato",
+        codigoDocumento: initialData.codigoDocumento || "",
+        version: initialData.version || "1.0",
+        visibilidad: initialData.visibilidad || "privado",
+        estado: initialData.estado || "borrador",
+        proximaRevision: initialData.proximaRevision || "",
+        subidoPor: initialData.subidoPor || user?.id || "",
+        revisadoPor: initialData.revisadoPor || "",
+        aprobadoPor: initialData.aprobadoPor || "",
+      });
+      if (initialData.contenidoHtml) {
+        setContent(initialData.contenidoHtml);
+      }
+    }
+  }, [initialData, user?.id]);
+
   // Cargar usuarios activos
   useEffect(() => {
     const fetchUsuarios = async () => {

@@ -8,12 +8,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  FileCheck, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle, 
-  X, 
+import {
+  FileCheck,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  X,
   Eye,
   FileText,
   Calendar,
@@ -32,30 +32,19 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { documentoService } from "@/services/documento.service";
+import { toast } from "sonner";
+
 interface Documento {
   id: string;
   codigo: string;
-  nombreArchivo: string;
+  nombre: string;
   tipo: string;
   version: string;
   estado: string;
   fechaSolicitud: string;
   solicitadoPor: string;
   prioridad: string;
-}
-
-interface DocumentoAPI {
-  id: string;
-  codigoDocumento: string;
-  nombreArchivo: string;
-  tipoDocumento?: string;
-  version: string;
-  estado: string;
-  creadoEn: string;
-  creadoPor?: {
-    nombre: string;
-    primerApellido: string;
-  };
 }
 
 export default function AprobacionesPendientes() {
@@ -77,79 +66,29 @@ export default function AprobacionesPendientes() {
   const fetchAprobacionesPendientes = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      
-      // Endpoint correcto según tu backend
-      const response = await fetch("/api/documentos", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Filtrar documentos con estado pendiente_aprobacion
+      const data = await documentoService.getAll({ estado: "pendiente_aprobacion" });
 
-      if (!response.ok) {
-        throw new Error("Error al obtener documentos pendientes");
-      }
-
-      const data = await response.json();
-
-      // Transformar datos según la estructura de tu API
-      const transformedData = data.items?.map((doc: DocumentoAPI) => ({
+      // Transformar datos
+      const transformedData = data.map((doc) => ({
         id: doc.id,
-        codigo: doc.codigoDocumento || "SIN-CÓDIGO",
-        nombreArchivo: doc.nombreArchivo,
-        tipo: doc.tipoDocumento || "Documento",
-        version: doc.version || "1.0",
+        codigo: doc.codigo,
+        nombre: doc.nombre,
+        tipo: doc.tipo_documento,
+        version: doc.version_actual,
         estado: "Pendiente de Aprobación",
-        fechaSolicitud: doc.creadoEn,
-        solicitadoPor: doc.creadoPor
-          ? `${doc.creadoPor.nombre} ${doc.creadoPor.primerApellido}`
-          : "Usuario desconocido",
-        prioridad: calcularPrioridad(doc.creadoEn),
-      })) || [];
+        fechaSolicitud: doc.creado_en,
+        solicitadoPor: "Usuario", // El backend no devuelve esta info actualmente
+        prioridad: calcularPrioridad(doc.creado_en),
+      }));
 
       setDocumentos(transformedData);
-      setTotal(data.total || transformedData.length);
+      setTotal(transformedData.length);
     } catch (error) {
       console.error("Error:", error);
-      
-      // Datos de ejemplo para desarrollo/testing
-      const ejemploData: Documento[] = [
-        {
-          id: "1",
-          codigo: "PRO-SGC-001",
-          nombreArchivo: "Procedimiento de Control de Documentos",
-          tipo: "Procedimiento",
-          version: "2.0",
-          estado: "Pendiente de Aprobación",
-          fechaSolicitud: "2024-10-20T10:30:00",
-          solicitadoPor: "Ana Martínez",
-          prioridad: "Alta",
-        },
-        {
-          id: "2",
-          codigo: "FOR-CAL-015",
-          nombreArchivo: "Formato de Auditoría Interna",
-          tipo: "Formato",
-          version: "1.5",
-          estado: "Pendiente de Aprobación",
-          fechaSolicitud: "2024-10-22T14:20:00",
-          solicitadoPor: "Carlos Rodríguez",
-          prioridad: "Media",
-        },
-        {
-          id: "3",
-          codigo: "MAN-SGC-001",
-          nombreArchivo: "Manual de Calidad ISO 9001:2015",
-          tipo: "Manual",
-          version: "3.0",
-          estado: "Pendiente de Aprobación",
-          fechaSolicitud: "2024-10-18T09:00:00",
-          solicitadoPor: "María González",
-          prioridad: "Urgente",
-        },
-      ];
-      setDocumentos(ejemploData);
-      setTotal(ejemploData.length);
+      toast.error("Error al cargar aprobaciones pendientes");
+      setDocumentos([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -178,29 +117,13 @@ export default function AprobacionesPendientes() {
 
     setActionLoading(documento.id);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`/api/documentos/${documento.id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ estado: "aprobado" }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al aprobar documento");
-      }
-
-      // Mostrar mensaje de éxito
-      alert(`✓ Documento "${documento.nombreArchivo}" aprobado correctamente`);
-      
-      // Recargar datos
+      await documentoService.update(documento.id, { estado: "aprobado" });
+      toast.success(`Documento "${documento.nombre}" aprobado correctamente`);
       await fetchAprobacionesPendientes();
       closeDialog();
     } catch (error) {
       console.error("Error:", error);
-      alert("✗ Error al aprobar el documento. Por favor intente nuevamente.");
+      toast.error("Error al aprobar el documento");
     } finally {
       setActionLoading(null);
     }
@@ -212,37 +135,20 @@ export default function AprobacionesPendientes() {
 
     setActionLoading(documento.id);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`/api/documentos/${documento.id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ estado: "borrador" }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al rechazar documento");
-      }
-
-      // Mostrar mensaje de éxito
-      alert(`✓ Documento "${documento.nombreArchivo}" rechazado. Devuelto a borrador.`);
-      
-      // Recargar datos
+      await documentoService.update(documento.id, { estado: "borrador" });
+      toast.success(`Documento "${documento.nombre}" rechazado. Devuelto a borrador.`);
       await fetchAprobacionesPendientes();
       closeDialog();
     } catch (error) {
       console.error("Error:", error);
-      alert("✗ Error al rechazar el documento. Por favor intente nuevamente.");
+      toast.error("Error al rechazar el documento");
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleVer = (documento: Documento) => {
-    // Aquí podrías abrir un modal o redirigir a la vista del documento
-    alert(`Ver documento: ${documento.nombreArchivo}\nCódigo: ${documento.codigo}\nVersión: ${documento.version}`);
+    window.location.href = `/documentos/${documento.id}`;
   };
 
   const getPrioridadColor = (prioridad: string) => {
@@ -306,8 +212,8 @@ export default function AprobacionesPendientes() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={fetchAprobacionesPendientes}
             disabled={loading}
@@ -483,8 +389,8 @@ export default function AprobacionesPendientes() {
             </thead>
             <tbody>
               {documentosFiltrados.map((doc) => (
-                <tr 
-                  key={doc.id} 
+                <tr
+                  key={doc.id}
                   className="border-b transition-colors hover:bg-gray-50"
                 >
                   <td className="p-4 align-middle">
@@ -492,7 +398,7 @@ export default function AprobacionesPendientes() {
                   </td>
                   <td className="p-4 align-middle">
                     <div className="max-w-[300px]">
-                      <div className="font-medium truncate">{doc.nombreArchivo}</div>
+                      <div className="font-medium truncate">{doc.nombre}</div>
                       <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                         <FileText className="w-3 h-3" />
                         {doc.estado}
@@ -510,8 +416,8 @@ export default function AprobacionesPendientes() {
                     </span>
                   </td>
                   <td className="p-4 align-middle">
-                    <Badge 
-                      variant="outline" 
+                    <Badge
+                      variant="outline"
                       className={`${getPrioridadColor(doc.prioridad)} font-medium`}
                     >
                       {getPrioridadIcon(doc.prioridad)}
@@ -583,7 +489,7 @@ export default function AprobacionesPendientes() {
                 ¡No hay documentos pendientes!
               </h3>
               <p className="text-gray-600 mb-4">
-                {filtro !== "todos" 
+                {filtro !== "todos"
                   ? `No hay documentos con prioridad ${filtro}`
                   : "Todos los documentos han sido revisados y aprobados."
                 }
@@ -620,7 +526,7 @@ export default function AprobacionesPendientes() {
                 <>
                   <div className="bg-gray-50 p-3 rounded-lg space-y-1">
                     <p className="font-semibold text-gray-900">
-                      {dialogState.documento.nombreArchivo}
+                      {dialogState.documento.nombre}
                     </p>
                     <p className="text-sm text-gray-600">
                       Código: {dialogState.documento.codigo}
@@ -631,12 +537,12 @@ export default function AprobacionesPendientes() {
                   </div>
                   {dialogState.type === 'aprobar' ? (
                     <p>
-                      El documento será marcado como <strong className="text-green-600">aprobado</strong> y 
+                      El documento será marcado como <strong className="text-green-600">aprobado</strong> y
                       estará disponible para su uso en el sistema.
                     </p>
                   ) : (
                     <p>
-                      El documento será devuelto a estado <strong className="text-orange-600">borrador</strong> y 
+                      El documento será devuelto a estado <strong className="text-orange-600">borrador</strong> y
                       el solicitante deberá realizar las correcciones necesarias.
                     </p>
                   )}
@@ -651,8 +557,8 @@ export default function AprobacionesPendientes() {
             <AlertDialogAction
               onClick={dialogState.type === 'aprobar' ? handleAprobar : handleRechazar}
               disabled={actionLoading !== null}
-              className={dialogState.type === 'aprobar' 
-                ? 'bg-green-600 hover:bg-green-700' 
+              className={dialogState.type === 'aprobar'
+                ? 'bg-green-600 hover:bg-green-700'
                 : 'bg-red-600 hover:bg-red-700'
               }
             >
