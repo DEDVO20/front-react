@@ -23,6 +23,8 @@ import AreasResponsables from "./pages/areas/Asignar_Responsables";
 
 import ListaDeUsuarios from "./pages/usuarios/ListaDeUsuarios";
 import NuevosUsuarios from "./pages/usuarios/NuevoUsuario";
+import EditarUsuario from "./pages/usuarios/EditarUsuario";
+import CargaMasivaUsuarios from "./pages/usuarios/CargaMasivaUsuarios";
 import RolesYPermisos from "./pages/usuarios/Roles_Permisos";
 
 import AuditoriasPlanificacion from "./pages/auditorias/AuditoriasPlanificacion";
@@ -102,6 +104,8 @@ function App() {
             {/* Usuarios */}
             <Route path="/ListaDeUsuarios" element={<ListaDeUsuarios />} />
             <Route path="/NuevoUsuario" element={<NuevosUsuarios />} />
+            <Route path="/usuarios/:id/editar" element={<EditarUsuario />} />
+            <Route path="/usuarios/carga-masiva" element={<CargaMasivaUsuarios />} />
             <Route path="/Roles_y_Permisos" element={<RolesYPermisos />} />
 
             {/* Auditorías */}

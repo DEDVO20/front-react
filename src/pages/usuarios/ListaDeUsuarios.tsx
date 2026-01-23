@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Users,
   Search,
@@ -24,6 +26,7 @@ import {
   Shield,
   CheckCircle,
   XCircle,
+  Upload,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -36,6 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { apiClient } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Usuario {
   id: string;
@@ -71,6 +75,8 @@ export default function ListaUsuarios() {
     type: "ver" | "eliminar" | null;
     usuario: Usuario | null;
   }>({ open: false, type: null, usuario: null });
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchUsuarios();
@@ -138,12 +144,35 @@ export default function ListaUsuarios() {
     try {
       await apiClient.delete(`/usuarios/${usuario.id}`);
 
-      alert(`✓ Usuario "${usuario.nombre_usuario}" eliminado correctamente`);
+      toast.success(`Usuario "${usuario.nombre_usuario}" eliminado correctamente`);
       await fetchUsuarios();
       closeDialog();
     } catch (error) {
       console.error("Error:", error);
-      alert("✗ Error al eliminar el usuario. Por favor intente nuevamente.");
+      toast.error("Error al eliminar el usuario. Por favor intente nuevamente.");
+    }
+  };
+
+  const handleToggleEstado = async (usuario: Usuario) => {
+    try {
+      const nuevoEstado = !usuario.activo;
+      await apiClient.put(`/usuarios/${usuario.id}`, {
+        activo: nuevoEstado,
+      });
+
+      // Actualizar el estado local
+      setUsuarios(prev =>
+        prev.map(u =>
+          u.id === usuario.id ? { ...u, activo: nuevoEstado } : u
+        )
+      );
+
+      toast.success(
+        `Usuario "${usuario.nombre_usuario}" ${nuevoEstado ? "activado" : "desactivado"} correctamente`
+      );
+    } catch (error) {
+      console.error("Error al cambiar estado:", error);
+      toast.error("Error al cambiar el estado del usuario. Por favor intente nuevamente.");
     }
   };
 
@@ -188,6 +217,15 @@ export default function ListaUsuarios() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/usuarios/carga-masiva")}
+            className="bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200"
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Carga Masiva
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -423,23 +461,17 @@ export default function ListaUsuarios() {
                     </div>
                   </td>
                   <td className="p-4 align-middle">
-                    {usuario.activo ? (
-                      <Badge
-                        variant="outline"
-                        className="bg-green-50 text-green-700 border-green-200"
-                      >
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Activo
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="bg-red-50 text-red-700 border-red-200"
-                      >
-                        <XCircle className="w-3 h-3 mr-1" />
-                        Inactivo
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={usuario.activo}
+                        onCheckedChange={() => handleToggleEstado(usuario)}
+                        className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-red-400"
+                      />
+                      <span className={`text-sm font-medium ${usuario.activo ? "text-green-700" : "text-red-700"
+                        }`}>
+                        {usuario.activo ? "Activo" : "Inactivo"}
+                      </span>
+                    </div>
                   </td>
                   <td className="p-4 align-middle">
                     <div className="flex gap-2">
@@ -456,6 +488,7 @@ export default function ListaUsuarios() {
                         size="sm"
                         variant="outline"
                         className="h-8 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200"
+                        onClick={() => navigate(`/usuarios/${usuario.id}/editar`)}
                       >
                         <Edit className="w-3 h-3 mr-1" />
                         Editar
