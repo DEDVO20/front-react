@@ -35,6 +35,7 @@ export function NuevaNoConformidadForm({ onSuccess }: NuevaNoConformidadFormProp
         tipo: "",
         descripcion: "",
         fuente: "",
+        gravedad: "",
         fecha_deteccion: new Date().toISOString().split("T")[0],
         responsable_id: "",
     });
@@ -54,7 +55,7 @@ export function NuevaNoConformidadForm({ onSuccess }: NuevaNoConformidadFormProp
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.codigo || !formData.tipo || !formData.descripcion || !formData.fuente) {
+        if (!formData.codigo || !formData.tipo || !formData.descripcion || !formData.fuente || !formData.gravedad) {
             setError("Por favor completa los campos obligatorios");
             return;
         }
@@ -131,6 +132,24 @@ export function NuevaNoConformidadForm({ onSuccess }: NuevaNoConformidadFormProp
                             <SelectItem value="Interna">Interna</SelectItem>
                             <SelectItem value="Externa">Externa</SelectItem>
                             <SelectItem value="Cliente">Cliente</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="grid gap-2">
+                    <Label htmlFor="gravedad">Gravedad *</Label>
+                    <Select
+                        value={formData.gravedad}
+                        onValueChange={(value) => setFormData({ ...formData, gravedad: value })}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Selecciona gravedad" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Menor">Menor</SelectItem>
+                            <SelectItem value="Media">Media</SelectItem>
+                            <SelectItem value="Mayor">Mayor</SelectItem>
+                            <SelectItem value="Critica">Critica</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
