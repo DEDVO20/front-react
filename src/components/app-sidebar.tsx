@@ -340,6 +340,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     ],
     navSecondary: [
       {
+        title: "Sistema",
+        url: "#",
+        icon: Shield,
+        items: [
+          {
+            title: "Migraciones de BD",
+            url: "/sistema/migraciones",
+          },
+        ],
+      },
+      {
         title: "Reportes",
         url: "/reportes",
         icon: BarChart3,

@@ -55,6 +55,7 @@ import ReportesView from "./pages/reportes";
 import MatrizRiesgos from "./pages/riesgos/matriz";
 import ControlesRiesgos from "./pages/riesgos/controles";
 import TratamientoRiesgos from "./pages/riesgos/tratamiento";
+import MigracionesDB from "./pages/sistema/MigracionesDB";
 
 import { ProtectedLayout } from "./components/ProtectedLayout";
 import { AuthProvider } from "./context/AuthContext";
@@ -140,6 +141,9 @@ function App() {
             <Route path="/riesgos/matriz" element={<MatrizRiesgos />} />
             <Route path="/riesgos/controles" element={<ControlesRiesgos />} />
             <Route path="/riesgos/tratamiento" element={<TratamientoRiesgos />} />
+
+            {/* Sistema */}
+            <Route path="/sistema/migraciones" element={<MigracionesDB />} />
           </Route>
 
           {/* Catch-all */}

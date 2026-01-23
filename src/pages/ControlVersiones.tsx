@@ -1,5 +1,5 @@
 // src/pages/ControlVersiones.tsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,38 +18,46 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Search, Eye, Filter, FileText, Layers, Star, Clock } from "lucide-react";
+import { Search, Eye, Filter, FileText, Layers, Clock, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { documentoService, type DocumentoResponse } from "@/services/documento.service";
 
 /**
- * ControlVersiones (componente completo)
+ * ControlVersiones - Vista de control de versiones de documentos
  *
  * - Indicadores arriba (resumen)
  * - Buscador + botón Filtrar (por fecha)
  * - Tabla de documentos
  * - Modal "Ver" con: info básica + historial de versiones
- *    - En historial: botón "Ver versión" que carga el PDF en el mismo modal
- *
- * Nota: las URLs de los PDFs en cada versión son de ejemplo; reemplázalas por las reales.
  */
 
 type Version = {
   id: string;
-  numero: string;
-  fecha: string;
-  cambios?: string;
-  usuario?: string;
-  url?: string; // link del PDF para esa versión
+  version: string;
+  descripcion_cambios?: string;
+  creado_en: string;
+  creado_por?: {
+    nombre?: string;
+    primerApellido?: string;
+    segundoApellido?: string;
+  };
+  ruta_archivo?: string;
 };
 
 type Documento = {
-  id: number;
+  id: string;
+  codigo: string;
   nombre: string;
-  estado?: string;
-  fecha: string;
-  autor?: string;
-  versionesVigentes: number;
+  estado: string;
+  creado_en: string;
+  version_actual: string;
+  creado_por?: {
+    nombre?: string;
+    primerApellido?: string;
+    segundoApellido?: string;
+  };
   versiones?: Version[];
-  url?: string;
+  ruta_archivo?: string;
 };
 
 export default function ControlVersiones() {
@@ -57,71 +65,119 @@ export default function ControlVersiones() {
   const [filterDate, setFilterDate] = useState("");
   const [selectedDoc, setSelectedDoc] = useState<Documento | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
+  const [documentos, setDocumentos] = useState<Documento[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Datos de ejemplo (reemplazar cuando se conecte con backend)
-  const documentos: Documento[] = [
-    {
-      id: 1,
-      nombre: "Manual de Calidad",
-      estado: "Aprobado",
-      fecha: "2025-09-15",
-      autor: "Juan Pérez",
-      versionesVigentes: 3,
-      versiones: [
-        { id: "1a", numero: "1.0", fecha: "2024-01-15", cambios: "Creación", usuario: "Juan", url: "/docs/manual_v1.pdf" },
-        { id: "1b", numero: "2.0", fecha: "2025-02-10", cambios: "Revisión", usuario: "María", url: "/docs/manual_v2.pdf" },
-        { id: "1c", numero: "3.1", fecha: "2025-09-15", cambios: "Ajustes", usuario: "Carlos", url: "/docs/manual_v3_1.pdf" },
-      ],
-      url: "/docs/manual_calidad.pdf",
-    },
-    {
-      id: 2,
-      nombre: "Procedimiento de Auditoría",
-      estado: "En Proceso",
-      fecha: "2025-08-10",
-      autor: "Coordinador de Calidad",
-      versionesVigentes: 2,
-      versiones: [
-        { id: "2a", numero: "1.0", fecha: "2024-04-02", cambios: "Inicial", usuario: "Ana", url: "/docs/auditoria_v1.pdf" },
-        { id: "2b", numero: "2.0", fecha: "2025-08-10", cambios: "Actualización", usuario: "Luis", url: "/docs/auditoria_v2.pdf" },
-      ],
-      url: "/docs/auditoria.pdf",
-    },
-  ];
+  // Cargar documentos desde el backend
+  useEffect(() => {
+    cargarDocumentos();
+  }, []);
 
-  // filtros
+  const cargarDocumentos = async () => {
+    try {
+      setLoading(true);
+      const docs = await documentoService.getAll();
+      setDocumentos(docs as any);
+    } catch (error) {
+      console.error("Error al cargar documentos:", error);
+      toast.error("Error al cargar los documentos");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cargar versiones de un documento
+  const cargarVersiones = async (documentoId: string) => {
+    try {
+      const versiones = await documentoService.getVersiones(documentoId);
+      return versiones;
+    } catch (error) {
+      console.error("Error al cargar versiones:", error);
+      toast.error("Error al cargar las versiones del documento");
+      return [];
+    }
+  };
+
+  // Filtros
   const filtrados = useMemo(() => {
     return documentos.filter((doc) => {
       const term = search.trim().toLowerCase();
       const matchesSearch =
         !term ||
         doc.nombre.toLowerCase().includes(term) ||
-        (doc.autor && doc.autor.toLowerCase().includes(term));
-      const matchesDate = !filterDate || doc.fecha === filterDate;
+        doc.codigo.toLowerCase().includes(term) ||
+        (doc.creado_por &&
+          `${doc.creado_por.nombre} ${doc.creado_por.primerApellido}`.toLowerCase().includes(term));
+
+      const docFecha = new Date(doc.creado_en).toISOString().split('T')[0];
+      const matchesDate = !filterDate || docFecha === filterDate;
+
       return matchesSearch && matchesDate;
     });
   }, [documentos, search, filterDate]);
 
-  // indicadores (usados en tarjetas superiores)
+  // Indicadores (usados en tarjetas superiores)
   const totalDocumentos = documentos.length;
-  const totalVersiones = documentos.reduce((s, d) => s + (d.versionesVigentes || 0), 0);
+  const totalVersiones = documentos.reduce((s, d) => s + (d.versiones?.length || 0), 0);
   const masVersiones = documentos.reduce(
-    (best, cur) => (cur.versionesVigentes > (best?.versionesVigentes ?? 0) ? cur : best),
+    (best, cur) => ((cur.versiones?.length || 0) > (best?.versiones?.length ?? 0) ? cur : best),
     documentos[0]
   );
   const ultimoDocumento = documentos.reduce(
-    (last, cur) => (new Date(cur.fecha) > new Date(last.fecha) ? cur : last),
+    (last, cur) => (new Date(cur.creado_en) > new Date(last?.creado_en || 0) ? cur : last),
     documentos[0]
   );
 
-  const openDoc = (doc: Documento) => {
+  const openDoc = async (doc: Documento) => {
     setSelectedDoc(doc);
     setSelectedVersion(null);
+
+    // Cargar versiones si no están cargadas
+    if (!doc.versiones || doc.versiones.length === 0) {
+      const versiones = await cargarVersiones(doc.id);
+      setSelectedDoc({ ...doc, versiones });
+    }
   };
 
   const verVersion = (v: Version) => {
     setSelectedVersion(v);
   };
+
+  // Función para formatear estados
+  const formatearEstado = (estado: string): string => {
+    const estadosMap: Record<string, string> = {
+      'borrador': 'Borrador',
+      'en_revision': 'En Revisión',
+      'aprobado': 'Aprobado',
+      'vigente': 'Vigente',
+      'obsoleto': 'Obsoleto',
+      'archivado': 'Archivado'
+    };
+    return estadosMap[estado] || estado;
+  };
+
+  // Función para obtener nombre completo del usuario
+  const obtenerNombreCompleto = (usuario?: { nombre?: string; primerApellido?: string; segundoApellido?: string }): string => {
+    if (!usuario) return '-';
+
+    // Validar que los campos requeridos existan
+    const nombre = usuario.nombre || '';
+    const primerApellido = usuario.primerApellido || '';
+    const segundoApellido = usuario.segundoApellido || '';
+
+    // Si no hay nombre ni apellido, retornar guión
+    if (!nombre && !primerApellido) return '-';
+
+    return `${nombre} ${primerApellido}${segundoApellido ? ' ' + segundoApellido : ''}`.trim();
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -154,7 +210,7 @@ export default function ControlVersiones() {
             <p className="text-sm text-gray-500">Más Versiones</p>
             <p className="text-base font-semibold">{masVersiones?.nombre ?? "-"}</p>
             <p className="text-xs text-gray-400">
-              ({masVersiones?.versionesVigentes ?? 0} versiones)
+              ({masVersiones?.versiones?.length ?? 0} versiones)
             </p>
           </div>
         </div>
@@ -163,7 +219,9 @@ export default function ControlVersiones() {
           <div>
             <p className="text-sm text-gray-500">Último Actualizado</p>
             <p className="text-base font-semibold">{ultimoDocumento?.nombre ?? "-"}</p>
-            <p className="text-xs text-gray-400">{ultimoDocumento?.fecha}</p>
+            <p className="text-xs text-gray-400">
+              {ultimoDocumento?.creado_en ? new Date(ultimoDocumento.creado_en).toLocaleDateString('es-ES') : '-'}
+            </p>
           </div>
         </div>
       </div>
@@ -218,10 +276,16 @@ export default function ControlVersiones() {
             {filtrados.map((doc) => (
               <TableRow key={doc.id}>
                 <TableCell>{doc.nombre}</TableCell>
-                <TableCell>{doc.estado ?? "-"}</TableCell>
-                <TableCell>{doc.fecha}</TableCell>
-                <TableCell>{doc.autor ?? "-"}</TableCell>
-                <TableCell className="text-center">{doc.versionesVigentes}</TableCell>
+                <TableCell>
+                  <span className="capitalize">{formatearEstado(doc.estado)}</span>
+                </TableCell>
+                <TableCell>
+                  {new Date(doc.creado_en).toLocaleDateString('es-ES')}
+                </TableCell>
+                <TableCell>
+                  {obtenerNombreCompleto(doc.creado_por)}
+                </TableCell>
+                <TableCell className="text-center">{doc.versiones?.length || 0}</TableCell>
                 <TableCell className="text-center">
                   <Dialog>
                     <DialogTrigger asChild>
@@ -243,10 +307,15 @@ export default function ControlVersiones() {
                         {/* izquierda: info + historial */}
                         <div className="lg:col-span-2 space-y-4">
                           <div className="bg-gray-50 border rounded-lg p-4">
+                            <p><strong>Código:</strong> {selectedDoc?.codigo}</p>
                             <p><strong>Nombre:</strong> {selectedDoc?.nombre}</p>
-                            <p><strong>Estado:</strong> {selectedDoc?.estado}</p>
-                            <p><strong>Fecha:</strong> {selectedDoc?.fecha}</p>
-                            <p><strong>Responsable:</strong> {selectedDoc?.autor}</p>
+                            <p>
+                              <strong>Estado:</strong>{' '}
+                              <span className="capitalize">{selectedDoc?.estado ? formatearEstado(selectedDoc.estado) : '-'}</span>
+                            </p>
+                            <p><strong>Fecha:</strong> {selectedDoc?.creado_en ? new Date(selectedDoc.creado_en).toLocaleDateString('es-ES') : '-'}</p>
+                            <p><strong>Responsable:</strong> {obtenerNombreCompleto(selectedDoc?.creado_por)}</p>
+                            <p><strong>Versión Actual:</strong> {selectedDoc?.version_actual}</p>
                           </div>
 
                           <div className="bg-white border rounded-lg p-3">
@@ -264,9 +333,13 @@ export default function ControlVersiones() {
                               <tbody>
                                 {selectedDoc?.versiones?.map((v) => (
                                   <tr key={v.id} className="hover:bg-gray-50">
-                                    <td className="p-2">{v.numero}</td>
-                                    <td className="p-2">{v.fecha}</td>
-                                    <td className="p-2">{v.usuario ?? "-"}</td>
+                                    <td className="p-2">{v.version}</td>
+                                    <td className="p-2">
+                                      {new Date(v.creado_en).toLocaleDateString('es-ES')}
+                                    </td>
+                                    <td className="p-2">
+                                      {obtenerNombreCompleto(v.creado_por)}
+                                    </td>
                                     <td className="p-2 text-center">
                                       <Button
                                         size="sm"
@@ -299,10 +372,10 @@ export default function ControlVersiones() {
                             </div>
 
                             <div style={{ height: 420 }} className="w-full">
-                              {selectedVersion?.url || selectedDoc?.url ? (
+                              {selectedVersion?.ruta_archivo || selectedDoc?.ruta_archivo ? (
                                 <iframe
                                   title="visor-version"
-                                  src={selectedVersion?.url || selectedDoc?.url}
+                                  src={selectedVersion?.ruta_archivo || selectedDoc?.ruta_archivo}
                                   className="w-full h-full"
                                 />
                               ) : (
@@ -314,7 +387,7 @@ export default function ControlVersiones() {
 
                             <div className="p-3 flex gap-2 border-t">
                               <a
-                                href={selectedVersion?.url || selectedDoc?.url || "#"}
+                                href={selectedVersion?.ruta_archivo || selectedDoc?.ruta_archivo || "#"}
                                 target="_blank"
                                 rel="noreferrer"
                               >
