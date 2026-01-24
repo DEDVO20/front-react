@@ -70,6 +70,16 @@ class DocumentoService {
     const response = await apiClient.get(`/documentos/${documentoId}/versiones`);
     return response.data;
   }
+
+  async createVersion(data: {
+    documento_id: string;
+    version: string;
+    descripcion_cambios?: string;
+    creado_por?: string;
+  }): Promise<any> {
+    const response = await apiClient.post('/versiones-documentos', data);
+    return response.data;
+  }
 }
 
 export const documentoService = new DocumentoService();
