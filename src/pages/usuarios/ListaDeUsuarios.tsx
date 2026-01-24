@@ -130,8 +130,8 @@ export default function ListaUsuarios() {
           user.correo_electronico.toLowerCase().includes(term) ||
           user.nombre_usuario.toLowerCase().includes(term) ||
           user.documento.toString().includes(term) ||
-          user.area?.nombre.toLowerCase().includes(term) ||
-          user.area?.codigo.toLowerCase().includes(term)
+          user.area?.nombre?.toLowerCase().includes(term) ||
+          user.area?.codigo?.toLowerCase().includes(term)
       );
     }
 

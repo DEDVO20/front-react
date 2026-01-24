@@ -16,16 +16,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -37,21 +27,17 @@ import {
   Save,
   CheckCircle,
   AlertCircle,
-  Building2,
-  Mail,
   User,
-  Lock,
-  FileText,
   Shield,
-  Sparkles,
   UserCheck,
+  Loader2,
 } from "lucide-react";
-import apiClient from "@/lib/api";
 
 interface Area {
   id: string;
   codigo: string;
   nombre: string;
+  descripcion?: string;
 }
 
 interface Rol {
@@ -75,7 +61,11 @@ interface FormData {
   activo: boolean;
 }
 
-export default function NuevosUsuarios() {
+interface FormErrors {
+  [key: string]: string;
+}
+
+export default function FormularioUsuario() {
   const { id } = useParams();
   const isEditing = !!id;
   const navigate = useNavigate();
@@ -97,80 +87,165 @@ export default function NuevosUsuarios() {
   const [areas, setAreas] = useState<Area[]>([]);
   const [roles, setRoles] = useState<Rol[]>([]);
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
+  const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
-  const [fetchingUser, setFetchingUser] = useState(false);
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [fetchingData, setFetchingData] = useState(true);
 
-  // Cargar catálogos y datos del usuario
+  // Cargar áreas, roles y datos del usuario (si es edición)
   useEffect(() => {
-    const init = async () => {
-      setFetchingUser(true);
+    const fetchInitialData = async () => {
+      setFetchingData(true);
       try {
-        // 1. Cargar Catálogos Primero
-        const [areasRes, rolesRes] = await Promise.all([
-          apiClient.get("/areas"),
-          apiClient.get("/roles")
-        ]);
+        const token = localStorage.getItem("token");
 
-        setAreas(areasRes.data);
-        setRoles(rolesRes.data);
+        // Cargar áreas
+        const areasResponse = await fetch("/api/v1/areas", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-        // 2. Cargar Usuario si estamos editando
-        if (isEditing) {
-          const userRes = await apiClient.get(`/usuarios/${id}`);
-          const data = userRes.data;
+        if (areasResponse.ok) {
+          const areasData = await areasResponse.json();
+          setAreas(Array.isArray(areasData) ? areasData : []);
+        } else {
+          throw new Error("Error al cargar áreas");
+        }
 
-          console.log("API User Data received:", data);
+        // Cargar roles - AQUÍ ESTÁ LA CONEXIÓN A LA BD
+        const rolesResponse = await fetch("/api/v1/roles", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-          setFormData({
-            documento: String(data.documento),
-            nombre: data.nombre,
-            segundoNombre: data.segundo_nombre || "",
-            primerApellido: data.primer_apellido,
-            segundoApellido: data.segundo_apellido || "",
-            correoElectronico: data.correo_electronico,
-            nombreUsuario: data.nombre_usuario,
-            contrasena: "",
-            confirmarContrasena: "",
-            areaId: data.area_id || "",
-            activo: data.activo,
+        if (rolesResponse.ok) {
+          const rolesData = await rolesResponse.json();
+          console.log("Roles cargados desde BD:", rolesData); // Para debug
+          setRoles(Array.isArray(rolesData) ? rolesData : []);
+        } else {
+          throw new Error("Error al cargar roles");
+        }
+
+        // Si es edición, cargar datos del usuario
+        if (isEditing && id) {
+          const userResponse = await fetch(`/api/v1/usuarios/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
           });
 
-          // Mapear roles: data.roles es List[UsuarioRolResponse]
-          const roleIds = data.roles?.map((ur: any) => String(ur.rol_id)) || [];
-          setSelectedRoleIds(roleIds);
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            console.log("Usuario cargado:", userData); // Para debug
+
+            setFormData({
+              documento: String(userData.documento || ""),
+              nombre: userData.nombre || "",
+              segundoNombre: userData.segundo_nombre || "",
+              primerApellido: userData.primer_apellido || "",
+              segundoApellido: userData.segundo_apellido || "",
+              correoElectronico: userData.correo_electronico || "",
+              nombreUsuario: userData.nombre_usuario || "",
+              contrasena: "",
+              confirmarContrasena: "",
+              areaId: userData.area_id || "",
+              activo: userData.activo ?? true,
+            });
+
+            // Cargar roles del usuario
+            if (userData.roles && Array.isArray(userData.roles)) {
+              const roleIds = userData.roles.map((ur: any) => String(ur.rol_id || ur.id));
+              console.log("Roles del usuario:", roleIds); // Para debug
+              setSelectedRoleIds(roleIds);
+            }
+          } else {
+            throw new Error("Error al cargar usuario");
+          }
         }
       } catch (error: any) {
-        toast.error("Error al cargar datos: " + error.message);
-        if (isEditing) navigate("/ListaDeUsuarios");
+        console.error("Error al cargar datos iniciales:", error);
+        toast.error(error.message || "Error al cargar datos del formulario");
+
+        // Datos de respaldo solo si falla la conexión
+        if (areas.length === 0) {
+          setAreas([
+            { id: "1", codigo: "CAL", nombre: "Gestión de Calidad" },
+            { id: "2", codigo: "SIS", nombre: "Sistemas y Tecnología" },
+            { id: "3", codigo: "RRHH", nombre: "Recursos Humanos" },
+          ]);
+        }
+
+        if (roles.length === 0) {
+          setRoles([
+            { id: "1", nombre: "Administrador", clave: "ADMIN", descripcion: "Acceso total al sistema" },
+            { id: "2", nombre: "Coordinador de Calidad", clave: "COORD_CALIDAD", descripcion: "Gestiona procesos de calidad" },
+            { id: "3", nombre: "Auditor Interno", clave: "AUDITOR", descripcion: "Realiza auditorías internas" },
+            { id: "4", nombre: "Usuario Estándar", clave: "USER", descripcion: "Acceso básico al sistema" },
+          ]);
+        }
+
+        if (isEditing) {
+          navigate("/ListaDeUsuarios");
+        }
       } finally {
-        setFetchingUser(false);
+        setFetchingData(false);
       }
     };
 
-    init();
+    fetchInitialData();
   }, [id, isEditing, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
-  const handleAreaChange = (value: string) => {
-    setFormData(prev => ({ ...prev, areaId: value }));
-  };
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
 
-  const toggleRole = (roleId: string) => {
-    setSelectedRoleIds(prev =>
-      prev.includes(roleId) ? prev.filter(r => r !== roleId) : [...prev, roleId]
-    );
+    if (!formData.documento.trim()) newErrors.documento = "El documento es obligatorio";
+    else if (!/^\d+$/.test(formData.documento)) newErrors.documento = "Solo números permitidos";
+
+    if (!formData.nombre.trim()) newErrors.nombre = "El nombre es obligatorio";
+    if (!formData.primerApellido.trim()) newErrors.primerApellido = "El primer apellido es obligatorio";
+
+    if (!formData.correoElectronico.trim()) newErrors.correoElectronico = "El correo es obligatorio";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correoElectronico))
+      newErrors.correoElectronico = "Formato de correo inválido";
+
+    if (!formData.nombreUsuario.trim()) newErrors.nombreUsuario = "El nombre de usuario es obligatorio";
+    else if (formData.nombreUsuario.length < 3) newErrors.nombreUsuario = "Mínimo 3 caracteres";
+
+    if (!isEditing) {
+      if (!formData.contrasena) newErrors.contrasena = "La contraseña es obligatoria";
+      else if (formData.contrasena.length < 8) newErrors.contrasena = "Mínimo 8 caracteres";
+
+      if (!formData.confirmarContrasena) newErrors.confirmarContrasena = "Confirme la contraseña";
+      else if (formData.contrasena !== formData.confirmarContrasena)
+        newErrors.confirmarContrasena = "Las contraseñas no coinciden";
+    } else if (formData.contrasena) {
+      if (formData.contrasena.length < 8) newErrors.contrasena = "Mínimo 8 caracteres";
+      if (formData.contrasena !== formData.confirmarContrasena)
+        newErrors.confirmarContrasena = "Las contraseñas no coinciden";
+    }
+
+    if (!formData.areaId) newErrors.areaId = "Seleccione un área";
+    if (selectedRoleIds.length === 0) newErrors.roles = "Seleccione al menos un rol";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (!validateForm()) return;
 
+    setLoading(true);
     try {
+      const token = localStorage.getItem("token");
+
       const payload: any = {
         documento: parseInt(formData.documento, 10),
         nombre: formData.nombre.trim(),
@@ -179,38 +254,85 @@ export default function NuevosUsuarios() {
         segundo_apellido: formData.segundoApellido.trim() || null,
         correo_electronico: formData.correoElectronico.trim(),
         nombre_usuario: formData.nombreUsuario.trim(),
-        area_id: formData.areaId || null,
+        area_id: formData.areaId,
         activo: formData.activo,
         rol_ids: selectedRoleIds,
       };
 
+      // Solo incluir contraseña si se proporcionó
       if (formData.contrasena) {
         payload.contrasena = formData.contrasena;
       }
 
+      let response;
       if (isEditing) {
-        await apiClient.put(`/usuarios/${id}`, payload);
-        toast.success("Usuario actualizado correctamente");
+        response = await fetch(`/api/v1/usuarios/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
       } else {
-        if (!formData.contrasena) throw new Error("La contraseña es obligatoria para nuevos usuarios");
-        await apiClient.post("/usuarios", payload);
-        toast.success("Usuario creado correctamente");
+        response = await fetch("/api/v1/usuarios", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
       }
 
-      navigate("/ListaDeUsuarios");
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success(isEditing
+          ? `Usuario "${formData.nombreUsuario}" actualizado exitosamente`
+          : `Usuario "${formData.nombreUsuario}" creado exitosamente`
+        );
+        setTimeout(() => navigate("/ListaDeUsuarios"), 1500);
+      } else {
+        const errorDetail = result.detail || "Error al procesar la solicitud";
+        throw new Error(Array.isArray(errorDetail) ? errorDetail[0].msg : errorDetail);
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      console.error("Error al guardar usuario:", error);
+      toast.error(error.message || "Error al guardar el usuario");
     } finally {
       setLoading(false);
     }
   };
 
-  if (fetchingUser) {
+  const toggleRole = (roleId: string) => {
+    setSelectedRoleIds(prev => {
+      const newRoles = prev.includes(roleId)
+        ? prev.filter(id => id !== roleId)
+        : [...prev, roleId];
+
+      // Limpiar error de roles si se selecciona al menos uno
+      if (newRoles.length > 0 && errors.roles) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.roles;
+          return newErrors;
+        });
+      }
+
+      return newRoles;
+    });
+  };
+
+  // Pantalla de carga mientras se obtienen los datos
+  if (fetchingData) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#F5F7FA]">
-        <div className="text-center space-y-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent mx-auto" />
-          <p className="text-gray-500 font-medium">Cargando información del usuario...</p>
+      <div className="flex items-center justify-center min-h-screen bg-[#F5F7FA]">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-[#2563EB] mx-auto" />
+          <p className="mt-4 text-lg font-medium text-[#6B7280]">
+            Cargando {isEditing ? "usuario" : "formulario"}...
+          </p>
         </div>
       </div>
     );
@@ -220,155 +342,386 @@ export default function NuevosUsuarios() {
     <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
       <TooltipProvider>
         <div className="max-w-5xl mx-auto space-y-8">
+
           {/* Header */}
           <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div>
                 <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                  {isEditing ? <UserCheck className="h-9 w-9 text-[#2563EB]" /> : <UserPlus className="h-9 w-9 text-[#2563EB]" />}
+                  {isEditing ? (
+                    <UserCheck className="h-9 w-9 text-[#2563EB]" />
+                  ) : (
+                    <UserPlus className="h-9 w-9 text-[#2563EB]" />
+                  )}
                   {isEditing ? "Editar Usuario" : "Nuevo Usuario"}
                 </h1>
-                <p className="text-[#6B7280] mt-1 text-lg">
-                  {isEditing ? `Perfil de ${formData.nombre} ${formData.primerApellido}` : "Registra un nuevo integrante para ISO 9001"}
+                <p className="text-[#6B7280] mt-2 text-lg">
+                  {isEditing
+                    ? `Modificando el perfil de @${formData.nombreUsuario}`
+                    : "Complete el formulario para registrar un nuevo usuario en el sistema ISO 9001"}
                 </p>
               </div>
-              <Button variant="outline" onClick={() => navigate(-1)} className="bg-white/50 backdrop-blur-sm">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Volver
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button type="button" variant="outline" onClick={() => navigate("/ListaDeUsuarios")}>
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Volver
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent><p>Volver a la lista de usuarios</p></TooltipContent>
+              </Tooltip>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <Card className="shadow-sm border-[#E5E7EB]">
-              <CardHeader className="bg-[#F1F5F9] border-b">
-                <CardTitle className="text-[#1E3A8A] flex items-center gap-2">
-                  <User className="h-5 w-5 text-blue-600" /> Datos Generales
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-8 space-y-10">
+          {/* Formulario */}
+          <Card className="shadow-sm border-[#E5E7EB]">
+            <CardHeader className="bg-[#F1F5F9] border-b border-[#E5E7EB]">
+              <CardTitle className="text-2xl text-[#1E3A8A] flex items-center gap-3">
+                <User className="h-6 w-6 text-[#2563EB]" />
+                Información del Usuario
+              </CardTitle>
+            </CardHeader>
 
-                {/* Sección 1: Identidad */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+            <CardContent className="p-8 space-y-10">
+
+              {/* Datos Personales */}
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-[#1E3A8A]">Datos Personales</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Cédula / Documento *</Label>
-                    <Input name="documento" value={formData.documento} onChange={handleInputChange} placeholder="00000000" />
+                    <Label className={errors.documento ? "text-red-500" : ""}>
+                      Documento <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="documento"
+                      value={formData.documento}
+                      onChange={handleInputChange}
+                      placeholder="Ej: 12345678"
+                      className={errors.documento ? "border-red-500" : ""}
+                    />
+                    {errors.documento && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.documento}
+                      </p>
+                    )}
                   </div>
+
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Primer Nombre *</Label>
-                    <Input name="nombre" value={formData.nombre} onChange={handleInputChange} placeholder="Ej: Juan" />
+                    <Label className={errors.nombre ? "text-red-500" : ""}>
+                      Primer Nombre <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="nombre"
+                      value={formData.nombre}
+                      onChange={handleInputChange}
+                      placeholder="Ej: Juan"
+                      className={errors.nombre ? "border-red-500" : ""}
+                    />
+                    {errors.nombre && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.nombre}
+                      </p>
+                    )}
                   </div>
+
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Segundo Nombre</Label>
-                    <Input name="segundoNombre" value={formData.segundoNombre} onChange={handleInputChange} placeholder="Opcional" />
+                    <Label>Segundo Nombre</Label>
+                    <Input
+                      name="segundoNombre"
+                      value={formData.segundoNombre}
+                      onChange={handleInputChange}
+                      placeholder="Ej: Carlos"
+                    />
                   </div>
+
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Primer Apellido *</Label>
-                    <Input name="primerApellido" value={formData.primerApellido} onChange={handleInputChange} placeholder="Ej: Pérez" />
+                    <Label className={errors.primerApellido ? "text-red-500" : ""}>
+                      Primer Apellido <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="primerApellido"
+                      value={formData.primerApellido}
+                      onChange={handleInputChange}
+                      placeholder="Ej: Pérez"
+                      className={errors.primerApellido ? "border-red-500" : ""}
+                    />
+                    {errors.primerApellido && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.primerApellido}
+                      </p>
+                    )}
                   </div>
+
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Segundo Apellido</Label>
-                    <Input name="segundoApellido" value={formData.segundoApellido} onChange={handleInputChange} placeholder="Opcional" />
+                    <Label>Segundo Apellido</Label>
+                    <Input
+                      name="segundoApellido"
+                      value={formData.segundoApellido}
+                      onChange={handleInputChange}
+                      placeholder="Ej: García"
+                    />
                   </div>
+
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Área de Trabajo *</Label>
-                    <Select value={formData.areaId} onValueChange={handleAreaChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccione el área" />
+                    <Label className={errors.areaId ? "text-red-500" : ""}>
+                      Área <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={formData.areaId}
+                      onValueChange={(val) => {
+                        setFormData(p => ({ ...p, areaId: val }));
+                        if (errors.areaId) {
+                          setErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.areaId;
+                            return newErrors;
+                          });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className={errors.areaId ? "border-red-500" : ""}>
+                        <SelectValue placeholder="Seleccione un área..." />
                       </SelectTrigger>
                       <SelectContent>
                         {areas.map(a => (
-                          <SelectItem key={a.id} value={a.id}>[{a.codigo}] {a.nombre}</SelectItem>
+                          <SelectItem key={a.id} value={a.id}>
+                            [{a.codigo}] {a.nombre}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {errors.areaId && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.areaId}
+                      </p>
+                    )}
                   </div>
                 </div>
+              </div>
 
-                {/* Sección 2: Roles */}
-                <div className="pt-8 border-t">
-                  <div className="flex items-center gap-2 mb-6">
-                    <Shield className="h-5 w-5 text-blue-600" />
-                    <h3 className="text-lg font-bold text-[#1E3A8A]">Roles y Atribuciones</h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {roles.map(rol => {
-                      const isSel = selectedRoleIds.includes(String(rol.id));
+              {/* Asignación de Roles - CORREGIDO PARA MOSTRAR ROLES DE LA BD */}
+              <div className="pt-8 border-t border-[#E5E7EB] space-y-6">
+                <div>
+                  <h3 className={`text-lg font-semibold flex items-center gap-2 ${errors.roles ? "text-red-500" : "text-[#1E3A8A]"}`}>
+                    <Shield className="h-5 w-5" />
+                    Asignación de Roles <span className="text-red-500">*</span>
+                  </h3>
+                  <p className="text-sm text-[#6B7280] mt-1">
+                    {roles.length > 0
+                      ? `${roles.length} roles disponibles en el sistema`
+                      : "Cargando roles desde la base de datos..."}
+                  </p>
+                  {errors.roles && (
+                    <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.roles}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {roles.length === 0 ? (
+                    <div className="col-span-2 text-center py-8 text-[#6B7280]">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                      <p>Cargando roles...</p>
+                    </div>
+                  ) : (
+                    roles.map(rol => {
+                      const isSelected = selectedRoleIds.includes(String(rol.id));
                       return (
                         <div
                           key={rol.id}
-                          onClick={() => toggleRole(rol.id)}
-                          className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-4 ${isSel ? "bg-blue-50 border-blue-600 shadow-sm" : "bg-white border-gray-100 hover:border-blue-200"}`}
+                          className={`p-5 rounded-xl border-2 transition-all ${isSelected
+                              ? "bg-[#E0EDFF] border-[#2563EB] shadow-sm"
+                              : "bg-white border-[#E5E7EB] hover:border-[#2563EB]/50 hover:shadow-sm"
+                            }`}
                         >
-                          <Checkbox checked={isSel} />
-                          <div>
-                            <p className="font-bold text-gray-900">{rol.nombre}</p>
-                            <p className="text-xs text-gray-500 uppercase tracking-tight">{rol.clave}</p>
+                          <div className="flex items-start gap-4">
+                            <Checkbox
+                              id={`role-${rol.id}`}
+                              checked={isSelected}
+                              onCheckedChange={() => toggleRole(String(rol.id))}
+                            />
+                            <label
+                              htmlFor={`role-${rol.id}`}
+                              className="flex-1 cursor-pointer"
+                            >
+                              <div className="font-semibold text-gray-900">{rol.nombre}</div>
+                              <div className="text-xs text-gray-400 font-mono uppercase mt-1">{rol.clave}</div>
+                              {rol.descripcion && (
+                                <div className="text-sm text-[#6B7280] mt-2">{rol.descripcion}</div>
+                              )}
+                            </label>
+                            {isSelected && (
+                              <CheckCircle className="h-6 w-6 text-[#2563EB] flex-shrink-0" />
+                            )}
                           </div>
                         </div>
                       );
-                    })}
-                  </div>
+                    })
+                  )}
                 </div>
 
-                {/* Sección 3: Cuenta */}
-                <div className="pt-8 border-t grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Correo Electrónico *</Label>
-                    <Input name="correoElectronico" type="email" value={formData.correoElectronico} onChange={handleInputChange} placeholder="usuario@empresa.com" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Nombre de Usuario *</Label>
-                    <div className="flex gap-2">
-                      <Input name="nombreUsuario" value={formData.nombreUsuario} onChange={handleInputChange} placeholder="ej: jperez" />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => {
-                              const n = formData.nombre.toLowerCase().trim();
-                              const a = formData.primerApellido.toLowerCase().trim();
-                              if (n && a) setFormData(p => ({ ...p, nombreUsuario: `${n.charAt(0)}${a}` }));
-                            }}
-                          >
-                            <Sparkles className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Sugerir nombre</TooltipContent>
-                      </Tooltip>
+                {/* Resumen de roles seleccionados */}
+                {selectedRoleIds.length > 0 && (
+                  <div className="bg-[#F8FAFC] rounded-xl p-4 border border-[#E5E7EB]">
+                    <p className="text-sm font-medium text-[#6B7280] mb-3">
+                      Roles seleccionados ({selectedRoleIds.length})
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedRoleIds.map(id => {
+                        const rol = roles.find(r => String(r.id) === id);
+                        return rol ? (
+                          <Badge key={id} className="bg-[#E0EDFF] text-[#2563EB] text-sm px-4 py-1">
+                            {rol.nombre}
+                          </Badge>
+                        ) : null;
+                      })}
                     </div>
                   </div>
+                )}
+              </div>
+
+              {/* Información de Cuenta */}
+              <div className="pt-8 border-t border-[#E5E7EB] space-y-6">
+                <h3 className="text-lg font-semibold text-[#1E3A8A]">Credenciales de Acceso</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold">{isEditing ? "Cambiar Contraseña" : "Contraseña *"}</Label>
-                    <Input name="contrasena" type="password" value={formData.contrasena} onChange={handleInputChange} placeholder={isEditing ? "Dejar vacío para no cambiar" : "Mínimo 6 caracteres"} />
+                    <Label className={errors.correoElectronico ? "text-red-500" : ""}>
+                      Correo Electrónico <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="correoElectronico"
+                      type="email"
+                      value={formData.correoElectronico}
+                      onChange={handleInputChange}
+                      placeholder="usuario@empresa.com"
+                      className={errors.correoElectronico ? "border-red-500" : ""}
+                    />
+                    {errors.correoElectronico && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.correoElectronico}
+                      </p>
+                    )}
                   </div>
+
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Confirmar Contraseña</Label>
-                    <Input name="confirmarContrasena" type="password" value={formData.confirmarContrasena} onChange={handleInputChange} />
+                    <Label className={errors.nombreUsuario ? "text-red-500" : ""}>
+                      Nombre de Usuario <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="nombreUsuario"
+                      value={formData.nombreUsuario}
+                      onChange={handleInputChange}
+                      placeholder="usuario123"
+                      className={errors.nombreUsuario ? "border-red-500" : ""}
+                    />
+                    {errors.nombreUsuario && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.nombreUsuario}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className={errors.contrasena ? "text-red-500" : ""}>
+                      {isEditing ? "Nueva Contraseña (opcional)" : "Contraseña"}
+                      {!isEditing && <span className="text-red-500"> *</span>}
+                    </Label>
+                    <Input
+                      type="password"
+                      name="contrasena"
+                      value={formData.contrasena}
+                      onChange={handleInputChange}
+                      placeholder={isEditing ? "Dejar vacío para mantener la actual" : "Mínimo 8 caracteres"}
+                      className={errors.contrasena ? "border-red-500" : ""}
+                    />
+                    {errors.contrasena && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.contrasena}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className={errors.confirmarContrasena ? "text-red-500" : ""}>
+                      Confirmar Contraseña
+                    </Label>
+                    <Input
+                      type="password"
+                      name="confirmarContrasena"
+                      value={formData.confirmarContrasena}
+                      onChange={handleInputChange}
+                      placeholder="Repita la contraseña"
+                      className={errors.confirmarContrasena ? "border-red-500" : ""}
+                    />
+                    {errors.confirmarContrasena && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.confirmarContrasena}
+                      </p>
+                    )}
                   </div>
                 </div>
+              </div>
 
-                {/* Estado y Acciones */}
-                <div className="pt-10 border-t flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div className="flex items-center gap-4 bg-gray-50 px-6 py-3 rounded-full border border-gray-200">
-                    <Switch checked={formData.activo} onCheckedChange={(val) => setFormData(p => ({ ...p, activo: val }))} />
-                    <span className="font-bold text-[#1E3A8A]">{formData.activo ? "Acceso Activado" : "Acceso Inactivo"}</span>
+              {/* Estado y Acciones */}
+              <div className="pt-8 border-t border-[#E5E7EB] space-y-6">
+                <div className="flex items-center gap-4">
+                  <Switch
+                    checked={formData.activo}
+                    onCheckedChange={(val) => setFormData(p => ({ ...p, activo: val }))}
+                  />
+                  <div className="flex-1">
+                    <Label className="font-semibold cursor-pointer">Usuario Activo</Label>
+                    <p className="text-sm text-[#6B7280] mt-1">
+                      {formData.activo
+                        ? "El usuario puede iniciar sesión inmediatamente"
+                        : "El acceso al sistema está deshabilitado"}
+                    </p>
                   </div>
-
-                  <div className="flex gap-3 w-full md:w-auto">
-                    <Button type="button" variant="outline" className="flex-1 md:flex-none border-gray-300" onClick={() => navigate(-1)}>
-                      Cancelar
-                    </Button>
-                    <Button type="submit" disabled={loading} className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 min-w-[200px]">
-                      {loading ? "Procesando..." : (isEditing ? "Guardar Cambios" : "Crear Usuario")}
-                    </Button>
-                  </div>
+                  <Badge className={`px-4 py-2 ${formData.activo ? "bg-[#ECFDF5] text-[#22C55E]" : "bg-gray-100 text-gray-600"}`}>
+                    {formData.activo ? "Activo" : "Inactivo"}
+                  </Badge>
                 </div>
 
-              </CardContent>
-            </Card>
-          </form>
+                <div className="flex gap-4 pt-4">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="submit"
+                        disabled={loading}
+                        onClick={handleSubmit}
+                        className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Guardando...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-5 w-5" />
+                            {isEditing ? "Actualizar Usuario" : "Crear Usuario"}
+                          </>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>{isEditing ? "Actualizar usuario" : "Crear nuevo usuario"}</p></TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+
+            </CardContent>
+          </Card>
         </div>
       </TooltipProvider>
     </div>
