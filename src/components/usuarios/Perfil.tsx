@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { UploadIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { uploadProfileImage, deleteProfileImage } from "@/services/storage";
 import { getCurrentUser } from "@/services/auth";
 import { apiClient } from "@/lib/api";
 import {
@@ -152,26 +151,27 @@ export default function ProfilePage() {
     try {
       let fotoUrl = profile.fotoUrl;
 
-      // 1. Si hay nueva foto, subirla a Supabase
+      // 1. Si hay nueva foto, subirla usando el endpoint del backend
       if (foto) {
         setUploadingImage(true);
         toast.info("Subiendo imagen...");
 
         try {
-          const uploadResult = await uploadProfileImage(foto, usuarioId);
-          fotoUrl = uploadResult.url;
+          const formData = new FormData();
+          formData.append("file", foto);
 
-          // Eliminar imagen anterior si existe
-          if (oldImagePath) {
-            try {
-              await deleteProfileImage(oldImagePath);
-            } catch (error) {
-              console.warn("No se pudo eliminar la imagen anterior:", error);
+          const uploadResponse = await apiClient.post(
+            `/usuarios/${usuarioId}/foto-perfil`,
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
             }
-          }
+          );
 
+          fotoUrl = uploadResponse.data.foto_url;
           toast.success("Imagen subida correctamente");
-          setOldImagePath(uploadResult.path);
         } catch (error) {
           toast.error("Error al subir la imagen");
           console.error("Error uploading image:", error);
