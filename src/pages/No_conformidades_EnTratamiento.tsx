@@ -65,31 +65,9 @@ export default function NoConformidadesEnTratamiento() {
       setNoConformidades(transformedData);
       setTotal(transformedData.length);
     } catch (error) {
-      console.error("Error:", error);
-      const ejemploData: NoConformidadUI[] = [
-        {
-          id: "10",
-          codigo: "NC-2024-010",
-          tipo: "Proceso",
-          descripcion: "Tratamiento en curso para desviación lote B-123",
-          estado: "En Tratamiento",
-          gravedad: "Mayor",
-          fechaDeteccion: "2024-10-18",
-          responsable: "Luis Pérez",
-        },
-        {
-          id: "11",
-          codigo: "NC-2024-011",
-          tipo: "Producto",
-          descripcion: "Acciones en ejecución por defecto detectado",
-          estado: "En Tratamiento",
-          gravedad: "Menor",
-          fechaDeteccion: "2024-10-22",
-          responsable: "Ana Ruiz",
-        },
-      ];
-      setNoConformidades(ejemploData);
-      setTotal(ejemploData.length);
+      console.error("Error al cargar no conformidades:", error);
+      setNoConformidades([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
