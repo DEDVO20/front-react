@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { 
-  FileText, 
-  Download, 
-  Calendar, 
-  Filter, 
-  TrendingUp, 
+import {
+  FileText,
+  Download,
+  Calendar,
+  Filter,
+  TrendingUp,
   AlertCircle,
   CheckCircle,
   Clock,
@@ -15,6 +15,14 @@ import {
   Target,
   Activity
 } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 const ReportesView = () => {
   const [selectedCategory, setSelectedCategory] = useState('todos');
@@ -105,8 +113,8 @@ const ReportesView = () => {
     { icon: Activity, label: 'Métricas en Tiempo Real', color: 'bg-orange-500' }
   ];
 
-  const filteredReports = selectedCategory === 'todos' 
-    ? reportsList 
+  const filteredReports = selectedCategory === 'todos'
+    ? reportsList
     : reportsList.filter(r => r.category === selectedCategory);
 
   const getStatusBadge = (status: string) => {
@@ -128,180 +136,191 @@ const ReportesView = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-4xl font-bold text-slate-800 mb-2">
-              Reportes y Análisis
-            </h1>
-            <p className="text-slate-600 text-lg">
-              Sistema de Gestión de Calidad ISO 9001:2015
-            </p>
-          </div>
-          <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2">
-            <Download size={20} />
-            Generar Reporte
-          </button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat) => {
-          const StatIcon = stat.icon;
-          return (
-            <div key={stat.label} className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200 hover:shadow-xl transition-shadow duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`${stat.color} p-3 rounded-xl`}>
-                  <StatIcon className="text-white" size={24} />
-                </div>
-                <span className={`text-sm font-semibold ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
-                  {stat.change}
-                </span>
+        {/* Header Profesional */}
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                <BarChart3 className="h-9 w-9 text-[#2563EB]" />
+                Reportes y Análisis
+              </h1>
+              <p className="text-[#6B7280] mt-2 text-lg">
+                Sistema de Gestión de Calidad ISO 9001:2015
+              </p>
+              <div className="flex flex-wrap items-center gap-3 mt-4">
+                <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
+                  Total {filteredReports.length} reportes
+                </Badge>
+                <Badge className="bg-[#ECFDF5] text-[#22C55E]">
+                  Cumplimiento Normativo
+                </Badge>
               </div>
-              <div className="text-3xl font-bold text-slate-800 mb-1">{stat.value}</div>
-              <div className="text-slate-600 text-sm">{stat.label}</div>
             </div>
-          );
-        })}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {quickActions.map((action) => {
-          const ActionIcon = action.icon;
-          return (
-            <button
-              key={action.label}
-              className="bg-white hover:bg-slate-50 rounded-xl shadow-md p-4 border border-slate-200 transition-all duration-200 hover:shadow-lg hover:scale-105 flex items-center gap-3 text-left"
-            >
-              <div className={`${action.color} p-3 rounded-lg`}>
-                <ActionIcon className="text-white" size={20} />
-              </div>
-              <span className="font-semibold text-slate-700">{action.label}</span>
+            <button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold flex items-center gap-2 transition-all">
+              <Download size={20} />
+              Generar Reporte
             </button>
-          );
-        })}
-      </div>
-
-      {/* Filters and Categories */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-slate-200">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Categories */}
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-4">
-              <Filter size={20} className="text-slate-600" />
-              <h3 className="font-semibold text-slate-800">Categorías</h3>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {reportCategories.map((cat) => {
-                const CatIcon = cat.icon;
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-                      selectedCategory === cat.id
-                        ? 'bg-blue-600 text-white shadow-lg'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    <CatIcon size={16} />
-                    {cat.name}
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      selectedCategory === cat.id ? 'bg-blue-500' : 'bg-slate-300'
-                    }`}>
-                      {cat.count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Period Filter */}
-          <div className="lg:w-64">
-            <div className="flex items-center gap-2 mb-4">
-              <Calendar size={20} className="text-slate-600" />
-              <h3 className="font-semibold text-slate-800">Período</h3>
-            </div>
-            <select 
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-            >
-              <option value="semana">Última Semana</option>
-              <option value="mes">Último Mes</option>
-              <option value="trimestre">Último Trimestre</option>
-              <option value="año">Último Año</option>
-            </select>
           </div>
         </div>
-      </div>
 
-      {/* Reports List */}
-      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-        <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white">
-          <h2 className="text-2xl font-bold text-slate-800">
-            Reportes Disponibles
-            <span className="text-lg font-normal text-slate-600 ml-3">
-              ({filteredReports.length} reportes)
-            </span>
-          </h2>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.map((stat) => {
+            const StatIcon = stat.icon;
+            return (
+              <Card key={stat.label} className="bg-white border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardDescription className="font-semibold text-[#6B7280]">{stat.label}</CardDescription>
+                    <div className="p-2 bg-[#E0EDFF] rounded-lg">
+                      <StatIcon className="text-[#2563EB]" size={20} />
+                    </div>
+                  </div>
+                  <CardTitle className="text-3xl font-bold text-[#1E3A8A]">{stat.value}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <span className={`text-xs font-bold ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+                    {stat.change} vs mes anterior
+                  </span>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
-        
-        <div className="divide-y divide-slate-200">
-          {filteredReports.map((report) => (
-            <div key={report.id} className="p-6 hover:bg-slate-50 transition-colors duration-200">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-blue-100 p-2 rounded-lg">
-                      <FileText className="text-blue-600" size={20} />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-slate-800 text-lg">
-                        {report.title}
-                      </h3>
-                      <p className="text-slate-600 text-sm mt-1">
-                        {report.description}
-                      </p>
+
+        {/* Quick Actions & Filters Container */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Categorías y Filtros (Izquierda) */}
+          <div className="lg:col-span-1 space-y-6">
+            <Card className="rounded-2xl shadow-sm border-[#E5E7EB]">
+              <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+                <CardTitle className="text-lg text-[#1E3A8A] flex items-center gap-2">
+                  <Filter size={18} />
+                  Filtrar por Categoría
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="flex flex-col gap-2">
+                  {reportCategories.map((cat) => {
+                    const CatIcon = cat.icon;
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setSelectedCategory(cat.id)}
+                        className={`w-full p-3 rounded-xl font-medium flex items-center justify-between transition-all ${selectedCategory === cat.id
+                          ? 'bg-[#2563EB] text-white shadow-md'
+                          : 'bg-white text-slate-700 hover:bg-[#EFF6FF]'
+                          }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <CatIcon size={18} />
+                          {cat.name}
+                        </div>
+                        <Badge className={`${selectedCategory === cat.id ? 'bg-white/20' : 'bg-[#E0EDFF] text-[#2563EB] border-none'}`}>
+                          {cat.count}
+                        </Badge>
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl shadow-sm border-[#E5E7EB]">
+              <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+                <CardTitle className="text-lg text-[#1E3A8A] flex items-center gap-2">
+                  <Calendar size={18} />
+                  Rango de Tiempo
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <select
+                  value={selectedPeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] focus:ring-2 focus:ring-[#2563EB]/20 outline-none transition-all font-medium text-[#1E3A8A]"
+                >
+                  <option value="semana">Última Semana</option>
+                  <option value="mes">Último Mes</option>
+                  <option value="trimestre">Último Trimestre</option>
+                  <option value="año">Último Año</option>
+                </select>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Listado de Reportes (Derecha) */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
+              <div className="bg-[#F8FAFC] border-b border-[#E5E7EB] px-8 py-5 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-[#1E3A8A]">Reportes Disponibles</h2>
+                <Badge variant="outline" className="bg-white text-[#6B7280]">
+                  Registrados: {filteredReports.length}
+                </Badge>
+              </div>
+
+              <div className="divide-y divide-[#E5E7EB]">
+                {filteredReports.map((report) => (
+                  <div key={report.id} className="p-6 hover:bg-[#EFF6FF] transition-colors duration-200 group">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-2">
+                          <div className="bg-[#E0EDFF] p-3 rounded-xl">
+                            <FileText className="text-[#2563EB]" size={24} />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-[#111827] text-lg group-hover:text-[#2563EB] transition-colors">
+                              {report.title}
+                            </h3>
+                            <p className="text-[#6B7280] text-sm mt-1">
+                              {report.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-4 mt-6 text-sm">
+                          <span className="flex items-center gap-2 text-[#6B7280] font-medium">
+                            <Clock size={16} />
+                            {new Date(report.date).toLocaleDateString('es-ES', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </span>
+                          <Badge className="bg-[#F8FAFC] border-[#E5E7EB] text-[#1E3A8A] font-bold">
+                            {report.format}
+                          </Badge>
+                          <span className="text-[#6B7280] font-mono">{report.size}</span>
+                          <span className={`px-3 py-1 rounded-lg text-xs font-bold border ${report.status === 'completado' ? 'bg-[#ECFDF5] text-[#10B981] border-[#10B981]/20' :
+                            report.status === 'procesando' ? 'bg-[#EFF6FF] text-[#2563EB] border-[#2563EB]/20' :
+                              'bg-[#FEF2F2] text-[#EF4444] border-[#EF4444]/20'
+                            }`}>
+                            {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button className="p-4 rounded-xl bg-[#F8FAFC] hover:bg-[#2563EB] text-[#6B7280] hover:text-white border border-[#E5E7EB] transition-all">
+                        <Download size={22} />
+                      </button>
                     </div>
                   </div>
-                  
-                  <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-slate-600">
-                    <span className="flex items-center gap-1">
-                      <Calendar size={16} />
-                      {new Date(report.date).toLocaleDateString('es-ES', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}
-                    </span>
-                    <span className="px-3 py-1 bg-slate-100 rounded-lg font-medium">
-                      {report.format}
-                    </span>
-                    <span>{report.size}</span>
-                    {getStatusBadge(report.status)}
-                  </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <button className="p-3 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors duration-200">
-                    <Download size={20} />
-                  </button>
-                </div>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Footer Info */}
-      <div className="mt-8 text-center text-slate-600 text-sm">
-        <p>Todos los reportes son generados automáticamente y cumplen con los requisitos de ISO 9001:2015</p>
+            <Card className="mt-8 border-none bg-transparent shadow-none">
+              <CardContent className="p-0 text-center">
+                <p className="text-sm text-[#6B7280] italic flex items-center justify-center gap-2">
+                  <AlertCircle size={14} />
+                  Todos los reportes son generados automáticamente y cumplen con los requisitos de ISO 9001:2015
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
