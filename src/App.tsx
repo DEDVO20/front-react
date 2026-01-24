@@ -102,6 +102,7 @@ function App() {
             {/* Usuarios */}
             <Route path="/ListaDeUsuarios" element={<ListaDeUsuarios />} />
             <Route path="/NuevoUsuario" element={<NuevosUsuarios />} />
+            <Route path="/usuarios/:id/editar" element={<NuevosUsuarios />} />
             <Route path="/Roles_y_Permisos" element={<RolesYPermisos />} />
 
             {/* Auditorías */}

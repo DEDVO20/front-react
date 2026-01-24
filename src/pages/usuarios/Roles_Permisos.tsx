@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Shield,
-  ShieldCheck,
   Search,
   Eye,
   Edit,
@@ -32,6 +31,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 interface Permiso {
   id: string;
   nombre: string;
@@ -49,7 +63,7 @@ interface Rol {
 }
 
 interface RolConPermisos extends Rol {
-  permisos?: Permiso[];
+  permisos?: any[];
   cantidad_permisos?: number;
 }
 
@@ -60,14 +74,12 @@ export default function GestionRolesPermisos() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Estados para modales
   const [dialogState, setDialogState] = useState<{
     open: boolean;
     type: "ver" | "eliminar" | "crear" | "editar" | "permisos" | null;
     rol: RolConPermisos | null;
   }>({ open: false, type: null, rol: null });
 
-  // Estados para formularios
   const [formData, setFormData] = useState({
     nombre: "",
     clave: "",
@@ -75,6 +87,7 @@ export default function GestionRolesPermisos() {
   });
 
   const [permisosSeleccionados, setPermisosSeleccionados] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -87,60 +100,29 @@ export default function GestionRolesPermisos() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      const token = localStorage.getItem("token");
 
+      const [rolesRes, permisosRes] = await Promise.all([
+        fetch("/api/v1/roles", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/v1/permisos", { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
 
-      // Obtener roles
-      // Obtener roles
-      const rolesRes = await apiClient.get("/roles");
-      const rolesData = rolesRes.data;
+      if (!rolesRes.ok || !permisosRes.ok) throw new Error("Error al obtener datos");
 
-      // Obtener permisos
-      const permisosRes = await apiClient.get("/permisos");
-      const permisosData = permisosRes.data;
+      const rolesData = await rolesRes.json();
+      const permisosData = await permisosRes.json();
 
       setRoles(Array.isArray(rolesData) ? rolesData : []);
       setPermisos(Array.isArray(permisosData) ? permisosData : []);
     } catch (error) {
       console.error("Error:", error);
+      toast.error("Error al cargar roles y permisos del servidor");
 
-      // Datos de ejemplo
       const ejemploRoles: RolConPermisos[] = [
-        {
-          id: "1",
-          nombre: "Administrador",
-          clave: "ADMIN",
-          descripcion: "Acceso completo al sistema",
-          creado_en: "2024-01-15T10:30:00",
-          cantidad_permisos: 45,
-        },
-        {
-          id: "2",
-          nombre: "Coordinador de Calidad",
-          clave: "COORD_CALIDAD",
-          descripcion: "Gestión del sistema de calidad",
-          creado_en: "2024-02-20T09:15:00",
-          cantidad_permisos: 28,
-        },
-        {
-          id: "3",
-          nombre: "Auditor Interno",
-          clave: "AUDITOR",
-          descripcion: "Realización de auditorías",
-          creado_en: "2024-03-10T16:00:00",
-          cantidad_permisos: 15,
-        },
+        { id: "1", nombre: "Administrador", clave: "ADMIN", descripcion: "Acceso completo al sistema", creado_en: new Date().toISOString(), cantidad_permisos: 45 },
+        { id: "2", nombre: "Coordinador de Calidad", clave: "COORD_CALIDAD", descripcion: "Gestión del sistema de calidad", creado_en: new Date().toISOString(), cantidad_permisos: 28 },
       ];
-
-      const ejemploPermisos: Permiso[] = [
-        { id: "1", nombre: "Ver usuarios", codigo: "USUARIOS_VER", descripcion: "Visualizar lista de usuarios", creado_en: "2024-01-01" },
-        { id: "2", nombre: "Crear usuarios", codigo: "USUARIOS_CREAR", descripcion: "Crear nuevos usuarios", creado_en: "2024-01-01" },
-        { id: "3", nombre: "Editar usuarios", codigo: "USUARIOS_EDITAR", descripcion: "Modificar usuarios", creado_en: "2024-01-01" },
-        { id: "4", nombre: "Eliminar usuarios", codigo: "USUARIOS_ELIMINAR", descripcion: "Eliminar usuarios", creado_en: "2024-01-01" },
-        { id: "5", nombre: "Ver documentos", codigo: "DOCUMENTOS_VER", creado_en: "2024-01-01" },
-      ];
-
       setRoles(ejemploRoles);
-      setPermisos(ejemploPermisos);
     } finally {
       setLoading(false);
     }
@@ -148,7 +130,6 @@ export default function GestionRolesPermisos() {
 
   const filtrarRoles = () => {
     let resultado = [...roles];
-
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       resultado = resultado.filter(
@@ -158,19 +139,39 @@ export default function GestionRolesPermisos() {
           (rol.descripcion && rol.descripcion.toLowerCase().includes(term))
       );
     }
-
     setRolesFiltrados(resultado);
   };
 
-  const openDialog = (type: "ver" | "eliminar" | "crear" | "editar" | "permisos", rol: RolConPermisos | null = null) => {
+  const openDialog = async (type: "ver" | "eliminar" | "crear" | "editar" | "permisos", rol: RolConPermisos | null = null) => {
     setDialogState({ open: true, type, rol });
 
-    if (type === "editar" && rol) {
-      setFormData({
-        nombre: rol.nombre,
-        clave: rol.clave,
-        descripcion: rol.descripcion || "",
-      });
+    if (rol) {
+      if (type === "editar") {
+        setFormData({
+          nombre: rol.nombre || "",
+          clave: rol.clave || "",
+          descripcion: rol.descripcion || "",
+        });
+      }
+
+      if (type === "permisos") {
+        setIsSaving(true);
+        try {
+          const token = localStorage.getItem("token");
+          const response = await fetch(`/api/v1/roles/${rol.id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            const ids = data.permisos?.map((p: any) => String(p.permiso_id).toLowerCase()) || [];
+            setPermisosSeleccionados(ids);
+          }
+        } catch (error) {
+          console.error("Error:", error);
+        } finally {
+          setIsSaving(false);
+        }
+      }
     } else if (type === "crear") {
       setFormData({ nombre: "", clave: "", descripcion: "" });
     }
@@ -180,474 +181,443 @@ export default function GestionRolesPermisos() {
     setDialogState({ open: false, type: null, rol: null });
     setFormData({ nombre: "", clave: "", descripcion: "" });
     setPermisosSeleccionados([]);
+    setIsSaving(false);
   };
 
   const handleSubmit = async () => {
-    const { type, rol } = dialogState;
+    if (!formData.nombre.trim() || !formData.clave.trim()) {
+      toast.error("Nombre y clave son obligatorios");
+      return;
+    }
 
+    setIsSaving(true);
     try {
-      const url = type === "crear" ? "/roles" : `/roles/${rol?.id}`;
-      const method = type === "crear" ? "post" : "put";
+      const token = localStorage.getItem("token");
+      const isEditing = dialogState.type === "editar";
+      const url = isEditing ? `/api/v1/roles/${dialogState.rol?.id}` : "/api/v1/roles";
+      const method = isEditing ? "PUT" : "POST";
 
-      const response = await (apiClient as any)[method](url, formData);
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
 
-      alert(`✓ Rol ${type === "crear" ? "creado" : "actualizado"} correctamente`);
+      if (!response.ok) throw new Error("Error al guardar");
+
+      toast.success(`Rol ${isEditing ? "actualizado" : "creado"} con éxito`);
       await fetchData();
       closeDialog();
-    } catch (error) {
-      console.error("Error:", error);
-      alert("✗ Error al guardar el rol");
+    } catch (error: any) {
+      toast.error("Error al procesar la solicitud");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleEliminar = async () => {
-    const rol = dialogState.rol;
-    if (!rol) return;
-
+    if (!dialogState.rol) return;
+    setIsSaving(true);
     try {
-      await apiClient.delete(`/roles/${rol.id}`);
-
-      alert(`✓ Rol "${rol.nombre}" eliminado correctamente`);
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/v1/roles/${dialogState.rol.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("No se pudo eliminar");
+      toast.success(`Rol eliminado`);
       await fetchData();
       closeDialog();
-    } catch (error) {
-      console.error("Error:", error);
-      alert("✗ Error al eliminar el rol");
+    } catch (error: any) {
+      toast.error("Error al eliminar el rol");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleGuardarPermisos = async () => {
-    const rol = dialogState.rol;
-    if (!rol) return;
-
+    if (!dialogState.rol) return;
+    setIsSaving(true);
     try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/v1/roles/${dialogState.rol.id}/permisos`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ permisoIds: permisosSeleccionados }),
+      });
 
+      if (!response.ok) throw new Error("Error al asignar permisos");
 
-      // Agregar permisos seleccionados
-      // Agregar permisos seleccionados
-      await apiClient.post(`/roles/${rol.id}/permisos`, { permisoIds: permisosSeleccionados });
-
-      alert(`✓ Permisos asignados correctamente al rol "${rol.nombre}"`);
+      toast.success("Permisos actualizados correctamente");
       await fetchData();
       closeDialog();
-    } catch (error) {
-      console.error("Error:", error);
-      alert("✗ Error al asignar permisos");
+    } catch (error: any) {
+      toast.error("Error al asignar permisos");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const togglePermiso = (permisoId: string) => {
+    const id = String(permisoId).toLowerCase();
     setPermisosSeleccionados(prev =>
-      prev.includes(permisoId)
-        ? prev.filter(id => id !== permisoId)
-        : [...prev, permisoId]
+      prev.includes(id)
+        ? prev.filter(p => p !== id)
+        : [...prev, id]
     );
   };
 
-  if (loading) {
+  if (loading && !dialogState.open) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <RefreshCw className="w-12 h-12 animate-spin mx-auto text-blue-500" />
-          <p className="text-gray-600">Cargando roles y permisos...</p>
+      <div className="flex items-center justify-center min-h-screen bg-[#F5F7FA]">
+        <div className="text-center">
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-[#2563EB] border-t-transparent" />
+          <p className="mt-4 text-lg font-medium text-[#6B7280]">Cargando...</p>
         </div>
       </div>
     );
   }
 
+  const totalPermisosPosibles = permisos.length;
+  const totalAsignados = roles.reduce((acc, r) => acc + (r.permisos?.length || 0), 0);
+
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-6 pt-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Shield className="h-7 w-7 text-purple-600" />
-            </div>
-            Roles y Permisos
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Gestiona los roles y permisos del sistema
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={fetchData}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Actualizar
-          </Button>
-          <Button size="sm" onClick={() => openDialog("crear")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Rol
-          </Button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <TooltipProvider>
+        <div className="max-w-7xl mx-auto space-y-8">
 
-      {/* Tarjetas de resumen */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="hover:shadow-md transition-shadow border-purple-100">
-          <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2 text-purple-600">
-              <Shield className="w-4 h-4" />
-              Total Roles
-            </CardDescription>
-            <CardTitle className="text-4xl font-bold text-purple-600">
-              {roles.length}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-gray-600">Roles configurados</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow border-blue-100">
-          <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2 text-blue-600">
-              <Lock className="w-4 h-4" />
-              Total Permisos
-            </CardDescription>
-            <CardTitle className="text-4xl font-bold text-blue-600">
-              {permisos.length}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-gray-600">Permisos disponibles</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow border-green-100">
-          <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2 text-green-600">
-              <ShieldCheck className="w-4 h-4" />
-              Roles Activos
-            </CardDescription>
-            <CardTitle className="text-4xl font-bold text-green-600">
-              {roles.length}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-              100% activos
-            </Badge>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Barra de búsqueda */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Search className="w-4 h-4" />
-            Búsqueda de Roles
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Buscar por nombre, clave o descripción..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <p className="text-sm text-gray-600 mt-3">
-            Mostrando {rolesFiltrados.length} de {roles.length} roles
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Lista de roles */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {rolesFiltrados.map((rol) => (
-          <Card key={rol.id} className="hover:shadow-lg transition-all">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Shield className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">{rol.nombre}</CardTitle>
-                    <CardDescription className="text-xs font-mono">
-                      {rol.clave}
-                    </CardDescription>
-                  </div>
+          {/* Header */}
+          <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div>
+                <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  <Shield className="h-9 w-9 text-[#2563EB]" />
+                  Gestión de Roles y Permisos
+                </h1>
+                <p className="text-[#6B7280] mt-2 text-lg">Administra los accesos del sistema</p>
+                <div className="flex flex-wrap items-center gap-3 mt-4">
+                  <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
+                    {roles.length} roles activos
+                  </Badge>
+                  <Badge className="bg-[#ECFDF5] text-[#22C55E]">
+                    <Lock className="h-4 w-4 mr-1" />
+                    {permisos.length} permisos disponibles
+                  </Badge>
                 </div>
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={() => openDialog("crear")} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white">
+                    <Plus className="mr-2 h-5 w-5" /> Nuevo Rol
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent><p>Crear un nuevo rol</p></TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+
+          {/* Tarjetas resumen - con colores pastel */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-[#1E3A8A]">Total Roles</CardTitle>
+                  <Shield className="h-8 w-8 text-[#2563EB]" />
+                </div>
+                <div className="text-4xl font-bold text-[#1E3A8A] mt-4">{roles.length}</div>
+                <p className="text-[#6B7280] text-sm mt-1">Roles configurados</p>
+              </CardHeader>
+            </Card>
+
+            <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-[#1E3A8A]">Total Permisos</CardTitle>
+                  <Lock className="h-8 w-8 text-[#22C55E]" />
+                </div>
+                <div className="text-4xl font-bold text-[#1E3A8A] mt-4">{permisos.length}</div>
+                <p className="text-[#6B7280] text-sm mt-1">Permisos disponibles</p>
+              </CardHeader>
+            </Card>
+
+            <Card className="bg-[#FFF7ED] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-[#1E3A8A]">Asignaciones</CardTitle>
+                  <CheckCircle className="h-8 w-8 text-[#F59E0B]" />
+                </div>
+                <div className="text-4xl font-bold text-[#1E3A8A] mt-4">{totalAsignados}</div>
+                <p className="text-[#6B7280] text-sm mt-1">Permisos asignados en total</p>
+              </CardHeader>
+            </Card>
+          </div>
+
+          {/* Búsqueda */}
+          <Card className="shadow-sm">
+            <CardHeader className="bg-[#F1F5F9]">
+              <div className="flex items-center gap-2">
+                <Search className="h-5 w-5 text-[#6B7280]" />
+                <CardTitle className="text-xl text-[#1E3A8A]">Búsqueda de Roles</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600 line-clamp-2">
-                {rol.descripcion || "Sin descripción"}
+            <CardContent className="pt-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-3.5 h-5 w-5 text-[#6B7280]" />
+                <Input
+                  placeholder="Buscar por nombre, clave o descripción..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <p className="text-sm text-[#6B7280] mt-4">
+                Mostrando {rolesFiltrados.length} de {roles.length} roles
               </p>
-
-              <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-gray-400" />
-                <span className="text-sm text-gray-600">
-                  {rol.cantidad_permisos || 0} permisos
-                </span>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 hover:bg-blue-50"
-                  onClick={() => openDialog("ver", rol)}
-                >
-                  <Eye className="w-3 h-3 mr-1" />
-                  Ver
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 hover:bg-purple-50"
-                  onClick={() => openDialog("permisos", rol)}
-                >
-                  <Lock className="w-3 h-3 mr-1" />
-                  Permisos
-                </Button>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 hover:bg-amber-50"
-                  onClick={() => openDialog("editar", rol)}
-                >
-                  <Edit className="w-3 h-3 mr-1" />
-                  Editar
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 hover:bg-red-50 hover:text-red-700"
-                  onClick={() => openDialog("eliminar", rol)}
-                >
-                  <Trash2 className="w-3 h-3 mr-1" />
-                  Eliminar
-                </Button>
-              </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      {rolesFiltrados.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-16">
-            <Shield className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No se encontraron roles</h3>
-            <p className="text-gray-600 mb-4">
-              {searchTerm ? `No hay roles que coincidan con "${searchTerm}"` : "No hay roles registrados"}
-            </p>
-            {searchTerm && (
-              <Button variant="outline" onClick={() => setSearchTerm("")}>
-                Limpiar búsqueda
-              </Button>
+          {/* Grid de Roles - tarjetas con colores sutiles y hover */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {rolesFiltrados.length === 0 ? (
+              <div className="col-span-full">
+                <Card className="shadow-sm border-[#E5E7EB]">
+                  <CardContent className="text-center py-20">
+                    <Shield className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+                    <p className="text-xl font-medium text-[#6B7280]">
+                      {searchTerm ? `No se encontraron roles para "${searchTerm}"` : "No hay roles registrados"}
+                    </p>
+                    {!searchTerm && (
+                      <Button onClick={() => openDialog("crear")} variant="outline" className="mt-6">
+                        <Plus className="mr-2 h-5 w-5" /> Crear primer rol
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              rolesFiltrados.map((rol) => (
+                <Card
+                  key={rol.id}
+                  className="bg-white border border-[#E5E7EB] shadow-sm hover:shadow-lg hover:border-[#2563EB]/30 transition-all"
+                >
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-[#E0EDFF] rounded-xl">
+                          <Shield className="h-8 w-8 text-[#2563EB]" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-xl text-[#1E3A8A]">{rol.nombre}</CardTitle>
+                          <Badge className="mt-2 bg-[#F1F5F9] text-[#6B7280] font-mono">
+                            {rol.clave}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <p className="text-[#6B7280] leading-relaxed">
+                      {rol.descripcion || <span className="italic">Sin descripción</span>}
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <Lock className="h-5 w-5 text-[#6B7280]" />
+                      <span className="text-lg font-semibold text-[#1E3A8A]">
+                        {rol.permisos?.length || 0}
+                      </span>
+                      <span className="text-[#6B7280]">permisos asignados</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[#E5E7EB]">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" onClick={() => openDialog("permisos", rol)}>
+                            <Lock className="mr-2 h-4 w-4 text-[#2563EB]" />
+                            Permisos
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Gestionar permisos del rol</p></TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" onClick={() => openDialog("editar", rol)}>
+                            <Edit className="mr-2 h-4 w-4 text-[#4B5563]" />
+                            Editar
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Editar información del rol</p></TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" onClick={() => openDialog("ver", rol)}>
+                            <Eye className="mr-2 h-4 w-4 text-[#2563EB]" />
+                            Ver
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Ver detalles del rol</p></TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" onClick={() => openDialog("eliminar", rol)} className="text-[#EF4444]">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Eliminar
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Eliminar rol permanentemente</p></TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
             )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
 
-      {/* Dialog Ver Detalles */}
-      <AlertDialog open={dialogState.open && dialogState.type === "ver"} onOpenChange={closeDialog}>
-        <AlertDialogContent className="max-w-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Eye className="w-5 h-5 text-blue-600" />
-              Detalles del Rol
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {dialogState.rol && (
-                <div className="mt-4 space-y-4 text-left">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-purple-100 rounded-lg">
-                      <Shield className="w-8 h-8 text-purple-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {dialogState.rol.nombre}
-                      </h3>
-                      <p className="text-sm font-mono text-gray-600">
-                        {dialogState.rol.clave}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Descripción</p>
-                      <p className="text-sm text-gray-900">
-                        {dialogState.rol.descripcion || "Sin descripción"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Permisos Asignados</p>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {dialogState.rol.cantidad_permisos || 0} permisos
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Fecha de Creación</p>
-                      <p className="text-sm text-gray-900">
-                        {new Date(dialogState.rol.creado_en).toLocaleDateString("es-ES", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </p>
-                    </div>
-                  </div>
+          {/* Dialogo Permisos - con colores en seleccionados */}
+          <Dialog open={dialogState.open && dialogState.type === "permisos"} onOpenChange={closeDialog}>
+            <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle className="text-2xl text-[#1E3A8A] flex items-center gap-3">
+                  <Lock className="h-7 w-7 text-[#2563EB]" />
+                  Gestionar Permisos - {dialogState.rol?.nombre}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto py-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {permisos.map((p) => {
+                    const isSelected = permisosSeleccionados.includes(String(p.id).toLowerCase());
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => togglePermiso(p.id)}
+                        className={`p-5 rounded-xl border-2 cursor-pointer transition-all ${isSelected
+                          ? "bg-[#E0EDFF] border-[#2563EB] shadow-sm"
+                          : "bg-white border-[#E5E7EB] hover:border-[#2563EB]/50"
+                          }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <Checkbox checked={isSelected} onCheckedChange={() => togglePermiso(p.id)} />
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-900">{p.nombre}</div>
+                            <div className="text-sm font-mono text-[#6B7280]">{p.codigo}</div>
+                            {p.descripcion && (
+                              <div className="text-sm text-[#6B7280] mt-2">{p.descripcion}</div>
+                            )}
+                          </div>
+                          {isSelected && <CheckCircle className="h-6 w-6 text-[#2563EB]" />}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cerrar</AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Dialog Crear/Editar */}
-      <AlertDialog open={dialogState.open && (dialogState.type === "crear" || dialogState.type === "editar")} onOpenChange={closeDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-purple-600" />
-              {dialogState.type === "crear" ? "Crear Nuevo Rol" : "Editar Rol"}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4 text-left">
-              <div>
-                <label className="text-sm font-medium text-gray-700">Nombre del Rol *</label>
-                <Input
-                  placeholder="Ej: Coordinador de Calidad"
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  className="mt-1"
-                />
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700">Clave *</label>
-                <Input
-                  placeholder="Ej: COORD_CALIDAD"
-                  value={formData.clave}
-                  onChange={(e) => setFormData({ ...formData, clave: e.target.value.toUpperCase() })}
-                  className="mt-1 font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700">Descripción</label>
-                <Input
-                  placeholder="Describe las responsabilidades del rol..."
-                  value={formData.descripcion}
-                  onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSubmit}>
-              <CheckCircle className="w-4 h-4 mr-2" />
-              {dialogState.type === "crear" ? "Crear Rol" : "Guardar Cambios"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Dialog Eliminar */}
-      <AlertDialog open={dialogState.open && dialogState.type === "eliminar"} onOpenChange={closeDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Trash2 className="w-5 h-5 text-red-600" />
-              ¿Eliminar rol?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3 text-left">
-              {dialogState.rol && (
-                <>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="font-semibold text-gray-900">{dialogState.rol.nombre}</p>
-                    <p className="text-sm text-gray-600 font-mono">{dialogState.rol.clave}</p>
-                  </div>
-                  <p className="text-red-600 font-medium">
-                    ⚠️ Esta acción eliminará el rol y todas sus asignaciones
-                  </p>
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleEliminar} className="bg-red-600 hover:bg-red-700">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Eliminar Rol
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Dialog Gestión de Permisos */}
-      <AlertDialog open={dialogState.open && dialogState.type === "permisos"} onOpenChange={closeDialog}>
-        <AlertDialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Lock className="w-5 h-5 text-purple-600" />
-              Gestionar Permisos - {dialogState.rol?.nombre}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4 text-left">
-              <p className="text-sm text-gray-600">
-                Selecciona los permisos que deseas asignar a este rol
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto p-2">
-                {permisos.map((permiso) => (
-                  <div
-                    key={permiso.id}
-                    onClick={() => togglePermiso(permiso.id)}
-                    className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${permisosSeleccionados.includes(permiso.id)
-                      ? "border-purple-500 bg-purple-50"
-                      : "border-gray-200 hover:border-purple-300"
-                      }`}
-                  >
-                    <div className="flex items-start gap-2">
-                      <div className="mt-0.5">
-                        {permisosSeleccionados.includes(permiso.id) ? (
-                          <CheckCircle className="w-5 h-5 text-purple-600" />
-                        ) : (
-                          <div className="w-5 h-5 rounded border-2 border-gray-300" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm text-gray-900">{permiso.nombre}</p>
-                        <p className="text-xs font-mono text-gray-500">{permiso.codigo}</p>
-                        {permiso.descripcion && (
-                          <p className="text-xs text-gray-600 mt-1">{permiso.descripcion}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>{permisosSeleccionados.length}</strong> permisos seleccionados
+              <div className="bg-[#E0EDFF] rounded-xl p-5 border border-[#2563EB]/30">
+                <p className="text-lg font-semibold text-[#1E3A8A]">
+                  {permisosSeleccionados.length} de {permisos.length} permisos seleccionados
                 </p>
               </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleGuardarPermisos}>
-              <ShieldCheck className="w-4 h-4 mr-2" />
-              Guardar Permisos
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              <DialogFooter className="mt-6 gap-3">
+                <Button variant="outline" onClick={closeDialog}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleGuardarPermisos}
+                  disabled={isSaving}
+                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
+                >
+                  {isSaving ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Guardar Permisos
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialogo Crear/Editar */}
+          <Dialog open={dialogState.open && (dialogState.type === "crear" || dialogState.type === "editar")} onOpenChange={closeDialog}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="text-2xl text-[#1E3A8A]">
+                  {dialogState.type === "crear" ? "Crear Nuevo Rol" : "Editar Rol"}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-6 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#1E3A8A]">Nombre del Rol *</label>
+                  <Input
+                    placeholder="Ej: Coordinador de Calidad"
+                    value={formData.nombre}
+                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#1E3A8A]">Clave *</label>
+                  <Input
+                    placeholder="Ej: COORD_CALIDAD"
+                    value={formData.clave}
+                    onChange={(e) => setFormData({ ...formData, clave: e.target.value.toUpperCase() })}
+                    className="font-mono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#1E3A8A]">Descripción</label>
+                  <Input
+                    placeholder="Describe las responsabilidades del rol..."
+                    value={formData.descripcion}
+                    onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                  />
+                </div>
+              </div>
+              <DialogFooter className="gap-3">
+                <Button variant="outline" onClick={closeDialog}>Cancelar</Button>
+                <Button onClick={handleSubmit} disabled={isSaving} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white">
+                  {isSaving ? "Guardando..." : "Guardar Rol"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Alerta Eliminar */}
+          <AlertDialog open={dialogState.open && dialogState.type === "eliminar"} onOpenChange={closeDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-[#1E3A8A]">¿Eliminar este rol?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {dialogState.rol && (
+                    <div className="bg-[#F1F5F9] p-5 rounded-lg my-4 border border-[#E5E7EB]">
+                      <p className="font-semibold text-lg">{dialogState.rol.nombre}</p>
+                      <p className="text-sm font-mono text-[#6B7280]">{dialogState.rol.clave}</p>
+                    </div>
+                  )}
+                  Esta acción es permanente y no se puede deshacer.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleEliminar} className="bg-[#EF4444] hover:bg-red-700">
+                  Eliminar Rol
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+        </div>
+      </TooltipProvider>
     </div>
   );
 }

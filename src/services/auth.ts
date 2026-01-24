@@ -15,6 +15,8 @@ export interface TokenResponse {
     nombre_completo: string;
     cargo?: string;
     activo: boolean;
+    foto_url?: string;
+    permisos: string[];
   };
 }
 
