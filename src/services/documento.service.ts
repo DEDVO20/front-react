@@ -14,6 +14,14 @@ export interface DocumentoData {
   aprobado_por?: string;
 }
 
+export interface UsuarioNested {
+  id: string;
+  nombre: string;
+  primerApellido?: string;
+  segundoApellido?: string;
+  correoElectronico?: string;
+}
+
 export interface DocumentoResponse {
   id: string;
   codigo: string;
@@ -25,8 +33,10 @@ export interface DocumentoResponse {
   estado: string;
   fecha_aprobacion?: string;
   fecha_vigencia?: string;
-  creado_por?: string;
-  aprobado_por?: string;
+  creado_por?: string;  // UUID
+  aprobado_por?: string;  // UUID
+  creador?: UsuarioNested;  // Objeto usuario completo
+  aprobador?: UsuarioNested;  // Objeto usuario completo
   creado_en: string;
   actualizado_en: string;
 }

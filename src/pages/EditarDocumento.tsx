@@ -13,6 +13,7 @@ interface DocumentoData {
   estado?: string;
   subidoPor?: string;
   aprobadoPor?: string;
+  contenidoHtml?: string;
 }
 
 export default function EditarDocumento() {
@@ -37,8 +38,16 @@ export default function EditarDocumento() {
         codigoDocumento: data.codigo,
         version: data.version_actual,
         estado: data.estado,
-        subidoPor: data.creado_por,
-        aprobadoPor: data.aprobado_por,
+        // Usar el nombre completo del creador si existe
+        subidoPor: data.creador
+          ? `${data.creador.nombre} ${data.creador.primerApellido || ''}`.trim()
+          : data.creado_por || '',
+        // Usar el nombre completo del aprobador si existe
+        aprobadoPor: data.aprobador
+          ? `${data.aprobador.nombre} ${data.aprobador.primerApellido || ''}`.trim()
+          : data.aprobado_por || '',
+        // Agregar el contenido HTML del documento
+        contenidoHtml: data.descripcion || '',
       };
 
       setInitialData(formData);
