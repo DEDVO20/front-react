@@ -19,7 +19,8 @@ import {
   Calendar,
   User,
   Filter,
-  RefreshCw
+  RefreshCw,
+  Activity,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -31,6 +32,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 import { documentoService } from "@/services/documento.service";
 import { toast } from "sonner";
@@ -66,19 +75,17 @@ export default function AprobacionesPendientes() {
   const fetchAprobacionesPendientes = async () => {
     setLoading(true);
     try {
-      // Filtrar documentos con estado pendiente_aprobacion
       const data = await documentoService.getAll({ estado: "pendiente_aprobacion" });
 
-      // Transformar datos
-      const transformedData = data.map((doc) => ({
+      const transformedData = data.map((doc: any) => ({
         id: doc.id,
         codigo: doc.codigo,
         nombre: doc.nombre,
-        tipo: doc.tipo_documento,
+        tipo: doc.tipo_documento || "Documento",
         version: doc.version_actual,
         estado: "Pendiente de Aprobación",
         fechaSolicitud: doc.creado_en,
-        solicitadoPor: "Usuario", // El backend no devuelve esta info actualmente
+        solicitadoPor: "Usuario", // Ajustar cuando el backend lo devuelva
         prioridad: calcularPrioridad(doc.creado_en),
       }));
 
@@ -151,42 +158,15 @@ export default function AprobacionesPendientes() {
     window.location.href = `/documentos/${documento.id}`;
   };
 
-  const getPrioridadColor = (prioridad: string) => {
-    switch (prioridad) {
-      case "Urgente":
-        return "bg-red-50 text-red-700 border-red-200 hover:bg-red-100";
-      case "Alta":
-        return "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100";
-      case "Media":
-        return "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100";
-      default:
-        return "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100";
-    }
-  };
-
-  const getPrioridadIcon = (prioridad: string) => {
-    switch (prioridad) {
-      case "Urgente":
-        return <AlertCircle className="w-3 h-3" />;
-      case "Alta":
-        return <Clock className="w-3 h-3" />;
-      default:
-        return null;
-    }
-  };
-
   const documentosFiltrados = documentos.filter(doc => {
     if (filtro === "todos") return true;
-    return doc.prioridad.toLowerCase() === filtro.toLowerCase();
+    return doc.prioridad.toLowerCase() === filtro;
   });
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <RefreshCw className="w-12 h-12 animate-spin mx-auto text-blue-500" />
-          <p className="text-gray-600">Cargando aprobaciones pendientes...</p>
-        </div>
+        <p>Cargando...</p>
       </div>
     );
   }
@@ -196,380 +176,344 @@ export default function AprobacionesPendientes() {
   const medias = documentos.filter((d) => d.prioridad === "Media").length;
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-6 pt-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FileCheck className="h-7 w-7 text-blue-600" />
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+
+        {/* Header Profesional */}
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                <FileCheck className="h-9 w-9 text-[#2563EB]" />
+                Aprobaciones Pendientes
+              </h1>
+              <p className="text-[#6B7280] mt-2 text-lg">
+                Revisa y decide sobre los documentos en espera de aprobación
+              </p>
+              <div className="flex flex-wrap items-center gap-3 mt-4">
+                <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
+                  {total} pendientes
+                </Badge>
+                {urgentes > 0 && (
+                  <Badge className="bg-[#FEF2F2] text-[#EF4444] border border-[#EF4444]/30">
+                    {urgentes} urgentes
+                  </Badge>
+                )}
+              </div>
             </div>
-            Aprobaciones Pendientes
-          </h1>
-          <p className="text-gray-600 mt-2">
-            {total} documento{total !== 1 ? "s" : ""} pendiente
-            {total !== 1 ? "s" : ""} de aprobación
-          </p>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchAprobacionesPendientes}
-            disabled={loading}
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
+
+        {/* Tarjetas de métricas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-bold text-[#1E3A8A]">Total Pendientes</CardDescription>
+                <FileText className="h-8 w-8 text-[#2563EB]" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{total}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xs text-[#6B7280] font-medium">
+                Requieren aprobación
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#FEF2F2] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-bold text-[#991B1B]">Urgente</CardDescription>
+                <div className="h-6 w-6 rounded-full bg-[#EF4444]/20 flex items-center justify-center">
+                  <div className="h-2 w-2 rounded-full bg-[#EF4444] animate-pulse" />
+                </div>
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#991B1B]">{urgentes}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Badge className="bg-white/80 text-[#EF4444] border-[#EF4444]/20 font-bold uppercase text-[10px]">
+                Prioridad Máxima
+              </Badge>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#FFF7ED] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-bold text-[#9A3412]">Alta</CardDescription>
+                <AlertCircle className="h-8 w-8 text-[#F97316]/50" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#9A3412]">{altas}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Badge className="bg-white/80 text-[#F97316] border-[#F97316]/20 font-bold uppercase text-[10px]">
+                Prioridad Alta
+              </Badge>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-bold text-[#065F46]">Media</CardDescription>
+                <Activity className="h-8 w-8 text-[#10B981]" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#065F46]">{medias}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Badge className="bg-white/80 text-[#10B981] border-[#10B981]/20 font-bold uppercase text-[10px]">
+                Control Operativo
+              </Badge>
+            </CardContent>
+          </Card>
         </div>
-      </div>
 
-      {/* Tarjetas de resumen */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Total Pendientes
+        {/* Guía de Proceso */}
+        <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
+          <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+            <CardTitle className="text-lg text-[#1E3A8A]">Guía de Aprobación</CardTitle>
+            <CardDescription>
+              Pasos recomendados para gestionar documentos pendientes
             </CardDescription>
-            <CardTitle className="text-4xl font-bold">{total}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-xs text-gray-600">
-              Requieren revisión y aprobación
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow border-red-100">
-          <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2 text-red-600">
-              <AlertCircle className="w-4 h-4" />
-              Prioridad Urgente
-            </CardDescription>
-            <CardTitle className="text-4xl font-bold text-red-600">{urgentes}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-              Más de 7 días
-            </Badge>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow border-orange-100">
-          <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2 text-orange-600">
-              <Clock className="w-4 h-4" />
-              Prioridad Alta
-            </CardDescription>
-            <CardTitle className="text-4xl font-bold text-orange-600">{altas}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-              3-7 días
-            </Badge>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow border-yellow-100">
-          <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2 text-yellow-600">
-              <Clock className="w-4 h-4" />
-              Prioridad Media
-            </CardDescription>
-            <CardTitle className="text-4xl font-bold text-yellow-600">{medias}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-              Menos de 3 días
-            </Badge>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Información del proceso */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <FileCheck className="w-5 h-5 text-blue-500" />
-            Proceso de Aprobación
-          </CardTitle>
-          <CardDescription>
-            Los documentos pendientes pueden ser:
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
-            <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-            <div>
-              <span className="font-semibold text-green-900">Aprobar:</span>
-              <p className="text-green-800">El documento cumple con los requisitos y puede ser publicado</p>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+              <div className="flex items-start gap-3 p-4 bg-[#EFF6FF] rounded-xl border border-[#DBEAFE]">
+                <div className="h-8 w-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-bold flex-shrink-0">1</div>
+                <div>
+                  <span className="font-bold text-[#1E3A8A] block mb-1">Revisar Documento</span>
+                  <span className="text-[#6B7280]">Analiza el contenido y verifica cumplimiento de requisitos.</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-4 bg-[#ECFDF5] rounded-xl border border-[#D1FAE5]">
+                <div className="h-8 w-8 rounded-lg bg-[#10B981] text-white flex items-center justify-center font-bold flex-shrink-0">2</div>
+                <div>
+                  <span className="font-bold text-[#065F46] block mb-1">Aprobar</span>
+                  <span className="text-[#6B7280]">Si cumple, marca como aprobado para publicación.</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-4 bg-[#FEF2F2] rounded-xl border border-[#FECACA]">
+                <div className="h-8 w-8 rounded-lg bg-[#EF4444] text-white flex items-center justify-center font-bold flex-shrink-0">3</div>
+                <div>
+                  <span className="font-bold text-[#991B1B] block mb-1">Rechazar (Alternativa)</span>
+                  <span className="text-[#6B7280]">Si necesita correcciones, devuelve a borrador.</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
-            <X className="w-5 h-5 text-red-600 mt-0.5" />
-            <div>
-              <span className="font-semibold text-red-900">Rechazar:</span>
-              <p className="text-red-800">El documento requiere correcciones antes de ser aprobado</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-            <Eye className="w-5 h-5 text-blue-600 mt-0.5" />
-            <div>
-              <span className="font-semibold text-blue-900">Revisar:</span>
-              <p className="text-blue-800">Visualizar el documento antes de tomar una decisión</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Filtros */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Filter className="w-4 h-4" />
+        {/* Filtros */}
+        <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-[#1E3A8A] flex items-center gap-2">
+              <Filter className="h-5 w-5" />
               Filtrar por prioridad
-            </CardTitle>
+            </h3>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             {["todos", "urgente", "alta", "media"].map((f) => (
               <Button
                 key={f}
                 variant={filtro === f ? "default" : "outline"}
-                size="sm"
                 onClick={() => setFiltro(f)}
-                className="capitalize"
+                className="capitalize rounded-xl"
               >
                 {f === "todos" ? "Todos" : f}
                 {f !== "todos" && (
-                  <Badge className="ml-2" variant="secondary">
+                  <Badge className="ml-2 bg-white/80" variant="secondary">
                     {f === "urgente" ? urgentes : f === "alta" ? altas : medias}
                   </Badge>
                 )}
               </Button>
             ))}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabla de documentos */}
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="border-b bg-gray-50">
-              <tr>
-                <th className="h-12 px-4 text-left align-middle font-semibold text-gray-700 text-sm">
-                  Código
-                </th>
-                <th className="h-12 px-4 text-left align-middle font-semibold text-gray-700 text-sm">
-                  Nombre del Documento
-                </th>
-                <th className="h-12 px-4 text-left align-middle font-semibold text-gray-700 text-sm">
-                  Tipo
-                </th>
-                <th className="h-12 px-4 text-left align-middle font-semibold text-gray-700 text-sm">
-                  Versión
-                </th>
-                <th className="h-12 px-4 text-left align-middle font-semibold text-gray-700 text-sm">
-                  Prioridad
-                </th>
-                <th className="h-12 px-4 text-left align-middle font-semibold text-gray-700 text-sm">
-                  Fecha
-                </th>
-                <th className="h-12 px-4 text-left align-middle font-semibold text-gray-700 text-sm">
-                  Solicitado Por
-                </th>
-                <th className="h-12 px-4 text-left align-middle font-semibold text-gray-700 text-sm">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {documentosFiltrados.map((doc) => (
-                <tr
-                  key={doc.id}
-                  className="border-b transition-colors hover:bg-gray-50"
-                >
-                  <td className="p-4 align-middle">
-                    <div className="font-mono text-sm font-medium">{doc.codigo}</div>
-                  </td>
-                  <td className="p-4 align-middle">
-                    <div className="max-w-[300px]">
-                      <div className="font-medium truncate">{doc.nombre}</div>
-                      <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                        <FileText className="w-3 h-3" />
-                        {doc.estado}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4 align-middle">
-                    <Badge variant="outline" className="font-normal">
-                      {doc.tipo}
-                    </Badge>
-                  </td>
-                  <td className="p-4 align-middle">
-                    <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                      v{doc.version}
-                    </span>
-                  </td>
-                  <td className="p-4 align-middle">
-                    <Badge
-                      variant="outline"
-                      className={`${getPrioridadColor(doc.prioridad)} font-medium`}
-                    >
-                      {getPrioridadIcon(doc.prioridad)}
-                      <span className="ml-1">{doc.prioridad}</span>
-                    </Badge>
-                  </td>
-                  <td className="p-4 align-middle">
-                    <div className="text-sm flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-gray-400" />
-                      {new Date(doc.fechaSolicitud).toLocaleDateString("es-ES")}
-                    </div>
-                  </td>
-                  <td className="p-4 align-middle">
-                    <div className="text-sm flex items-center gap-1">
-                      <User className="w-3 h-3 text-gray-400" />
-                      {doc.solicitadoPor}
-                    </div>
-                  </td>
-                  <td className="p-4 align-middle">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
-                        onClick={() => handleVer(doc)}
-                        disabled={actionLoading === doc.id}
-                      >
-                        <Eye className="w-3 h-3 mr-1" />
-                        Ver
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="h-8 bg-green-600 hover:bg-green-700 text-white"
-                        onClick={() => openDialog('aprobar', doc)}
-                        disabled={actionLoading === doc.id}
-                      >
-                        {actionLoading === doc.id ? (
-                          <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                        ) : (
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                        )}
-                        Aprobar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-8"
-                        onClick={() => openDialog('rechazar', doc)}
-                        disabled={actionLoading === doc.id}
-                      >
-                        {actionLoading === doc.id ? (
-                          <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                        ) : (
-                          <X className="w-3 h-3 mr-1" />
-                        )}
-                        Rechazar
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {documentosFiltrados.length === 0 && (
-            <div className="text-center py-16">
-              <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
-              <h3 className="text-xl font-semibold mb-2 text-gray-900">
-                ¡No hay documentos pendientes!
-              </h3>
-              <p className="text-gray-600 mb-4">
-                {filtro !== "todos"
-                  ? `No hay documentos con prioridad ${filtro}`
-                  : "Todos los documentos han sido revisados y aprobados."
-                }
-              </p>
-              {filtro !== "todos" && (
-                <Button variant="outline" onClick={() => setFiltro("todos")}>
-                  Ver todos los documentos
-                </Button>
-              )}
-            </div>
-          )}
         </div>
-      </Card>
 
-      {/* Dialog de confirmación */}
-      <AlertDialog open={dialogState.open} onOpenChange={closeDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              {dialogState.type === 'aprobar' ? (
-                <>
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  ¿Aprobar documento?
-                </>
-              ) : (
-                <>
-                  <X className="w-5 h-5 text-red-600" />
-                  ¿Rechazar documento?
-                </>
-              )}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3">
-              {dialogState.documento && (
-                <>
-                  <div className="bg-gray-50 p-3 rounded-lg space-y-1">
-                    <p className="font-semibold text-gray-900">
-                      {dialogState.documento.nombre}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Código: {dialogState.documento.codigo}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Versión: {dialogState.documento.version}
-                    </p>
-                  </div>
-                  {dialogState.type === 'aprobar' ? (
-                    <p>
-                      El documento será marcado como <strong className="text-green-600">aprobado</strong> y
-                      estará disponible para su uso en el sistema.
-                    </p>
-                  ) : (
-                    <p>
-                      El documento será devuelto a estado <strong className="text-orange-600">borrador</strong> y
-                      el solicitante deberá realizar las correcciones necesarias.
-                    </p>
-                  )}
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={actionLoading !== null}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={dialogState.type === 'aprobar' ? handleAprobar : handleRechazar}
-              disabled={actionLoading !== null}
-              className={dialogState.type === 'aprobar'
-                ? 'bg-green-600 hover:bg-green-700'
-                : 'bg-red-600 hover:bg-red-700'
-              }
-            >
-              {actionLoading !== null ? (
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-              ) : null}
-              {dialogState.type === 'aprobar' ? 'Aprobar' : 'Rechazar'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Tabla principal */}
+        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
+          <div className="p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
+            <h2 className="text-xl font-bold text-[#1E3A8A]">Documentos Pendientes</h2>
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="sm" onClick={fetchAprobacionesPendientes} disabled={loading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                Actualizar
+              </Button>
+              <Badge variant="outline" className="bg-white border-[#E5E7EB] text-[#6B7280]">
+                {documentosFiltrados.length} resultados
+              </Badge>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-[#F8FAFC]">
+                <TableRow>
+                  <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Código</TableHead>
+                  <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Nombre</TableHead>
+                  <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Tipo</TableHead>
+                  <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Versión</TableHead>
+                  <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Prioridad</TableHead>
+                  <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Fecha Solicitud</TableHead>
+                  <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Solicitado Por</TableHead>
+                  <TableHead className="px-6 py-4 font-bold text-[#1E3A8A] text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {documentosFiltrados.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-20 text-[#6B7280]">
+                      <div className="flex flex-col items-center">
+                        <CheckCircle className="h-16 w-16 text-[#10B981] mb-4" />
+                        <p className="text-lg font-medium">¡No hay documentos pendientes!</p>
+                        <p className="text-sm mt-2">
+                          {filtro !== "todos"
+                            ? `No hay documentos con prioridad "${filtro}".`
+                            : "Todos los documentos han sido revisados."}
+                        </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  documentosFiltrados.map((doc) => (
+                    <TableRow key={doc.id} className="hover:bg-[#F5F3FF] transition-colors">
+                      <TableCell className="px-6 py-4 font-mono text-sm">{doc.codigo}</TableCell>
+                      <TableCell className="px-6 py-4">
+                        <div>
+                          <p className="font-bold truncate max-w-[300px]">{doc.nombre}</p>
+                          <p className="text-xs text-[#6B7280] mt-1">{doc.estado}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
+                        <Badge variant="outline">{doc.tipo}</Badge>
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
+                        <Badge className="bg-[#F3F4F6] font-bold">v{doc.version}</Badge>
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
+                        <Badge
+                          variant="outline"
+                          className={
+                            doc.prioridad === "Urgente"
+                              ? "bg-[#FEF2F2] text-[#EF4444] border-[#EF4444]/30"
+                              : doc.prioridad === "Alta"
+                                ? "bg-[#FFF7ED] text-[#F97316] border-[#F97316]/30"
+                                : "bg-[#ECFDF5] text-[#10B981] border-[#10B981]/30"
+                          }
+                        >
+                          {doc.prioridad === "Urgente" && <AlertCircle className="w-3 h-3 mr-1" />}
+                          {doc.prioridad}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-6 py-4 text-[#6B7280]">
+                        {new Date(doc.fechaSolicitud).toLocaleDateString("es-ES")}
+                      </TableCell>
+                      <TableCell className="px-6 py-4 text-[#6B7280]">{doc.solicitadoPor}</TableCell>
+                      <TableCell className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleVer(doc)}
+                            disabled={actionLoading === doc.id}
+                            className="rounded-xl"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Ver
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-[#10B981] hover:bg-[#059669] text-white rounded-xl"
+                            onClick={() => openDialog('aprobar', doc)}
+                            disabled={actionLoading === doc.id}
+                          >
+                            {actionLoading === doc.id ? (
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                            )}
+                            Aprobar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="rounded-xl"
+                            onClick={() => openDialog('rechazar', doc)}
+                            disabled={actionLoading === doc.id}
+                          >
+                            {actionLoading === doc.id ? (
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <X className="h-4 w-4 mr-1" />
+                            )}
+                            Rechazar
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+
+        {/* Dialog de confirmación */}
+        <AlertDialog open={dialogState.open} onOpenChange={closeDialog}>
+          <AlertDialogContent className="rounded-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                {dialogState.type === 'aprobar' ? (
+                  <>
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    ¿Aprobar documento?
+                  </>
+                ) : (
+                  <>
+                    <X className="w-5 h-5 text-red-600" />
+                    ¿Rechazar documento?
+                  </>
+                )}
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-3">
+                {dialogState.documento && (
+                  <>
+                    <div className="bg-[#F8FAFC] p-4 rounded-xl border border-[#E5E7EB] space-y-1">
+                      <p className="font-bold text-[#111827]">{dialogState.documento.nombre}</p>
+                      <p className="text-sm text-[#6B7280]">Código: {dialogState.documento.codigo}</p>
+                      <p className="text-sm text-[#6B7280]">Versión: v{dialogState.documento.version}</p>
+                    </div>
+                    {dialogState.type === 'aprobar' ? (
+                      <p>
+                        El documento será marcado como <strong className="text-green-600">aprobado</strong> y estará disponible para uso.
+                      </p>
+                    ) : (
+                      <p>
+                        El documento volverá a <strong className="text-orange-600">borrador</strong> para correcciones.
+                      </p>
+                    )}
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={actionLoading !== null}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={dialogState.type === 'aprobar' ? handleAprobar : handleRechazar}
+                disabled={actionLoading !== null}
+                className={dialogState.type === 'aprobar'
+                  ? 'bg-[#10B981] hover:bg-[#059669] rounded-xl'
+                  : 'bg-[#EF4444] hover:bg-[#DC2626] rounded-xl'
+                }
+              >
+                {actionLoading !== null && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
+                {dialogState.type === 'aprobar' ? 'Aprobar' : 'Rechazar'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 }

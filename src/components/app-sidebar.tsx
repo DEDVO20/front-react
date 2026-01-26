@@ -35,9 +35,9 @@ const API_URL = "http://localhost:8000/api/v1";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [user, setUser] = React.useState(getCurrentUser());
-  const [pendingCount] = React.useState(5); // Simulado, conecta a tu API
+  const [pendingCount] = React.useState(5); // Simulado
 
-  // Cargar perfil completo del usuario al montar
+  // Cargar perfil completo al montar
   React.useEffect(() => {
     const cargarPerfilCompleto = async () => {
       const currentUser = getCurrentUser();
@@ -45,14 +45,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       if (currentUser?.id && token) {
         try {
           const res = await axios.get(`${API_URL}/usuarios/${currentUser.id}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           });
-          const updatedUser = {
-            ...currentUser,
-            ...res.data,
-          };
+          const updatedUser = { ...currentUser, ...res.data };
           localStorage.setItem("user", JSON.stringify(updatedUser));
           setUser(updatedUser);
         } catch (error) {
@@ -60,39 +55,63 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         }
       }
     };
-
     cargarPerfilCompleto();
   }, []);
 
   // Actualizar usuario cuando cambie en localStorage
   React.useEffect(() => {
-    const handleStorageChange = () => {
-      setUser(getCurrentUser());
-    };
-
+    const handleStorageChange = () => setUser(getCurrentUser());
     window.addEventListener("storage", handleStorageChange);
-
     const interval = setInterval(() => {
       const updatedUser = getCurrentUser();
       if (JSON.stringify(updatedUser) !== JSON.stringify(user)) {
         setUser(updatedUser);
       }
     }, 1000);
-
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       clearInterval(interval);
     };
   }, [user]);
 
+  // Lógica de Permisos Detallada
+  const userPermisos = user?.permisos || [];
+  const isAdmin = userPermisos.includes("sistema.admin");
+
+  const hasPermission = (permiso?: string) => {
+    if (!permiso || isAdmin) return true;
+    return userPermisos.includes(permiso);
+  };
+
+  // Función para filtrar menús recursivamente
+  const filterMenuItems = (items: any[]) => {
+    return items
+      .map(item => {
+        // Generar lista de sub-items permitidos
+        const filteredSubItems = item.items ? filterMenuItems(item.items) : undefined;
+
+        // Un ítem es visible si:
+        // 1. Tiene permiso directo y lo tiene el usuario
+        // 2. O NO tiene permiso directo pero tiene hijos permitidos
+        // 3. O no tiene ni permiso ni hijos (ej. Dashboard)
+        const isVisible = hasPermission(item.permiso) || (filteredSubItems && filteredSubItems.length > 0);
+
+        if (isVisible) {
+          return { ...item, items: filteredSubItems };
+        }
+        return null;
+      })
+      .filter(item => item !== null);
+  };
+
   const data = {
     user: {
-      name: user ? `${user.nombre} ${user.primerApellido}` : "Usuario",
-      email: user?.correoElectronico || "usuario@example.com",
+      name: user ? (user.nombre_completo || `${user.nombre || ""} ${user.primer_apellido || ""}`.trim() || "Usuario") : "Usuario",
+      email: user?.correoElectronico || user?.email || "usuario@example.com",
       avatar: "/avatars/user.jpg",
-      fotoUrl: user?.fotoUrl || "",
+      fotoUrl: user?.fotoUrl || user?.foto_url || "",
     },
-    navMain: [
+    navMain: filterMenuItems([
       {
         title: "Dashboard",
         url: "/dashboard",
@@ -105,14 +124,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "#",
         icon: Building2,
         items: [
-          {
-            title: "Gestionar Áreas",
-            url: "/gestionar_areas",
-          },
-          {
-            title: "Asignar Responsables",
-            url: "/Asignar_Responsables",
-          },
+          { title: "Gestionar Áreas", url: "/gestionar_areas", permiso: "areas.ver" },
+          { title: "Asignar Responsables", url: "/Asignar_Responsables", permiso: "areas.gestionar" },
         ],
       },
       {
@@ -120,18 +133,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "#",
         icon: Users,
         items: [
-          {
-            title: "Lista de Usuarios",
-            url: "/ListaDeUsuarios",
-          },
-          {
-            title: "Nuevo Usuario",
-            url: "/NuevoUsuario",
-          },
-          {
-            title: "Roles y Permisos",
-            url: "/Roles_y_Permisos",
-          },
+          { title: "Lista de Usuarios", url: "/ListaDeUsuarios", permiso: "usuarios.ver" },
+          { title: "Nuevo Usuario", url: "/NuevoUsuario", permiso: "usuarios.crear" },
+          { title: "Roles y Permisos", url: "/Roles_y_Permisos", permiso: "roles.administrar" },
         ],
       },
       {
@@ -141,23 +145,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         badge: pendingCount > 0 ? pendingCount.toString() : undefined,
         badgeVariant: "destructive" as const,
         items: [
-          {
-            title: "Gestión Documental",
-            url: "/documentos",
-          },
-          {
-            title: "Control de Versiones",
-            url: "/control-versiones",
-          },
+          { title: "Gestionar Documentos", url: "/documentos", permiso: "documentos.ver" },
+          { title: "Control de Versiones", url: "/control-versiones", permiso: "documentos.editar" },
           {
             title: "Aprobaciones Pendientes",
             url: "/Aprobaciones_Pendientes",
+            permiso: "documentos.aprobar",
             badge: pendingCount > 0 ? pendingCount.toString() : undefined,
           },
-          {
-            title: "Documentos Obsoletos",
-            url: "/Documentos_Obsoletos",
-          },
+          { title: "Documentos Obsoletos", url: "/Documentos_Obsoletos", permiso: "documentos.eliminar" },
         ],
       },
       {
@@ -165,68 +161,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "#",
         icon: FolderOpen,
         items: [
-          {
-            title: "Mapa de Procesos",
-            url: "#",
-          },
-          {
-            title: "Gestionar Procesos",
-            url: "#",
-          },
-          {
-            title: "Instancias Activas",
-            url: "#",
-          },
+          { title: "Mapa de Procesos", url: "#", permiso: "procesos.gestionar" },
+          { title: "Gestionar Procesos", url: "#", permiso: "procesos.gestionar" },
+          { title: "Instancias Activas", url: "#", permiso: "procesos.gestionar" },
         ],
       },
-    ],
-    navQuality: [
+    ]),
+    navQuality: filterMenuItems([
       {
         title: "Acciones Correctivas",
         icon: AlertTriangle,
         url: "#",
-        badge: "3",
-        badgeVariant: "destructive" as const,
         items: [
-          {
-            title: "Nuevas",
-            url: "/Acciones_correctivas_Nuevas",
-            badge: "3",
-          },
-          {
-            title: "En Proceso",
-            url: "/Acciones_correctivas_EnProceso",
-          },
-          {
-            title: "Cerradas",
-            url: "/Acciones_correctivas_Cerradas",
-          },
-          {
-            title: "Verificadas",
-            url: "/Acciones_correctivas_Verificadas",
-          },
+          { title: "Nuevas", url: "/Acciones_correctivas_Nuevas", permiso: "acciones_correctivas.gestionar" },
+          { title: "En Proceso", url: "/Acciones_correctivas_EnProceso", permiso: "acciones_correctivas.gestionar" },
+          { title: "Cerradas", url: "/Acciones_correctivas_Cerradas", permiso: "acciones_correctivas.gestionar" },
+          { title: "Verificadas", url: "/Acciones_correctivas_Verificadas", permiso: "acciones_correctivas.gestionar" },
         ],
       },
       {
         title: "No Conformidades",
         icon: ClipboardCheck,
         url: "#",
-        badge: "2",
-        badgeVariant: "default" as const,
         items: [
-          {
-            title: "Abiertas",
-            url: "/No_conformidades_Abiertas",
-            badge: "2",
-          },
-          {
-            title: "En Tratamiento",
-            url: "/No_conformidades_EnTratamiento",
-          },
-          {
-            title: "Cerradas",
-            url: "/No_conformidades_Cerradas",
-          },
+          { title: "Abiertas", url: "/No_conformidades_Abiertas", permiso: "no_conformidades.gestionar" },
+          { title: "En Tratamiento", url: "/No_conformidades_EnTratamiento", permiso: "no_conformidades.gestionar" },
+          { title: "Cerradas", url: "/No_conformidades_Cerradas", permiso: "no_conformidades.gestionar" },
         ],
       },
       {
@@ -234,23 +194,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: FileCheck,
         url: "#",
         items: [
-          {
-            title: "Planificación",
-            url: "/AuditoriasPlanificacion",
-          },
-          {
-            title: "En Curso",
-            url: "/AuditoriasEnCurso",
-            badge: "1",
-          },
-          {
-            title: "Completadas",
-            url: "/AuditoriasCompletas",
-          },
-          {
-            title: "Hallazgos",
-            url: "/AuditoriasHallazgosView",
-          },
+          { title: "Planificación", url: "/AuditoriasPlanificacion", permiso: "auditorias.planificar" },
+          { title: "En Curso", url: "/AuditoriasEnCurso", permiso: "auditorias.ejecutar" },
+          { title: "Completadas", url: "/AuditoriasCompletas", permiso: "auditorias.ejecutar" },
+          { title: "Hallazgos", url: "/AuditoriasHallazgosView", permiso: "auditorias.ejecutar" },
         ],
       },
       {
@@ -258,18 +205,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: Shield,
         url: "#",
         items: [
-          {
-            title: "Matriz de Riesgos",
-            url: "/riesgos/matriz",
-          },
-          {
-            title: "Controles",
-            url: "/riesgos/controles",
-          },
-          {
-            title: "Tratamiento",
-            url: "/riesgos/tratamiento",
-          },
+          { title: "Matriz de Riesgos", url: "/riesgos/matriz", permiso: "riesgos.administrar" },
+          { title: "Controles", url: "/riesgos/controles", permiso: "riesgos.administrar" },
         ],
       },
       {
@@ -277,18 +214,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: Target,
         url: "#",
         items: [
-          {
-            title: "Objetivos Activos",
-            url: "/Activos",
-          },
-          {
-            title: "Seguimiento",
-            url: "/Seguimiento",
-          },
-          {
-            title: "Historial",
-            url: "#",
-          },
+          { title: "Objetivos Activos", url: "/Activos", permiso: "objetivos.seguimiento" },
+          { title: "Seguimiento", url: "/Seguimiento", permiso: "objetivos.seguimiento" },
         ],
       },
       {
@@ -296,22 +223,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: TrendingUp,
         url: "#",
         items: [
-          {
-            title: "Tablero de Indicadores",
-            url: "/indicadores/tablero",
-          },
-          {
-            title: "Eficacia",
-            url: "/indicadores/eficacia",
-          },
-          {
-            title: "Eficiencia",
-            url: "/indicadores/eficiencia",
-          },
-          {
-            title: "Cumplimiento",
-            url: "/indicadores/cumplimiento",
-          },
+          { title: "Tablero", url: "/indicadores/tablero", permiso: "indicadores.ver" },
+          { title: "Mediciones", url: "#", permiso: "indicadores.medir" },
         ],
       },
       {
@@ -319,48 +232,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: GraduationCap,
         url: "#",
         items: [
-          {
-            title: "Programadas",
-            url: "/capacitaciones/programadas",
-          },
-          {
-            title: "Historial",
-            url: "/capacitaciones/historial",
-          },
-          {
-            title: "Asistencias",
-            url: "/capacitaciones/asistencias",
-          },
-          {
-            title: "Competencias",
-            url: "/capacitaciones/competencias",
-          },
+          { title: "Programadas", url: "/capacitaciones/programadas", permiso: "capacitaciones.gestionar" },
+          { title: "Historial", url: "/capacitaciones/historial", permiso: "capacitaciones.gestionar" },
         ],
       },
-    ],
-    navSecondary: [
+    ]),
+    navSecondary: filterMenuItems([
       {
         title: "Sistema",
         url: "#",
         icon: Shield,
         items: [
-          {
-            title: "Migraciones de BD",
-            url: "/sistema/migraciones",
-          },
+          { title: "Configuración Global", url: "#", permiso: "sistema.configurar" },
+          { title: "Migraciones de BD", url: "/sistema/migraciones", permiso: "sistema.migraciones" },
         ],
       },
       {
         title: "Reportes",
         url: "/reportes",
         icon: BarChart3,
+        permiso: "indicadores.ver",
       },
       {
         title: "Manual de Usuario",
         url: "#",
         icon: BookOpen,
       },
-    ],
+    ]),
   };
 
   return (

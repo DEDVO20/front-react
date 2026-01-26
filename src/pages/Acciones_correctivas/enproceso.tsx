@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { ClipboardList, Search, Eye, AlertCircle, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ClipboardList, Search, Eye, AlertCircle, Calendar, Activity, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,15 +18,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-
-
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 import { accionCorrectivaService, AccionCorrectiva } from "@/services/accionCorrectiva.service";
 
 export default function EnProcesoAccionesCorrectivas() {
   const [acciones, setAcciones] = useState<AccionCorrectiva[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   const [selectedAccion, setSelectedAccion] = useState<AccionCorrectiva | null>(null);
@@ -38,13 +43,10 @@ export default function EnProcesoAccionesCorrectivas() {
   const fetchAcciones = async () => {
     try {
       setLoading(true);
-      setError(null);
-
       const enProceso = await accionCorrectivaService.getEnProceso();
       setAcciones(enProceso);
     } catch (error: any) {
       console.error("Error:", error);
-      setError(error.message);
     } finally {
       setLoading(false);
     }
@@ -56,44 +58,45 @@ export default function EnProcesoAccionesCorrectivas() {
   };
 
   const getEstadoBadge = (estado: string) => {
-    const estados: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-      pendiente: { label: "Pendiente", variant: "secondary" },
-      en_proceso: { label: "En Proceso", variant: "default" },
-      en_ejecucion: { label: "En Ejecución", variant: "default" },
+    const config: Record<string, { bg: string; text: string; border: string }> = {
+      pendiente: { bg: "bg-[#F8FAFC]", text: "text-[#6B7280]", border: "border-[#E5E7EB]" },
+      en_proceso: { bg: "bg-[#E0EDFF]", text: "text-[#2563EB]", border: "border-[#2563EB]/30" },
+      en_ejecucion: { bg: "bg-[#ECFDF5]", text: "text-[#10B981]", border: "border-[#10B981]/30" },
     };
+    const c = config[estado] || { bg: "bg-[#F8FAFC]", text: "text-[#6B7280]", border: "border-[#E5E7EB]" };
+    const label = {
+      pendiente: "Pendiente",
+      en_proceso: "En Proceso",
+      en_ejecucion: "En Ejecución",
+    }[estado] || estado;
 
-    const config = estados[estado] || { label: estado, variant: "outline" };
     return (
-      <Badge variant={config.variant}>
-        {config.label}
+      <Badge variant="outline" className={`${c.bg} ${c.text} ${c.border}`}>
+        {label}
       </Badge>
     );
   };
 
   const getTipoBadge = (tipo: string) => {
-    const tipos: Record<string, string> = {
+    const labels: Record<string, string> = {
       correctiva: "Correctiva",
       preventiva: "Preventiva",
       mejora: "Mejora",
     };
-
-    return tipos[tipo] || tipo;
+    return labels[tipo] || tipo;
   };
 
   const filteredAcciones = acciones.filter(
     (accion) =>
       accion.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      accion.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (accion.descripcion && accion.descripcion.toLowerCase().includes(searchTerm.toLowerCase())) ||
       accion.tipo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent" />
-          <p className="mt-4 text-sm text-gray-500">Cargando acciones en proceso...</p>
-        </div>
+        <p>Cargando...</p>
       </div>
     );
   }
@@ -111,206 +114,271 @@ export default function EnProcesoAccionesCorrectivas() {
   }).length;
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-6 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <ClipboardList className="h-6 w-6 text-sky-500" />
-            Acciones Correctivas en Proceso
-          </h1>
-          <p className="text-gray-500">
-            {totalEnProceso} {totalEnProceso === 1 ? "acción en proceso" : "acciones en proceso"}
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
 
-      {error && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 text-amber-800">
-              <AlertCircle className="h-5 w-5" />
-              <div>
-                <p className="font-medium">Error de conexión</p>
-                <p className="text-sm">{error}</p>
-                <button
-                  className="text-sm underline mt-1 inline-block"
-                  onClick={fetchAcciones}
-                >
-                  Intentar nuevamente
-                </button>
+        {/* Header Profesional */}
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                <ClipboardList className="h-9 w-9 text-[#2563EB]" />
+                Acciones Correctivas en Proceso
+              </h1>
+              <p className="text-[#6B7280] mt-2 text-lg">
+                Seguimiento de acciones correctivas pendientes de cierre
+              </p>
+              <div className="flex flex-wrap items-center gap-3 mt-4">
+                <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
+                  {totalEnProceso} totales
+                </Badge>
+                {vencidas > 0 && (
+                  <Badge className="bg-[#FEF2F2] text-[#EF4444] border border-[#EF4444]/30">
+                    {vencidas} vencidas
+                  </Badge>
+                )}
+                {porVencer > 0 && (
+                  <Badge className="bg-[#FFF7ED] text-[#F97316] border border-[#F97316]/30">
+                    {porVencer} por vencer
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tarjetas de métricas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-bold text-[#1E3A8A]">Total en Proceso</CardDescription>
+                <Activity className="h-8 w-8 text-[#2563EB]" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{totalEnProceso}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xs text-[#6B7280] font-medium">
+                Pendientes de cierre
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#FEF2F2] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-bold text-[#991B1B]">Vencidas</CardDescription>
+                <div className="h-6 w-6 rounded-full bg-[#EF4444]/20 flex items-center justify-center">
+                  <div className="h-2 w-2 rounded-full bg-[#EF4444] animate-pulse" />
+                </div>
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#991B1B]">{vencidas}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Badge className="bg-white/80 text-[#EF4444] border-[#EF4444]/20 font-bold uppercase text-[10px]">
+                Prioridad Máxima
+              </Badge>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#FFF7ED] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-bold text-[#9A3412]">Por Vencer</CardDescription>
+                <Calendar className="h-8 w-8 text-[#F97316]/50" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#9A3412]">{porVencer}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Badge className="bg-white/80 text-[#F97316] border-[#F97316]/20 font-bold uppercase text-[10px]">
+                ≤7 días
+              </Badge>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Guía de Seguimiento */}
+        <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
+          <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+            <CardTitle className="text-lg text-[#1E3A8A]">Guía de Seguimiento</CardTitle>
+            <CardDescription>
+              Pasos para gestionar acciones correctivas en proceso
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+              <div className="flex items-start gap-3 p-4 bg-[#EFF6FF] rounded-xl border border-[#DBEAFE]">
+                <div className="h-8 w-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-bold flex-shrink-0">1</div>
+                <div>
+                  <span className="font-bold text-[#1E3A8A] block mb-1">Implementación</span>
+                  <span className="text-[#6B7280]">Ejecutar el plan de acción definido.</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-4 bg-[#ECFDF5] rounded-xl border border-[#D1FAE5]">
+                <div className="h-8 w-8 rounded-lg bg-[#10B981] text-white flex items-center justify-center font-bold flex-shrink-0">2</div>
+                <div>
+                  <span className="font-bold text-[#065F46] block mb-1">Verificación</span>
+                  <span className="text-[#6B7280]">Comprobar la efectividad de la acción.</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-4 bg-[#FFF7ED] rounded-xl border border-[#FBBF24]/20">
+                <div className="h-8 w-8 rounded-lg bg-[#F97316] text-white flex items-center justify-center font-bold flex-shrink-0">3</div>
+                <div>
+                  <span className="font-bold text-[#9A3412] block mb-1">Cierre</span>
+                  <span className="text-[#6B7280]">Documentar resultados y cerrar la acción.</span>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
-      )}
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Total En Proceso</CardTitle>
-              <ClipboardList className="h-4 w-4 text-blue-500" />
-            </div>
-            <div className="text-2xl font-bold">{totalEnProceso}</div>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Por Vencer (7 días)</CardTitle>
-              <Calendar className="h-4 w-4 text-amber-500" />
-            </div>
-            <div className="text-2xl font-bold">{porVencer}</div>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Vencidas</CardTitle>
-              <AlertCircle className="h-4 w-4 text-red-500" />
-            </div>
-            <div className="text-2xl font-bold">{vencidas}</div>
-          </CardHeader>
-        </Card>
-      </div>
+        {/* Buscador */}
+        <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
+            <Input
+              placeholder="Buscar por código, descripción o tipo..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
+            />
+          </div>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Listado de Acciones en Proceso</CardTitle>
-              <CardDescription>
-                Gestiona y da seguimiento a las acciones correctivas en curso
-              </CardDescription>
-            </div>
-            <div className="w-72">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-                <Input
-                  placeholder="Buscar por código o descripción..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
+        {/* Tabla principal */}
+        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
+          <div className="p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
+            <h2 className="text-xl font-bold text-[#1E3A8A]">Listado de Acciones</h2>
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="sm" onClick={fetchAcciones}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Actualizar
+              </Button>
+              <Badge variant="outline" className="bg-white border-[#E5E7EB] text-[#6B7280]">
+                {filteredAcciones.length} resultados
+              </Badge>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="border rounded-md">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="border-b">
-                  <tr>
-                    <th className="text-left p-3 text-sm font-medium w-32">Código</th>
-                    <th className="text-left p-3 text-sm font-medium w-28">Tipo</th>
-                    <th className="text-left p-3 text-sm font-medium">Descripción</th>
-                    <th className="text-left p-3 text-sm font-medium w-32">Fecha Compromiso</th>
-                    <th className="text-left p-3 text-sm font-medium w-32">Estado</th>
-                    <th className="text-right p-3 text-sm font-medium w-24">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredAcciones.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="text-center p-12 text-gray-500">
-                        {searchTerm
-                          ? "No se encontraron resultados"
-                          : "No hay acciones correctivas en proceso"}
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredAcciones.map((accion) => {
-                      const isVencida = accion.fechaCompromiso &&
-                        new Date(accion.fechaCompromiso) < new Date();
 
-                      return (
-                        <tr key={accion.id} className="border-b hover:bg-gray-50">
-                          <td className="p-3 font-medium">{accion.codigo}</td>
-                          <td className="p-3">
-                            <span className="text-sm text-gray-600">
-                              {getTipoBadge(accion.tipo)}
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            <div className="max-w-md">
-                              <p className="line-clamp-2">
-                                {accion.descripcion || "Sin descripción"}
-                              </p>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-[#F8FAFC]">
+                <TableRow>
+                  <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Código</TableHead>
+                  <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Tipo</TableHead>
+                  <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Descripción</TableHead>
+                  <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Fecha Compromiso</TableHead>
+                  <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Estado</TableHead>
+                  <TableHead className="px-6 py-4 font-bold text-[#1E3A8A] text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAcciones.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-20 text-[#6B7280]">
+                      <div className="flex flex-col items-center">
+                        <ClipboardList className="h-16 w-16 text-gray-300 mb-4" />
+                        <p className="text-lg font-medium">
+                          {searchTerm ? "No se encontraron resultados" : "No hay acciones en proceso"}
+                        </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredAcciones.map((accion) => {
+                    const isVencida = accion.fechaCompromiso && new Date(accion.fechaCompromiso) < new Date();
+                    const isPorVencer = accion.fechaCompromiso &&
+                      new Date(accion.fechaCompromiso).getTime() - new Date().getTime() <= 7 * 24 * 60 * 60 * 1000 &&
+                      !isVencida;
+
+                    return (
+                      <TableRow key={accion.id} className="hover:bg-[#F5F3FF] transition-colors">
+                        <TableCell className="px-6 py-4 font-mono font-bold">{accion.codigo}</TableCell>
+                        <TableCell className="px-6 py-4">
+                          <Badge variant="outline" className="capitalize">
+                            {getTipoBadge(accion.tipo)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="px-6 py-4">
+                          <p className="line-clamp-2 max-w-md">
+                            {accion.descripcion || "Sin descripción"}
+                          </p>
+                        </TableCell>
+                        <TableCell className="px-6 py-4">
+                          {accion.fechaCompromiso ? (
+                            <div className="flex items-center gap-2">
+                              {isVencida && <AlertCircle className="h-4 w-4 text-[#EF4444]" />}
+                              {isPorVencer && <Calendar className="h-4 w-4 text-[#F97316]" />}
+                              <span className={isVencida ? "text-[#EF4444] font-bold" : isPorVencer ? "text-[#F97316] font-medium" : ""}>
+                                {new Date(accion.fechaCompromiso).toLocaleDateString("es-CO")}
+                              </span>
                             </div>
-                          </td>
-                          <td className="p-3">
-                            {accion.fechaCompromiso ? (
-                              <div className="flex items-center gap-1">
-                                {isVencida && (
-                                  <AlertCircle className="h-4 w-4 text-red-500" />
-                                )}
-                                <span className={isVencida ? "text-red-600 font-medium" : "text-sm text-gray-600"}>
-                                  {new Date(accion.fechaCompromiso).toLocaleDateString("es-CO")}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-sm text-gray-400">No definida</span>
-                            )}
-                          </td>
-                          <td className="p-3">
-                            {getEstadoBadge(accion.estado)}
-                          </td>
-                          <td className="p-3">
-                            <div className="flex items-center justify-end">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => handleView(accion)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                          ) : (
+                            <span className="text-[#6B7280]">No definida</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="px-6 py-4">{getEstadoBadge(accion.estado)}</TableCell>
+                        <TableCell className="px-6 py-4 text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleView(accion)}
+                            className="rounded-xl"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Ver Detalles
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="sm:max-w-[700px]">
-          <DialogHeader>
-            <DialogTitle>Detalles de la Acción Correctiva</DialogTitle>
-            <DialogDescription>
-              Información completa de la acción correctiva en proceso
-            </DialogDescription>
-          </DialogHeader>
+        {/* Dialog de Detalles */}
+        <Dialog open={showDialog} onOpenChange={setShowDialog}>
+          <DialogContent className="max-w-4xl rounded-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-[#1E3A8A]">
+                Detalles de Acción Correctiva
+              </DialogTitle>
+              <DialogDescription>
+                Información completa y seguimiento
+              </DialogDescription>
+            </DialogHeader>
 
-          {selectedAccion && (
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-3">
-                <div className="flex items-center justify-between">
+            {selectedAccion && (
+              <div className="space-y-6 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-gray-500">Código</Label>
-                    <p className="font-bold text-lg mt-1">{selectedAccion.codigo}</p>
+                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Código</Label>
+                    <p className="text-xl font-bold text-[#1E3A8A] mt-1">{selectedAccion.codigo}</p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex items-end justify-start md:justify-end gap-3">
                     {getEstadoBadge(selectedAccion.estado)}
+                    <Badge variant="outline" className="capitalize">
+                      {getTipoBadge(selectedAccion.tipo)}
+                    </Badge>
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-gray-500">Tipo</Label>
-                    <p className="font-medium mt-1">{getTipoBadge(selectedAccion.tipo)}</p>
-                  </div>
-                  <div>
-                    <Label className="text-gray-500">Fecha de Compromiso</Label>
-                    <p className="font-medium mt-1">
+                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha Compromiso</Label>
+                    <p className="text-lg font-medium mt-1">
                       {selectedAccion.fechaCompromiso
                         ? new Date(selectedAccion.fechaCompromiso).toLocaleDateString("es-CO")
+                        : "No definida"}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha Implementación</Label>
+                    <p className="text-lg font-medium mt-1">
+                      {selectedAccion.fechaImplementacion
+                        ? new Date(selectedAccion.fechaImplementacion).toLocaleDateString("es-CO")
                         : "No definida"}
                     </p>
                   </div>
@@ -318,49 +386,47 @@ export default function EnProcesoAccionesCorrectivas() {
 
                 {selectedAccion.descripcion && (
                   <div>
-                    <Label className="text-gray-500">Descripción</Label>
-                    <p className="mt-1 text-sm">{selectedAccion.descripcion}</p>
+                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Descripción</Label>
+                    <p className="mt-2 text-[#111827] leading-relaxed">{selectedAccion.descripcion}</p>
                   </div>
                 )}
 
                 {selectedAccion.analisisCausaRaiz && (
                   <div>
-                    <Label className="text-gray-500">Análisis de Causa Raíz</Label>
-                    <p className="mt-1 text-sm">{selectedAccion.analisisCausaRaiz}</p>
+                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Análisis de Causa Raíz</Label>
+                    <div className="mt-2 p-4 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB]">
+                      <p className="text-[#111827] leading-relaxed">{selectedAccion.analisisCausaRaiz}</p>
+                    </div>
                   </div>
                 )}
 
                 {selectedAccion.planAccion && (
                   <div>
-                    <Label className="text-gray-500">Plan de Acción</Label>
-                    <p className="mt-1 text-sm">{selectedAccion.planAccion}</p>
+                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Plan de Acción</Label>
+                    <div className="mt-2 p-4 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB]">
+                      <p className="text-[#111827] leading-relaxed">{selectedAccion.planAccion}</p>
+                    </div>
                   </div>
                 )}
 
                 {selectedAccion.observacion && (
                   <div>
-                    <Label className="text-gray-500">Observaciones</Label>
-                    <p className="mt-1 text-sm">{selectedAccion.observacion}</p>
+                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Observaciones</Label>
+                    <p className="mt-2 text-[#111827] leading-relaxed">{selectedAccion.observacion}</p>
                   </div>
                 )}
-              </div>
 
-              <div className="grid gap-2 pt-2 border-t">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Creada el:</span>
-                  <span>{new Date(selectedAccion.creadoEn).toLocaleString("es-CO")}</span>
-                </div>
-                {selectedAccion.fechaImplementacion && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Fecha de Implementación:</span>
-                    <span>{new Date(selectedAccion.fechaImplementacion).toLocaleDateString("es-CO")}</span>
+                <div className="pt-4 border-t border-[#E5E7EB] text-sm text-[#6B7280]">
+                  <div className="flex justify-between">
+                    <span>Creada el:</span>
+                    <span>{new Date(selectedAccion.creadoEn).toLocaleString("es-CO")}</span>
                   </div>
-                )}
+                </div>
               </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }

@@ -1,32 +1,36 @@
 import { useState, useEffect } from "react";
-import { apiClient } from "@/lib/api";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   UserPlus,
   ArrowLeft,
   Save,
-  X,
   CheckCircle,
   AlertCircle,
-  Building2,
-  Mail,
   User,
-  Lock,
-  FileText,
-  Users,
   Shield,
+  UserCheck,
+  Loader2,
 } from "lucide-react";
 
 interface Area {
@@ -61,7 +65,11 @@ interface FormErrors {
   [key: string]: string;
 }
 
-export default function NuevosUsuarios() {
+export default function FormularioUsuario() {
+  const { id } = useParams();
+  const isEditing = !!id;
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState<FormData>({
     documento: "",
     nombre: "",
@@ -81,59 +89,110 @@ export default function NuevosUsuarios() {
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
-  const [dialogState, setDialogState] = useState<{
-    open: boolean;
-    type: "success" | "error";
-    message: string;
-  }>({ open: false, type: "success", message: "" });
+  const [fetchingData, setFetchingData] = useState(true);
 
+  // Cargar áreas, roles y datos del usuario (si es edición)
   useEffect(() => {
-    fetchAreas();
-    fetchRoles();
-  }, []);
+    const fetchInitialData = async () => {
+      setFetchingData(true);
+      try {
+        const token = localStorage.getItem("token");
 
-  const fetchAreas = async () => {
-    try {
-      const response = await apiClient.get("/areas");
-      const data = response.data;
-      setAreas(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Error al obtener áreas:", error);
-      setAreas([
-        { id: "1", codigo: "CAL", nombre: "Gestión de Calidad" },
-        { id: "2", codigo: "SIS", nombre: "Sistemas y Tecnología" },
-        { id: "3", codigo: "RRHH", nombre: "Recursos Humanos" },
-        { id: "4", codigo: "COM", nombre: "Comercial" },
-        { id: "5", codigo: "OPE", nombre: "Operaciones" },
-        { id: "6", codigo: "FIN", nombre: "Finanzas" },
-      ]);
-    }
-  };
+        // Cargar áreas
+        const areasResponse = await fetch("/api/v1/areas", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-  const fetchRoles = async () => {
-    try {
-      const response = await apiClient.get("/roles");
-      const data = response.data;
-      setRoles(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Error al obtener roles:", error);
-      setRoles([
-        { id: "1", nombre: "Administrador", clave: "ADMIN", descripcion: "Acceso total" },
-        { id: "2", nombre: "Coordinador de Calidad", clave: "COORD_CALIDAD" },
-        { id: "3", nombre: "Auditor Interno", clave: "AUDITOR" },
-        { id: "4", nombre: "Usuario Estándar", clave: "USER" },
-      ]);
-    }
-  };
+        if (areasResponse.ok) {
+          const areasData = await areasResponse.json();
+          setAreas(Array.isArray(areasData) ? areasData : []);
+        } else {
+          throw new Error("Error al cargar áreas");
+        }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
+        // Cargar roles - AQUÍ ESTÁ LA CONEXIÓN A LA BD
+        const rolesResponse = await fetch("/api/v1/roles", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
-    }));
+        if (rolesResponse.ok) {
+          const rolesData = await rolesResponse.json();
+          console.log("Roles cargados desde BD:", rolesData); // Para debug
+          setRoles(Array.isArray(rolesData) ? rolesData : []);
+        } else {
+          throw new Error("Error al cargar roles");
+        }
 
+        // Si es edición, cargar datos del usuario
+        if (isEditing && id) {
+          const userResponse = await fetch(`/api/v1/usuarios/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            console.log("Usuario cargado:", userData); // Para debug
+
+            setFormData({
+              documento: String(userData.documento || ""),
+              nombre: userData.nombre || "",
+              segundoNombre: userData.segundo_nombre || "",
+              primerApellido: userData.primer_apellido || "",
+              segundoApellido: userData.segundo_apellido || "",
+              correoElectronico: userData.correo_electronico || "",
+              nombreUsuario: userData.nombre_usuario || "",
+              contrasena: "",
+              confirmarContrasena: "",
+              areaId: userData.area_id || "",
+              activo: userData.activo ?? true,
+            });
+
+            // Cargar roles del usuario
+            if (userData.roles && Array.isArray(userData.roles)) {
+              const roleIds = userData.roles.map((ur: any) => String(ur.rol_id || ur.id));
+              console.log("Roles del usuario:", roleIds); // Para debug
+              setSelectedRoleIds(roleIds);
+            }
+          } else {
+            throw new Error("Error al cargar usuario");
+          }
+        }
+      } catch (error: any) {
+        console.error("Error al cargar datos iniciales:", error);
+        toast.error(error.message || "Error al cargar datos del formulario");
+
+        // Datos de respaldo solo si falla la conexión
+        if (areas.length === 0) {
+          setAreas([
+            { id: "1", codigo: "CAL", nombre: "Gestión de Calidad" },
+            { id: "2", codigo: "SIS", nombre: "Sistemas y Tecnología" },
+            { id: "3", codigo: "RRHH", nombre: "Recursos Humanos" },
+          ]);
+        }
+
+        if (roles.length === 0) {
+          setRoles([
+            { id: "1", nombre: "Administrador", clave: "ADMIN", descripcion: "Acceso total al sistema" },
+            { id: "2", nombre: "Coordinador de Calidad", clave: "COORD_CALIDAD", descripcion: "Gestiona procesos de calidad" },
+            { id: "3", nombre: "Auditor Interno", clave: "AUDITOR", descripcion: "Realiza auditorías internas" },
+            { id: "4", nombre: "Usuario Estándar", clave: "USER", descripcion: "Acceso básico al sistema" },
+          ]);
+        }
+
+        if (isEditing) {
+          navigate("/ListaDeUsuarios");
+        }
+      } finally {
+        setFetchingData(false);
+      }
+    };
+
+    fetchInitialData();
+  }, [id, isEditing, navigate]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -146,52 +205,34 @@ export default function NuevosUsuarios() {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.documento.trim()) {
-      newErrors.documento = "El documento es obligatorio";
-    } else if (!/^\d+$/.test(formData.documento)) {
-      newErrors.documento = "El documento debe contener solo números";
+    if (!formData.documento.trim()) newErrors.documento = "El documento es obligatorio";
+    else if (!/^\d+$/.test(formData.documento)) newErrors.documento = "Solo números permitidos";
+
+    if (!formData.nombre.trim()) newErrors.nombre = "El nombre es obligatorio";
+    if (!formData.primerApellido.trim()) newErrors.primerApellido = "El primer apellido es obligatorio";
+
+    if (!formData.correoElectronico.trim()) newErrors.correoElectronico = "El correo es obligatorio";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correoElectronico))
+      newErrors.correoElectronico = "Formato de correo inválido";
+
+    if (!formData.nombreUsuario.trim()) newErrors.nombreUsuario = "El nombre de usuario es obligatorio";
+    else if (formData.nombreUsuario.length < 3) newErrors.nombreUsuario = "Mínimo 3 caracteres";
+
+    if (!isEditing) {
+      if (!formData.contrasena) newErrors.contrasena = "La contraseña es obligatoria";
+      else if (formData.contrasena.length < 8) newErrors.contrasena = "Mínimo 8 caracteres";
+
+      if (!formData.confirmarContrasena) newErrors.confirmarContrasena = "Confirme la contraseña";
+      else if (formData.contrasena !== formData.confirmarContrasena)
+        newErrors.confirmarContrasena = "Las contraseñas no coinciden";
+    } else if (formData.contrasena) {
+      if (formData.contrasena.length < 8) newErrors.contrasena = "Mínimo 8 caracteres";
+      if (formData.contrasena !== formData.confirmarContrasena)
+        newErrors.confirmarContrasena = "Las contraseñas no coinciden";
     }
 
-    if (!formData.nombre.trim()) {
-      newErrors.nombre = "El nombre es obligatorio";
-    }
-
-    if (!formData.primerApellido.trim()) {
-      newErrors.primerApellido = "El primer apellido es obligatorio";
-    }
-
-    if (!formData.correoElectronico.trim()) {
-      newErrors.correoElectronico = "El correo electrónico es obligatorio";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correoElectronico)) {
-      newErrors.correoElectronico = "El correo electrónico no es válido";
-    }
-
-    if (!formData.nombreUsuario.trim()) {
-      newErrors.nombreUsuario = "El nombre de usuario es obligatorio";
-    } else if (formData.nombreUsuario.length < 3) {
-      newErrors.nombreUsuario = "El nombre de usuario debe tener al menos 3 caracteres";
-    }
-
-    if (!formData.contrasena) {
-      newErrors.contrasena = "La contraseña es obligatoria";
-    } else if (formData.contrasena.length < 6) {
-      newErrors.contrasena = "La contraseña debe tener al menos 6 caracteres";
-    }
-
-    if (!formData.confirmarContrasena) {
-      newErrors.confirmarContrasena = "Debe confirmar la contraseña";
-    } else if (formData.contrasena !== formData.confirmarContrasena) {
-      newErrors.confirmarContrasena = "Las contraseñas no coinciden";
-    }
-
-    if (!formData.areaId) {
-      newErrors.areaId = "Debe seleccionar un área";
-    }
-
-    // Validar roles
-    if (selectedRoleIds.length === 0) {
-      newErrors.roles = "Debe seleccionar al menos un rol";
-    }
+    if (!formData.areaId) newErrors.areaId = "Seleccione un área";
+    if (selectedRoleIds.length === 0) newErrors.roles = "Seleccione al menos un rol";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -199,518 +240,490 @@ export default function NuevosUsuarios() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
-
     try {
-      const dataToSend = {
+      const token = localStorage.getItem("token");
+
+      const payload: any = {
         documento: parseInt(formData.documento, 10),
         nombre: formData.nombre.trim(),
-        segundo_nombre: formData.segundoNombre.trim() || undefined,
+        segundo_nombre: formData.segundoNombre.trim() || null,
         primer_apellido: formData.primerApellido.trim(),
-        segundo_apellido: formData.segundoApellido.trim() || undefined,
+        segundo_apellido: formData.segundoApellido.trim() || null,
         correo_electronico: formData.correoElectronico.trim(),
         nombre_usuario: formData.nombreUsuario.trim(),
-        contrasena: formData.contrasena,
         area_id: formData.areaId,
         activo: formData.activo,
-        rol_ids: selectedRoleIds, // Enviar roles
+        rol_ids: selectedRoleIds,
       };
 
-      await apiClient.post("/usuarios", dataToSend);
+      // Solo incluir contraseña si se proporcionó
+      if (formData.contrasena) {
+        payload.contrasena = formData.contrasena;
+      }
 
-      setDialogState({
-        open: true,
-        type: "success",
-        message: `Usuario "${formData.nombreUsuario}" creado exitosamente`,
-      });
+      let response;
+      if (isEditing) {
+        response = await fetch(`/api/v1/usuarios/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        response = await fetch("/api/v1/usuarios", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+      }
 
-      // Limpiar formulario
-      setFormData({
-        documento: "",
-        nombre: "",
-        segundoNombre: "",
-        primerApellido: "",
-        segundoApellido: "",
-        correoElectronico: "",
-        nombreUsuario: "",
-        contrasena: "",
-        confirmarContrasena: "",
-        areaId: "",
-        activo: true,
-      });
-      setSelectedRoleIds([]);
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success(isEditing
+          ? `Usuario "${formData.nombreUsuario}" actualizado exitosamente`
+          : `Usuario "${formData.nombreUsuario}" creado exitosamente`
+        );
+        setTimeout(() => navigate("/ListaDeUsuarios"), 1500);
+      } else {
+        const errorDetail = result.detail || "Error al procesar la solicitud";
+        throw new Error(Array.isArray(errorDetail) ? errorDetail[0].msg : errorDetail);
+      }
     } catch (error: any) {
-      console.error("Error:", error);
-      setDialogState({
-        open: true,
-        type: "error",
-        message: error.message || "Error al crear el usuario. Por favor intente nuevamente.",
-      });
+      console.error("Error al guardar usuario:", error);
+      toast.error(error.message || "Error al guardar el usuario");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    if (window.confirm("¿Está seguro de que desea cancelar? Se perderán todos los cambios.")) {
-      setFormData({
-        documento: "",
-        nombre: "",
-        segundoNombre: "",
-        primerApellido: "",
-        segundoApellido: "",
-        correoElectronico: "",
-        nombreUsuario: "",
-        contrasena: "",
-        confirmarContrasena: "",
-        areaId: "",
-        activo: true,
-      });
-      setSelectedRoleIds([]);
-      setErrors({});
-    }
+  const toggleRole = (roleId: string) => {
+    setSelectedRoleIds(prev => {
+      const newRoles = prev.includes(roleId)
+        ? prev.filter(id => id !== roleId)
+        : [...prev, roleId];
+
+      // Limpiar error de roles si se selecciona al menos uno
+      if (newRoles.length > 0 && errors.roles) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.roles;
+          return newErrors;
+        });
+      }
+
+      return newRoles;
+    });
   };
 
-  const closeDialog = () => {
-    setDialogState({ open: false, type: "success", message: "" });
-  };
-
-  const removeRole = (id: string) => {
-    setSelectedRoleIds(prev => prev.filter(r => r !== id));
-    if (errors.roles) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors.roles;
-        return newErrors;
-      });
-    }
-  };
-
-  return (
-    <div className="flex-1 space-y-6 p-4 md:p-6 pt-6 max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <UserPlus className="h-7 w-7 text-blue-600" />
-            </div>
-            Nuevo Usuario
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Complete el formulario para registrar un nuevo usuario en el sistema
+  // Pantalla de carga mientras se obtienen los datos
+  if (fetchingData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#F5F7FA]">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-[#2563EB] mx-auto" />
+          <p className="mt-4 text-lg font-medium text-[#6B7280]">
+            Cargando {isEditing ? "usuario" : "formulario"}...
           </p>
         </div>
-        <Button variant="outline" size-="sm" onClick={() => window.history.back()}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Volver
-        </Button>
       </div>
+    );
+  }
 
-      {/* Formulario */}
-      <form onSubmit={handleSubmit}>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Información del Usuario
-            </CardTitle>
-            <CardDescription>
-              Los campos marcados con asterisco (*) son obligatorios
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Información Personal */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" />
-                Datos Personales
-              </h3>
+  return (
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <TooltipProvider>
+        <div className="max-w-5xl mx-auto space-y-8">
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Documento */}
-                <div className="space-y-2">
-                  <label htmlFor="documento" className="text-sm font-medium text-gray-700">
-                    Documento <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    id="documento"
-                    name="documento"
-                    type="text"
-                    placeholder="Ej: 12345678"
-                    value={formData.documento}
-                    onChange={handleInputChange}
-                    className={errors.documento ? "border-red-500" : ""}
-                  />
-                  {errors.documento && (
-                    <p className="text-sm text-red-500 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {errors.documento}
-                    </p>
+          {/* Header */}
+          <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div>
+                <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  {isEditing ? (
+                    <UserCheck className="h-9 w-9 text-[#2563EB]" />
+                  ) : (
+                    <UserPlus className="h-9 w-9 text-[#2563EB]" />
                   )}
-                </div>
-
-                {/* Nombre */}
-                <div className="space-y-2">
-                  <label htmlFor="nombre" className="text-sm font-medium text-gray-700">
-                    Primer Nombre <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    id="nombre"
-                    name="nombre"
-                    type="text"
-                    placeholder="Ej: Juan"
-                    value={formData.nombre}
-                    onChange={handleInputChange}
-                    className={errors.nombre ? "border-red-500" : ""}
-                  />
-                  {errors.nombre && (
-                    <p className="text-sm text-red-500 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {errors.nombre}
-                    </p>
-                  )}
-                </div>
-
-                {/* Segundo Nombre */}
-                <div className="space-y-2">
-                  <label htmlFor="segundoNombre" className="text-sm font-medium text-gray-700">
-                    Segundo Nombre
-                  </label>
-                  <Input
-                    id="segundoNombre"
-                    name="segundoNombre"
-                    type="text"
-                    placeholder="Ej: Carlos"
-                    value={formData.segundoNombre}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                {/* Primer Apellido */}
-                <div className="space-y-2">
-                  <label htmlFor="primerApellido" className="text-sm font-medium text-gray-700">
-                    Primer Apellido <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    id="primerApellido"
-                    name="primerApellido"
-                    type="text"
-                    placeholder="Ej: Pérez"
-                    value={formData.primerApellido}
-                    onChange={handleInputChange}
-                    className={errors.primerApellido ? "border-red-500" : ""}
-                  />
-                  {errors.primerApellido && (
-                    <p className="text-sm text-red-500 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {errors.primerApellido}
-                    </p>
-                  )}
-                </div>
-
-                {/* Segundo Apellido */}
-                <div className="space-y-2">
-                  <label htmlFor="segundoApellido" className="text-sm font-medium text-gray-700">
-                    Segundo Apellido
-                  </label>
-                  <Input
-                    id="segundoApellido"
-                    name="segundoApellido"
-                    type="text"
-                    placeholder="Ej: García"
-                    value={formData.segundoApellido}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                {/* Área */}
-                <div className="space-y-2">
-                  <label htmlFor="areaId" className="text-sm font-medium text-gray-700">
-                    Área <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <select
-                      id="areaId"
-                      name="areaId"
-                      value={formData.areaId}
-                      onChange={handleInputChange}
-                      className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.areaId ? "border-red-500" : "border-gray-300"
-                        }`}
-                    >
-                      <option value="">Seleccione un área</option>
-                      {areas.map((area) => (
-                        <option key={area.id} value={area.id}>
-                          {area.nombre} ({area.codigo})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {errors.areaId && (
-                    <p className="text-sm text-red-500 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {errors.areaId}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Selección de Roles */}
-            <div className="space-y-4 pt-6 border-t">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-purple-600" />
-                Asignación de Roles
-              </h3>
-
-              <div className="space-y-2">
-                <label htmlFor="roles" className="text-sm font-medium text-gray-700">
-                  Roles <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Shield className="absolute left-3 top-3 text-gray-400 w-4 h-4 z-10" />
-                  <select
-                    id="roles"
-                    multiple
-                    value={selectedRoleIds}
-                    onChange={(e) => {
-                      const selected = Array.from(e.target.selectedOptions, option => option.value);
-                      setSelectedRoleIds(selected);
-                    }}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-32 ${errors.roles ? "border-red-500" : "border-gray-300"
-                      }`}
-                  >
-                    {roles.map((rol) => (
-                      <option key={rol.id} value={rol.id}>
-                        {rol.nombre} ({rol.clave})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <p className="text-xs text-gray-500">
-                  Mantén presionada la tecla <kbd className="px-1 bg-gray-200 rounded">Ctrl</kbd> (o <kbd className="px-1 bg-gray-200 rounded">Cmd</kbd>) para seleccionar múltiples roles
+                  {isEditing ? "Editar Usuario" : "Nuevo Usuario"}
+                </h1>
+                <p className="text-[#6B7280] mt-2 text-lg">
+                  {isEditing
+                    ? `Modificando el perfil de @${formData.nombreUsuario}`
+                    : "Complete el formulario para registrar un nuevo usuario en el sistema ISO 9001"}
                 </p>
-                {errors.roles && (
-                  <p className="text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.roles}
-                  </p>
-                )}
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button type="button" variant="outline" onClick={() => navigate("/ListaDeUsuarios")}>
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Volver
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent><p>Volver a la lista de usuarios</p></TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
 
-                {/* Mostrar roles seleccionados como badges */}
+          {/* Formulario */}
+          <Card className="shadow-sm border-[#E5E7EB]">
+            <CardHeader className="bg-[#F1F5F9] border-b border-[#E5E7EB]">
+              <CardTitle className="text-2xl text-[#1E3A8A] flex items-center gap-3">
+                <User className="h-6 w-6 text-[#2563EB]" />
+                Información del Usuario
+              </CardTitle>
+            </CardHeader>
+
+            <CardContent className="p-8 space-y-10">
+
+              {/* Datos Personales */}
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-[#1E3A8A]">Datos Personales</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className={errors.documento ? "text-red-500" : ""}>
+                      Documento <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="documento"
+                      value={formData.documento}
+                      onChange={handleInputChange}
+                      placeholder="Ej: 12345678"
+                      className={errors.documento ? "border-red-500" : ""}
+                    />
+                    {errors.documento && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.documento}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className={errors.nombre ? "text-red-500" : ""}>
+                      Primer Nombre <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="nombre"
+                      value={formData.nombre}
+                      onChange={handleInputChange}
+                      placeholder="Ej: Juan"
+                      className={errors.nombre ? "border-red-500" : ""}
+                    />
+                    {errors.nombre && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.nombre}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Segundo Nombre</Label>
+                    <Input
+                      name="segundoNombre"
+                      value={formData.segundoNombre}
+                      onChange={handleInputChange}
+                      placeholder="Ej: Carlos"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className={errors.primerApellido ? "text-red-500" : ""}>
+                      Primer Apellido <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="primerApellido"
+                      value={formData.primerApellido}
+                      onChange={handleInputChange}
+                      placeholder="Ej: Pérez"
+                      className={errors.primerApellido ? "border-red-500" : ""}
+                    />
+                    {errors.primerApellido && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.primerApellido}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Segundo Apellido</Label>
+                    <Input
+                      name="segundoApellido"
+                      value={formData.segundoApellido}
+                      onChange={handleInputChange}
+                      placeholder="Ej: García"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className={errors.areaId ? "text-red-500" : ""}>
+                      Área <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={formData.areaId}
+                      onValueChange={(val) => {
+                        setFormData(p => ({ ...p, areaId: val }));
+                        if (errors.areaId) {
+                          setErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.areaId;
+                            return newErrors;
+                          });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className={errors.areaId ? "border-red-500" : ""}>
+                        <SelectValue placeholder="Seleccione un área..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {areas.map(a => (
+                          <SelectItem key={a.id} value={a.id}>
+                            [{a.codigo}] {a.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.areaId && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.areaId}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Asignación de Roles - CORREGIDO PARA MOSTRAR ROLES DE LA BD */}
+              <div className="pt-8 border-t border-[#E5E7EB] space-y-6">
+                <div>
+                  <h3 className={`text-lg font-semibold flex items-center gap-2 ${errors.roles ? "text-red-500" : "text-[#1E3A8A]"}`}>
+                    <Shield className="h-5 w-5" />
+                    Asignación de Roles <span className="text-red-500">*</span>
+                  </h3>
+                  <p className="text-sm text-[#6B7280] mt-1">
+                    {roles.length > 0
+                      ? `${roles.length} roles disponibles en el sistema`
+                      : "Cargando roles desde la base de datos..."}
+                  </p>
+                  {errors.roles && (
+                    <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.roles}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {roles.length === 0 ? (
+                    <div className="col-span-2 text-center py-8 text-[#6B7280]">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                      <p>Cargando roles...</p>
+                    </div>
+                  ) : (
+                    roles.map(rol => {
+                      const isSelected = selectedRoleIds.includes(String(rol.id));
+                      return (
+                        <div
+                          key={rol.id}
+                          className={`p-5 rounded-xl border-2 transition-all ${isSelected
+                              ? "bg-[#E0EDFF] border-[#2563EB] shadow-sm"
+                              : "bg-white border-[#E5E7EB] hover:border-[#2563EB]/50 hover:shadow-sm"
+                            }`}
+                        >
+                          <div className="flex items-start gap-4">
+                            <Checkbox
+                              id={`role-${rol.id}`}
+                              checked={isSelected}
+                              onCheckedChange={() => toggleRole(String(rol.id))}
+                            />
+                            <label
+                              htmlFor={`role-${rol.id}`}
+                              className="flex-1 cursor-pointer"
+                            >
+                              <div className="font-semibold text-gray-900">{rol.nombre}</div>
+                              <div className="text-xs text-gray-400 font-mono uppercase mt-1">{rol.clave}</div>
+                              {rol.descripcion && (
+                                <div className="text-sm text-[#6B7280] mt-2">{rol.descripcion}</div>
+                              )}
+                            </label>
+                            {isSelected && (
+                              <CheckCircle className="h-6 w-6 text-[#2563EB] flex-shrink-0" />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Resumen de roles seleccionados */}
                 {selectedRoleIds.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {selectedRoleIds.map((id) => {
-                      const rol = roles.find(r => r.id === id);
-                      return rol ? (
-                        <Badge key={id} variant="secondary" className="flex items-center gap-1">
-                          {rol.nombre}
-                          <button
-                            type="button"
-                            onClick={() => removeRole(id)}
-                            className="ml-1 text-xs hover:text-red-600"
-                          >
-                            ×
-                          </button>
-                        </Badge>
-                      ) : null;
-                    })}
+                  <div className="bg-[#F8FAFC] rounded-xl p-4 border border-[#E5E7EB]">
+                    <p className="text-sm font-medium text-[#6B7280] mb-3">
+                      Roles seleccionados ({selectedRoleIds.length})
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedRoleIds.map(id => {
+                        const rol = roles.find(r => String(r.id) === id);
+                        return rol ? (
+                          <Badge key={id} className="bg-[#E0EDFF] text-[#2563EB] text-sm px-4 py-1">
+                            {rol.nombre}
+                          </Badge>
+                        ) : null;
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Información de Cuenta */}
-            <div className="space-y-4 pt-6 border-t">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <User className="w-5 h-5 text-blue-600" />
-                Información de Cuenta
-              </h3>
+              {/* Información de Cuenta */}
+              <div className="pt-8 border-t border-[#E5E7EB] space-y-6">
+                <h3 className="text-lg font-semibold text-[#1E3A8A]">Credenciales de Acceso</h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Correo Electrónico */}
-                <div className="space-y-2">
-                  <label htmlFor="correoElectronico" className="text-sm font-medium text-gray-700">
-                    Correo Electrónico <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className={errors.correoElectronico ? "text-red-500" : ""}>
+                      Correo Electrónico <span className="text-red-500">*</span>
+                    </Label>
                     <Input
-                      id="correoElectronico"
                       name="correoElectronico"
                       type="email"
-                      placeholder="Ej: juan.perez@sgc.com"
                       value={formData.correoElectronico}
                       onChange={handleInputChange}
-                      className={`pl-10 ${errors.correoElectronico ? "border-red-500" : ""}`}
+                      placeholder="usuario@empresa.com"
+                      className={errors.correoElectronico ? "border-red-500" : ""}
                     />
+                    {errors.correoElectronico && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.correoElectronico}
+                      </p>
+                    )}
                   </div>
-                  {errors.correoElectronico && (
-                    <p className="text-sm text-red-500 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {errors.correoElectronico}
-                    </p>
-                  )}
-                </div>
 
-                {/* Nombre de Usuario */}
-                <div className="space-y-2">
-                  <label htmlFor="nombreUsuario" className="text-sm font-medium text-gray-700">
-                    Nombre de Usuario <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <div className="space-y-2">
+                    <Label className={errors.nombreUsuario ? "text-red-500" : ""}>
+                      Nombre de Usuario <span className="text-red-500">*</span>
+                    </Label>
                     <Input
-                      id="nombreUsuario"
                       name="nombreUsuario"
-                      type="text"
-                      placeholder="Ej: jperez"
                       value={formData.nombreUsuario}
                       onChange={handleInputChange}
-                      className={`pl-10 ${errors.nombreUsuario ? "border-red-500" : ""}`}
+                      placeholder="usuario123"
+                      className={errors.nombreUsuario ? "border-red-500" : ""}
                     />
+                    {errors.nombreUsuario && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.nombreUsuario}
+                      </p>
+                    )}
                   </div>
-                  {errors.nombreUsuario && (
-                    <p className="text-sm text-red-500 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {errors.nombreUsuario}
-                    </p>
-                  )}
-                </div>
 
-                {/* Contraseña */}
-                <div className="space-y-2">
-                  <label htmlFor="contrasena" className="text-sm font-medium text-gray-700">
-                    Contraseña <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <div className="space-y-2">
+                    <Label className={errors.contrasena ? "text-red-500" : ""}>
+                      {isEditing ? "Nueva Contraseña (opcional)" : "Contraseña"}
+                      {!isEditing && <span className="text-red-500"> *</span>}
+                    </Label>
                     <Input
-                      id="contrasena"
-                      name="contrasena"
                       type="password"
-                      placeholder="Mínimo 6 caracteres"
+                      name="contrasena"
                       value={formData.contrasena}
                       onChange={handleInputChange}
-                      className={`pl-10 ${errors.contrasena ? "border-red-500" : ""}`}
+                      placeholder={isEditing ? "Dejar vacío para mantener la actual" : "Mínimo 8 caracteres"}
+                      className={errors.contrasena ? "border-red-500" : ""}
                     />
+                    {errors.contrasena && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.contrasena}
+                      </p>
+                    )}
                   </div>
-                  {errors.contrasena && (
-                    <p className="text-sm text-red-500 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {errors.contrasena}
-                    </p>
-                  )}
-                </div>
 
-                {/* Confirmar Contraseña */}
-                <div className="space-y-2">
-                  <label htmlFor="confirmarContrasena" className="text-sm font-medium text-gray-700">
-                    Confirmar Contraseña <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <div className="space-y-2">
+                    <Label className={errors.confirmarContrasena ? "text-red-500" : ""}>
+                      Confirmar Contraseña
+                    </Label>
                     <Input
-                      id="confirmarContrasena"
-                      name="confirmarContrasena"
                       type="password"
-                      placeholder="Repita la contraseña"
+                      name="confirmarContrasena"
                       value={formData.confirmarContrasena}
                       onChange={handleInputChange}
-                      className={`pl-10 ${errors.confirmarContrasena ? "border-red-500" : ""}`}
+                      placeholder="Repita la contraseña"
+                      className={errors.confirmarContrasena ? "border-red-500" : ""}
                     />
+                    {errors.confirmarContrasena && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.confirmarContrasena}
+                      </p>
+                    )}
                   </div>
-                  {errors.confirmarContrasena && (
-                    <p className="text-sm text-red-500 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {errors.confirmarContrasena}
-                    </p>
-                  )}
                 </div>
               </div>
-            </div>
 
-            {/* Estado */}
-            <div className="space-y-4 pt-6 border-t">
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="activo"
-                  name="activo"
-                  checked={formData.activo}
-                  onChange={handleInputChange}
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="activo" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  Usuario Activo
-                  <Badge variant="outline" className={formData.activo ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-700 border-gray-200"}>
+              {/* Estado y Acciones */}
+              <div className="pt-8 border-t border-[#E5E7EB] space-y-6">
+                <div className="flex items-center gap-4">
+                  <Switch
+                    checked={formData.activo}
+                    onCheckedChange={(val) => setFormData(p => ({ ...p, activo: val }))}
+                  />
+                  <div className="flex-1">
+                    <Label className="font-semibold cursor-pointer">Usuario Activo</Label>
+                    <p className="text-sm text-[#6B7280] mt-1">
+                      {formData.activo
+                        ? "El usuario puede iniciar sesión inmediatamente"
+                        : "El acceso al sistema está deshabilitado"}
+                    </p>
+                  </div>
+                  <Badge className={`px-4 py-2 ${formData.activo ? "bg-[#ECFDF5] text-[#22C55E]" : "bg-gray-100 text-gray-600"}`}>
                     {formData.activo ? "Activo" : "Inactivo"}
                   </Badge>
-                </label>
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="submit"
+                        disabled={loading}
+                        onClick={handleSubmit}
+                        className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Guardando...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-5 w-5" />
+                            {isEditing ? "Actualizar Usuario" : "Crear Usuario"}
+                          </>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>{isEditing ? "Actualizar usuario" : "Crear nuevo usuario"}</p></TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
-              <p className="text-sm text-gray-500">
-                Los usuarios activos pueden iniciar sesión en el sistema
-              </p>
-            </div>
 
-            {/* Botones */}
-            <div className="flex gap-3 pt-6 border-t">
-              <Button type="submit" disabled={loading} className="flex-1 bg-blue-600 hover:bg-blue-700">
-                {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                    Guardando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Guardar Usuario
-                  </>
-                )}
-              </Button>
-              <Button type="button" variant="outline" onClick={handleCancel} disabled={loading} className="flex-1">
-                <X className="w-4 h-4 mr-2" />
-                Cancelar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </form>
-
-      {/* Dialog de Resultado */}
-      <AlertDialog open={dialogState.open} onOpenChange={closeDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              {dialogState.type === "success" ? (
-                <>
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  Usuario Creado
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-5 h-5 text-red-600" />
-                  Error
-                </>
-              )}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-base">
-              {dialogState.message}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={closeDialog}>
-              Aceptar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </CardContent>
+          </Card>
+        </div>
+      </TooltipProvider>
     </div>
   );
 }

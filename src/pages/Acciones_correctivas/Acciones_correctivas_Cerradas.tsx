@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
-import { PlusIcon, CheckCircle } from "lucide-react";
+import { PlusIcon, CheckCircle, Activity, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -45,12 +45,10 @@ export default function AccionesCorrectivasCerradas() {
     try {
       const accionesCerradas = await accionCorrectivaService.getCerradas();
 
-      // Transformar los datos para el DataTable
       const transformedData = accionesCerradas.map((ac: IAccionCorrectiva, index: number) => {
         let fechaFormateada = "Sin fecha";
         if (ac.fechaCompromiso) {
           try {
-            // La fecha viene en formato YYYY-MM-DD, convertir a DD/MM/YYYY
             const [anio, mes, dia] = ac.fechaCompromiso.split('-');
             fechaFormateada = `${dia}/${mes}/${anio}`;
           } catch (e) {
@@ -74,7 +72,6 @@ export default function AccionesCorrectivasCerradas() {
       setTotal(transformedData.length);
     } catch (error) {
       console.error("Error:", error);
-      // Datos de ejemplo en caso de error
       const ejemploData: AccionCorrectivaUI[] = [
         {
           id: 1,
@@ -113,142 +110,175 @@ export default function AccionesCorrectivasCerradas() {
   }
 
   const correctivas = accionesCorrectivas.filter(
-    (ac) => ac.tipo === "Correctiva" || ac.tipo === "correctiva"
+    (ac) => ac.tipo.toLowerCase() === "correctiva"
   ).length;
   const preventivas = accionesCorrectivas.filter(
-    (ac) => ac.tipo === "Preventiva" || ac.tipo === "preventiva"
+    (ac) => ac.tipo.toLowerCase() === "preventiva"
+  ).length;
+  const mejoras = accionesCorrectivas.filter(
+    (ac) => ac.tipo.toLowerCase() === "mejora"
   ).length;
   const verificadas = accionesCorrectivas.filter(
     (ac) => ac.gravedad === "Verificada"
   ).length;
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-6 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <CheckCircle className="h-6 w-6 text-green-500" />
-            Acciones Correctivas Cerradas
-          </h1>
-          <p className="text-muted-foreground">
-            {total} acción{total !== 1 ? "es" : ""} completamente implementada{total !== 1 ? "s" : ""}
-          </p>
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+
+        {/* Header Profesional */}
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                <CheckCircle className="h-9 w-9 text-[#10B981]" />
+                Acciones Correctivas Cerradas
+              </h1>
+              <p className="text-[#6B7280] mt-2 text-lg">
+                Registro histórico de acciones implementadas y verificadas
+              </p>
+              <div className="flex flex-wrap items-center gap-3 mt-4">
+                <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
+                  {total} totales
+                </Badge>
+                <Badge className="bg-[#ECFDF5] text-[#10B981] border border-[#10B981]/30">
+                  {verificadas} verificadas
+                </Badge>
+              </div>
+            </div>
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold">
+                  <PlusIcon className="mr-2 h-5 w-5" />
+                  Nueva Acción Correctiva
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle>Nueva Acción Correctiva</DialogTitle>
+                </DialogHeader>
+                <NuevasAccionesCorrectivas />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusIcon className="mr-2 h-4 w-4" />
-              Nueva Acción Correctiva
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Nueva Acción Correctiva</DialogTitle>
-            </DialogHeader>
-            <NuevasAccionesCorrectivas />
-          </DialogContent>
-        </Dialog>
-      </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Cerradas</CardDescription>
-            <CardTitle className="text-3xl">{total}</CardTitle>
+        {/* Tarjetas de métricas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-bold text-[#1E3A8A]">Total Cerradas</CardDescription>
+                <CheckCircle className="h-8 w-8 text-[#2563EB]" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{total}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xs text-[#6B7280] font-medium">
+                Implementadas completamente
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#FFF7ED] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-bold text-[#9A3412]">Correctivas</CardDescription>
+                <Activity className="h-8 w-8 text-[#F97316]/50" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#9A3412]">{correctivas}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Badge className="bg-white/80 text-[#F97316] border-[#F97316]/20 font-bold uppercase text-[10px]">
+                Corrección
+              </Badge>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-bold text-[#065F46]">Preventivas / Mejora</CardDescription>
+                <CheckCircle className="h-8 w-8 text-[#10B981]" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#065F46]">{preventivas + mejoras}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Badge className="bg-white/80 text-[#10B981] border-[#10B981]/20 font-bold uppercase text-[10px]">
+                Prevención
+              </Badge>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#F0FDF4] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-bold text-[#166534]">Eficacia Verificada</CardDescription>
+                <CheckCircle className="h-8 w-8 text-[#22C55E]" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#166534]">{verificadas}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Badge className="bg-white/80 text-[#22C55E] border-[#22C55E]/20 font-bold uppercase text-[10px]">
+                Confirmadas
+              </Badge>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Guía de Cierre */}
+        <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
+          <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+            <CardTitle className="text-lg text-[#1E3A8A]">Ciclo de Cierre</CardTitle>
+            <CardDescription>
+              Características de una acción correctiva cerrada
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="text-xs text-muted-foreground">
-              Acciones completadas
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+              <div className="flex items-start gap-3 p-4 bg-[#EFF6FF] rounded-xl border border-[#DBEAFE]">
+                <div className="h-8 w-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-bold flex-shrink-0">1</div>
+                <div>
+                  <span className="font-bold text-[#1E3A8A] block mb-1">Implementación Completa</span>
+                  <span className="text-[#6B7280]">Todas las tareas del plan fueron ejecutadas.</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-4 bg-[#ECFDF5] rounded-xl border border-[#D1FAE5]">
+                <div className="h-8 w-8 rounded-lg bg-[#10B981] text-white flex items-center justify-center font-bold flex-shrink-0">2</div>
+                <div>
+                  <span className="font-bold text-[#065F46] block mb-1">Verificación de Eficacia</span>
+                  <span className="text-[#6B7280]">Se comprobó que la acción resolvió el problema.</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-4 bg-[#F0FDF4] rounded-xl border border-[#BBF7D0]">
+                <div className="h-8 w-8 rounded-lg bg-[#22C55E] text-white flex items-center justify-center font-bold flex-shrink-0">3</div>
+                <div>
+                  <span className="font-bold text-[#166534] block mb-1">Documentación Histórica</span>
+                  <span className="text-[#6B7280]">Registro para auditorías y mejora continua.</span>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Correctivas</CardDescription>
-            <CardTitle className="text-3xl text-orange-600">
-              {correctivas}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Badge
-              variant="outline"
-              className="bg-orange-50 text-orange-700 border-orange-200"
-            >
-              Corrección
-            </Badge>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Preventivas</CardDescription>
-            <CardTitle className="text-3xl text-blue-600">
-              {preventivas}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Badge
-              variant="outline"
-              className="bg-blue-50 text-blue-700 border-blue-200"
-            >
-              Prevención
-            </Badge>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Eficacia Verificada</CardDescription>
-            <CardTitle className="text-3xl text-green-600">
-              {verificadas}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Badge
-              variant="outline"
-              className="bg-green-50 text-green-700 border-green-200"
-            >
-              Verificadas
-            </Badge>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Información de Registro</CardTitle>
-          <CardDescription>
-            Las acciones correctivas cerradas son aquellas que:
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div className="flex items-start gap-2">
-            <div className="h-2 w-2 rounded-full bg-green-500 mt-1.5" />
-            <div>
-              <span className="font-medium">Implementadas:</span> Todas las
-              acciones planificadas fueron ejecutadas según lo programado
+        {/* Tabla principal */}
+        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
+          <div className="p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
+            <h2 className="text-xl font-bold text-[#1E3A8A]">Historial de Acciones Cerradas</h2>
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="sm" onClick={fetchAccionesCorrectivasCerradas}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Actualizar
+              </Button>
+              <Badge variant="outline" className="bg-white border-[#E5E7EB] text-[#6B7280]">
+                {total} registros
+              </Badge>
             </div>
           </div>
-          <div className="flex items-start gap-2">
-            <div className="h-2 w-2 rounded-full bg-blue-500 mt-1.5" />
-            <div>
-              <span className="font-medium">Documentadas:</span> Registro
-              completo de implementación y resultados
-            </div>
+          <div className="p-0">
+            <DataTable data={accionesCorrectivas} />
           </div>
-          <div className="flex items-start gap-2">
-            <div className="h-2 w-2 rounded-full bg-purple-500 mt-1.5" />
-            <div>
-              <span className="font-medium">Historial:</span> Disponibles para
-              análisis de mejora continua
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="rounded-xl border bg-card">
-        <DataTable data={accionesCorrectivas} />
+        </div>
       </div>
     </div>
   );
