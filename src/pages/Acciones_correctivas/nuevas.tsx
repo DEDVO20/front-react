@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, X, AlertCircle, FileText } from "lucide-react";
+import { Save, X, AlertCircle, FileText, Activity, Calendar, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,9 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { accionCorrectivaService } from "@/services/accionCorrectiva.service";
 import { noConformidadService } from "@/services/noConformidad.service";
-
 
 interface NoConformidad {
   id: string;
@@ -64,14 +64,14 @@ export default function NuevasAccionesCorrectivas() {
       setLoading(true);
 
       const noConformidadesData = await noConformidadService.getAll();
-      const noConformidadesFormatted = noConformidadesData.map(nc => ({
-        id: nc.id.toString(),
-        codigo: nc.codigo,
-        descripcion: nc.descripcion
-      }));
+      const noConformidadesFormatted = noConformidadesData
+        .filter((nc: any) => nc.estado === "abierta" || nc.estado === "en_tratamiento")
+        .map((nc: any) => ({
+          id: nc.id.toString(),
+          codigo: nc.codigo,
+          descripcion: nc.descripcion,
+        }));
 
-      // Import apiClient locally if not imported at top, or just assumes it's available?
-      // Better to import it at top. But for this chunk:
       const { apiClient } = await import("@/lib/api");
       const usuariosRes = await apiClient.get("/usuarios");
       const usuariosData = usuariosRes.data;
@@ -80,7 +80,7 @@ export default function NuevasAccionesCorrectivas() {
       setUsuarios(usuariosData);
     } catch (error: any) {
       console.error("Error:", error);
-      setError(error.message);
+      setError(error.message || "Error al cargar datos");
     } finally {
       setLoading(false);
     }
@@ -90,16 +90,16 @@ export default function NuevasAccionesCorrectivas() {
     e.preventDefault();
 
     if (!formData.noConformidadId || !formData.codigo || !formData.tipo) {
-      alert("Por favor completa los campos obligatorios");
+      setError("Por favor completa los campos obligatorios");
       return;
     }
 
     try {
       setSaving(true);
+      setError(null);
       await accionCorrectivaService.create(formData);
-      alert("Acción correctiva creada exitosamente");
 
-      // Limpiar formulario
+      // Reset form
       setFormData({
         noConformidadId: "",
         codigo: "",
@@ -115,7 +115,7 @@ export default function NuevasAccionesCorrectivas() {
       });
     } catch (error: any) {
       console.error("Error:", error);
-      alert(error.message || "Error al crear acción correctiva");
+      setError(error.message || "Error al crear la acción correctiva");
     } finally {
       setSaving(false);
     }
@@ -136,247 +136,292 @@ export default function NuevasAccionesCorrectivas() {
         estado: "pendiente",
         observacion: "",
       });
+      setError(null);
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent" />
-          <p className="mt-4 text-sm text-gray-500">Cargando...</p>
-        </div>
+        <p>Cargando...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-6 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <FileText className="h-6 w-6 text-sky-500" />
-            Nueva Acción Correctiva
-          </h1>
-          <p className="text-gray-500">
-            Registra una nueva acción correctiva asociada a una no conformidad
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
 
-      {error && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 text-amber-800">
-              <AlertCircle className="h-5 w-5" />
-              <div>
-                <p className="font-medium">Error de conexión</p>
-                <p className="text-sm">{error}</p>
+        {/* Header Profesional */}
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                <Activity className="h-9 w-9 text-[#2563EB]" />
+                Nueva Acción Correctiva
+              </h1>
+              <p className="text-[#6B7280] mt-2 text-lg">
+                Registra una acción correctiva para resolver una no conformidad
+              </p>
+              <div className="flex flex-wrap items-center gap-3 mt-4">
+                <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
+                  {noConformidades.length} NC disponibles
+                </Badge>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </div>
 
-      <form onSubmit={handleSubmit}>
-        <Card>
-          <CardHeader>
-            <CardTitle>Información de la Acción Correctiva</CardTitle>
+        {/* Guía de Proceso */}
+        <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
+          <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+            <CardTitle className="text-lg text-[#1E3A8A]">Guía de Registro</CardTitle>
             <CardDescription>
-              Completa todos los campos marcados con * para registrar la acción correctiva
+              Pasos clave para definir una acción correctiva efectiva
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* No Conformidad */}
-              <div className="grid gap-2">
-                <Label htmlFor="noConformidadId">No Conformidad Asociada *</Label>
-                <Select
-                  value={formData.noConformidadId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, noConformidadId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona una no conformidad" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {noConformidades.map((nc) => (
-                      <SelectItem key={nc.id} value={nc.id}>
-                        [{nc.codigo}] {nc.descripcion}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+              <div className="flex items-start gap-3 p-4 bg-[#EFF6FF] rounded-xl border border-[#DBEAFE]">
+                <div className="h-8 w-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-bold flex-shrink-0">1</div>
+                <div>
+                  <span className="font-bold text-[#1E3A8A] block mb-1">Identificar Causa Raíz</span>
+                  <span className="text-[#6B7280]">Analiza profundamente el origen del problema.</span>
+                </div>
               </div>
-
-              {/* Código */}
-              <div className="grid gap-2">
-                <Label htmlFor="codigo">Código *</Label>
-                <Input
-                  id="codigo"
-                  placeholder="Ej: AC-2024-001"
-                  value={formData.codigo}
-                  onChange={(e) =>
-                    setFormData({ ...formData, codigo: e.target.value })
-                  }
-                  required
-                />
+              <div className="flex items-start gap-3 p-4 bg-[#ECFDF5] rounded-xl border border-[#D1FAE5]">
+                <div className="h-8 w-8 rounded-lg bg-[#10B981] text-white flex items-center justify-center font-bold flex-shrink-0">2</div>
+                <div>
+                  <span className="font-bold text-[#065F46] block mb-1">Definir Plan de Acción</span>
+                  <span className="text-[#6B7280]">Establece medidas concretas y responsables.</span>
+                </div>
               </div>
-
-              {/* Tipo */}
-              <div className="grid gap-2">
-                <Label htmlFor="tipo">Tipo *</Label>
-                <Select
-                  value={formData.tipo}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, tipo: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona el tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="correctiva">Correctiva</SelectItem>
-                    <SelectItem value="preventiva">Preventiva</SelectItem>
-                    <SelectItem value="mejora">Mejora</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="flex items-start gap-3 p-4 bg-[#FFF7ED] rounded-xl border border-[#FBBF24]/20">
+                <div className="h-8 w-8 rounded-lg bg-[#F97316] text-white flex items-center justify-center font-bold flex-shrink-0">3</div>
+                <div>
+                  <span className="font-bold text-[#9A3412] block mb-1">Seguimiento y Verificación</span>
+                  <span className="text-[#6B7280]">Define fechas y verifica la efectividad.</span>
+                </div>
               </div>
-
-              {/* Responsable */}
-              <div className="grid gap-2">
-                <Label htmlFor="responsableId">Responsable</Label>
-                <Select
-                  value={formData.responsableId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, responsableId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un responsable" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {usuarios.map((usuario) => (
-                      <SelectItem key={usuario.id} value={usuario.id}>
-                        {usuario.nombre} {usuario.primerApellido}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Fecha Compromiso */}
-              <div className="grid gap-2">
-                <Label htmlFor="fechaCompromiso">Fecha Compromiso</Label>
-                <Input
-                  id="fechaCompromiso"
-                  type="date"
-                  value={formData.fechaCompromiso}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fechaCompromiso: e.target.value })
-                  }
-                />
-              </div>
-
-              {/* Fecha Implementación */}
-              <div className="grid gap-2">
-                <Label htmlFor="fechaImplementacion">Fecha Implementación</Label>
-                <Input
-                  id="fechaImplementacion"
-                  type="date"
-                  value={formData.fechaImplementacion}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fechaImplementacion: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-
-            {/* Descripción */}
-            <div className="grid gap-2">
-              <Label htmlFor="descripcion">Descripción</Label>
-              <Textarea
-                id="descripcion"
-                placeholder="Describe la acción correctiva..."
-                rows={3}
-                value={formData.descripcion}
-                onChange={(e: { target: { value: any; }; }) =>
-                  setFormData({ ...formData, descripcion: e.target.value })
-                }
-              />
-            </div>
-
-            {/* Análisis de Causa Raíz */}
-            <div className="grid gap-2">
-              <Label htmlFor="analisisCausaRaiz">Análisis de Causa Raíz</Label>
-              <Textarea
-                id="analisisCausaRaiz"
-                placeholder="Describe el análisis de la causa raíz..."
-                rows={4}
-                value={formData.analisisCausaRaiz}
-                onChange={(e: { target: { value: any; }; }) =>
-                  setFormData({ ...formData, analisisCausaRaiz: e.target.value })
-                }
-              />
-            </div>
-
-            {/* Plan de Acción */}
-            <div className="grid gap-2">
-              <Label htmlFor="planAccion">Plan de Acción</Label>
-              <Textarea
-                id="planAccion"
-                placeholder="Detalla el plan de acción..."
-                rows={4}
-                value={formData.planAccion}
-                onChange={(e: { target: { value: any; }; }) =>
-                  setFormData({ ...formData, planAccion: e.target.value })
-                }
-              />
-            </div>
-
-            {/* Observaciones */}
-            <div className="grid gap-2">
-              <Label htmlFor="observacion">Observaciones</Label>
-              <Textarea
-                id="observacion"
-                placeholder="Observaciones adicionales..."
-                rows={3}
-                value={formData.observacion}
-                onChange={(e: { target: { value: any; }; }) =>
-                  setFormData({ ...formData, observacion: e.target.value })
-                }
-              />
-            </div>
-
-            {/* Botones */}
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleReset}
-                disabled={saving}
-              >
-                <X className="mr-2 h-4 w-4" />
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={saving}>
-                {saving ? (
-                  <>
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
-                    Guardando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Crear Acción Correctiva
-                  </>
-                )}
-              </Button>
             </div>
           </CardContent>
         </Card>
-      </form>
+
+        {/* Error Alert */}
+        {error && (
+          <Card className="bg-[#FEF2F2] border border-[#FECACA] shadow-sm rounded-2xl">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 text-[#991B1B]">
+                <AlertCircle className="h-6 w-6" />
+                <div>
+                  <p className="font-bold">Error</p>
+                  <p className="text-sm">{error}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Formulario Principal */}
+        <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
+          <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+            <CardTitle className="text-xl text-[#1E3A8A]">Información de la Acción Correctiva</CardTitle>
+            <CardDescription>
+              Los campos marcados con <span className="text-red-500">*</span> son obligatorios
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* No Conformidad */}
+                <div className="space-y-2">
+                  <Label className="font-bold">
+                    No Conformidad Asociada <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.noConformidadId}
+                    onValueChange={(value) => setFormData({ ...formData, noConformidadId: value })}
+                  >
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Selecciona una NC" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {noConformidades.map((nc) => (
+                        <SelectItem key={nc.id} value={nc.id}>
+                          [{nc.codigo}] {nc.descripcion}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Código */}
+                <div className="space-y-2">
+                  <Label className="font-bold">
+                    Código <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    placeholder="Ej: AC-2024-001"
+                    value={formData.codigo}
+                    onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
+                    className="rounded-xl"
+                    required
+                  />
+                </div>
+
+                {/* Tipo */}
+                <div className="space-y-2">
+                  <Label className="font-bold">
+                    Tipo <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.tipo}
+                    onValueChange={(value) => setFormData({ ...formData, tipo: value })}
+                  >
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Selecciona tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="correctiva">Correctiva</SelectItem>
+                      <SelectItem value="preventiva">Preventiva</SelectItem>
+                      <SelectItem value="mejora">Mejora</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Responsable */}
+                <div className="space-y-2">
+                  <Label className="font-bold">Responsable</Label>
+                  <Select
+                    value={formData.responsableId}
+                    onValueChange={(value) => setFormData({ ...formData, responsableId: value })}
+                  >
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Selecciona responsable" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {usuarios.map((usuario) => (
+                        <SelectItem key={usuario.id} value={usuario.id}>
+                          {usuario.nombre} {usuario.primerApellido}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Fecha Compromiso */}
+                <div className="space-y-2">
+                  <Label className="font-bold flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Fecha Compromiso
+                  </Label>
+                  <Input
+                    type="date"
+                    value={formData.fechaCompromiso}
+                    onChange={(e) => setFormData({ ...formData, fechaCompromiso: e.target.value })}
+                    className="rounded-xl"
+                  />
+                </div>
+
+                {/* Fecha Implementación */}
+                <div className="space-y-2">
+                  <Label className="font-bold flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Fecha Implementación
+                  </Label>
+                  <Input
+                    type="date"
+                    value={formData.fechaImplementacion}
+                    onChange={(e) => setFormData({ ...formData, fechaImplementacion: e.target.value })}
+                    className="rounded-xl"
+                  />
+                </div>
+              </div>
+
+              {/* Descripción */}
+              <div className="space-y-2">
+                <Label className="font-bold">Descripción</Label>
+                <Textarea
+                  placeholder="Describe la acción correctiva..."
+                  rows={4}
+                  value={formData.descripcion}
+                  onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                  className="rounded-xl"
+                />
+              </div>
+
+              {/* Análisis Causa Raíz */}
+              <div className="space-y-2">
+                <Label className="font-bold">Análisis de Causa Raíz</Label>
+                <Textarea
+                  placeholder="Describe el análisis realizado (5 Porqués, Ishikawa, etc.)..."
+                  rows={5}
+                  value={formData.analisisCausaRaiz}
+                  onChange={(e) => setFormData({ ...formData, analisisCausaRaiz: e.target.value })}
+                  className="rounded-xl"
+                />
+              </div>
+
+              {/* Plan de Acción */}
+              <div className="space-y-2">
+                <Label className="font-bold">Plan de Acción</Label>
+                <Textarea
+                  placeholder="Detalla las acciones específicas, responsables y plazos..."
+                  rows={5}
+                  value={formData.planAccion}
+                  onChange={(e) => setFormData({ ...formData, planAccion: e.target.value })}
+                  className="rounded-xl"
+                />
+              </div>
+
+              {/* Observaciones */}
+              <div className="space-y-2">
+                <Label className="font-bold">Observaciones</Label>
+                <Textarea
+                  placeholder="Observaciones adicionales..."
+                  rows={4}
+                  value={formData.observacion}
+                  onChange={(e) => setFormData({ ...formData, observacion: e.target.value })}
+                  className="rounded-xl"
+                />
+              </div>
+
+              {/* Botones */}
+              <div className="flex justify-end gap-4 pt-6 border-t border-[#E5E7EB]">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={handleReset}
+                  disabled={saving}
+                  className="rounded-xl px-8"
+                >
+                  <X className="mr-2 h-5 w-5" />
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={saving}
+                  className="bg-[#2563EB] hover:bg-[#1D4ED8] rounded-xl px-8 font-bold"
+                >
+                  {saving ? (
+                    <>
+                      <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-white border-r-transparent" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-5 w-5" />
+                      Crear Acción Correctiva
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
