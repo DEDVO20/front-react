@@ -1,16 +1,58 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, Search, Download, Eye, Edit, Trash2, Users, CheckCircle, AlertCircle, Clock, Loader2 } from 'lucide-react';
 
+// Tipos TypeScript
+interface Auditoria {
+  id: string;
+  codigo: string;
+  nombre: string;
+  tipo: string;
+  objetivo: string;
+  alcance: string;
+  normaReferencia: string;
+  auditorLiderId: string;
+  fechaPlanificada: string;
+  fechaInicio: string;
+  fechaFin: string;
+  estado: 'planificada' | 'en_curso' | 'completada' | 'cancelada';
+}
+
+interface Usuario {
+  id: string;
+  nombre: string;
+  primerApellido: string;
+  segundoApellido?: string;
+}
+
+interface AuditoriaFormData {
+  codigo: string;
+  nombre: string;
+  tipo: string;
+  objetivo: string;
+  alcance: string;
+  normaReferencia: string;
+  auditorLiderId: string;
+  fechaPlanificada: string;
+  fechaInicio: string;
+  fechaFin: string;
+  estado: string;
+}
+
+interface Filters {
+  tipo?: string;
+  estado?: string;
+}
+
 // Configuración de la API
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 // Servicio API para Auditorías
 const auditoriaService = {
-  async getAll(filters = {}) {
+  async getAll(filters: Filters = {}): Promise<Auditoria[]> {
     const params = new URLSearchParams();
     if (filters.tipo) params.append('tipo', filters.tipo);
     if (filters.estado) params.append('estado', filters.estado);
-    
+
     const url = `${API_BASE_URL}/auditorias${params.toString() ? `?${params.toString()}` : ''}`;
     const response = await fetch(url, {
       headers: {
@@ -18,12 +60,12 @@ const auditoriaService = {
         'Content-Type': 'application/json'
       }
     });
-    
+
     if (!response.ok) throw new Error('Error al cargar auditorías');
     return response.json();
   },
 
-  async create(data) {
+  async create(data: AuditoriaFormData): Promise<Auditoria> {
     const response = await fetch(`${API_BASE_URL}/auditorias`, {
       method: 'POST',
       headers: {
@@ -32,12 +74,12 @@ const auditoriaService = {
       },
       body: JSON.stringify(data)
     });
-    
+
     if (!response.ok) throw new Error('Error al crear auditoría');
     return response.json();
   },
 
-  async update(id, data) {
+  async update(id: string, data: Partial<AuditoriaFormData>): Promise<Auditoria> {
     const response = await fetch(`${API_BASE_URL}/auditorias/${id}`, {
       method: 'PUT',
       headers: {
@@ -46,19 +88,19 @@ const auditoriaService = {
       },
       body: JSON.stringify(data)
     });
-    
+
     if (!response.ok) throw new Error('Error al actualizar auditoría');
     return response.json();
   },
 
-  async delete(id) {
+  async delete(id: string): Promise<boolean> {
     const response = await fetch(`${API_BASE_URL}/auditorias/${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
     });
-    
+
     if (!response.ok) throw new Error('Error al eliminar auditoría');
     return true;
   }
@@ -66,14 +108,14 @@ const auditoriaService = {
 
 // Servicio API para Usuarios
 const usuarioService = {
-  async getAll() {
+  async getAll(): Promise<Usuario[]> {
     const response = await fetch(`${API_BASE_URL}/usuarios`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'Content-Type': 'application/json'
       }
     });
-    
+
     if (!response.ok) throw new Error('Error al cargar usuarios');
     return response.json();
   }
@@ -81,11 +123,11 @@ const usuarioService = {
 
 const AuditoriasPlanificacion = () => {
   // Estados
-  const [auditorias, setAuditorias] = useState([]);
-  const [usuarios, setUsuarios] = useState([]);
+  const [auditorias, setAuditorias] = useState<Auditoria[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Estados para filtros
   const [filtroTipo, setFiltroTipo] = useState('');
@@ -94,8 +136,8 @@ const AuditoriasPlanificacion = () => {
 
   // Estados para modal
   const [mostrarModal, setMostrarModal] = useState(false);
-  const [auditoriaEditando, setAuditoriaEditando] = useState(null);
-  const [formData, setFormData] = useState({
+  const [auditoriaEditando, setAuditoriaEditando] = useState<Auditoria | null>(null);
+  const [formData, setFormData] = useState<AuditoriaFormData>({
     codigo: '',
     nombre: '',
     tipo: 'interna',
@@ -125,13 +167,13 @@ const AuditoriasPlanificacion = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Cargar usuarios y auditorías en paralelo
       const [usuariosData, auditoriasData] = await Promise.all([
         usuarioService.getAll(),
         auditoriaService.getAll({ tipo: filtroTipo, estado: filtroEstado })
       ]);
-      
+
       setUsuarios(Array.isArray(usuariosData) ? usuariosData : []);
       setAuditorias(Array.isArray(auditoriasData) ? auditoriasData : []);
     } catch (err) {
@@ -155,7 +197,7 @@ const AuditoriasPlanificacion = () => {
   // Filtrar auditorías localmente por búsqueda
   const auditoriasFiltradas = auditorias.filter(aud => {
     if (!busqueda) return true;
-    
+
     const searchLower = busqueda.toLowerCase();
     return (
       aud.codigo?.toLowerCase().includes(searchLower) ||
@@ -167,12 +209,12 @@ const AuditoriasPlanificacion = () => {
   // Abrir modal para crear
   const abrirModalCrear = () => {
     setAuditoriaEditando(null);
-    
+
     // Generar código automático
     const year = new Date().getFullYear();
     const nextNumber = auditorias.length + 1;
     const codigo = `AUD-${year}-${String(nextNumber).padStart(3, '0')}`;
-    
+
     setFormData({
       codigo,
       nombre: '',
@@ -190,7 +232,7 @@ const AuditoriasPlanificacion = () => {
   };
 
   // Abrir modal para editar
-  const abrirModalEditar = (auditoria) => {
+  const abrirModalEditar = (auditoria: Auditoria) => {
     setAuditoriaEditando(auditoria);
     setFormData({
       codigo: auditoria.codigo,
@@ -209,9 +251,9 @@ const AuditoriasPlanificacion = () => {
   };
 
   // Guardar auditoría
-  const guardarAuditoria = async (e) => {
+  const guardarAuditoria = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setSaving(true);
       setError(null);
@@ -224,21 +266,21 @@ const AuditoriasPlanificacion = () => {
 
       setMostrarModal(false);
       await cargarAuditorias();
-      
+
       // Mostrar mensaje de éxito
       alert(auditoriaEditando ? 'Auditoría actualizada exitosamente' : 'Auditoría creada exitosamente');
     } catch (err) {
       console.error('Error al guardar auditoría:', err);
-      setError(err.message || 'Error al guardar la auditoría');
+      setError(err instanceof Error ? err.message : 'Error al guardar la auditoría');
     } finally {
       setSaving(false);
     }
   };
 
   // Eliminar auditoría
-  const eliminarAuditoria = async (id) => {
+  const eliminarAuditoria = async (id: string) => {
     if (!confirm('¿Está seguro de eliminar esta auditoría?')) return;
-    
+
     try {
       setError(null);
       await auditoriaService.delete(id);
@@ -246,13 +288,13 @@ const AuditoriasPlanificacion = () => {
       alert('Auditoría eliminada exitosamente');
     } catch (err) {
       console.error('Error al eliminar auditoría:', err);
-      setError(err.message || 'Error al eliminar la auditoría');
+      setError(err instanceof Error ? err.message : 'Error al eliminar la auditoría');
     }
   };
 
   // Obtener color de estado
-  const getEstadoColor = (estado) => {
-    const colores = {
+  const getEstadoColor = (estado: string) => {
+    const colores: Record<string, string> = {
       planificada: 'bg-blue-100 text-blue-800',
       en_curso: 'bg-yellow-100 text-yellow-800',
       completada: 'bg-green-100 text-green-800',
@@ -262,8 +304,8 @@ const AuditoriasPlanificacion = () => {
   };
 
   // Obtener icono de estado
-  const getEstadoIcono = (estado) => {
-    const iconos = {
+  const getEstadoIcono = (estado: string) => {
+    const iconos: Record<string, React.ReactElement> = {
       planificada: <Clock className="w-4 h-4" />,
       en_curso: <AlertCircle className="w-4 h-4" />,
       completada: <CheckCircle className="w-4 h-4" />,
@@ -273,7 +315,7 @@ const AuditoriasPlanificacion = () => {
   };
 
   // Formatear fecha
-  const formatearFecha = (fecha) => {
+  const formatearFecha = (fecha: string | undefined) => {
     if (!fecha) return 'No definida';
     return new Date(fecha).toLocaleDateString('es-ES', {
       year: 'numeric',
@@ -283,7 +325,7 @@ const AuditoriasPlanificacion = () => {
   };
 
   // Obtener nombre completo usuario
-  const getNombreUsuario = (id) => {
+  const getNombreUsuario = (id: string) => {
     const usuario = usuarios.find(u => u.id === id);
     if (!usuario) return 'No asignado';
     return `${usuario.nombre} ${usuario.primerApellido} ${usuario.segundoApellido || ''}`.trim();
@@ -567,7 +609,7 @@ const AuditoriasPlanificacion = () => {
                     <input
                       type="text"
                       value={formData.codigo}
-                      onChange={(e) => setFormData({...formData, codigo: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="AUD-2025-001"
@@ -579,7 +621,7 @@ const AuditoriasPlanificacion = () => {
                     </label>
                     <select
                       value={formData.tipo}
-                      onChange={(e) => setFormData({...formData, tipo: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
@@ -598,7 +640,7 @@ const AuditoriasPlanificacion = () => {
                   <input
                     type="text"
                     value={formData.nombre}
-                    onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Auditoría Interna de Procesos"
                   />
@@ -610,7 +652,7 @@ const AuditoriasPlanificacion = () => {
                   </label>
                   <textarea
                     value={formData.objetivo}
-                    onChange={(e) => setFormData({...formData, objetivo: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, objetivo: e.target.value })}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Verificar el cumplimiento de los requisitos ISO 9001:2015..."
@@ -623,7 +665,7 @@ const AuditoriasPlanificacion = () => {
                   </label>
                   <textarea
                     value={formData.alcance}
-                    onChange={(e) => setFormData({...formData, alcance: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, alcance: e.target.value })}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Procesos de gestión de calidad, operaciones..."
@@ -638,7 +680,7 @@ const AuditoriasPlanificacion = () => {
                     <input
                       type="text"
                       value={formData.normaReferencia}
-                      onChange={(e) => setFormData({...formData, normaReferencia: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, normaReferencia: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="ISO 9001:2015"
                     />
@@ -649,7 +691,7 @@ const AuditoriasPlanificacion = () => {
                     </label>
                     <select
                       value={formData.auditorLiderId}
-                      onChange={(e) => setFormData({...formData, auditorLiderId: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, auditorLiderId: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="">Seleccionar auditor...</option>
@@ -670,7 +712,7 @@ const AuditoriasPlanificacion = () => {
                     <input
                       type="date"
                       value={formData.fechaPlanificada}
-                      onChange={(e) => setFormData({...formData, fechaPlanificada: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, fechaPlanificada: e.target.value })}
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
@@ -682,7 +724,7 @@ const AuditoriasPlanificacion = () => {
                     <input
                       type="date"
                       value={formData.fechaInicio}
-                      onChange={(e) => setFormData({...formData, fechaInicio: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, fechaInicio: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -693,7 +735,7 @@ const AuditoriasPlanificacion = () => {
                     <input
                       type="date"
                       value={formData.fechaFin}
-                      onChange={(e) => setFormData({...formData, fechaFin: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, fechaFin: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -705,7 +747,7 @@ const AuditoriasPlanificacion = () => {
                   </label>
                   <select
                     value={formData.estado}
-                    onChange={(e) => setFormData({...formData, estado: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="planificada">Planificada</option>
