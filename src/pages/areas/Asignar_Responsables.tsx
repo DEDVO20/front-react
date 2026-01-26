@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Calendar,
   Hash,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -47,7 +49,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
@@ -55,6 +56,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Area {
   id: string;
@@ -87,7 +96,6 @@ export default function AsignarResponsables() {
   const [areas, setAreas] = useState<Area[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<"create" | "view">("create");
   const [selectedAsignacion, setSelectedAsignacion] = useState<Asignacion | null>(null);
@@ -112,7 +120,6 @@ export default function AsignarResponsables() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      setError(null);
       const token = getAuthToken();
       if (!token) throw new Error("No hay sesión activa");
 
@@ -138,7 +145,7 @@ export default function AsignarResponsables() {
       setAreas(areasData);
       setUsuarios(usuariosData);
     } catch (error: any) {
-      setError(error.message || "Error desconocido");
+      toast.error(error.message || "Error al cargar datos");
     } finally {
       setLoading(false);
     }
@@ -148,30 +155,7 @@ export default function AsignarResponsables() {
     setDialogMode("create");
     setFormData({ area_id: "", usuario_id: "", es_principal: false });
     setSelectedAsignacion(null);
-
-    try {
-      const token = getAuthToken();
-      if (!token) return alert("Sesión no válida");
-
-      const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
-      const [areasRes, usuariosRes] = await Promise.all([
-        fetch(`${API_URL}/areas`, { headers }),
-        fetch(`${API_URL}/usuarios`, { headers }),
-      ]);
-
-      if (areasRes.ok && usuariosRes.ok) {
-        const [areasData, usuariosData] = await Promise.all([
-          areasRes.json(),
-          usuariosRes.json(),
-        ]);
-        setAreas(areasData);
-        setUsuarios(usuariosData);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setShowDialog(true);
-    }
+    setShowDialog(true);
   };
 
   const handleView = (asignacion: Asignacion) => {
@@ -251,11 +235,8 @@ export default function AsignarResponsables() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-          <p className="mt-4 text-lg font-medium text-gray-700">Cargando asignaciones...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Cargando...</p>
       </div>
     );
   }
@@ -270,6 +251,7 @@ export default function AsignarResponsables() {
     <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
       <TooltipProvider>
         <div className="max-w-7xl mx-auto space-y-8">
+
           {/* Header Profesional */}
           <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -283,398 +265,429 @@ export default function AsignarResponsables() {
                 </p>
                 <div className="flex flex-wrap items-center gap-3 mt-4">
                   <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
-                    {totalAsignaciones} asignaciones activas
+                    {totalAsignaciones} asignaciones
                   </Badge>
-                  {responsablesPrincipales > 0 && (
-                    <Badge className="bg-[#ECFDF5] text-[#22C55E]">
-                      <ShieldCheck className="h-4 w-4 mr-1" />
-                      {responsablesPrincipales} principales
-                    </Badge>
-                  )}
+                  <Badge className="bg-[#ECFDF5] text-[#22C55E] border border-[#22C55E]/30">
+                    {responsablesPrincipales} principales
+                  </Badge>
                   {areasSinResponsable > 0 && (
-                    <Badge className="bg-[#FFF7ED] text-[#F59E0B] border border-[#F59E0B]/30">
-                      <AlertCircle className="h-4 w-4 mr-1" />
-                      {areasSinResponsable} sin responsable
+                    <Badge className="bg-[#FFF7ED] text-[#F97316] border border-[#F97316]/30">
+                      {areasSinResponsable} sin asignar
                     </Badge>
                   )}
                 </div>
               </div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="lg"
-                    onClick={handleCreate}
-                    className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-medium shadow-sm"
-                  >
-                    <UserPlus className="mr-2 h-5 w-5" />
-                    Nueva Asignación
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Crear nueva asignación de responsable</p>
-                </TooltipContent>
-              </Tooltip>
+              <Button
+                onClick={handleCreate}
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold"
+              >
+                <UserPlus className="mr-2 h-5 w-5" />
+                Nueva Asignación
+              </Button>
             </div>
           </div>
 
-          {error && (
-            <Card className="border-red-200 bg-red-50">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3 text-red-700">
-                  <AlertCircle className="h-6 w-6" />
-                  <div>
-                    <p className="font-semibold">Error de conexión</p>
-                    <p className="text-sm">{error}</p>
-                    <button onClick={fetchData} className="text-sm font-medium underline mt-1">
-                      Reintentar
-                    </button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Tarjetas de métricas */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader>
+            <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-[#1E3A8A]">Total Asignaciones</CardTitle>
+                  <CardDescription className="font-bold text-[#1E3A8A]">Total Asignaciones</CardDescription>
                   <Users className="h-8 w-8 text-[#2563EB]" />
                 </div>
-                <div className="text-4xl font-bold text-[#1E3A8A] mt-4">{totalAsignaciones}</div>
+                <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{totalAsignaciones}</CardTitle>
               </CardHeader>
-            </Card>
-
-            <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-[#1E3A8A]">Áreas Cubiertas</CardTitle>
-                  <Building2 className="h-8 w-8 text-[#22C55E]" />
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-4xl font-bold text-[#1E3A8A] mb-2">{areasConResponsable}</div>
-                <p className="text-sm text-[#6B7280] mb-3">
-                  de {areas.length} áreas totales
-                </p>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#6B7280]">Cobertura</span>
-                    <span className="font-semibold text-[#22C55E]">{coveragePercentage}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-[#22C55E] h-3 rounded-full transition-all duration-700"
-                      style={{ width: `${coveragePercentage}%` }}
-                    />
-                  </div>
+              <CardContent>
+                <div className="text-xs text-[#6B7280] font-medium">
+                  Activas en el sistema
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-[#FFF7ED] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader>
+            <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-[#1E3A8A]">Sin Responsable</CardTitle>
-                  <AlertCircle className="h-8 w-8 text-[#F59E0B]" />
+                  <CardDescription className="font-bold text-[#065F46]">Áreas Cubiertas</CardDescription>
+                  <Building2 className="h-8 w-8 text-[#10B981]" />
                 </div>
-                <div className="text-4xl font-bold text-[#1E3A8A] mt-4">{areasSinResponsable}</div>
+                <CardTitle className="text-4xl font-bold text-[#065F46]">{areasConResponsable}</CardTitle>
               </CardHeader>
+              <CardContent>
+                <div className="text-xs text-[#6B7280] font-medium mb-2">
+                  Cobertura: {coveragePercentage}%
+                </div>
+                <div className="w-full bg-[#E5E7EB] rounded-full h-3">
+                  <div
+                    className="bg-[#10B981] h-3 rounded-full transition-all"
+                    style={{ width: `${coveragePercentage}%` }}
+                  />
+                </div>
+              </CardContent>
             </Card>
 
-            <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader>
+            <Card className="bg-[#FFF7ED] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-[#1E3A8A]">Responsables Principales</CardTitle>
-                  <ShieldCheck className="h-8 w-8 text-[#22C55E]" />
+                  <CardDescription className="font-bold text-[#9A3412]">Sin Responsable</CardDescription>
+                  <AlertCircle className="h-8 w-8 text-[#F97316]/50" />
                 </div>
-                <div className="text-4xl font-bold text-[#1E3A8A] mt-4">{responsablesPrincipales}</div>
+                <CardTitle className="text-4xl font-bold text-[#9A3412]">{areasSinResponsable}</CardTitle>
               </CardHeader>
+              <CardContent>
+                <Badge className="bg-white/80 text-[#F97316] border-[#F97316]/20 font-bold uppercase text-[10px]">
+                  Pendiente
+                </Badge>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription className="font-bold text-[#065F46]">Responsables Principales</CardDescription>
+                  <ShieldCheck className="h-8 w-8 text-[#10B981]" />
+                </div>
+                <CardTitle className="text-4xl font-bold text-[#065F46]">{responsablesPrincipales}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Badge className="bg-white/80 text-[#10B981] border-[#10B981]/20 font-bold uppercase text-[10px]">
+                  Liderazgo
+                </Badge>
+              </CardContent>
             </Card>
           </div>
 
-          {/* Tabla de Asignaciones */}
-          <Card className="shadow-sm overflow-hidden">
-            <CardHeader className="bg-[#F1F5F9]">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
-                  <CardTitle className="text-2xl text-[#1E3A8A] flex items-center gap-3">
-                    <Hash className="h-7 w-7" />
-                    Asignaciones Actuales
-                  </CardTitle>
-                  <CardDescription className="text-[#6B7280]">
-                    Busca y administra responsables por área
-                  </CardDescription>
-                </div>
-                <div className="w-full md:w-96">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3.5 h-5 w-5 text-[#6B7280]" />
-                    <Input
-                      placeholder="Buscar área, código o usuario..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
+          {/* Guía de Asignación */}
+          <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
+            <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+              <CardTitle className="text-lg text-[#1E3A8A]">Guía de Asignación</CardTitle>
+              <CardDescription>
+                Pasos para asignar responsables de manera efectiva
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                <div className="flex items-start gap-3 p-4 bg-[#EFF6FF] rounded-xl border border-[#DBEAFE]">
+                  <div className="h-8 w-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-bold flex-shrink-0">1</div>
+                  <div>
+                    <span className="font-bold text-[#1E3A8A] block mb-1">Seleccionar Área</span>
+                    <span className="text-[#6B7280]">Elige la área organizacional.</span>
                   </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-[#F1F5F9] border-b border-[#E5E7EB]">
-                    <tr>
-                      <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">Código</th>
-                      <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">Área</th>
-                      <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">Responsable</th>
-                      <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">Email</th>
-                      <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">Tipo</th>
-                      <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">
-                        <Calendar className="inline h-4 w-4 mr-1" /> Fecha
-                      </th>
-                      <th className="text-right p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider pr-10">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-[#E5E7EB]">
-                    {filteredAsignaciones.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="text-center py-20 text-[#6B7280]">
-                          <div className="flex flex-col items-center">
-                            <UserPlus className="h-16 w-16 text-gray-300 mb-4" />
-                            <p className="text-xl font-medium">
-                              {searchTerm ? "No se encontraron resultados" : "Aún no hay asignaciones"}
-                            </p>
-                            {!searchTerm && (
-                              <Button onClick={handleCreate} variant="outline" className="mt-6">
-                                <UserPlus className="mr-2 h-5 w-5" /> Hacer primera asignación
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredAsignaciones.map((asignacion) => (
-                        <tr key={asignacion.id} className="hover:bg-[#EFF6FF] transition-colors">
-                          <td className="p-6">
-                            <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold">
-                              {asignacion.area.codigo}
-                            </Badge>
-                          </td>
-                          <td className="p-6 font-medium text-gray-900">
-                            {asignacion.area.nombre}
-                          </td>
-                          <td className="p-6">
-                            <div className="flex items-center gap-3">
-                              <div className="h-10 w-10 rounded-full bg-[#2563EB] flex items-center justify-center text-white font-bold">
-                                {asignacion.usuario.nombre.charAt(0).toUpperCase()}
-                              </div>
-                              <span className="font-medium">{asignacion.usuario.nombre}</span>
-                            </div>
-                          </td>
-                          <td className="p-6 text-[#6B7280]">{asignacion.usuario.correo_electronico}</td>
-                          <td className="p-6">
-                            {asignacion.es_principal ? (
-                              <Badge className="bg-[#ECFDF5] text-[#22C55E]">
-                                <ShieldCheck className="h-4 w-4 mr-1" /> Principal
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary">Apoyo</Badge>
-                            )}
-                          </td>
-                          <td className="p-6 text-sm text-[#6B7280]">
-                            {new Date(asignacion.creado_en).toLocaleDateString("es-CO", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                          </td>
-                          <td className="p-6">
-                            <div className="flex items-center justify-end gap-3">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="sm" variant="ghost" onClick={() => handleView(asignacion)}>
-                                    <Eye className="h-4 w-4 text-[#2563EB]" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Ver detalles</p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="sm" variant="ghost" onClick={() => openDeleteDialog(asignacion)}>
-                                    <Trash2 className="h-4 w-4 text-[#EF4444]" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Eliminar asignación</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                <div className="flex items-start gap-3 p-4 bg-[#ECFDF5] rounded-xl border border-[#D1FAE5]">
+                  <div className="h-8 w-8 rounded-lg bg-[#10B981] text-white flex items-center justify-center font-bold flex-shrink-0">2</div>
+                  <div>
+                    <span className="font-bold text-[#065F46] block mb-1">Asignar Usuario</span>
+                    <span className="text-[#6B7280]">Vincula al responsable adecuado.</span>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-4 bg-[#FFF7ED] rounded-xl border border-[#FBBF24]/20">
+                  <div className="h-8 w-8 rounded-lg bg-[#F97316] text-white flex items-center justify-center font-bold flex-shrink-0">3</div>
+                  <div>
+                    <span className="font-bold text-[#9A3412] block mb-1">Definir Principal</span>
+                    <span className="text-[#6B7280]">Marca si es líder del área.</span>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
-        </div>
-      </TooltipProvider>
 
-      {/* Diálogo de Crear/Ver */}
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl text-[#1E3A8A] flex items-center gap-3">
-              {dialogMode === "create" ? (
-                <><UserPlus className="h-7 w-7 text-[#2563EB]" /> Nueva Asignación</>
-              ) : (
-                <><Eye className="h-7 w-7 text-[#2563EB]" /> Detalles de Asignación</>
-              )}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-6 py-4">
-            {dialogMode === "create" ? (
-              <>
-                <div>
-                  <Label className="text-base font-medium">Área a Asignar *</Label>
-                  <Select value={formData.area_id} onValueChange={(v) => setFormData({ ...formData, area_id: v })}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Selecciona un área" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {areas.map((area) => (
-                        <SelectItem key={area.id} value={area.id}>
-                          [{area.codigo}] {area.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-base font-medium">Responsable *</Label>
-                  <Select value={formData.usuario_id} onValueChange={(v) => setFormData({ ...formData, usuario_id: v })}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Selecciona un usuario" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {usuarios.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>
-                          {u.nombre} — {u.correo_electronico}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center space-x-4">
-                  <Checkbox
-                    id="principal"
-                    checked={formData.es_principal}
-                    onCheckedChange={(checked) => setFormData({ ...formData, es_principal: !!checked })}
-                  />
-                  <div className="space-y-1">
-                    <Label htmlFor="principal" className="text-base font-medium cursor-pointer">
-                      Marcar como Responsable Principal
-                    </Label>
-                    <p className="text-sm text-[#6B7280]">
-                      Otorga permisos adicionales sobre el área
-                    </p>
-                  </div>
-                </div>
-              </>
-            ) : selectedAsignacion && (
-              <div className="space-y-6">
-                <div className="bg-[#E0EDFF] rounded-xl p-6 border border-[#E5E7EB]">
-                  <h3 className="font-semibold text-[#1E3A8A] mb-2">Área Asignada</h3>
-                  <p className="text-xl font-bold text-[#1E3A8A]">[{selectedAsignacion.area.codigo}] {selectedAsignacion.area.nombre}</p>
-                  {selectedAsignacion.area.descripcion && (
-                    <p className="text-[#6B7280] mt-2">{selectedAsignacion.area.descripcion}</p>
-                  )}
-                </div>
-
-                <div className="bg-[#ECFDF5] rounded-xl p-6 border border-[#E5E7EB]">
-                  <h3 className="font-semibold text-[#1E3A8A] mb-3">Responsable</h3>
-                  <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-xl font-bold">
-                      {selectedAsignacion.usuario.nombre.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-xl font-bold text-gray-900">{selectedAsignacion.usuario.nombre}</p>
-                      <p className="text-[#6B7280]">{selectedAsignacion.usuario.correo_electronico}</p>
-                      <p className="text-sm text-[#6B7280] mt-1">Rol: {selectedAsignacion.usuario.rol}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
-                  <h3 className="font-semibold text-[#1E3A8A] mb-2">Fecha de Asignación</h3>
-                  <p className="text-lg text-[#1E3A8A]">
-                    {new Date(selectedAsignacion.creado_en).toLocaleDateString("es-CO", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </p>
-                </div>
-
-                <div className="flex justify-center">
-                  {selectedAsignacion.es_principal ? (
-                    <Badge className="text-base px-6 py-3 bg-[#ECFDF5] text-[#22C55E]">
-                      <ShieldCheck className="h-5 w-5 mr-2" /> Responsable Principal
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="text-base px-6 py-3">
-                      Responsable de Apoyo
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            )}
+          {/* Buscador */}
+          <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
+              <Input
+                placeholder="Buscar área, código o usuario..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
+              />
+            </div>
           </div>
 
-          <DialogFooter className="gap-3">
-            <Button variant="outline" onClick={() => setShowDialog(false)}>
-              {dialogMode === "view" ? "Cerrar" : "Cancelar"}
-            </Button>
-            {dialogMode === "create" && (
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
-              >
-                {saving ? "Asignando..." : <><Save className="mr-2 h-5 w-5" /> Asignar Responsable</>}
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          {/* Tabla principal */}
+          <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
+            <div className="p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
+              <h2 className="text-xl font-bold text-[#1E3A8A]">Asignaciones Actuales</h2>
+              <div className="flex items-center gap-4">
+                <Button variant="outline" size="sm" onClick={fetchData}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Actualizar
+                </Button>
+                <Badge variant="outline" className="bg-white border-[#E5E7EB] text-[#6B7280]">
+                  {filteredAsignaciones.length} resultados
+                </Badge>
+              </div>
+            </div>
 
-      {/* AlertDialog de Eliminación */}
-      <AlertDialog open={deleteDialog.open} onOpenChange={closeDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar esta asignación?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteDialog.asignacion && (
-                <>Se eliminará la asignación de <strong>{deleteDialog.asignacion.usuario.nombre}</strong> al área <strong>{deleteDialog.asignacion.area.nombre}</strong>. Esta acción no se puede deshacer.</>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-[#EF4444] hover:bg-red-700">
-              Eliminar Asignación
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-[#F8FAFC]">
+                  <TableRow>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Código Área</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Área</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Responsable</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Email</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Tipo</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Fecha</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A] text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAsignaciones.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-20 text-[#6B7280]">
+                        <div className="flex flex-col items-center">
+                          <UserPlus className="h-16 w-16 text-gray-300 mb-4" />
+                          <p className="text-lg font-medium">
+                            {searchTerm ? "No se encontraron asignaciones" : "No hay asignaciones aún"}
+                          </p>
+                          {!searchTerm && (
+                            <Button onClick={handleCreate} className="mt-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl">
+                              <UserPlus className="mr-2 h-5 w-5" />
+                              Hacer primera asignación
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredAsignaciones.map((asignacion) => (
+                      <TableRow key={asignacion.id} className="hover:bg-[#F5F3FF] transition-colors">
+                        <TableCell className="px-6 py-4">
+                          <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold px-4 py-2">
+                            {asignacion.area.codigo}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="px-6 py-4 font-bold">{asignacion.area.nombre}</TableCell>
+                        <TableCell className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-[#2563EB] flex items-center justify-center text-white font-bold text-lg">
+                              {asignacion.usuario.nombre.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="font-medium">{asignacion.usuario.nombre}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="px-6 py-4 text-[#6B7280]">{asignacion.usuario.correo_electronico}</TableCell>
+                        <TableCell className="px-6 py-4">
+                          {asignacion.es_principal ? (
+                            <Badge className="bg-[#ECFDF5] text-[#22C55E] border-[#22C55E]/30">
+                              <ShieldCheck className="h-4 w-4 mr-1" />
+                              Principal
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline">Apoyo</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="px-6 py-4 text-[#6B7280]">
+                          {new Date(asignacion.creado_en).toLocaleDateString("es-CO")}
+                        </TableCell>
+                        <TableCell className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="outline" onClick={() => handleView(asignacion)} className="rounded-xl">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Ver detalles</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="destructive" onClick={() => openDeleteDialog(asignacion)} className="rounded-xl">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Eliminar</p></TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          {/* Diálogo de Crear/Ver */}
+          <Dialog open={showDialog} onOpenChange={setShowDialog}>
+            <DialogContent className="max-w-4xl rounded-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  {dialogMode === "create" ? (
+                    <><UserPlus className="h-7 w-7 text-[#2563EB]" /> Nueva Asignación</>
+                  ) : (
+                    <><Eye className="h-7 w-7 text-[#2563EB]" /> Detalles de Asignación</>
+                  )}
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-8 py-4">
+                {dialogMode === "create" ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label className="font-bold">
+                        Área a Asignar <span className="text-red-500">*</span>
+                      </Label>
+                      <Select value={formData.area_id} onValueChange={(v) => setFormData({ ...formData, area_id: v })}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="Selecciona un área" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {areas.map((area) => (
+                            <SelectItem key={area.id} value={area.id}>
+                              [{area.codigo}] {area.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="font-bold">
+                        Responsable <span className="text-red-500">*</span>
+                      </Label>
+                      <Select value={formData.usuario_id} onValueChange={(v) => setFormData({ ...formData, usuario_id: v })}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="Selecciona un usuario" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {usuarios.map((u) => (
+                            <SelectItem key={u.id} value={u.id}>
+                              {u.nombre} — {u.correo_electronico}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center space-x-4 p-4 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB]">
+                      <Checkbox
+                        id="principal"
+                        checked={formData.es_principal}
+                        onCheckedChange={(checked) => setFormData({ ...formData, es_principal: !!checked })}
+                      />
+                      <div className="space-y-1">
+                        <Label htmlFor="principal" className="text-base font-medium cursor-pointer">
+                          Marcar como Responsable Principal
+                        </Label>
+                        <p className="text-sm text-[#6B7280]">
+                          Otorga permisos adicionales y liderazgo sobre el área
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                ) : selectedAsignacion && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
+                        <Label className="text-[#6B7280] uppercase text-xs font-bold">Área</Label>
+                        <div className="mt-3">
+                          <Badge className="text-lg px-4 py-2 bg-[#2563EB]/10 text-[#2563EB] mb-2">
+                            {selectedAsignacion.area.codigo}
+                          </Badge>
+                          <p className="text-2xl font-bold text-[#111827]">{selectedAsignacion.area.nombre}</p>
+                          {selectedAsignacion.area.descripcion && (
+                            <p className="text-[#6B7280] mt-3">{selectedAsignacion.area.descripcion}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
+                        <Label className="text-[#6B7280] uppercase text-xs font-bold">Responsable</Label>
+                        <div className="flex items-center gap-4 mt-3">
+                          <div className="h-16 w-16 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-2xl font-bold">
+                            {selectedAsignacion.usuario.nombre.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="text-2xl font-bold text-[#111827]">{selectedAsignacion.usuario.nombre}</p>
+                            <p className="text-[#6B7280]">{selectedAsignacion.usuario.correo_electronico}</p>
+                            <p className="text-sm text-[#6B7280] mt-1">Rol: {selectedAsignacion.usuario.rol}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-center">
+                      {selectedAsignacion.es_principal ? (
+                        <Badge className="text-lg px-8 py-4 bg-[#ECFDF5] text-[#22C55E] border-[#22C55E]/30">
+                          <ShieldCheck className="h-6 w-6 mr-3" />
+                          Responsable Principal
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-lg px-8 py-4">
+                          Responsable de Apoyo
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
+                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha de Asignación</Label>
+                      <p className="text-xl font-medium mt-3">
+                        {new Date(selectedAsignacion.creado_en).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' })}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <DialogFooter className="gap-4">
+                <Button variant="outline" onClick={() => setShowDialog(false)} className="rounded-xl">
+                  {dialogMode === "view" ? "Cerrar" : "Cancelar"}
+                </Button>
+                {dialogMode === "create" && (
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-bold"
+                  >
+                    {saving ? (
+                      <>
+                        <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-white border-r-transparent" />
+                        Asignando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-5 w-5" />
+                        Asignar Responsable
+                      </>
+                    )}
+                  </Button>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* AlertDialog de Eliminación */}
+          <AlertDialog open={deleteDialog.open} onOpenChange={closeDeleteDialog}>
+            <AlertDialogContent className="rounded-2xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <Trash2 className="h-5 w-5 text-[#EF4444]" />
+                  ¿Eliminar asignación?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {deleteDialog.asignacion && (
+                    <div className="bg-[#F8FAFC] p-4 rounded-xl border border-[#E5E7EB] mt-4">
+                      <p className="font-bold">{deleteDialog.asignacion.usuario.nombre}</p>
+                      <p className="text-sm text-[#6B7280]">Área: {deleteDialog.asignacion.area.nombre} ({deleteDialog.asignacion.area.codigo})</p>
+                      <p className="text-sm mt-3 text-[#991B1B] font-medium">
+                        Esta acción es permanente.
+                      </p>
+                    </div>
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-[#EF4444] hover:bg-[#DC2626] rounded-xl">
+                  Eliminar Asignación
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </TooltipProvider>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   AlertTriangle, Plus, Users, UserCheck, UserX, AlertCircle,
-  Eye, Trash2, Save, Building2, Hash, FileText, Calendar, Search, Edit
+  Eye, Trash2, Save, Building2, Hash, FileText, Calendar, Search, Edit, RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Area {
   id: string;
@@ -54,7 +62,6 @@ const API_URL = "/api/v1";
 export default function AreasResponsables() {
   const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [selectedArea, setSelectedArea] = useState<Area | null>(null);
@@ -79,7 +86,6 @@ export default function AreasResponsables() {
   const fetchAreas = async () => {
     try {
       setLoading(true);
-      setError(null);
       const token = getAuthToken();
       if (!token) throw new Error("No hay sesión activa. Por favor, inicia sesión.");
 
@@ -98,7 +104,7 @@ export default function AreasResponsables() {
       const data: Area[] = await response.json();
       setAreas(data);
     } catch (error: any) {
-      setError(error.message);
+      toast.error(error.message || "Error al cargar áreas");
     } finally {
       setLoading(false);
     }
@@ -205,17 +211,14 @@ export default function AreasResponsables() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-          <p className="mt-4 text-lg font-medium text-gray-700">Cargando áreas...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Cargando...</p>
       </div>
     );
   }
 
   const total = areas.length;
-  const asignadas = 0; // Placeholder – puedes conectar con asignaciones reales más adelante
+  const asignadas = 0; // Placeholder
   const sinAsignar = total - asignadas;
   const conIncidencias = 0;
   const coveragePercentage = total === 0 ? 0 : Math.round((asignadas / total) * 100);
@@ -234,383 +237,392 @@ export default function AreasResponsables() {
                   Gestión de Áreas Responsables
                 </h1>
                 <p className="text-[#6B7280] mt-2 text-lg">
-                  Administra todas las áreas de tu sistema de calidad ISO 9001
+                  Administra las áreas organizacionales del sistema de calidad
                 </p>
                 <div className="flex flex-wrap items-center gap-3 mt-4">
                   <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
-                    {total} {total === 1 ? "área activa" : "áreas activas"}
+                    {total} áreas
                   </Badge>
                   {sinAsignar > 0 && (
-                    <Badge className="bg-[#FFF7ED] text-[#F59E0B] border border-[#F59E0B]/30">
-                      <AlertCircle className="h-4 w-4 mr-1" />
+                    <Badge className="bg-[#FFF7ED] text-[#F97316] border border-[#F97316]/30">
                       {sinAsignar} sin responsable
                     </Badge>
                   )}
                 </div>
               </div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="lg"
-                    onClick={handleCreate}
-                    className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-medium shadow-sm"
-                  >
-                    <Plus className="mr-2 h-5 w-5" />
-                    Nueva Área
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Crear una nueva área responsable</p>
-                </TooltipContent>
-              </Tooltip>
+              <Button
+                onClick={handleCreate}
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold"
+              >
+                <Plus className="mr-2 h-5 w-5" />
+                Nueva Área
+              </Button>
             </div>
           </div>
 
-          {/* Error Card */}
-          {error && (
-            <Card className="border-red-200 bg-red-50">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3 text-red-700">
-                  <AlertCircle className="h-6 w-6" />
-                  <div>
-                    <p className="font-semibold">Error de conexión</p>
-                    <p className="text-sm">{error}</p>
-                    <button onClick={fetchAreas} className="text-sm font-medium underline mt-1">
-                      Reintentar conexión
-                    </button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Tarjetas de métricas */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader>
+            <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-[#1E3A8A]">Total Áreas</CardTitle>
+                  <CardDescription className="font-bold text-[#1E3A8A]">Total Áreas</CardDescription>
                   <Users className="h-8 w-8 text-[#2563EB]" />
                 </div>
-                <div className="text-4xl font-bold text-[#1E3A8A] mt-4">{total}</div>
-                <p className="text-[#6B7280] text-sm mt-1">Registradas en el sistema</p>
+                <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{total}</CardTitle>
               </CardHeader>
-            </Card>
-
-            <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-[#1E3A8A]">Asignadas</CardTitle>
-                  <UserCheck className="h-8 w-8 text-[#22C55E]" />
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-4xl font-bold text-[#1E3A8A] mb-2">{asignadas}</div>
-                <p className="text-sm text-[#6B7280] mb-3">Con responsables asignados</p>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#6B7280]">Cobertura</span>
-                    <span className="font-semibold text-[#22C55E]">{coveragePercentage}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-[#22C55E] h-3 rounded-full transition-all duration-700"
-                      style={{ width: `${coveragePercentage}%` }}
-                    />
-                  </div>
+              <CardContent>
+                <div className="text-xs text-[#6B7280] font-medium">
+                  Registradas en el sistema
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-[#FFF7ED] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader>
+            <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-[#1E3A8A]">Sin Asignar</CardTitle>
-                  <UserX className="h-8 w-8 text-[#F59E0B]" />
+                  <CardDescription className="font-bold text-[#065F46]">Asignadas</CardDescription>
+                  <UserCheck className="h-8 w-8 text-[#10B981]" />
                 </div>
-                <div className="text-4xl font-bold text-[#1E3A8A] mt-4">{sinAsignar}</div>
-                <p className="text-[#6B7280] text-sm mt-1">Pendientes de responsable</p>
+                <CardTitle className="text-4xl font-bold text-[#065F46]">{asignadas}</CardTitle>
               </CardHeader>
+              <CardContent>
+                <div className="text-xs text-[#6B7280] font-medium mb-2">
+                  Cobertura: {coveragePercentage}%
+                </div>
+                <div className="w-full bg-[#E5E7EB] rounded-full h-3">
+                  <div
+                    className="bg-[#10B981] h-3 rounded-full transition-all"
+                    style={{ width: `${coveragePercentage}%` }}
+                  />
+                </div>
+              </CardContent>
             </Card>
 
-            <Card className="bg-[#FEF2F2] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader>
+            <Card className="bg-[#FFF7ED] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-[#1E3A8A]">Incidencias</CardTitle>
-                  <AlertTriangle className="h-8 w-8 text-[#EF4444]" />
+                  <CardDescription className="font-bold text-[#9A3412]">Sin Responsable</CardDescription>
+                  <UserX className="h-8 w-8 text-[#F97316]/50" />
                 </div>
-                <div className="text-4xl font-bold text-[#1E3A8A] mt-4">{conIncidencias}</div>
-                <p className="text-[#6B7280] text-sm mt-1">Requieren atención inmediata</p>
+                <CardTitle className="text-4xl font-bold text-[#9A3412]">{sinAsignar}</CardTitle>
               </CardHeader>
+              <CardContent>
+                <Badge className="bg-white/80 text-[#F97316] border-[#F97316]/20 font-bold uppercase text-[10px]">
+                  Pendiente asignación
+                </Badge>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[#FEF2F2] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription className="font-bold text-[#991B1B]">Con Incidencias</CardDescription>
+                  <div className="h-6 w-6 rounded-full bg-[#EF4444]/20 flex items-center justify-center">
+                    <div className="h-2 w-2 rounded-full bg-[#EF4444] animate-pulse" />
+                  </div>
+                </div>
+                <CardTitle className="text-4xl font-bold text-[#991B1B]">{conIncidencias}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Badge className="bg-white/80 text-[#EF4444] border-[#EF4444]/20 font-bold uppercase text-[10px]">
+                  Atención requerida
+                </Badge>
+              </CardContent>
             </Card>
           </div>
 
-          {/* Tabla de Áreas */}
-          <Card className="shadow-sm overflow-hidden">
-            <CardHeader className="bg-[#F1F5F9]">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
-                  <CardTitle className="text-2xl text-[#1E3A8A] flex items-center gap-3">
-                    <Hash className="h-7 w-7" />
-                    Listado Completo de Áreas
-                  </CardTitle>
-                  <CardDescription className="text-[#6B7280]">
-                    Busca, visualiza, edita o elimina áreas
-                  </CardDescription>
-                </div>
-                <div className="w-full md:w-96">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3.5 h-5 w-5 text-[#6B7280]" />
-                    <Input
-                      placeholder="Buscar por código, nombre o descripción..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
+          {/* Guía de Gestión */}
+          <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
+            <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+              <CardTitle className="text-lg text-[#1E3A8A]">Guía de Gestión de Áreas</CardTitle>
+              <CardDescription>
+                Mejores prácticas para mantener las áreas actualizadas
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                <div className="flex items-start gap-3 p-4 bg-[#EFF6FF] rounded-xl border border-[#DBEAFE]">
+                  <div className="h-8 w-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-bold flex-shrink-0">1</div>
+                  <div>
+                    <span className="font-bold text-[#1E3A8A] block mb-1">Definir Claramente</span>
+                    <span className="text-[#6B7280]">Código único y descripción detallada.</span>
                   </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-[#F1F5F9] border-b border-[#E5E7EB]">
-                    <tr>
-                      <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">Código</th>
-                      <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">Nombre del Área</th>
-                      <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">Descripción</th>
-                      <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">
-                        <Calendar className="inline h-4 w-4 mr-1" /> Creado
-                      </th>
-                      <th className="text-right p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider pr-10">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-[#E5E7EB]">
-                    {filteredAreas.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="text-center py-20 text-[#6B7280]">
-                          <div className="flex flex-col items-center">
-                            <Building2 className="h-16 w-16 text-gray-300 mb-4" />
-                            <p className="text-xl font-medium">
-                              {searchTerm ? "No se encontraron resultados" : "No hay áreas registradas aún"}
-                            </p>
-                            {!searchTerm && (
-                              <Button onClick={handleCreate} variant="outline" className="mt-6">
-                                <Plus className="mr-2 h-5 w-5" /> Crear la primera área
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredAreas.map((area) => (
-                        <tr key={area.id} className="hover:bg-[#EFF6FF] transition-colors">
-                          <td className="p-6">
-                            <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold">
-                              {area.codigo}
-                            </Badge>
-                          </td>
-                          <td className="p-6 font-medium text-gray-900">{area.nombre}</td>
-                          <td className="p-6 text-[#6B7280] max-w-md">
-                            {area.descripcion || <span className="italic text-gray-400">Sin descripción</span>}
-                          </td>
-                          <td className="p-6 text-sm text-[#6B7280]">
-                            {new Date(area.creado_en).toLocaleDateString('es-CO', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric'
-                            })}
-                          </td>
-                          <td className="p-6">
-                            <div className="flex items-center justify-end gap-3">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="sm" variant="ghost" onClick={() => handleView(area)}>
-                                    <Eye className="h-4 w-4 text-[#2563EB]" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Ver detalles</p></TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="sm" variant="ghost" onClick={() => handleEdit(area)}>
-                                    <Edit className="h-4 w-4 text-[#4B5563]" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Editar área</p></TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="sm" variant="ghost" onClick={() => openDeleteDialog(area)}>
-                                    <Trash2 className="h-4 w-4 text-[#EF4444]" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Eliminar área</p></TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                <div className="flex items-start gap-3 p-4 bg-[#ECFDF5] rounded-xl border border-[#D1FAE5]">
+                  <div className="h-8 w-8 rounded-lg bg-[#10B981] text-white flex items-center justify-center font-bold flex-shrink-0">2</div>
+                  <div>
+                    <span className="font-bold text-[#065F46] block mb-1">Asignar Responsable</span>
+                    <span className="text-[#6B7280]">Designa un líder para cada área.</span>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-4 bg-[#FFF7ED] rounded-xl border border-[#FBBF24]/20">
+                  <div className="h-8 w-8 rounded-lg bg-[#F97316] text-white flex items-center justify-center font-bold flex-shrink-0">3</div>
+                  <div>
+                    <span className="font-bold text-[#9A3412] block mb-1">Revisar Periódicamente</span>
+                    <span className="text-[#6B7280]">Actualiza según cambios organizacionales.</span>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
-        </div>
-      </TooltipProvider>
 
-      {/* Dialog de Crear/Editar/Ver */}
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl text-[#1E3A8A] flex items-center gap-3">
-              {dialogMode === 'create' && <><Plus className="h-7 w-7 text-[#2563EB]" /> Nueva Área</>}
-              {dialogMode === 'edit' && <><Edit className="h-7 w-7 text-[#2563EB]" /> Editar Área</>}
-              {dialogMode === 'view' && <><Eye className="h-7 w-7 text-[#2563EB]" /> Detalles del Área</>}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-6 py-4">
-            {dialogMode === 'view' && selectedArea ? (
-              <>
-                <div className="bg-[#E0EDFF] rounded-xl p-6 border border-[#E5E7EB]">
-                  <h3 className="font-semibold text-[#1E3A8A] mb-3">Información Principal</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <p className="text-sm text-[#6B7280] mb-1">Código</p>
-                      <Badge className="text-lg px-4 py-2 bg-[#2563EB]/10 text-[#2563EB]">
-                        {selectedArea.codigo}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="text-sm text-[#6B7280] mb-1">Nombre</p>
-                      <p className="text-xl font-bold text-gray-900">{selectedArea.nombre}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {selectedArea.descripcion && (
-                  <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                    <h3 className="font-semibold text-[#1E3A8A] mb-3 flex items-center gap-2">
-                      <FileText className="h-5 w-5" /> Descripción
-                    </h3>
-                    <p className="text-gray-700 leading-relaxed">{selectedArea.descripcion}</p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white rounded-xl p-5 border border-[#E5E7EB]">
-                    <p className="text-sm text-[#6B7280] mb-1">Fecha de Creación</p>
-                    <p className="text-lg font-medium">
-                      {new Date(selectedArea.creado_en).toLocaleDateString('es-CO', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-xl p-5 border border-[#E5E7EB]">
-                    <p className="text-sm text-[#6B7280] mb-1">Última Actualización</p>
-                    <p className="text-lg font-medium">
-                      {new Date(selectedArea.actualizado_en).toLocaleDateString('es-CO', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="codigo" className="text-base font-medium">
-                      <Hash className="inline h-4 w-4 mr-1 text-[#2563EB]" /> Código *
-                    </Label>
-                    <Input
-                      id="codigo"
-                      value={formData.codigo}
-                      onChange={(e) => setFormData({ ...formData, codigo: e.target.value.toUpperCase() })}
-                      placeholder="EJ: CAL, RRHH, SIS"
-                      disabled={dialogMode === 'view'}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="nombre" className="text-base font-medium">Nombre Completo *</Label>
-                    <Input
-                      id="nombre"
-                      value={formData.nombre}
-                      onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                      placeholder="Gestión de Calidad"
-                      disabled={dialogMode === 'view'}
-                      className="mt-2"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="descripcion" className="text-base font-medium">
-                    <FileText className="inline h-4 w-4 mr-1 text-[#2563EB]" /> Descripción
-                  </Label>
-                  <Textarea
-                    id="descripcion"
-                    value={formData.descripcion}
-                    onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                    placeholder="Describe las funciones y responsabilidades de esta área..."
-                    rows={5}
-                    disabled={dialogMode === 'view'}
-                    className="mt-2"
-                  />
-                </div>
-              </>
-            )}
+          {/* Buscador */}
+          <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
+              <Input
+                placeholder="Buscar por código, nombre o descripción..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
+              />
+            </div>
           </div>
 
-          <DialogFooter className="gap-3">
-            <Button variant="outline" onClick={() => setShowDialog(false)}>
-              {dialogMode === 'view' ? 'Cerrar' : 'Cancelar'}
-            </Button>
-            {dialogMode !== 'view' && (
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
-              >
-                {saving ? 'Guardando...' : <><Save className="mr-2 h-5 w-5" /> Guardar Área</>}
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          {/* Tabla principal */}
+          <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
+            <div className="p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
+              <h2 className="text-xl font-bold text-[#1E3A8A]">Listado de Áreas</h2>
+              <div className="flex items-center gap-4">
+                <Button variant="outline" size="sm" onClick={fetchAreas}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Actualizar
+                </Button>
+                <Badge variant="outline" className="bg-white border-[#E5E7EB] text-[#6B7280]">
+                  {filteredAreas.length} resultados
+                </Badge>
+              </div>
+            </div>
 
-      {/* AlertDialog de Eliminación */}
-      <AlertDialog open={deleteDialog.open} onOpenChange={closeDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar esta área?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteDialog.area && (
-                <>Se eliminará permanentemente el área <strong>{deleteDialog.area.nombre}</strong> (código: <strong>{deleteDialog.area.codigo}</strong>). Esta acción no se puede deshacer.</>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-[#EF4444] hover:bg-red-700">
-              Eliminar Área
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-[#F8FAFC]">
+                  <TableRow>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Código</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Nombre</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Descripción</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Creado</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A] text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAreas.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-20 text-[#6B7280]">
+                        <div className="flex flex-col items-center">
+                          <Building2 className="h-16 w-16 text-gray-300 mb-4" />
+                          <p className="text-lg font-medium">
+                            {searchTerm ? "No se encontraron áreas" : "No hay áreas registradas"}
+                          </p>
+                          {!searchTerm && (
+                            <Button onClick={handleCreate} className="mt-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl">
+                              <Plus className="mr-2 h-5 w-5" />
+                              Crear primera área
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredAreas.map((area) => (
+                      <TableRow key={area.id} className="hover:bg-[#F5F3FF] transition-colors">
+                        <TableCell className="px-6 py-4">
+                          <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold px-4 py-2">
+                            {area.codigo}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="px-6 py-4 font-bold">{area.nombre}</TableCell>
+                        <TableCell className="px-6 py-4 text-[#6B7280] max-w-md">
+                          {area.descripcion || <span className="italic">Sin descripción</span>}
+                        </TableCell>
+                        <TableCell className="px-6 py-4 text-[#6B7280]">
+                          {new Date(area.creado_en).toLocaleDateString('es-CO')}
+                        </TableCell>
+                        <TableCell className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="outline" onClick={() => handleView(area)} className="rounded-xl">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Ver detalles</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="outline" onClick={() => handleEdit(area)} className="rounded-xl">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Editar</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="destructive" onClick={() => openDeleteDialog(area)} className="rounded-xl">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Eliminar</p></TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          {/* Dialog de Crear/Editar/Ver */}
+          <Dialog open={showDialog} onOpenChange={setShowDialog}>
+            <DialogContent className="max-w-4xl rounded-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  {dialogMode === 'create' && <><Plus className="h-7 w-7 text-[#2563EB]" /> Nueva Área</>}
+                  {dialogMode === 'edit' && <><Edit className="h-7 w-7 text-[#2563EB]" /> Editar Área</>}
+                  {dialogMode === 'view' && <><Eye className="h-7 w-7 text-[#2563EB]" /> Detalles del Área</>}
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-8 py-4">
+                {dialogMode === 'view' && selectedArea ? (
+                  <>
+                    <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                          <Label className="text-[#6B7280] uppercase text-xs font-bold">Código</Label>
+                          <Badge className="mt-2 text-lg px-6 py-3 bg-[#2563EB]/10 text-[#2563EB] font-bold">
+                            {selectedArea.codigo}
+                          </Badge>
+                        </div>
+                        <div>
+                          <Label className="text-[#6B7280] uppercase text-xs font-bold">Nombre</Label>
+                          <p className="mt-2 text-2xl font-bold text-[#111827]">{selectedArea.nombre}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {selectedArea.descripcion && (
+                      <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
+                        <Label className="text-[#6B7280] uppercase text-xs font-bold mb-3 block">Descripción</Label>
+                        <p className="text-[#111827] leading-relaxed">{selectedArea.descripcion}</p>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
+                        <Label className="text-[#6B7280] uppercase text-xs font-bold">Creado el</Label>
+                        <p className="mt-2 text-lg font-medium">
+                          {new Date(selectedArea.creado_en).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' })}
+                        </p>
+                      </div>
+                      <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
+                        <Label className="text-[#6B7280] uppercase text-xs font-bold">Última actualización</Label>
+                        <p className="mt-2 text-lg font-medium">
+                          {new Date(selectedArea.actualizado_en).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' })}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label className="font-bold">
+                          Código <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          value={formData.codigo}
+                          onChange={(e) => setFormData({ ...formData, codigo: e.target.value.toUpperCase() })}
+                          placeholder="EJ: CAL, RRHH"
+                          className="rounded-xl"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-bold">
+                          Nombre <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          value={formData.nombre}
+                          onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                          placeholder="Gestión de Calidad"
+                          className="rounded-xl"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="font-bold">Descripción</Label>
+                      <Textarea
+                        value={formData.descripcion}
+                        onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                        placeholder="Describe funciones y responsabilidades..."
+                        rows={6}
+                        className="rounded-xl"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter className="gap-4">
+                <Button variant="outline" onClick={() => setShowDialog(false)} className="rounded-xl">
+                  {dialogMode === 'view' ? 'Cerrar' : 'Cancelar'}
+                </Button>
+                {dialogMode !== 'view' && (
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-bold"
+                  >
+                    {saving ? (
+                      <>
+                        <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-white border-r-transparent" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-5 w-5" />
+                        Guardar Área
+                      </>
+                    )}
+                  </Button>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* AlertDialog de Eliminación */}
+          <AlertDialog open={deleteDialog.open} onOpenChange={closeDeleteDialog}>
+            <AlertDialogContent className="rounded-2xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <Trash2 className="h-5 w-5 text-[#EF4444]" />
+                  ¿Eliminar área?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {deleteDialog.area && (
+                    <div className="bg-[#F8FAFC] p-4 rounded-xl border border-[#E5E7EB] mt-4">
+                      <p className="font-bold">{deleteDialog.area.nombre}</p>
+                      <p className="text-sm text-[#6B7280]">Código: {deleteDialog.area.codigo}</p>
+                      <p className="text-sm mt-3 text-[#991B1B] font-medium">
+                        Esta acción es permanente y no se podrá deshacer.
+                      </p>
+                    </div>
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-[#EF4444] hover:bg-[#DC2626] rounded-xl">
+                  Eliminar Área
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </TooltipProvider>
     </div>
   );
 }
