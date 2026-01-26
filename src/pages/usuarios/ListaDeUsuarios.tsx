@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Search,
   RefreshCw,
@@ -24,6 +25,10 @@ import {
   Eye,
   Edit,
   Trash2,
+  Shield,
+  CheckCircle,
+  XCircle,
+  Upload,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -49,6 +54,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { apiClient } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Usuario {
   id: string;
@@ -86,6 +93,8 @@ export default function ListaUsuarios() {
     open: false,
     usuario: null,
   });
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchUsuarios();
@@ -168,6 +177,7 @@ export default function ListaUsuarios() {
       if (!response.ok) throw new Error("Error al eliminar usuario");
 
       toast.success(`Usuario "${usuario.nombre_usuario}" eliminado`);
+      toast.success(`Usuario "${usuario.nombre_usuario}" eliminado correctamente`);
       await fetchUsuarios();
       closeDeleteDialog();
     } catch (error) {
@@ -194,6 +204,31 @@ export default function ListaUsuarios() {
       toast.error("Error al cambiar el estado");
       // Rollback
       setUsuarios(prev => prev.map(u => u.id === id ? { ...u, activo: !nuevoEstado } : u));
+      console.error("Error:", error);
+      toast.error("Error al eliminar el usuario. Por favor intente nuevamente.");
+    }
+  };
+
+  const handleToggleEstado = async (usuario: Usuario) => {
+    try {
+      const nuevoEstado = !usuario.activo;
+      await apiClient.put(`/usuarios/${usuario.id}`, {
+        activo: nuevoEstado,
+      });
+
+      // Actualizar el estado local
+      setUsuarios(prev =>
+        prev.map(u =>
+          u.id === usuario.id ? { ...u, activo: nuevoEstado } : u
+        )
+      );
+
+      toast.success(
+        `Usuario "${usuario.nombre_usuario}" ${nuevoEstado ? "activado" : "desactivado"} correctamente`
+      );
+    } catch (error) {
+      console.error("Error al cambiar estado:", error);
+      toast.error("Error al cambiar el estado del usuario. Por favor intente nuevamente.");
     }
   };
 
@@ -223,6 +258,44 @@ export default function ListaUsuarios() {
     <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
       <TooltipProvider>
         <div className="max-w-7xl mx-auto space-y-8">
+    <div className="flex-1 space-y-6 p-4 md:p-6 pt-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Users className="h-7 w-7 text-blue-600" />
+            </div>
+            Lista De Usuarios
+          </h1>
+          <p className="text-gray-600 mt-2">
+            {total} usuario{total !== 1 ? "s" : ""} registrado
+            {total !== 1 ? "s" : ""} en el sistema
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/usuarios/carga-masiva")}
+            className="bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200"
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Carga Masiva
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchUsuarios}
+            disabled={loading}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
+            />
+            Actualizar
+          </Button>
+        </div>
+      </div>
 
           {/* Header Profesional */}
           <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
@@ -539,6 +612,118 @@ export default function ListaUsuarios() {
                     <div className="h-20 w-20 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-3xl font-bold">
                       {selectedUsuario.nombre.charAt(0).toUpperCase()}
                       {selectedUsuario.primer_apellido?.charAt(0).toUpperCase()}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 text-sm">Sin área</span>
+                    )}
+                  </td>
+                  <td className="p-4 align-middle">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Mail className="w-3 h-3 text-gray-400" />
+                        <span className="text-gray-700">
+                          {usuario.correo_electronico}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4 align-middle">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={usuario.activo}
+                        onCheckedChange={() => handleToggleEstado(usuario)}
+                        className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-red-400"
+                      />
+                      <span className={`text-sm font-medium ${usuario.activo ? "text-green-700" : "text-red-700"
+                        }`}>
+                        {usuario.activo ? "Activo" : "Inactivo"}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="p-4 align-middle">
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+                        onClick={() => openDialog("ver", usuario)}
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
+                        Ver
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200"
+                        onClick={() => navigate(`/usuarios/${usuario.id}/editar`)}
+                      >
+                        <Edit className="w-3 h-3 mr-1" />
+                        Editar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                        onClick={() => openDialog("eliminar", usuario)}
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        Eliminar
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {usuariosFiltrados.length === 0 && (
+            <div className="text-center py-16">
+              <Users className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+              <h3 className="text-xl font-semibold mb-2 text-gray-900">
+                No se encontraron usuarios
+              </h3>
+              <p className="text-gray-600 mb-4">
+                {searchTerm
+                  ? `No hay usuarios que coincidan con "${searchTerm}"`
+                  : "No hay usuarios registrados en el sistema"}
+              </p>
+              {searchTerm && (
+                <Button variant="outline" onClick={() => setSearchTerm("")}>
+                  Limpiar búsqueda
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Dialog de detalles */}
+      <AlertDialog
+        open={dialogState.open && dialogState.type === "ver"}
+        onOpenChange={closeDialog}
+      >
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5 text-blue-600" />
+              Detalles del Usuario
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {dialogState.usuario && (
+                <div className="mt-4 space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
+                      {dialogState.usuario.nombre.charAt(0)}
+                      {dialogState.usuario.primer_apellido.charAt(0)}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {getNombreCompleto(dialogState.usuario)}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        @{dialogState.usuario.nombre_usuario}
+                      </p>
                     </div>
                     <div className="flex-1">
                       <h3 className="text-2xl font-bold text-gray-900">{getNombreCompleto(selectedUsuario)}</h3>
