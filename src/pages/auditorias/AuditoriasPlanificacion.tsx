@@ -1,8 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, Search, Download, Eye, Edit, Trash2, Users, CheckCircle, AlertCircle, Clock, Loader2 } from 'lucide-react';
 
+// Tipos TypeScript
+interface Auditoria {
+  id: string;
+  codigo: string;
+  nombre: string;
+  tipo: string;
+  objetivo: string;
+  alcance: string;
+  normaReferencia: string;
+  auditorLiderId: string;
+  fechaPlanificada: string;
+  fechaInicio: string;
+  fechaFin: string;
+  estado: 'planificada' | 'en_curso' | 'completada' | 'cancelada';
+}
+
+interface Usuario {
+  id: string;
+  nombre: string;
+  primerApellido: string;
+  segundoApellido?: string;
+}
+
+interface AuditoriaFormData {
+  codigo: string;
+  nombre: string;
+  tipo: string;
+  objetivo: string;
+  alcance: string;
+  normaReferencia: string;
+  auditorLiderId: string;
+  fechaPlanificada: string;
+  fechaInicio: string;
+  fechaFin: string;
+  estado: string;
+}
+
+interface Filters {
+  tipo?: string;
+  estado?: string;
+}
+
 // Configuración de la API
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 const auditoriaService = {
   async getAll(filters: Filters = {}): Promise<Auditoria[]> {
@@ -79,11 +121,11 @@ const usuarioService = {
 
 const AuditoriasPlanificacion = () => {
   // Estados
-  const [auditorias, setAuditorias] = useState([]);
-  const [usuarios, setUsuarios] = useState([]);
+  const [auditorias, setAuditorias] = useState<Auditoria[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   const [filtroTipo, setFiltroTipo] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
@@ -179,7 +221,7 @@ const AuditoriasPlanificacion = () => {
   };
 
   // Abrir modal para editar
-  const abrirModalEditar = (auditoria) => {
+  const abrirModalEditar = (auditoria: Auditoria) => {
     setAuditoriaEditando(auditoria);
     setFormData({
       codigo: auditoria.codigo,
@@ -198,7 +240,7 @@ const AuditoriasPlanificacion = () => {
   };
 
   // Guardar auditoría
-  const guardarAuditoria = async (e) => {
+  const guardarAuditoria = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
@@ -215,14 +257,14 @@ const AuditoriasPlanificacion = () => {
       alert(auditoriaEditando ? 'Auditoría actualizada exitosamente' : 'Auditoría creada exitosamente');
     } catch (err) {
       console.error('Error al guardar auditoría:', err);
-      setError(err.message || 'Error al guardar la auditoría');
+      setError(err instanceof Error ? err.message : 'Error al guardar la auditoría');
     } finally {
       setSaving(false);
     }
   };
 
   // Eliminar auditoría
-  const eliminarAuditoria = async (id) => {
+  const eliminarAuditoria = async (id: string) => {
     if (!confirm('¿Está seguro de eliminar esta auditoría?')) return;
 
     try {
@@ -231,13 +273,13 @@ const AuditoriasPlanificacion = () => {
       setDeleteDialog({ open: false, id: null });
     } catch (err) {
       console.error('Error al eliminar auditoría:', err);
-      setError(err.message || 'Error al eliminar la auditoría');
+      setError(err instanceof Error ? err.message : 'Error al eliminar la auditoría');
     }
   };
 
   // Obtener color de estado
-  const getEstadoColor = (estado) => {
-    const colores = {
+  const getEstadoColor = (estado: string) => {
+    const colores: Record<string, string> = {
       planificada: 'bg-blue-100 text-blue-800',
       en_curso: 'bg-yellow-100 text-yellow-800',
       completada: 'bg-green-100 text-green-800',
@@ -247,8 +289,8 @@ const AuditoriasPlanificacion = () => {
   };
 
   // Obtener icono de estado
-  const getEstadoIcono = (estado) => {
-    const iconos = {
+  const getEstadoIcono = (estado: string) => {
+    const iconos: Record<string, React.ReactElement> = {
       planificada: <Clock className="w-4 h-4" />,
       en_curso: <AlertCircle className="w-4 h-4" />,
       completada: <CheckCircle className="w-4 h-4" />,
@@ -258,7 +300,7 @@ const AuditoriasPlanificacion = () => {
   };
 
   // Formatear fecha
-  const formatearFecha = (fecha) => {
+  const formatearFecha = (fecha: string | undefined) => {
     if (!fecha) return 'No definida';
     return new Date(fecha).toLocaleDateString('es-ES', {
       year: 'numeric',
@@ -268,7 +310,7 @@ const AuditoriasPlanificacion = () => {
   };
 
   // Obtener nombre completo usuario
-  const getNombreUsuario = (id) => {
+  const getNombreUsuario = (id: string) => {
     const usuario = usuarios.find(u => u.id === id);
     return usuario ? `${usuario.nombre} ${usuario.primerApellido || ''}`.trim() : 'No asignado';
   };
@@ -548,7 +590,7 @@ const AuditoriasPlanificacion = () => {
                     <input
                       type="text"
                       value={formData.codigo}
-                      onChange={(e) => setFormData({...formData, codigo: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="AUD-2025-001"
@@ -560,7 +602,7 @@ const AuditoriasPlanificacion = () => {
                     </label>
                     <select
                       value={formData.tipo}
-                      onChange={(e) => setFormData({...formData, tipo: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
@@ -579,7 +621,7 @@ const AuditoriasPlanificacion = () => {
                   <input
                     type="text"
                     value={formData.nombre}
-                    onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Auditoría Interna de Procesos"
                   />
@@ -591,7 +633,7 @@ const AuditoriasPlanificacion = () => {
                   </label>
                   <textarea
                     value={formData.objetivo}
-                    onChange={(e) => setFormData({...formData, objetivo: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, objetivo: e.target.value })}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Verificar el cumplimiento de los requisitos ISO 9001:2015..."
@@ -604,7 +646,7 @@ const AuditoriasPlanificacion = () => {
                   </label>
                   <textarea
                     value={formData.alcance}
-                    onChange={(e) => setFormData({...formData, alcance: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, alcance: e.target.value })}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Procesos de gestión de calidad, operaciones..."
@@ -619,7 +661,7 @@ const AuditoriasPlanificacion = () => {
                     <input
                       type="text"
                       value={formData.normaReferencia}
-                      onChange={(e) => setFormData({...formData, normaReferencia: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, normaReferencia: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="ISO 9001:2015"
                     />
@@ -630,7 +672,7 @@ const AuditoriasPlanificacion = () => {
                     </label>
                     <select
                       value={formData.auditorLiderId}
-                      onChange={(e) => setFormData({...formData, auditorLiderId: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, auditorLiderId: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="">Seleccionar auditor...</option>
@@ -652,7 +694,7 @@ const AuditoriasPlanificacion = () => {
                     <input
                       type="date"
                       value={formData.fechaPlanificada}
-                      onChange={(e) => setFormData({...formData, fechaPlanificada: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, fechaPlanificada: e.target.value })}
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
@@ -664,7 +706,7 @@ const AuditoriasPlanificacion = () => {
                     <input
                       type="date"
                       value={formData.fechaInicio}
-                      onChange={(e) => setFormData({...formData, fechaInicio: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, fechaInicio: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -675,7 +717,7 @@ const AuditoriasPlanificacion = () => {
                     <input
                       type="date"
                       value={formData.fechaFin}
-                      onChange={(e) => setFormData({...formData, fechaFin: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, fechaFin: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -687,7 +729,7 @@ const AuditoriasPlanificacion = () => {
                   </label>
                   <select
                     value={formData.estado}
-                    onChange={(e) => setFormData({...formData, estado: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="planificada">Planificada</option>
