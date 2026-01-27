@@ -93,7 +93,7 @@ export default function CapacitacionesProgramadas() {
     try {
       setLoading(true);
       const data = await capacitacionService.getProgramadas();
-      setCapacitaciones(data);
+      setCapacitaciones(Array.isArray(data) ? data : []);
     } catch (err: any) {
       toast.error(err.message || "Error al cargar capacitaciones");
     } finally {
@@ -134,9 +134,17 @@ export default function CapacitacionesProgramadas() {
   const handleEdit = (cap: Capacitacion) => {
     setDialogMode('edit');
     // CAMBIO: Formato correcto de fecha para input type="date"
-    const fechaFormateada = cap.fechaProgramada
-      ? cap.fechaProgramada.split('T')[0]
-      : '';
+    let fechaFormateada = '';
+    if (cap.fechaProgramada) {
+      try {
+        // Intentar obtener YYYY-MM-DD de forma segura
+        fechaFormateada = new Date(cap.fechaProgramada).toISOString().split('T')[0];
+      } catch (e) {
+        console.error("Error parsing date:", cap.fechaProgramada);
+        // Fallback si falla el parsing
+        fechaFormateada = String(cap.fechaProgramada).split('T')[0] || '';
+      }
+    }
 
     setFormData({
       nombre: cap.nombre,
@@ -238,12 +246,12 @@ export default function CapacitacionesProgramadas() {
     }
   };
 
-  const filteredCapacitaciones = capacitaciones.filter((c) =>
-    c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.tipoCapacitacion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.instructor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.lugar?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCapacitaciones = Array.isArray(capacitaciones) ? capacitaciones.filter((c) =>
+    (c.nombre || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.tipoCapacitacion || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.instructor || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.lugar || "").toLowerCase().includes(searchTerm.toLowerCase())
+  ) : [];
 
   const total = capacitaciones.length;
   const virtuales = capacitaciones.filter(c => c.modalidad === "Virtual").length;
