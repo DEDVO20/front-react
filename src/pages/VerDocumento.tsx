@@ -38,7 +38,9 @@ export default function VerDocumento() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [documento, setDocumento] = useState<Documento | null>(null);
+  const [versiones, setVersiones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingVersiones, setLoadingVersiones] = useState(false);
 
   const fetchDocumento = async () => {
     if (!id) return;
@@ -47,6 +49,9 @@ export default function VerDocumento() {
       setLoading(true);
       const data = await documentoService.getById(id);
       setDocumento(data as unknown as Documento);
+
+      // Cargar versiones del documento
+      fetchVersiones();
     } catch (error) {
       console.error("Error al cargar documento:", error);
       toast.error(
@@ -55,6 +60,21 @@ export default function VerDocumento() {
       navigate("/documentos");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchVersiones = async () => {
+    if (!id) return;
+
+    try {
+      setLoadingVersiones(true);
+      const data = await documentoService.getVersiones(id);
+      setVersiones(data || []);
+    } catch (error) {
+      console.error("Error al cargar versiones:", error);
+      // No mostrar error al usuario, solo log
+    } finally {
+      setLoadingVersiones(false);
     }
   };
 
@@ -410,10 +430,190 @@ export default function VerDocumento() {
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <Clock className="w-5 h-5 text-[#2563EB]" />
-              <span className="text-sm font-semibold text-[#1E3A8A]">Última Actualización</span>
+<<<<<<< HEAD
+  <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
+    <div className="flex items-center gap-2 mb-3">
+      <Clock className="w-5 h-5 text-[#2563EB]" />
+      <span className="text-sm font-semibold text-[#1E3A8A]">Última Actualización</span>
+=======
+          <div className="flex gap-2">
+        <button
+          onClick={() => navigate(`/documentos/${documento.id}/editar`)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+        >
+          <Edit className="w-4 h-4" />
+          Editar
+        </button>
+        <button
+          onClick={handleExportPDF}
+          className="flex items-center gap-2 px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          Exportar PDF
+        </button>
+        <button
+          onClick={handleDelete}
+          className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {/* Metadata Cards */ }
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    {/* Estado */}
+    <div className="bg-card p-4 rounded-lg border border-border">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm text-muted-foreground">Estado</span>
+      </div>
+      {getEstadoBadge(documento.estado)}
+    </div>
+
+    {/* Versión */}
+    <div className="bg-card p-4 rounded-lg border border-border">
+      <div className="flex items-center gap-2 mb-2">
+        <Hash className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Versión</span>
+      </div>
+      <p className="text-2xl font-bold">{documento.version_actual}</p>
+    </div>
+
+    {/* Tipo de Documento */}
+    <div className="bg-card p-4 rounded-lg border border-border">
+      <div className="flex items-center gap-2 mb-2">
+        <FileType className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Tipo</span>
+      </div>
+      <p className="text-xl font-semibold capitalize">
+        {documento.tipo_documento}
+      </p>
+    </div>
+  </div>
+
+
+
+  {/* Workflow removed - backend doesn't track these user relationships */ }
+
+
+
+  {/* Fechas */ }
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div className="bg-card p-4 rounded-lg border border-border">
+      <div className="flex items-center gap-2 mb-2">
+        <Clock className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Fecha de Creación</span>
+      </div>
+      <p className="text-lg">
+        {new Date(documento.creado_en).toLocaleDateString("es-ES", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </p>
+    </div>
+
+    <div className="bg-card p-4 rounded-lg border border-border">
+      <div className="flex items-center gap-2 mb-2">
+        <Clock className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Última Actualización</span>
+      </div>
+      <p className="text-lg">
+        {new Date(documento.actualizado_en).toLocaleDateString("es-ES", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </p>
+    </div>
+  </div>
+
+
+  {/* Historial de Versiones */ }
+  {
+    versiones.length > 0 && (
+      <div className="bg-card rounded-lg border border-border mb-6">
+        <div className="p-6 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold">Historial de Versiones</h2>
+            <span className="ml-2 px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
+              {versiones.length} {versiones.length === 1 ? 'versión' : 'versiones'}
+            </span>
+          </div>
+        </div>
+        <div className="p-6">
+          {loadingVersiones ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+              <p className="text-sm text-muted-foreground">Cargando versiones...</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {versiones.map((version, index) => (
+                <div
+                  key={version.id || index}
+                  className="flex items-start gap-4 p-4 border border-border rounded-lg hover:bg-accent/50 transition-colors"
+                >
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Hash className="w-6 h-6 text-primary" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-semibold text-lg">
+                        Versión {version.version}
+                      </span>
+                      {index === 0 && (
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                          Más reciente
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {version.descripcion_cambios || 'Sin descripción'}
+                    </p>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(version.creado_en).toLocaleDateString('es-ES', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+  {/* Contenido del Documento */ }
+  <div className="bg-card rounded-lg border border-border">
+    <div className="p-6 border-b border-border">
+      <div className="flex items-center gap-2">
+        <FileText className="w-5 h-5 text-primary" />
+        <h2 className="text-xl font-semibold">Contenido del Documento</h2>
+      </div>
+    </div>
+    <div className="p-6">
+      {documento.descripcion ? (
+            <div className="prose prose-sm max-w-none">
+              <p>{documento.descripcion}</p>
+>>>>>>> 0c87085c1bfef27de602c74787d3c161254ae019
             </div>
             <p className="text-lg text-[#6B7280]">
               {new Date(documento.actualizado_en).toLocaleDateString("es-ES", {
@@ -425,30 +625,30 @@ export default function VerDocumento() {
               })}
             </p>
           </div>
-        </div>
+  </div>
 
-        {/* Contenido del Documento */}
-        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm">
-          <div className="p-6 border-b border-[#E5E7EB] bg-[#F1F5F9]">
-            <div className="flex items-center gap-2">
-              <FileText className="w-6 h-6 text-[#2563EB]" />
-              <h2 className="text-xl font-semibold text-[#1E3A8A]">Contenido del Documento</h2>
-            </div>
-          </div>
-          <div className="p-8">
-            {documento.descripcion ? (
-              <div className="prose prose-sm max-w-none">
-                <p className="text-[#6B7280]">{documento.descripcion}</p>
-              </div>
-            ) : (
-              <div className="text-center py-12 text-[#6B7280]">
-                <FileText className="w-12 h-12 mx-auto mb-3 opacity-30 text-gray-300" />
-                <p>Este documento no tiene contenido</p>
-              </div>
-            )}
-          </div>
-        </div>
+  {/* Contenido del Documento */ }
+  <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm">
+    <div className="p-6 border-b border-[#E5E7EB] bg-[#F1F5F9]">
+      <div className="flex items-center gap-2">
+        <FileText className="w-6 h-6 text-[#2563EB]" />
+        <h2 className="text-xl font-semibold text-[#1E3A8A]">Contenido del Documento</h2>
       </div>
     </div>
+    <div className="p-8">
+      {documento.descripcion ? (
+        <div className="prose prose-sm max-w-none">
+          <p className="text-[#6B7280]">{documento.descripcion}</p>
+        </div>
+      ) : (
+        <div className="text-center py-12 text-[#6B7280]">
+          <FileText className="w-12 h-12 mx-auto mb-3 opacity-30 text-gray-300" />
+          <p>Este documento no tiene contenido</p>
+        </div>
+      )}
+    </div>
+  </div>
+      </div >
+    </div >
   );
 }

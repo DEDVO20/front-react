@@ -46,7 +46,7 @@ cd backendFastApi
 
 ```bash
 # Abrir terminal de PostgreSQL (psql)
-psql -U postgres
+   psql -U postgres
 
 # Dentro de psql, ejecutar:
 CREATE DATABASE calidad_db;

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { DocumentFormWithTipTap } from "@/components/documents/DocumentFormWithTipTap";
 import { documentoService } from "@/services/documento.service";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle, ArrowLeft, FileText } from "lucide-react";
 
@@ -13,11 +14,13 @@ interface DocumentoData {
   estado?: string;
   subidoPor?: string;
   aprobadoPor?: string;
+  contenidoHtml?: string;
 }
 
 export default function EditarDocumento() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [initialData, setInitialData] = useState<DocumentoData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,8 +40,12 @@ export default function EditarDocumento() {
         codigoDocumento: data.codigo,
         version: data.version_actual,
         estado: data.estado,
-        subidoPor: data.creado_por,
-        aprobadoPor: data.aprobado_por,
+        // Usar el UUID del creador (el select necesita el ID)
+        subidoPor: data.creado_por || '',
+        // Usar el UUID del aprobador (el select necesita el ID)
+        aprobadoPor: data.aprobado_por || '',
+        // Agregar el contenido HTML del documento
+        contenidoHtml: data.descripcion || '',
       };
 
       setInitialData(formData);
@@ -66,13 +73,35 @@ export default function EditarDocumento() {
     try {
       setError(null);
 
+      // Obtener el contenido HTML actual del formulario
+      const nuevoContenido = formData.get("contenidoHtml") as string;
+      const contenidoOriginal = initialData?.contenidoHtml || '';
+
+      // Detectar si hubo cambios en el contenido
+      const huboCambios = nuevoContenido !== contenidoOriginal;
+
+      // Incrementar versión automáticamente si hubo cambios
+      let versionActual = formData.get("version") as string;
+      if (huboCambios && versionActual) {
+        // Parsear la versión (ej: "1.0" -> [1, 0])
+        const partes = versionActual.split('.');
+        if (partes.length >= 2) {
+          const mayor = parseInt(partes[0]) || 1;
+          const menor = parseInt(partes[1]) || 0;
+          // Incrementar el número menor
+          versionActual = `${mayor}.${menor + 1}`;
+
+          toast.info(`Cambios detectados. Versión actualizada a ${versionActual}`);
+        }
+      }
+
       // Convert FormData to JSON object with backend field names
       const documentData: any = {
         codigo: formData.get("codigoDocumento") as string,
         nombre: formData.get("nombreArchivo") as string,
-        descripcion: `Documento ${formData.get("nombreArchivo")}`,
+        descripcion: nuevoContenido || `Documento ${formData.get("nombreArchivo")}`,
         tipo_documento: formData.get("tipoDocumento") as string,
-        version_actual: formData.get("version") as string,
+        version_actual: versionActual,
         estado: formData.get("estado") as string,
       };
 
@@ -85,6 +114,22 @@ export default function EditarDocumento() {
       const aprobado_por = formData.get("aprobadoPor") as string;
       if (aprobado_por) {
         documentData.aprobado_por = aprobado_por;
+      }
+
+      // Si hubo cambios, guardar la versión anterior en el historial
+      if (huboCambios && initialData) {
+        try {
+          await documentoService.createVersion({
+            documento_id: id,
+            version: initialData.version || '1.0',
+            descripcion_cambios: 'Versión anterior guardada automáticamente antes de actualizar',
+            creado_por: user?.id || undefined
+          });
+          console.log('✅ Versión anterior guardada en historial');
+        } catch (versionError) {
+          console.error('⚠️ Error al guardar versión anterior:', versionError);
+          // Continuar con la actualización aunque falle el guardado de versión
+        }
       }
 
       await documentoService.update(id, documentData);

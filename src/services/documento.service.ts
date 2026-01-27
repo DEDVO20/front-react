@@ -14,6 +14,14 @@ export interface DocumentoData {
   aprobado_por?: string;
 }
 
+export interface UsuarioNested {
+  id: string;
+  nombre: string;
+  primerApellido?: string;
+  segundoApellido?: string;
+  correoElectronico?: string;
+}
+
 export interface DocumentoResponse {
   id: string;
   codigo: string;
@@ -25,8 +33,10 @@ export interface DocumentoResponse {
   estado: string;
   fecha_aprobacion?: string;
   fecha_vigencia?: string;
-  creado_por?: string;
-  aprobado_por?: string;
+  creado_por?: string;  // UUID
+  aprobado_por?: string;  // UUID
+  creador?: UsuarioNested;  // Objeto usuario completo
+  aprobador?: UsuarioNested;  // Objeto usuario completo
   creado_en: string;
   actualizado_en: string;
 }
@@ -58,6 +68,16 @@ class DocumentoService {
 
   async getVersiones(documentoId: string): Promise<any[]> {
     const response = await apiClient.get(`/documentos/${documentoId}/versiones`);
+    return response.data;
+  }
+
+  async createVersion(data: {
+    documento_id: string;
+    version: string;
+    descripcion_cambios?: string;
+    creado_por?: string;
+  }): Promise<any> {
+    const response = await apiClient.post('/versiones-documentos', data);
     return response.data;
   }
 }
