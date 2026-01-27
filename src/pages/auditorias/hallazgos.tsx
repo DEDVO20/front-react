@@ -5,6 +5,17 @@ import {
 } from 'lucide-react';
 import { auditoriaService } from '@/services/auditoria.service';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const API_URL = 'http://localhost:8000/api/v1';
 
@@ -272,7 +283,6 @@ const AuditoriasHallazgosView: React.FC = () => {
   };
 
   const handleDeleteAuditoria = async (id: string) => {
-    if (!confirm('¿Está seguro de eliminar esta auditoría?')) return;
     try {
       const response = await fetch(`${API_URL}/auditorias/${id}`, {
         method: 'DELETE',
@@ -348,7 +358,6 @@ const AuditoriasHallazgosView: React.FC = () => {
   };
 
   const handleDeleteHallazgo = async (id: string) => {
-    if (!confirm('¿Eliminar este hallazgo?')) return;
     try {
       const response = await fetch(`${API_URL}/hallazgos-auditoria/${id}`, {
         method: 'DELETE',
@@ -663,13 +672,30 @@ const AuditoriasHallazgosView: React.FC = () => {
                             >
                               <Edit className="w-5 h-5" />
                             </button>
-                            <button
-                              onClick={() => handleDeleteAuditoria(auditoria.id)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                              title="Eliminar"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <button
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                  title="Eliminar"
+                                >
+                                  <Trash2 className="w-5 h-5" />
+                                </button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta acción no se puede deshacer. Se eliminará permanentemente la auditoría y sus hallazgos asociados.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteAuditoria(auditoria.id)} className="bg-red-600 hover:bg-red-700">
+                                    Eliminar
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </div>
                       </div>
@@ -727,12 +753,30 @@ const AuditoriasHallazgosView: React.FC = () => {
                                         >
                                           <Edit className="w-4 h-4" />
                                         </button>
-                                        <button
-                                          onClick={() => handleDeleteHallazgo(hallazgo.id)}
-                                          className="p-1 text-red-600 hover:bg-red-50 rounded"
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <button
+                                              className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                              title="Eliminar Hallazgo"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>¿Eliminar hallazgo?</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                Esta acción eliminará permanentemente este hallazgo.
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                              <AlertDialogAction onClick={() => handleDeleteHallazgo(hallazgo.id)} className="bg-red-600 hover:bg-red-700">
+                                                Eliminar
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
                                       </div>
                                     </div>
                                   </div>
@@ -789,12 +833,30 @@ const AuditoriasHallazgosView: React.FC = () => {
                             >
                               <Edit className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => handleDeleteHallazgo(hallazgo.id)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <button
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                  title="Eliminar Hallazgo"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Eliminar hallazgo?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta acción eliminará permanentemente este hallazgo.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteHallazgo(hallazgo.id)} className="bg-red-600 hover:bg-red-700">
+                                    Eliminar
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </div>
                       </div>

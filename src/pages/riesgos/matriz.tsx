@@ -27,7 +27,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const API_URL = "http://localhost:3000/api";
+import { toast } from "sonner";
+
+const API_URL = "http://localhost:8000/api/v1";
 
 interface Riesgo {
   id: string;
@@ -49,19 +51,21 @@ interface Riesgo {
 
 export default function MatrizRiesgos() {
   const [riesgos, setRiesgos] = useState<Riesgo[]>([]);
+  const [procesos, setProcesos] = useState<{ id: string; nombre: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedRiesgo, setSelectedRiesgo] = useState<Riesgo | null>(null);
   const [saving, setSaving] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     codigo: "",
     descripcion: "",
     tipo: "",
     probabilidad: "",
     impacto: "",
+    procesoId: "",
     tratamiento: "",
     estado: "identificado",
     fechaIdentificacion: "",
@@ -85,19 +89,32 @@ export default function MatrizRiesgos() {
         throw new Error("No hay sesión activa");
       }
 
-      const response = await fetch(`${API_URL}/riesgos`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const [riesgosResponse, procesosResponse] = await Promise.all([
+        fetch(`${API_URL}/riesgos`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }),
+        fetch(`${API_URL}/procesos`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }),
+      ]);
 
-      if (!response.ok) {
-        throw new Error("Error al cargar riesgos");
+      if (!riesgosResponse.ok || !procesosResponse.ok) {
+        throw new Error("Error al cargar datos");
       }
 
-      const data = await response.json();
-      setRiesgos(data);
+      const [riesgosData, procesosData] = await Promise.all([
+        riesgosResponse.json(),
+        procesosResponse.json(),
+      ]);
+
+      setRiesgos(riesgosData);
+      setProcesos(procesosData);
     } catch (error: any) {
       console.error("Error:", error);
       setError(error.message);
@@ -109,8 +126,8 @@ export default function MatrizRiesgos() {
   const handleCreateRiesgo = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.codigo || !formData.probabilidad || !formData.impacto) {
-      alert("Por favor completa los campos obligatorios");
+    if (!formData.codigo || !formData.probabilidad || !formData.impacto || !formData.procesoId) {
+      toast.error("Por favor completa los campos obligatorios");
       return;
     }
 
@@ -124,7 +141,22 @@ export default function MatrizRiesgos() {
 
       const probabilidad = parseInt(formData.probabilidad);
       const impacto = parseInt(formData.impacto);
-      const nivelRiesgo = probabilidad * impacto;
+      const nivelRiesgoNum = probabilidad * impacto;
+      // Get label for nivel_riesgo string required by backend
+      const nivelRiesgo = getNivelRiesgoLabel(nivelRiesgoNum);
+
+      // Payload mapping to match Backend Pydantic Schema (snake_case)
+      const payload = {
+        proceso_id: formData.procesoId,
+        codigo: formData.codigo,
+        descripcion: formData.descripcion,
+        tipo_riesgo: formData.tipo, // maps to tipo_riesgo
+        probabilidad: probabilidad,
+        impacto: impacto,
+        nivel_riesgo: nivelRiesgo, // string label
+        estado: formData.estado,
+        // Omitted: tratamiento (not in schema), fechaIdentificacion (not in schema)
+      };
 
       const response = await fetch(`${API_URL}/riesgos`, {
         method: "POST",
@@ -132,12 +164,7 @@ export default function MatrizRiesgos() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...formData,
-          probabilidad,
-          impacto,
-          nivelRiesgo,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -145,12 +172,13 @@ export default function MatrizRiesgos() {
         throw new Error(errorData.message || "Error al crear riesgo");
       }
 
-      alert("Riesgo creado exitosamente");
+      toast.success("Riesgo creado exitosamente");
       setShowNewDialog(false);
       setFormData({
         codigo: "",
         descripcion: "",
         tipo: "",
+        procesoId: "",
         probabilidad: "",
         impacto: "",
         tratamiento: "",
@@ -160,7 +188,7 @@ export default function MatrizRiesgos() {
       fetchRiesgos();
     } catch (error: any) {
       console.error("Error:", error);
-      alert(error.message || "Error al crear riesgo");
+      toast.error(error.message || "Error al crear riesgo");
     } finally {
       setSaving(false);
     }
@@ -439,6 +467,25 @@ export default function MatrizRiesgos() {
           <form onSubmit={handleCreateRiesgo}>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="proceso">Proceso / Área *</Label>
+                  <Select
+                    value={formData.procesoId}
+                    onValueChange={(value) => setFormData({ ...formData, procesoId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona proceso" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {procesos.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="grid gap-2">
                   <Label htmlFor="codigo">Código *</Label>
                   <Input

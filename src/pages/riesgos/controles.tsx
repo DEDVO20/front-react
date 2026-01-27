@@ -27,7 +27,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const API_URL = "http://localhost:3000/api";
+import { toast } from "sonner";
+
+const API_URL = "http://localhost:8000/api/v1";
 
 interface ControlRiesgo {
   id: string;
@@ -116,7 +118,7 @@ export default function ControlesRiesgos() {
     e.preventDefault();
 
     if (!formData.riesgoId || !formData.descripcion) {
-      alert("Por favor completa los campos obligatorios");
+      toast.error("Por favor completa los campos obligatorios");
       return;
     }
 
@@ -142,7 +144,7 @@ export default function ControlesRiesgos() {
         throw new Error(errorData.message || "Error al crear control");
       }
 
-      alert("Control creado exitosamente");
+      toast.success("Control creado exitosamente");
       setShowNewDialog(false);
       setFormData({
         riesgoId: "",
@@ -154,7 +156,7 @@ export default function ControlesRiesgos() {
       fetchData();
     } catch (error: any) {
       console.error("Error:", error);
-      alert(error.message || "Error al crear control");
+      toast.error(error.message || "Error al crear control");
     } finally {
       setSaving(false);
     }
