@@ -198,12 +198,12 @@ const AuditoriasHallazgosView: React.FC = () => {
       objetivo: '',
       alcance: '',
       normaReferencia: 'ISO 9001:2015',
-      auditorLiderId: '1',
+      auditorLiderId: '',
       fechaPlanificada: '',
       fechaInicio: '',
       fechaFin: '',
       estado: 'planificada',
-      creadoPor: '1'
+      creadoPor: ''
     });
     setShowModal(true);
   };
@@ -246,7 +246,8 @@ const AuditoriasHallazgosView: React.FC = () => {
       const payload: any = { ...formData };
 
       // Sanitizar datos para enviar al backend
-      if (!payload.auditorLiderId) payload.auditorLiderId = null;
+      if (!payload.auditorLiderId || payload.auditorLiderId === '1') payload.auditorLiderId = null;
+      if (!payload.creadoPor || payload.creadoPor === '1') payload.creadoPor = null;
       if (!payload.fechaPlanificada) payload.fechaPlanificada = null;
       if (!payload.fechaInicio) payload.fechaInicio = null;
       if (!payload.fechaFin) payload.fechaFin = null;
