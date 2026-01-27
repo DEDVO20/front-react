@@ -4,8 +4,9 @@ import {
   Eye, Edit, Trash2, Users, Clock, TrendingUp, ChevronDown, ChevronUp, AlertCircle, X
 } from 'lucide-react';
 import { auditoriaService } from '@/services/auditoria.service';
+import { toast } from 'sonner';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:8000/api/v1';
 
 // Tipos de datos
 interface Auditoria {
@@ -242,20 +243,31 @@ const AuditoriasHallazgosView: React.FC = () => {
 
       const method = modalMode === 'create' ? 'POST' : 'PUT';
 
+      const payload: any = { ...formData };
+
+      // Sanitizar datos para enviar al backend
+      if (!payload.auditorLiderId) payload.auditorLiderId = null;
+      if (!payload.fechaPlanificada) payload.fechaPlanificada = null;
+      if (!payload.fechaInicio) payload.fechaInicio = null;
+      if (!payload.fechaFin) payload.fechaFin = null;
+      if (!payload.normaReferencia) payload.normaReferencia = null;
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       if (response.ok) {
         setShowModal(false);
         fetchAuditorias();
+        toast.success(modalMode === 'create' ? 'Auditoría creada exitosamente' : 'Auditoría actualizada exitosamente');
       }
     } catch (error) {
       console.error('Error al guardar auditoría:', error);
+      toast.error('Error al guardar la auditoría');
     }
   };
 
@@ -268,9 +280,11 @@ const AuditoriasHallazgosView: React.FC = () => {
       });
       if (response.ok) {
         fetchAuditorias();
+        toast.success('Auditoría eliminada exitosamente');
       }
     } catch (error) {
       console.error('Error al eliminar auditoría:', error);
+      toast.error('Error al eliminar la auditoría');
     }
   };
 
@@ -325,9 +339,11 @@ const AuditoriasHallazgosView: React.FC = () => {
       if (response.ok) {
         setShowHallazgoModal(false);
         fetchHallazgos();
+        toast.success(modalMode === 'create' ? 'Hallazgo registrado exitosamente' : 'Hallazgo actualizado exitosamente');
       }
     } catch (error) {
       console.error('Error al guardar hallazgo:', error);
+      toast.error('Error al guardar el hallazgo');
     }
   };
 
@@ -340,9 +356,11 @@ const AuditoriasHallazgosView: React.FC = () => {
       });
       if (response.ok) {
         fetchHallazgos();
+        toast.success('Hallazgo eliminado exitosamente');
       }
     } catch (error) {
       console.error('Error al eliminar hallazgo:', error);
+      toast.error('Error al eliminar el hallazgo');
     }
   };
 
@@ -484,11 +502,10 @@ const AuditoriasHallazgosView: React.FC = () => {
           <div className="flex border-b">
             <button
               onClick={() => setActiveTab('auditorias')}
-              className={`px-6 py-3 font-medium transition-colors ${
-                activeTab === 'auditorias'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`px-6 py-3 font-medium transition-colors ${activeTab === 'auditorias'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+                }`}
             >
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5" />
@@ -497,11 +514,10 @@ const AuditoriasHallazgosView: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('hallazgos')}
-              className={`px-6 py-3 font-medium transition-colors ${
-                activeTab === 'hallazgos'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`px-6 py-3 font-medium transition-colors ${activeTab === 'hallazgos'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+                }`}
             >
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5" />
@@ -816,19 +832,19 @@ const AuditoriasHallazgosView: React.FC = () => {
                 ) : (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <input type="text" placeholder="Código" value={formData.codigo} onChange={e => setFormData({...formData, codigo: e.target.value})} required className="w-full px-4 py-3 border rounded-xl" />
-                      <select value={formData.tipo} onChange={e => setFormData({...formData, tipo: e.target.value})} className="w-full px-4 py-3 border rounded-xl">
+                      <input type="text" placeholder="Código" value={formData.codigo} onChange={e => setFormData({ ...formData, codigo: e.target.value })} required className="w-full px-4 py-3 border rounded-xl" />
+                      <select value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })} className="w-full px-4 py-3 border rounded-xl">
                         <option value="interna">Interna</option>
                         <option value="externa">Externa</option>
                         <option value="certificacion">Certificación</option>
                       </select>
                     </div>
-                    <input type="text" placeholder="Nombre" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} className="w-full px-4 py-3 border rounded-xl" />
-                    <textarea placeholder="Objetivo" value={formData.objetivo} onChange={e => setFormData({...formData, objetivo: e.target.value})} rows={3} className="w-full px-4 py-3 border rounded-xl resize-none" />
-                    <textarea placeholder="Alcance" value={formData.alcance} onChange={e => setFormData({...formData, alcance: e.target.value})} rows={3} className="w-full px-4 py-3 border rounded-xl resize-none" />
+                    <input type="text" placeholder="Nombre" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} className="w-full px-4 py-3 border rounded-xl" />
+                    <textarea placeholder="Objetivo" value={formData.objetivo} onChange={e => setFormData({ ...formData, objetivo: e.target.value })} rows={3} className="w-full px-4 py-3 border rounded-xl resize-none" />
+                    <textarea placeholder="Alcance" value={formData.alcance} onChange={e => setFormData({ ...formData, alcance: e.target.value })} rows={3} className="w-full px-4 py-3 border rounded-xl resize-none" />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <input type="text" placeholder="Norma" value={formData.normaReferencia} onChange={e => setFormData({...formData, normaReferencia: e.target.value})} className="w-full px-4 py-3 border rounded-xl" />
-                      <select value={formData.estado} onChange={e => setFormData({...formData, estado: e.target.value})} className="w-full px-4 py-3 border rounded-xl">
+                      <input type="text" placeholder="Norma" value={formData.normaReferencia} onChange={e => setFormData({ ...formData, normaReferencia: e.target.value })} className="w-full px-4 py-3 border rounded-xl" />
+                      <select value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })} className="w-full px-4 py-3 border rounded-xl">
                         <option value="planificada">Planificada</option>
                         <option value="en_curso">En Curso</option>
                         <option value="completada">Completada</option>
@@ -836,9 +852,9 @@ const AuditoriasHallazgosView: React.FC = () => {
                       </select>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                      <input type="date" value={formData.fechaPlanificada} onChange={e => setFormData({...formData, fechaPlanificada: e.target.value})} className="w-full px-4 py-3 border rounded-xl" />
-                      <input type="date" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} className="w-full px-4 py-3 border rounded-xl" />
-                      <input type="date" value={formData.fechaFin} onChange={e => setFormData({...formData, fechaFin: e.target.value})} className="w-full px-4 py-3 border rounded-xl" />
+                      <input type="date" value={formData.fechaPlanificada} onChange={e => setFormData({ ...formData, fechaPlanificada: e.target.value })} className="w-full px-4 py-3 border rounded-xl" />
+                      <input type="date" value={formData.fechaInicio} onChange={e => setFormData({ ...formData, fechaInicio: e.target.value })} className="w-full px-4 py-3 border rounded-xl" />
+                      <input type="date" value={formData.fechaFin} onChange={e => setFormData({ ...formData, fechaFin: e.target.value })} className="w-full px-4 py-3 border rounded-xl" />
                     </div>
                   </>
                 )}
@@ -872,7 +888,7 @@ const AuditoriasHallazgosView: React.FC = () => {
               <form onSubmit={handleSubmitHallazgo} className="p-6 space-y-5">
                 <select
                   value={hallazgoFormData.tipo}
-                  onChange={e => setHallazgoFormData({...hallazgoFormData, tipo: e.target.value})}
+                  onChange={e => setHallazgoFormData({ ...hallazgoFormData, tipo: e.target.value })}
                   className="w-full px-4 py-3 border rounded-xl"
                 >
                   <option value="no_conformidad_mayor">No Conformidad Mayor</option>
@@ -883,7 +899,7 @@ const AuditoriasHallazgosView: React.FC = () => {
                 <textarea
                   placeholder="Descripción del hallazgo"
                   value={hallazgoFormData.descripcion}
-                  onChange={e => setHallazgoFormData({...hallazgoFormData, descripcion: e.target.value})}
+                  onChange={e => setHallazgoFormData({ ...hallazgoFormData, descripcion: e.target.value })}
                   rows={3}
                   required
                   className="w-full px-4 py-3 border rounded-xl resize-none"
@@ -892,13 +908,13 @@ const AuditoriasHallazgosView: React.FC = () => {
                   type="text"
                   placeholder="Cláusula ISO (ej: 7.1.3)"
                   value={hallazgoFormData.clausulaIso}
-                  onChange={e => setHallazgoFormData({...hallazgoFormData, clausulaIso: e.target.value})}
+                  onChange={e => setHallazgoFormData({ ...hallazgoFormData, clausulaIso: e.target.value })}
                   className="w-full px-4 py-3 border rounded-xl"
                 />
                 <textarea
                   placeholder="Evidencia"
                   value={hallazgoFormData.evidencia}
-                  onChange={e => setHallazgoFormData({...hallazgoFormData, evidencia: e.target.value})}
+                  onChange={e => setHallazgoFormData({ ...hallazgoFormData, evidencia: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-3 border rounded-xl resize-none"
                 />
