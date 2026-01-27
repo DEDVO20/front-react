@@ -104,10 +104,10 @@ export default function EditarDocumento() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-[#F5F7FA]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Cargando documento...</p>
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-[#2563EB] border-t-transparent" />
+          <p className="mt-4 text-lg font-medium text-[#6B7280]">Cargando documento...</p>
         </div>
       </div>
     );
@@ -115,20 +115,22 @@ export default function EditarDocumento() {
 
   if (error && !initialData) {
     return (
-      <div className="container mx-auto p-6 max-w-7xl">
-        <div className="text-center py-12">
-          <AlertCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold mb-2">
-            Error al cargar documento
-          </h2>
-          <p className="text-muted-foreground mb-6">{error}</p>
-          <button
-            onClick={() => navigate("/documentos")}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Volver a Documentos
-          </button>
+      <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-20 text-center">
+            <AlertCircle className="w-16 h-16 text-[#EF4444] mx-auto mb-4" />
+            <h2 className="text-2xl font-semibold mb-2 text-[#1E3A8A]">
+              Error al cargar documento
+            </h2>
+            <p className="text-[#6B7280] mb-6">{error}</p>
+            <button
+              onClick={() => navigate("/documentos")}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Volver a Documentos
+            </button>
+          </div>
         </div>
       </div>
     );
