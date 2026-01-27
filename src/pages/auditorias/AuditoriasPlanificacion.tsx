@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, Search, Download, Eye, Edit, Trash2, Users, CheckCircle, AlertCircle, Clock, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Tipos TypeScript
 interface Auditoria {
@@ -258,20 +259,30 @@ const AuditoriasPlanificacion = () => {
       setSaving(true);
       setError(null);
 
+      // Sanitizar datos para enviar al backend
+      const payload: any = { ...formData };
+
+      // Convertir strings vacíos a null para campos opcionales
+      if (!payload.auditorLiderId) payload.auditorLiderId = null;
+      if (!payload.fechaPlanificada) payload.fechaPlanificada = null;
+      if (!payload.fechaInicio) payload.fechaInicio = null;
+      if (!payload.fechaFin) payload.fechaFin = null;
+      if (!payload.normaReferencia) payload.normaReferencia = null;
+
       if (auditoriaEditando) {
-        await auditoriaService.update(auditoriaEditando.id, formData);
+        await auditoriaService.update(auditoriaEditando.id, payload);
       } else {
-        await auditoriaService.create(formData);
+        await auditoriaService.create(payload);
       }
 
       setMostrarModal(false);
       await cargarAuditorias();
 
       // Mostrar mensaje de éxito
-      alert(auditoriaEditando ? 'Auditoría actualizada exitosamente' : 'Auditoría creada exitosamente');
+      toast.success(auditoriaEditando ? 'Auditoría actualizada exitosamente' : 'Auditoría creada exitosamente');
     } catch (err) {
       console.error('Error al guardar auditoría:', err);
-      setError(err instanceof Error ? err.message : 'Error al guardar la auditoría');
+      toast.error(err instanceof Error ? err.message : 'Error al guardar la auditoría');
     } finally {
       setSaving(false);
     }
@@ -285,10 +296,10 @@ const AuditoriasPlanificacion = () => {
       setError(null);
       await auditoriaService.delete(id);
       await cargarAuditorias();
-      alert('Auditoría eliminada exitosamente');
+      toast.success('Auditoría eliminada exitosamente');
     } catch (err) {
       console.error('Error al eliminar auditoría:', err);
-      setError(err instanceof Error ? err.message : 'Error al eliminar la auditoría');
+      toast.error(err instanceof Error ? err.message : 'Error al eliminar la auditoría');
     }
   };
 
@@ -420,7 +431,7 @@ const AuditoriasPlanificacion = () => {
               <option value="cancelada">Cancelada</option>
             </select>
             <button
-              onClick={() => alert('Función de exportar en desarrollo')}
+              onClick={() => toast.info('Función de exportar en desarrollo')}
               className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
             >
               <Download className="w-5 h-5" />
@@ -561,7 +572,7 @@ const AuditoriasPlanificacion = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => alert('Vista detallada en desarrollo')}
+                            onClick={() => toast.info('Vista detallada en desarrollo')}
                             className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
                             title="Ver detalles"
                           >
