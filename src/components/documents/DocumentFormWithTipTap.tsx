@@ -18,6 +18,7 @@ interface InitialData {
   revisadoPor?: string;
   aprobadoPor?: string;
   contenidoHtml?: string;
+  rutaArchivo?: string;
 }
 
 interface DocumentFormWithTipTapProps {
@@ -40,7 +41,9 @@ export const DocumentFormWithTipTap = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Document creation mode: 'editor' or 'upload'
-  const [documentMode, setDocumentMode] = useState<'editor' | 'upload'>('editor');
+  const [documentMode, setDocumentMode] = useState<'editor' | 'upload'>(
+    initialData?.rutaArchivo ? 'upload' : 'editor'
+  );
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   const [formData, setFormData] = useState({
@@ -75,6 +78,9 @@ export const DocumentFormWithTipTap = ({
       });
       if (initialData.contenidoHtml) {
         setContent(initialData.contenidoHtml);
+      }
+      if (initialData.rutaArchivo) {
+        setDocumentMode('upload');
       }
     }
   }, [initialData, user?.id]);
@@ -476,7 +482,7 @@ export const DocumentFormWithTipTap = ({
               <option value="">Seleccionar usuario</option>
               {usuarios?.map((usuario) => (
                 <option key={usuario.id} value={usuario.id}>
-                  {usuario.nombre} {usuario.primerApellido}
+                  {usuario.nombre_completo || usuario.nombre_usuario}
                 </option>
               ))}
             </select>
@@ -509,7 +515,7 @@ export const DocumentFormWithTipTap = ({
               <option value="">Seleccionar (opcional)</option>
               {usuarios?.map((usuario) => (
                 <option key={usuario.id} value={usuario.id}>
-                  {usuario.nombre} {usuario.primerApellido}
+                  {usuario.nombre_completo || usuario.nombre_usuario}
                 </option>
               ))}
             </select>
@@ -537,7 +543,7 @@ export const DocumentFormWithTipTap = ({
               <option value="">Seleccionar (opcional)</option>
               {usuarios?.map((usuario) => (
                 <option key={usuario.id} value={usuario.id}>
-                  {usuario.nombre} {usuario.primerApellido}
+                  {usuario.nombre_completo || usuario.nombre_usuario}
                 </option>
               ))}
             </select>
@@ -667,6 +673,30 @@ export const DocumentFormWithTipTap = ({
             />
             {errors.file && (
               <p className="text-destructive text-sm mt-2">{errors.file}</p>
+            )}
+
+            {initialData?.rutaArchivo && !uploadedFile && (
+              <div className="mt-4 p-4 bg-muted rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-full">
+                    <FileText className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Archivo Actual</p>
+                    <a
+                      href={initialData.rutaArchivo}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline truncate max-w-[200px] block"
+                    >
+                      Ver documento actual
+                    </a>
+                  </div>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  Sube un nuevo archivo para reemplazarlo
+                </span>
+              </div>
             )}
           </>
         )}

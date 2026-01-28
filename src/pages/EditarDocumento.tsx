@@ -15,6 +15,7 @@ interface DocumentoData {
   subidoPor?: string;
   aprobadoPor?: string;
   contenidoHtml?: string;
+  rutaArchivo?: string;
 }
 
 export default function EditarDocumento() {
@@ -46,6 +47,7 @@ export default function EditarDocumento() {
         aprobadoPor: data.aprobado_por || '',
         // Agregar el contenido HTML del documento
         contenidoHtml: data.descripcion || '',
+        rutaArchivo: data.ruta_archivo || '',
       };
 
       setInitialData(formData);
@@ -167,7 +169,7 @@ export default function EditarDocumento() {
             <h2 className="text-2xl font-semibold mb-2 text-[#1E3A8A]">
               Error al cargar documento
             </h2>
-            <p className="text-[#6B7280] mb-6">{error}</p>
+            <p className="text-xs text-muted-foreground mb-6">{error}</p>
             <button
               onClick={() => navigate("/documentos")}
               className="inline-flex items-center gap-2 px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all"
