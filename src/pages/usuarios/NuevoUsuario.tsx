@@ -536,8 +536,8 @@ export default function FormularioUsuario() {
                         <div
                           key={rol.id}
                           className={`p-5 rounded-xl border-2 transition-all ${isSelected
-                              ? "bg-[#E0EDFF] border-[#2563EB] shadow-sm"
-                              : "bg-white border-[#E5E7EB] hover:border-[#2563EB]/50 hover:shadow-sm"
+                            ? "bg-[#E0EDFF] border-[#2563EB] shadow-sm"
+                            : "bg-white border-[#E5E7EB] hover:border-[#2563EB]/50 hover:shadow-sm"
                             }`}
                         >
                           <div className="flex items-start gap-4">

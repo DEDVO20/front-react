@@ -47,6 +47,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
 import {
   Tooltip,
   TooltipContent,
@@ -91,6 +92,8 @@ export default function ListaUsuarios() {
     open: false,
     usuario: null,
   });
+
+
 
   useEffect(() => {
     fetchUsuarios();
@@ -182,28 +185,7 @@ export default function ListaUsuarios() {
 
 
 
-  const handleToggleEstado = async (usuario: Usuario) => {
-    try {
-      const nuevoEstado = !usuario.activo;
-      await apiClient.put(`/usuarios/${usuario.id}`, {
-        activo: nuevoEstado,
-      });
 
-      // Actualizar el estado local
-      setUsuarios(prev =>
-        prev.map(u =>
-          u.id === usuario.id ? { ...u, activo: nuevoEstado } : u
-        )
-      );
-
-      toast.success(
-        `Usuario "${usuario.nombre_usuario}" ${nuevoEstado ? "activado" : "desactivado"} correctamente`
-      );
-    } catch (error) {
-      console.error("Error al cambiar estado:", error);
-      toast.error("Error al cambiar el estado del usuario. Por favor intente nuevamente.");
-    }
-  };
 
   const getNombreCompleto = (usuario: Usuario) => {
     const partes = [usuario.nombre, usuario.segundo_nombre, usuario.primer_apellido, usuario.segundo_apellido].filter(Boolean);
@@ -526,7 +508,7 @@ export default function ListaUsuarios() {
                               <div className="flex items-center gap-3">
                                 <Switch
                                   checked={usuario.activo}
-                                  onCheckedChange={() => handleToggleEstado(usuario)}
+                                  onCheckedChange={(checked) => handleToggleEstado(usuario.id, checked)}
                                 />
                                 <span className={usuario.activo ? "text-[#22C55E] font-medium" : "text-[#6B7280]"}>
                                   {usuario.activo ? "Activo" : "Inactivo"}
@@ -572,7 +554,7 @@ export default function ListaUsuarios() {
 
             {/* Dialog Ver Detalles */}
             <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-              <DialogContent className="sm:max-w-2xl">
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle className="text-2xl text-[#1E3A8A] flex items-center gap-3">
                     <Eye className="h-7 w-7 text-[#2563EB]" />
@@ -649,44 +631,46 @@ export default function ListaUsuarios() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-          </div>
 
-          {/* Dialog Eliminar */}
-          <AlertDialog open={deleteDialog.open} onOpenChange={closeDeleteDialog}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="text-[#1E3A8A]">¿Eliminar usuario?</AlertDialogTitle>
-                <AlertDialogDescription className="space-y-4">
-                  {deleteDialog.usuario && (
-                    <>
-                      <div className="bg-[#F1F5F9] p-5 rounded-lg border border-[#E5E7EB]">
-                        <div className="flex items-center gap-4">
-                          <div className="h-12 w-12 rounded-full bg-[#2563EB] flex items-center justify-center text-white font-bold">
-                            {deleteDialog.usuario.nombre.charAt(0).toUpperCase()}
-                            {deleteDialog.usuario.primer_apellido?.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900 text-lg">{getNombreCompleto(deleteDialog.usuario)}</p>
-                            <p className="text-sm text-[#6B7280]">@{deleteDialog.usuario.nombre_usuario}</p>
-                            <p className="text-sm text-[#6B7280]">Documento: {deleteDialog.usuario.documento.toLocaleString()}</p>
+
+
+            {/* Dialog Eliminar */}
+            <AlertDialog open={deleteDialog.open} onOpenChange={closeDeleteDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-[#1E3A8A]">¿Eliminar usuario?</AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-4">
+                    {deleteDialog.usuario && (
+                      <>
+                        <div className="bg-[#F1F5F9] p-5 rounded-lg border border-[#E5E7EB]">
+                          <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-full bg-[#2563EB] flex items-center justify-center text-white font-bold">
+                              {deleteDialog.usuario.nombre.charAt(0).toUpperCase()}
+                              {deleteDialog.usuario.primer_apellido?.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 text-lg">{getNombreCompleto(deleteDialog.usuario)}</p>
+                              <p className="text-sm text-[#6B7280]">@{deleteDialog.usuario.nombre_usuario}</p>
+                              <p className="text-sm text-[#6B7280]">Documento: {deleteDialog.usuario.documento.toLocaleString()}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <p className="text-[#EF4444] font-medium">
-                        Esta acción es permanente y no se puede deshacer.
-                      </p>
-                    </>
-                  )}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleEliminar} className="bg-[#EF4444] hover:bg-red-700">
-                  Eliminar Usuario
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                        <p className="text-[#EF4444] font-medium">
+                          Esta acción es permanente y no se puede deshacer.
+                        </p>
+                      </>
+                    )}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleEliminar} className="bg-[#EF4444] hover:bg-red-700">
+                    Eliminar Usuario
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </TooltipProvider >
     </div >

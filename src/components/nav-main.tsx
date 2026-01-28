@@ -27,9 +27,14 @@ export function NavMain({
     url: string;
     icon?: LucideIcon;
     isActive?: boolean;
+    badge?: string;
+    badgeVariant?: "default" | "destructive" | "outline" | "secondary";
+    permiso?: string;
     items?: {
       title: string;
       url: string;
+      badge?: string;
+      permiso?: string;
     }[];
   }[];
   title?: string;

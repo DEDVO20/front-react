@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search, Filter, Plus, Calendar, FileText, AlertTriangle, CheckCircle, XCircle,
-  Eye, Edit, Trash2, Users, Clock, TrendingUp, ChevronDown, ChevronUp, AlertCircle, X
+  Eye, Edit, Trash2, Users, Clock, TrendingUp, ChevronDown, ChevronUp, AlertCircle, X, Activity
 } from 'lucide-react';
 import { auditoriaService } from '@/services/auditoria.service';
 import { toast } from 'sonner';
@@ -432,295 +432,258 @@ const AuditoriasHallazgosView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
 
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Auditorías y Hallazgos</h1>
-          <p className="text-gray-600">Sistema de Gestión de Calidad ISO 9001:2015 - Cláusula 9.2</p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-blue-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Auditorías</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalAuditorias}</p>
-              </div>
-              <FileText className="w-12 h-12 text-blue-500" />
-            </div>
-            <div className="mt-4 flex gap-2 text-xs">
-              <span className="text-blue-600">Planificadas: {stats.planificadas}</span>
-              <span className="text-yellow-600">En curso: {stats.enCurso}</span>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-green-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Completadas</p>
-                <p className="text-3xl font-bold text-green-600">{stats.completadas}</p>
-              </div>
-              <CheckCircle className="w-12 h-12 text-green-500" />
-            </div>
-            <div className="mt-4">
-              <p className="text-xs text-gray-600">
-                {stats.totalAuditorias > 0
-                  ? `${((stats.completadas / stats.totalAuditorias) * 100).toFixed(1)}% del total`
-                  : '0% del total'}
+        {/* Header Profesional */}
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                <FileText className="h-9 w-9 text-[#2563EB]" />
+                Auditorías y Hallazgos
+              </h1>
+              <p className="text-[#6B7280] mt-2 text-lg">
+                Consolidado de auditorías realizadas y gestión integral de hallazgos - ISO 9001:2015
               </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-orange-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Hallazgos</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalHallazgos}</p>
+              <div className="flex flex-wrap items-center gap-3 mt-4">
+                <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
+                  {stats.totalAuditorias} auditorías registradas
+                </Badge>
+                <Badge className="bg-[#ECFDF5] text-[#22C55E]">
+                  Normatividad: ISO 9001:2015
+                </Badge>
               </div>
-              <AlertTriangle className="w-12 h-12 text-orange-500" />
             </div>
-            <div className="mt-4 flex gap-2 text-xs">
-              <span className="text-red-600">NC Mayor: {stats.noConformidadesMayores}</span>
-              <span className="text-yellow-600">NC Menor: {stats.noConformidadesMenores}</span>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-blue-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Observaciones</p>
-                <p className="text-3xl font-bold text-blue-600">{stats.observaciones}</p>
-              </div>
-              <AlertCircle className="w-12 h-12 text-blue-500" />
-            </div>
-            <div className="mt-4">
-              <p className="text-xs text-gray-600">
-                {stats.totalHallazgos > 0
-                  ? `${((stats.observaciones / stats.totalHallazgos) * 100).toFixed(1)}% del total`
-                  : '0% del total'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="bg-white rounded-xl shadow-lg mb-6">
-          <div className="flex border-b">
-            <button
-              onClick={() => setActiveTab('auditorias')}
-              className={`px-6 py-3 font-medium transition-colors ${activeTab === 'auditorias'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-                }`}
-            >
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Auditorías ({filteredAuditorias.length})
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('hallazgos')}
-              className={`px-6 py-3 font-medium transition-colors ${activeTab === 'hallazgos'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-                }`}
-            >
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5" />
-                Hallazgos ({filteredHallazgos.length})
-              </div>
-            </button>
-          </div>
-
-          {/* Filters and Search */}
-          <div className="p-4 bg-gray-50 border-b">
-            <div className="flex flex-wrap gap-4">
-              <div className="flex-1 min-w-[300px]">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Buscar..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  />
-                </div>
-              </div>
-              {activeTab === 'auditorias' ? (
-                <>
-                  <select
-                    value={filterTipo}
-                    onChange={(e) => setFilterTipo(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  >
-                    <option value="">Todos los tipos</option>
-                    <option value="interna">Interna</option>
-                    <option value="externa">Externa</option>
-                    <option value="certificacion">Certificación</option>
-                  </select>
-                  <select
-                    value={filterEstado}
-                    onChange={(e) => setFilterEstado(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  >
-                    <option value="">Todos los estados</option>
-                    <option value="planificada">Planificada</option>
-                    <option value="en_curso">En Curso</option>
-                    <option value="completada">Completada</option>
-                    <option value="cancelada">Cancelada</option>
-                  </select>
-                </>
-              ) : (
-                <select
-                  value={filterTipo}
-                  onChange={(e) => setFilterTipo(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                >
-                  <option value="">Todos los tipos</option>
-                  <option value="no_conformidad_mayor">NC Mayor</option>
-                  <option value="no_conformidad_menor">NC Menor</option>
-                  <option value="observacion">Observación</option>
-                  <option value="oportunidad_mejora">Oportunidad de Mejora</option>
-                </select>
-              )}
-              <button
+            <div className="flex flex-col gap-2">
+              <Button
                 onClick={activeTab === 'auditorias' ? handleCreateAuditoria : () => handleCreateHallazgo()}
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center gap-2 shadow-md"
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
                 Nueva {activeTab === 'auditorias' ? 'Auditoría' : 'Hallazgo'}
-              </button>
+              </Button>
             </div>
           </div>
+        </div>
 
-          {/* Content */}
-          <div className="p-6">
+        {/* Stats Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-[#E0EDFF] border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-semibold text-[#1E3A8A]">Total Auditorías</CardDescription>
+                <FileText className="h-6 w-6 text-[#2563EB]" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{stats.totalAuditorias}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2 mt-2">
+                <Badge variant="outline" className="text-[10px] bg-white/50 text-[#2563EB] border-[#2563EB]/20">P: {stats.planificadas}</Badge>
+                <Badge variant="outline" className="text-[10px] bg-white/50 text-[#2563EB] border-[#2563EB]/20">E: {stats.enCurso}</Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-semibold text-[#6B7280]">Completadas</CardDescription>
+                <CheckCircle className="h-6 w-6 text-[#22C55E]" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{stats.completadas}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+                <div
+                  className="bg-[#22C55E] h-1.5 rounded-full"
+                  style={{ width: stats.totalAuditorias > 0 ? `${(stats.completadas / stats.totalAuditorias) * 100}%` : '0%' }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-semibold text-[#6B7280]">Total Hallazgos</CardDescription>
+                <AlertTriangle className="h-6 w-6 text-[#2563EB]" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{stats.totalHallazgos}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-1 mt-2">
+                <Badge className="bg-[#FEF2F2] text-[#EF4444] border-none text-[10px]">MAY: {stats.noConformidadesMayores}</Badge>
+                <Badge className="bg-[#FEFCE8] text-[#854D0E] border-none text-[10px]">MEN: {stats.noConformidadesMenores}</Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#C7D2FE]/20 border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-semibold text-[#1E3A8A]">Observaciones</CardDescription>
+                <AlertCircle className="h-6 w-6 text-[#2563EB]" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{stats.observaciones}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Áreas de Mejora</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tab Interface */}
+        <Card className="rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
+          <div className="bg-[#F8FAFC] border-b border-[#E5E7EB] p-1 flex">
+            <button
+              onClick={() => setActiveTab('auditorias')}
+              className={`flex-1 py-4 font-bold text-sm flex items-center justify-center gap-2 transition-all rounded-xl ${activeTab === 'auditorias'
+                  ? 'bg-white text-[#2563EB] shadow-sm'
+                  : 'text-[#6B7280] hover:text-[#1E3A8A]'
+                }`}
+            >
+              <FileText className="w-5 h-5" />
+              Gestión de Auditorías
+            </button>
+            <button
+              onClick={() => setActiveTab('hallazgos')}
+              className={`flex-1 py-4 font-bold text-sm flex items-center justify-center gap-2 transition-all rounded-xl ${activeTab === 'hallazgos'
+                  ? 'bg-white text-[#2563EB] shadow-sm'
+                  : 'text-[#6B7280] hover:text-[#1E3A8A]'
+                }`}
+            >
+              <AlertTriangle className="w-5 h-5" />
+              Consolidado de Hallazgos
+            </button>
+          </div>
+
+          <div className="p-8">
+            {/* Buscador y Filtros Dinámicos */}
+            <div className="flex flex-col md:flex-row gap-4 mb-8">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6B7280] w-5 h-5" />
+                <Input
+                  placeholder={`Buscar ${activeTab === 'auditorias' ? 'auditorías...' : 'hallazgos...'}`}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 py-6 border-[#E5E7EB] rounded-xl focus:ring-[#2563EB]/20"
+                />
+              </div>
+              <div className="flex gap-2">
+                {activeTab === 'auditorias' ? (
+                  <>
+                    <select
+                      value={filterTipo}
+                      onChange={(e) => setFilterTipo(e.target.value)}
+                      className="px-4 py-2 border border-[#E5E7EB] rounded-xl bg-[#F8FAFC] font-bold text-[#1E3A8A] min-w-[160px] outline-none"
+                    >
+                      <option value="">Tipo</option>
+                      <option value="interna">Interna</option>
+                      <option value="externa">Externa</option>
+                    </select>
+                    <select
+                      value={filterEstado}
+                      onChange={(e) => setFilterEstado(e.target.value)}
+                      className="px-4 py-2 border border-[#E5E7EB] rounded-xl bg-[#F8FAFC] font-bold text-[#1E3A8A] min-w-[160px] outline-none"
+                    >
+                      <option value="">Estado</option>
+                      <option value="planificada">Planificada</option>
+                      <option value="en_curso">En Curso</option>
+                      <option value="completada">Completada</option>
+                    </select>
+                  </>
+                ) : (
+                  <select
+                    value={filterTipo}
+                    onChange={(e) => setFilterTipo(e.target.value)}
+                    className="px-4 py-2 border border-[#E5E7EB] rounded-xl bg-[#F8FAFC] font-bold text-[#1E3A8A] min-w-[200px] outline-none"
+                  >
+                    <option value="">Clasificación</option>
+                    <option value="no_conformidad_mayor">NC Mayor</option>
+                    <option value="no_conformidad_menor">NC Menor</option>
+                    <option value="observacion">Observación</option>
+                  </select>
+                )}
+                <button
+                  onClick={() => { setSearchTerm(''); setFilterTipo(''); setFilterEstado(''); }}
+                  className="p-3 bg-[#F8FAFC] hover:bg-[#E0EDFF] text-[#2563EB] rounded-xl transition-all border border-[#E5E7EB]"
+                >
+                  <Filter className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Listado Principal */}
             {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Cargando...</p>
+              <div className="py-20 text-center">
+                <Activity className="animate-spin h-12 w-12 text-[#2563EB] mx-auto mb-4" />
+                <p className="text-[#6B7280] font-bold">Procesando información...</p>
               </div>
             ) : activeTab === 'auditorias' ? (
-              filteredAuditorias.length === 0 ? (
-                <div className="text-center py-12">
-                  <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-600">No se encontraron auditorías</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {filteredAuditorias.map((auditoria) => (
-                    <div key={auditoria.id} className="border border-gray-200 rounded-xl hover:shadow-lg transition-shadow bg-white">
-                      <div className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="text-lg font-semibold text-gray-900">
-                                {auditoria.codigo}
-                              </h3>
+              <div className="space-y-4">
+                {filteredAuditorias.length === 0 ? (
+                  <div className="py-20 text-center bg-[#F8FAFC] rounded-2xl border border-dashed border-[#E5E7EB]">
+                    <FileText className="h-16 w-16 text-gray-200 mx-auto mb-4" />
+                    <p className="text-[#6B7280]">No se encontraron auditorías registradas</p>
+                  </div>
+                ) : (
+                  filteredAuditorias.map((auditoria) => (
+                    <div key={auditoria.id} className="group bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden hover:shadow-md transition-all">
+                      <div className="p-6">
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center gap-3">
+                              <span className="font-bold text-[#1E3A8A] group-hover:text-[#2563EB] transition-colors">{auditoria.codigo}</span>
                               {getEstadoBadge(auditoria.estado)}
-                              <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">
-                                {auditoria.tipo?.toUpperCase()}
-                              </span>
+                              <Badge className="bg-[#F1F5F9] text-[#64748B] border-none uppercase">{auditoria.tipo}</Badge>
                             </div>
-                            <p className="text-gray-700 mb-2">{auditoria.nombre || 'Sin nombre'}</p>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                              <div>
-                                <span className="text-gray-600">Planificada:</span>
-                                <p className="font-medium">{formatDate(auditoria.fechaPlanificada)}</p>
+                            <h3 className="text-lg font-bold text-[#111827]">{auditoria.nombre || 'Auditoría sin título'}</h3>
+                            <div className="flex flex-wrap gap-4 text-xs text-[#6B7280] font-medium">
+                              <div className="flex items-center gap-1.5 bg-[#F8FAFC] px-2 py-1 rounded-lg border border-[#E5E7EB]">
+                                <Calendar size={12} className="text-[#2563EB]" />
+                                Planificada: {formatDate(auditoria.fechaPlanificada)}
                               </div>
-                              <div>
-                                <span className="text-gray-600">Inicio:</span>
-                                <p className="font-medium">{formatDate(auditoria.fechaInicio)}</p>
-                              </div>
-                              <div>
-                                <span className="text-gray-600">Fin:</span>
-                                <p className="font-medium">{formatDate(auditoria.fechaFin)}</p>
-                              </div>
-                              <div>
-                                <span className="text-gray-600">Norma:</span>
-                                <p className="font-medium">{auditoria.normaReferencia || '-'}</p>
+                              <div className="flex items-center gap-1.5 bg-[#F8FAFC] px-2 py-1 rounded-lg border border-[#E5E7EB]">
+                                <Clock size={12} className="text-[#2563EB]" />
+                                Fin: {formatDate(auditoria.fechaFin)}
                               </div>
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => setExpandedAuditoria(expandedAuditoria === auditoria.id ? null : auditoria.id)}
-                              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                              title="Ver hallazgos"
-                            >
-                              {expandedAuditoria === auditoria.id ? (
-                                <ChevronUp className="w-5 h-5" />
-                              ) : (
-                                <ChevronDown className="w-5 h-5" />
-                              )}
+                          <div className="flex gap-1 md:bg-[#F8FAFC] md:p-1 md:rounded-xl">
+                            <button onClick={() => setExpandedAuditoria(expandedAuditoria === auditoria.id ? null : auditoria.id)} className="p-2.5 text-[#6B7280] hover:text-[#2563EB] hover:bg-white rounded-lg transition-all">
+                              {expandedAuditoria === auditoria.id ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                             </button>
-                            <button
-                              onClick={() => handleViewAuditoria(auditoria)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                              title="Ver detalles"
-                            >
-                              <Eye className="w-5 h-5" />
+                            <button onClick={() => handleViewAuditoria(auditoria)} className="p-2.5 text-[#2563EB] hover:bg-white rounded-lg transition-all shadow-none">
+                              <Eye size={20} />
                             </button>
-                            <button
-                              onClick={() => handleEditAuditoria(auditoria)}
-                              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                              title="Editar"
-                            >
-                              <Edit className="w-5 h-5" />
+                            <button onClick={() => handleEditAuditoria(auditoria)} className="p-2.5 text-[#10B981] hover:bg-white rounded-lg transition-all shadow-none">
+                              <Edit size={20} />
                             </button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <button
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                                  title="Eliminar"
-                                >
-                                  <Trash2 className="w-5 h-5" />
-                                </button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Esta acción no se puede deshacer. Se eliminará permanentemente la auditoría y sus hallazgos asociados.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteAuditoria(auditoria.id)} className="bg-red-600 hover:bg-red-700">
-                                    Eliminar
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <button onClick={() => handleDeleteAuditoria(auditoria.id)} className="p-2.5 text-[#EF4444] hover:bg-white rounded-lg transition-all shadow-none">
+                              <Trash2 size={20} />
+                            </button>
                           </div>
                         </div>
                       </div>
 
                       {expandedAuditoria === auditoria.id && (
-                        <div className="border-t bg-gray-50 p-4 rounded-b-xl">
-                          <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                              <AlertTriangle className="w-5 h-5" />
-                              Hallazgos de esta Auditoría
+                        <div className="bg-[#F8FAFC] border-t border-[#E5E7EB] p-8">
+                          <div className="flex items-center justify-between mb-6">
+                            <h4 className="font-bold text-[#1E3A8A] flex items-center gap-2">
+                              <AlertTriangle size={18} className="text-[#EAB308]" />
+                              Hallazgos Registrados
                             </h4>
-                            <button
-                              onClick={() => handleCreateHallazgo(auditoria.id)}
-                              className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center gap-1"
-                            >
-                              <Plus className="w-4 h-4" />
-                              Agregar Hallazgo
-                            </button>
+                            <Button onClick={() => handleCreateHallazgo(auditoria.id)} size="sm" className="bg-[#2563EB] text-white rounded-lg font-bold">
+                              <Plus size={14} className="mr-1" /> Nuevo Hallazgo
+                            </Button>
                           </div>
 
-                          <div className="space-y-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {hallazgos.filter(h => h.auditoriaId === auditoria.id).length === 0 ? (
-                              <p className="text-gray-600 text-sm text-center py-4">
-                                No hay hallazgos registrados para esta auditoría
-                              </p>
+                              <div className="col-span-full py-10 text-center bg-white border border-[#E5E7EB] rounded-xl border-dashed">
+                                <p className="text-[#6B7280] text-sm italic">Sin hallazgos en esta auditoría</p>
+                              </div>
                             ) : (
                               hallazgos
                                 .filter(h => h.auditoriaId === auditoria.id)
@@ -780,219 +743,256 @@ const AuditoriasHallazgosView: React.FC = () => {
                                       </div>
                                     </div>
                                   </div>
-                                ))
+                                  <p className="text-[#1E3A8A] font-bold text-sm mb-3 leading-relaxed">{hallazgo.descripcion}</p>
+                                  <div className="flex items-center gap-4 text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">
+                                    <div className="flex items-center gap-1"><Users size={12} /> Responsable</div>
+                                    <div className="flex items-center gap-1"><Calendar size={12} /> {formatDate(hallazgo.creadoEn)}</div>
+                                  </div>
+                                </div>
+                              ))
                             )}
                           </div>
                         </div>
                       )}
                     </div>
-                  ))}
-                </div>
-              )
-            ) : (
-              filteredHallazgos.length === 0 ? (
-                <div className="text-center py-12">
-                  <AlertTriangle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-600">No se encontraron hallazgos</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {filteredHallazgos.map((hallazgo) => {
-                    const auditoria = auditorias.find(a => a.id === hallazgo.auditoriaId);
-                    return (
-                      <div key={hallazgo.id} className="bg-white p-4 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              {getTipoHallazgoBadge(hallazgo.tipo)}
-                              <span className="text-xs text-gray-500">
-                                {formatDate(hallazgo.creadoEn)}
-                              </span>
-                            </div>
-                            <p className="font-semibold text-gray-900 mb-1">{hallazgo.descripcion}</p>
-                            <div className="text-sm text-gray-600 space-y-1">
-                              <p>
-                                <span className="font-medium">Auditoría:</span> {auditoria?.codigo} - {auditoria?.nombre}
-                              </p>
-                              {hallazgo.clausulaIso && (
-                                <p>
-                                  <span className="font-medium">Cláusula:</span> {hallazgo.clausulaIso}
-                                </p>
-                              )}
-                              {hallazgo.evidencia && (
-                                <p className="italic">
-                                  "{hallazgo.evidencia}"
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => handleEditHallazgo(hallazgo)}
-                              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <button
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                                  title="Eliminar Hallazgo"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>¿Eliminar hallazgo?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Esta acción eliminará permanentemente este hallazgo.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteHallazgo(hallazgo.id)} className="bg-red-600 hover:bg-red-700">
-                                    Eliminar
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )
-            )}
-          </div>
-        </div>
-
-        {/* Modal Auditoría */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
-                <h2 className="text-2xl font-bold">
-                  {modalMode === 'view' ? 'Detalles de Auditoría' : modalMode === 'edit' ? 'Editar Auditoría' : 'Nueva Auditoría'}
-                </h2>
-                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-6 h-6" />
-                </button>
+                  ))
+                )}
               </div>
-              <form onSubmit={handleSubmitAuditoria} className="p-6 space-y-5">
-                {modalMode === 'view' ? (
-                  <div className="space-y-4">
-                    <div><strong>Código:</strong> {selectedAuditoria?.codigo}</div>
-                    <div><strong>Nombre:</strong> {selectedAuditoria?.nombre}</div>
-                    <div><strong>Tipo:</strong> {selectedAuditoria?.tipo}</div>
-                    <div><strong>Objetivo:</strong> {selectedAuditoria?.objetivo}</div>
-                    <div><strong>Alcance:</strong> {selectedAuditoria?.alcance}</div>
-                    <div><strong>Norma:</strong> {selectedAuditoria?.normaReferencia}</div>
-                    <div><strong>Estado:</strong> {selectedAuditoria?.estado}</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredHallazgos.length === 0 ? (
+                  <div className="col-span-full py-20 text-center bg-[#F8FAFC] rounded-2xl border border-dashed border-[#E5E7EB]">
+                    <AlertTriangle className="h-16 w-16 text-gray-200 mx-auto mb-4" />
+                    <p className="text-[#6B7280]">No se encontraron hallazgos con los criterios actuales</p>
                   </div>
                 ) : (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <input type="text" placeholder="Código" value={formData.codigo} onChange={e => setFormData({ ...formData, codigo: e.target.value })} required className="w-full px-4 py-3 border rounded-xl" />
-                      <select value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })} className="w-full px-4 py-3 border rounded-xl">
+                  filteredHallazgos.map((hallazgo) => {
+                    const auditoria = auditorias.find(a => a.id === hallazgo.auditoriaId);
+                    return (
+                      <Card key={hallazgo.id} className="rounded-2xl border-[#E5E7EB] shadow-sm hover:shadow-md transition-all bg-white relative overflow-hidden group">
+                        <div className={`absolute top-0 left-0 w-1.5 h-full ${hallazgo.tipo === 'no_conformidad_mayor' ? 'bg-[#EF4444]' :
+                            hallazgo.tipo === 'no_conformidad_menor' ? 'bg-[#EAB308]' : 'bg-[#3B82F6]'
+                          }`} />
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-center mb-2">
+                            {getTipoHallazgoBadge(hallazgo.tipo)}
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                              <button onClick={() => handleEditHallazgo(hallazgo)} className="p-1.5 text-[#10B981] hover:bg-[#ECFDF5] rounded-md"><Edit size={14} /></button>
+                              <button onClick={() => handleDeleteHallazgo(hallazgo.id)} className="p-1.5 text-[#EF4444] hover:bg-[#FEF2F2] rounded-md"><Trash2 size={14} /></button>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <p className="text-[#1E3A8A] font-bold text-sm leading-relaxed min-h-[40px]">{hallazgo.descripcion}</p>
+                          <div className="pt-4 border-t border-[#F1F5F9] space-y-2">
+                            <div className="flex items-center gap-2 text-xs text-[#6B7280]">
+                              <FileText size={12} className="text-[#2563EB]" />
+                              <span className="font-bold flex-1 truncate">{auditoria?.codigo} - {auditoria?.nombre}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-[#6B7280]">
+                              <Activity size={12} className="text-[#2563EB]" />
+                              <span className="font-bold">Cláusula: {hallazgo.clausulaIso || 'No esp.'}</span>
+                            </div>
+                            {hallazgo.evidencia && (
+                              <p className="text-[10px] text-[#6B7280] bg-[#F8FAFC] p-2 rounded-lg border border-[#E5E7EB] italic">
+                                "{hallazgo.evidencia}"
+                              </p>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Modal Auditoría */}
+      {showModal && (
+        <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#E5E7EB]">
+            <div className="sticky top-0 bg-[#F8FAFC] border-b p-8 flex justify-between items-center z-10">
+              <h2 className="text-2xl font-bold text-[#1E3A8A]">
+                {modalMode === 'view' ? 'Detalles de Auditoría' : modalMode === 'edit' ? 'Editar Auditoría' : 'Nueva Auditoría'}
+              </h2>
+              <button onClick={() => setShowModal(false)} className="p-2 border border-[#E5E7EB] text-[#6B7280] hover:text-[#2563EB] hover:bg-white rounded-xl transition-all">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmitAuditoria} className="p-8 space-y-6">
+              {modalMode === 'view' && selectedAuditoria ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+                  <div className="space-y-4">
+                    <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
+                      <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Información General</h4>
+                      <p><strong>Nombre:</strong> {selectedAuditoria.nombre}</p>
+                      <p><strong>Código:</strong> {selectedAuditoria.codigo}</p>
+                      <p><strong>Tipo:</strong> {selectedAuditoria.tipo}</p>
+                    </div>
+                    <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
+                      <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Objetivos y Alcance</h4>
+                      <p><strong>Objetivo:</strong> {selectedAuditoria.objetivo}</p>
+                      <p><strong>Alcance:</strong> {selectedAuditoria.alcance}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
+                      <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Cronograma</h4>
+                      <p><strong>Planificada:</strong> {formatDate(selectedAuditoria.fechaPlanificada)}</p>
+                      <p><strong>Inicio:</strong> {formatDate(selectedAuditoria.fechaInicio)}</p>
+                      <p><strong>Fin:</strong> {formatDate(selectedAuditoria.fechaFin)}</p>
+                    </div>
+                    <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
+                      <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Auditor</h4>
+                      <p><strong>Auditor Líder:</strong> {selectedAuditoria.auditorLider?.nombre || 'No asignado'}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-[#6B7280] uppercase">Código</label>
+                      <Input value={formData.codigo} readOnly className="bg-[#F8FAFC] font-bold" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-[#6B7280] uppercase">Tipo</label>
+                      <select value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none">
                         <option value="interna">Interna</option>
                         <option value="externa">Externa</option>
                         <option value="certificacion">Certificación</option>
                       </select>
                     </div>
-                    <input type="text" placeholder="Nombre" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} className="w-full px-4 py-3 border rounded-xl" />
-                    <textarea placeholder="Objetivo" value={formData.objetivo} onChange={e => setFormData({ ...formData, objetivo: e.target.value })} rows={3} className="w-full px-4 py-3 border rounded-xl resize-none" />
-                    <textarea placeholder="Alcance" value={formData.alcance} onChange={e => setFormData({ ...formData, alcance: e.target.value })} rows={3} className="w-full px-4 py-3 border rounded-xl resize-none" />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <input type="text" placeholder="Norma" value={formData.normaReferencia} onChange={e => setFormData({ ...formData, normaReferencia: e.target.value })} className="w-full px-4 py-3 border rounded-xl" />
-                      <select value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })} className="w-full px-4 py-3 border rounded-xl">
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-[#6B7280] uppercase">Nombre de Auditoría</label>
+                    <Input placeholder="Nombre" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-[#6B7280] uppercase">Objetivo</label>
+                    <textarea placeholder="Objetivo" value={formData.objetivo} onChange={e => setFormData({ ...formData, objetivo: e.target.value })} rows={3} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-[#6B7280] uppercase">Alcance</label>
+                    <textarea placeholder="Alcance" value={formData.alcance} onChange={e => setFormData({ ...formData, alcance: e.target.value })} rows={3} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-[#6B7280] uppercase">Norma Referencia</label>
+                      <Input value={formData.normaReferencia} onChange={e => setFormData({ ...formData, normaReferencia: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-[#6B7280] uppercase">Estado</label>
+                      <select value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none">
                         <option value="planificada">Planificada</option>
                         <option value="en_curso">En Curso</option>
                         <option value="completada">Completada</option>
                         <option value="cancelada">Cancelada</option>
                       </select>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                      <input type="date" value={formData.fechaPlanificada} onChange={e => setFormData({ ...formData, fechaPlanificada: e.target.value })} className="w-full px-4 py-3 border rounded-xl" />
-                      <input type="date" value={formData.fechaInicio} onChange={e => setFormData({ ...formData, fechaInicio: e.target.value })} className="w-full px-4 py-3 border rounded-xl" />
-                      <input type="date" value={formData.fechaFin} onChange={e => setFormData({ ...formData, fechaFin: e.target.value })} className="w-full px-4 py-3 border rounded-xl" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#6B7280] uppercase px-1">Planificada</label>
+                      <input type="date" value={formData.fechaPlanificada} onChange={e => setFormData({ ...formData, fechaPlanificada: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl font-bold bg-white" />
                     </div>
-                  </>
-                )}
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  <button type="button" onClick={() => setShowModal(false)} className="px-6 py-3 border rounded-xl text-gray-700 hover:bg-gray-50">
-                    {modalMode === 'view' ? 'Cerrar' : 'Cancelar'}
-                  </button>
-                  {modalMode !== 'view' && (
-                    <button type="submit" className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700">
-                      {modalMode === 'edit' ? 'Actualizar' : 'Crear'}
-                    </button>
-                  )}
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Modal Hallazgo */}
-        {showHallazgoModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
-                <h2 className="text-2xl font-bold">
-                  {modalMode === 'edit' ? 'Editar Hallazgo' : 'Nuevo Hallazgo'}
-                </h2>
-                <button onClick={() => setShowHallazgoModal(false)} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-6 h-6" />
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#6B7280] uppercase px-1">Inicio</label>
+                      <input type="date" value={formData.fechaInicio} onChange={e => setFormData({ ...formData, fechaInicio: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl font-bold bg-white" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#6B7280] uppercase px-1">Fin</label>
+                      <input type="date" value={formData.fechaFin} onChange={e => setFormData({ ...formData, fechaFin: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl font-bold bg-white" />
+                    </div>
+                  </div>
+                </>
+              )}
+              <div className="flex justify-end gap-3 pt-8 border-t border-[#E5E7EB]">
+                <button type="button" onClick={() => setShowModal(false)} className="px-8 py-4 border border-[#E5E7EB] rounded-2xl text-[#6B7280] font-bold hover:bg-[#F8FAFC] transition-all">
+                  {modalMode === 'view' ? 'Cerrar' : 'Cancelar'}
                 </button>
+                {modalMode !== 'view' && (
+                  <button type="submit" className="px-8 py-4 bg-[#2563EB] text-white rounded-2xl font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-200 transition-all">
+                    {modalMode === 'edit' ? 'Actualizar Registro' : 'Crear Auditoría'}
+                  </button>
+                )}
               </div>
-              <form onSubmit={handleSubmitHallazgo} className="p-6 space-y-5">
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Hallazgo */}
+      {showHallazgoModal && (
+        <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-[#E5E7EB]">
+            <div className="sticky top-0 bg-[#F8FAFC] border-b p-8 flex justify-between items-center z-10">
+              <h2 className="text-2xl font-bold text-[#1E3A8A]">
+                {modalMode === 'edit' ? 'Editar Hallazgo' : 'Registro de Hallazgo'}
+              </h2>
+              <button onClick={() => setShowHallazgoModal(false)} className="p-2 border border-[#E5E7EB] text-[#6B7280] hover:text-[#2563EB] hover:bg-white rounded-xl transition-all">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmitHallazgo} className="p-8 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-[#6B7280] uppercase">Clasificación del Hallazgo</label>
                 <select
                   value={hallazgoFormData.tipo}
                   onChange={e => setHallazgoFormData({ ...hallazgoFormData, tipo: e.target.value })}
-                  className="w-full px-4 py-3 border rounded-xl"
+                  className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none"
                 >
                   <option value="no_conformidad_mayor">No Conformidad Mayor</option>
                   <option value="no_conformidad_menor">No Conformidad Menor</option>
                   <option value="observacion">Observación</option>
                   <option value="oportunidad_mejora">Oportunidad de Mejora</option>
                 </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-[#6B7280] uppercase">Descripción Detallada</label>
                 <textarea
-                  placeholder="Descripción del hallazgo"
+                  placeholder="Descripción del hallazgo..."
                   value={hallazgoFormData.descripcion}
                   onChange={e => setHallazgoFormData({ ...hallazgoFormData, descripcion: e.target.value })}
-                  rows={3}
+                  rows={4}
                   required
-                  className="w-full px-4 py-3 border rounded-xl resize-none"
+                  className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none font-medium"
                 />
-                <input
-                  type="text"
-                  placeholder="Cláusula ISO (ej: 7.1.3)"
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-[#6B7280] uppercase">Cláusula ISO Asociada</label>
+                <Input
+                  placeholder="ej: 7.1.3 - Infraestructura"
                   value={hallazgoFormData.clausulaIso}
                   onChange={e => setHallazgoFormData({ ...hallazgoFormData, clausulaIso: e.target.value })}
                   className="w-full px-4 py-3 border rounded-xl"
                 />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-[#6B7280] uppercase">Evidencia Objetiva</label>
                 <textarea
-                  placeholder="Evidencia"
+                  placeholder="Describa la evidencia encontrada..."
                   value={hallazgoFormData.evidencia}
                   onChange={e => setHallazgoFormData({ ...hallazgoFormData, evidencia: e.target.value })}
                   rows={3}
-                  className="w-full px-4 py-3 border rounded-xl resize-none"
+                  className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none italic text-gray-600"
                 />
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  <button type="button" onClick={() => setShowHallazgoModal(false)} className="px-6 py-3 border rounded-xl text-gray-700 hover:bg-gray-50">
-                    Cancelar
-                  </button>
-                  <button type="submit" className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700">
-                    {modalMode === 'edit' ? 'Actualizar' : 'Crear'} Hallazgo
-                  </button>
-                </div>
-              </form>
-            </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-8 border-t border-[#E5E7EB]">
+                <button type="button" onClick={() => setShowHallazgoModal(false)} className="px-8 py-4 border border-[#E5E7EB] rounded-2xl text-[#6B7280] font-bold hover:bg-[#F8FAFC] transition-all">
+                  Descartar
+                </button>
+                <button type="submit" className="px-8 py-4 bg-[#2563EB] text-white rounded-2xl font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-200 transition-all">
+                  {modalMode === 'edit' ? 'Actualizar Hallazgo' : 'Registrar Hallazgo'}
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

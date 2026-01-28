@@ -26,10 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-import { toast } from "sonner";
-
-const API_URL = "http://localhost:8000/api/v1";
+import { apiClient } from "@/lib/api";
 
 interface Riesgo {
   id: string;
@@ -49,6 +46,11 @@ interface Riesgo {
   creadoEn: string;
 }
 
+interface Proceso {
+  id: string;
+  nombre: string;
+}
+
 export default function MatrizRiesgos() {
   const [riesgos, setRiesgos] = useState<Riesgo[]>([]);
   const [procesos, setProcesos] = useState<{ id: string; nombre: string }[]>([]);
@@ -58,8 +60,10 @@ export default function MatrizRiesgos() {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedRiesgo, setSelectedRiesgo] = useState<Riesgo | null>(null);
   const [saving, setSaving] = useState(false);
+  const [procesos, setProcesos] = useState<Proceso[]>([]);
 
   const [formData, setFormData] = useState({
+    procesoId: "",
     codigo: "",
     descripcion: "",
     tipo: "",
@@ -73,10 +77,16 @@ export default function MatrizRiesgos() {
 
   useEffect(() => {
     fetchRiesgos();
+    fetchProcesos();
   }, []);
 
-  const getAuthToken = () => {
-    return localStorage.getItem("token");
+  const fetchProcesos = async () => {
+    try {
+      const response = await apiClient.get('/procesos');
+      setProcesos(response.data);
+    } catch (error) {
+      console.error("Error al cargar procesos:", error);
+    }
   };
 
   const fetchRiesgos = async () => {
@@ -126,55 +136,43 @@ export default function MatrizRiesgos() {
   const handleCreateRiesgo = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.codigo || !formData.probabilidad || !formData.impacto || !formData.procesoId) {
-      toast.error("Por favor completa los campos obligatorios");
+    if (!formData.procesoId || !formData.codigo || !formData.probabilidad || !formData.impacto) {
+      alert("Por favor completa los campos obligatorios");
       return;
     }
 
     try {
       setSaving(true);
-      const token = getAuthToken();
-
-      if (!token) {
-        throw new Error("No hay sesión activa");
-      }
 
       const probabilidad = parseInt(formData.probabilidad);
       const impacto = parseInt(formData.impacto);
-      const nivelRiesgoNum = probabilidad * impacto;
-      // Get label for nivel_riesgo string required by backend
-      const nivelRiesgo = getNivelRiesgoLabel(nivelRiesgoNum);
+      const nivel = probabilidad * impacto;
 
-      // Payload mapping to match Backend Pydantic Schema (snake_case)
+      let nivelRiesgoStr = "Bajo";
+      if (nivel >= 15) nivelRiesgoStr = "Crítico";
+      else if (nivel >= 10) nivelRiesgoStr = "Alto";
+      else if (nivel >= 5) nivelRiesgoStr = "Medio";
+
+      // Mapear a snake_case según esquema RiesgoCreate
       const payload = {
         proceso_id: formData.procesoId,
         codigo: formData.codigo,
         descripcion: formData.descripcion,
-        tipo_riesgo: formData.tipo, // maps to tipo_riesgo
-        probabilidad: probabilidad,
-        impacto: impacto,
-        nivel_riesgo: nivelRiesgo, // string label
-        estado: formData.estado,
-        // Omitted: tratamiento (not in schema), fechaIdentificacion (not in schema)
+        tipo_riesgo: formData.tipo || "operacional", // Default si está vacío
+        probabilidad,
+        impacto,
+        nivel_riesgo: nivelRiesgoStr,
+        // tratamiento no está en el esquema, se omite o se pone en otro campo si fuera necesario
+        // fechaIdentificacion no está en el esquema
+        estado: "activo"
       };
 
-      const response = await fetch(`${API_URL}/riesgos`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Error al crear riesgo");
-      }
+      await apiClient.post('/riesgos', payload);
 
       toast.success("Riesgo creado exitosamente");
       setShowNewDialog(false);
       setFormData({
+        procesoId: "",
         codigo: "",
         descripcion: "",
         tipo: "",
@@ -466,6 +464,25 @@ export default function MatrizRiesgos() {
 
           <form onSubmit={handleCreateRiesgo}>
             <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="proceso">Proceso *</Label>
+                <Select
+                  value={formData.procesoId}
+                  onValueChange={(value) => setFormData({ ...formData, procesoId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona proceso" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {procesos.map((proc) => (
+                      <SelectItem key={proc.id} value={proc.id}>
+                        {proc.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="proceso">Proceso / Área *</Label>

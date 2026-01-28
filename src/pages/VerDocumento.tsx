@@ -257,27 +257,27 @@ export default function VerDocumento() {
       { color: string; icon: React.ReactElement; label: string }
     > = {
       borrador: {
-        color: "bg-gray-100 text-gray-800 border-gray-300",
+        color: "bg-[#F8FAFC] text-[#6B7280] border-[#E5E7EB]",
         icon: <Clock className="w-4 h-4" />,
         label: "Borrador",
       },
       en_revision: {
-        color: "bg-blue-100 text-blue-800 border-blue-300",
+        color: "bg-[#E0EDFF] text-[#2563EB] border-[#2563EB]/30",
         icon: <Eye className="w-4 h-4" />,
         label: "En Revisión",
       },
       pendiente_aprobacion: {
-        color: "bg-orange-100 text-orange-800 border-orange-300",
+        color: "bg-[#FFF7ED] text-[#F59E0B] border-[#F59E0B]/30",
         icon: <FileCheck className="w-4 h-4" />,
         label: "Pendiente Aprobación",
       },
       aprobado: {
-        color: "bg-green-100 text-green-800 border-green-300",
+        color: "bg-[#ECFDF5] text-[#22C55E] border-[#22C55E]/30",
         icon: <CheckCircle className="w-4 h-4" />,
         label: "Aprobado",
       },
       obsoleto: {
-        color: "bg-red-100 text-red-800 border-red-300",
+        color: "bg-[#FEF2F2] text-[#EF4444] border-[#EF4444]/30",
         icon: <Trash2 className="w-4 h-4" />,
         label: "Obsoleto",
       },
@@ -297,10 +297,10 @@ export default function VerDocumento() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-[#F5F7FA]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Cargando documento...</p>
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-[#2563EB] border-t-transparent" />
+          <p className="mt-4 text-lg font-medium text-[#6B7280]">Cargando documento...</p>
         </div>
       </div>
     );
@@ -308,233 +308,167 @@ export default function VerDocumento() {
 
   if (!documento) {
     return (
-      <div className="container mx-auto p-6 max-w-7xl">
-        <div className="text-center py-12">
-          <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold mb-2">
-            Documento no encontrado
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            El documento que buscas no existe o fue eliminado
-          </p>
-          <button
-            onClick={() => navigate("/documentos")}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Volver a Documentos
-          </button>
+      <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-20 text-center">
+            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h2 className="text-2xl font-semibold mb-2 text-[#1E3A8A]">
+              Documento no encontrado
+            </h2>
+            <p className="text-[#6B7280] mb-6">
+              El documento que buscas no existe o fue eliminado
+            </p>
+            <button
+              onClick={() => navigate("/documentos")}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Volver a Documentos
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      {/* Header */}
-      <div className="mb-6">
-        <button
-          onClick={() => navigate("/documentos")}
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver a documentos
-        </button>
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Profesional */}
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+          <button
+            onClick={() => navigate("/documentos")}
+            className="inline-flex items-center gap-2 text-[#6B7280] hover:text-[#1E3A8A] mb-4 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver a documentos
+          </button>
 
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2">
-              {documento.nombre}
-            </h1>
-            <p className="text-muted-foreground font-mono text-lg">
-              {documento.codigo}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                <FileText className="h-9 w-9 text-[#2563EB]" />
+                {documento.nombre}
+              </h1>
+              <p className="text-[#6B7280] mt-2 text-lg font-mono">
+                {documento.codigo}
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigate(`/documentos/${documento.id}/editar`)}
+                className="flex items-center gap-2 px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all"
+              >
+                <Edit className="w-4 h-4" />
+                Editar
+              </button>
+              <button
+                onClick={handleExportPDF}
+                className="flex items-center gap-2 px-6 py-3 bg-white text-[#6B7280] border border-[#E5E7EB] rounded-xl hover:bg-[#F8FAFC] font-semibold transition-all"
+              >
+                <Download className="w-4 h-4" />
+                Exportar PDF
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-2 px-6 py-3 bg-[#FEF2F2] text-[#EF4444] border border-[#EF4444]/30 rounded-xl hover:bg-red-100 font-semibold transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Metadata Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Estado */}
+          <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-semibold text-[#1E3A8A]">Estado</span>
+            </div>
+            {getEstadoBadge(documento.estado)}
+          </div>
+
+          {/* Versión */}
+          <div className="bg-[#E0EDFF] p-6 rounded-2xl border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-4">
+              <Hash className="w-5 h-5 text-[#2563EB]" />
+              <span className="text-sm font-semibold text-[#1E3A8A]">Versión</span>
+            </div>
+            <p className="text-3xl font-bold text-[#1E3A8A]">{documento.version_actual}</p>
+          </div>
+
+          {/* Tipo de Documento */}
+          <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-4">
+              <FileType className="w-5 h-5 text-[#6B7280]" />
+              <span className="text-sm font-semibold text-[#1E3A8A]">Tipo</span>
+            </div>
+            <p className="text-xl font-semibold text-[#1E3A8A] capitalize">
+              {documento.tipo_documento}
+            </p>
+          </div>
+        </div>
+
+        {/* Fechas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="w-5 h-5 text-[#2563EB]" />
+              <span className="text-sm font-semibold text-[#1E3A8A]">Fecha de Creación</span>
+            </div>
+            <p className="text-lg text-[#6B7280]">
+              {new Date(documento.creado_en).toLocaleDateString("es-ES", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </p>
           </div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => navigate(`/documentos/${documento.id}/editar`)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-            >
-              <Edit className="w-4 h-4" />
-              Editar
-            </button>
-            <button
-              onClick={handleExportPDF}
-              className="flex items-center gap-2 px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              Exportar PDF
-            </button>
-            <button
-              onClick={handleDelete}
-              className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              Eliminar
-            </button>
+          <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <Clock className="w-5 h-5 text-[#2563EB]" />
+              <span className="text-sm font|-semibold text-[#1E3A8A]">Última Actualización</span>
+            </div>
+            <p className="text-lg text-[#6B7280]">
+              {new Date(documento.actualizado_en).toLocaleDateString("es-ES", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
           </div>
         </div>
-      </div>
 
-      {/* Metadata Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {/* Estado */}
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-muted-foreground">Estado</span>
-          </div>
-          {getEstadoBadge(documento.estado)}
-        </div>
-
-        {/* Versión */}
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <div className="flex items-center gap-2 mb-2">
-            <Hash className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Versión</span>
-          </div>
-          <p className="text-2xl font-bold">{documento.version_actual}</p>
-        </div>
-
-        {/* Tipo de Documento */}
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <div className="flex items-center gap-2 mb-2">
-            <FileType className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Tipo</span>
-          </div>
-          <p className="text-xl font-semibold capitalize">
-            {documento.tipo_documento}
-          </p>
-        </div>
-      </div>
-
-
-
-      {/* Workflow removed - backend doesn't track these user relationships */}
-
-
-
-      {/* Fechas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Fecha de Creación</span>
-          </div>
-          <p className="text-lg">
-            {new Date(documento.creado_en).toLocaleDateString("es-ES", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-        </div>
-
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Última Actualización</span>
-          </div>
-          <p className="text-lg">
-            {new Date(documento.actualizado_en).toLocaleDateString("es-ES", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-        </div>
-      </div>
-
-
-      {/* Historial de Versiones */}
-      {versiones.length > 0 && (
-        <div className="bg-card rounded-lg border border-border mb-6">
-          <div className="p-6 border-b border-border">
+        {/* Contenido del Documento */}
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm">
+          <div className="p-6 border-b border-[#E5E7EB] bg-[#F1F5F9]">
             <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-semibold">Historial de Versiones</h2>
-              <span className="ml-2 px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
-                {versiones.length} {versiones.length === 1 ? 'versión' : 'versiones'}
-              </span>
+              <FileText className="w-6 h-6 text-[#2563EB]" />
+              <h2 className="text-xl font-semibold text-[#1E3A8A]">Contenido del Documento</h2>
             </div>
           </div>
-          <div className="p-6">
-            {loadingVersiones ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                <p className="text-sm text-muted-foreground">Cargando versiones...</p>
+          <div className="p-8">
+            {documento.descripcion ? (
+              <div className="prose prose-sm max-w-none">
+                <p className="text-[#6B7280]">{documento.descripcion}</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {versiones.map((version, index) => (
-                  <div
-                    key={version.id || index}
-                    className="flex items-start gap-4 p-4 border border-border rounded-lg hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex-shrink-0">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Hash className="w-6 h-6 text-primary" />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-lg">
-                          Versión {version.version}
-                        </span>
-                        {index === 0 && (
-                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
-                            Más reciente
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {version.descripcion_cambios || 'Sin descripción'}
-                      </p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(version.creado_en).toLocaleDateString('es-ES', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="text-center py-12 text-[#6B7280]">
+                <FileText className="w-12 h-12 mx-auto mb-3 opacity-30 text-gray-300" />
+                <p>Este documento no tiene contenido</p>
               </div>
             )}
           </div>
         </div>
-      )}
-      {/* Contenido del Documento */}
-      <div className="bg-card rounded-lg border border-border">
-        <div className="p-6 border-b border-border">
-          <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-semibold">Contenido del Documento</h2>
-          </div>
-        </div>
-        <div className="p-6">
-          {documento.descripcion ? (
-            <div className="prose prose-sm max-w-none">
-              <p>{documento.descripcion}</p>
-            </div>
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Este documento no tiene contenido</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

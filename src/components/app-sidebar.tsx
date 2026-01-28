@@ -83,10 +83,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     return userPermisos.includes(permiso);
   };
 
+  // Definición de tipos para los elementos del menú
+  interface MenuItem {
+    title: string;
+    url: string;
+    icon?: any; // Usamos any para evitar conflictos con LucideIcon si no se importa directamente
+    isActive?: boolean;
+    badge?: string;
+    badgeVariant?: "default" | "destructive" | "outline" | "secondary";
+    permiso?: string;
+    items?: MenuItem[];
+    onClick?: () => void;
+  }
+
   // Función para filtrar menús recursivamente
-  const filterMenuItems = (items: any[]): any[] => {
+  const filterMenuItems = (items: MenuItem[]): MenuItem[] => {
     return items
-      .map(item => {
+      .map((item): MenuItem | null => {
         // Generar lista de sub-items permitidos
         const filteredSubItems = item.items ? filterMenuItems(item.items) : undefined;
 
@@ -113,7 +126,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
         return null;
       })
-      .filter(item => item !== null);
+      .filter((item): item is MenuItem => item !== null);
   };
 
   const data = {
@@ -246,6 +259,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           { title: "Programadas", url: "/capacitaciones/programadas", permiso: "capacitaciones.gestionar" },
           { title: "Historial", url: "/capacitaciones/historial", permiso: "capacitaciones.gestionar" },
+          { title: "Asistencias", url: "/capacitaciones/asistencias", permiso: "capacitaciones.gestionar" },
+          { title: "Competencias", url: "/capacitaciones/competencias", permiso: "capacitaciones.gestionar" },
         ],
       },
     ]),

@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Calendar, Plus, Search, Eye, Edit, Trash2, 
+import {
+  Calendar, Plus, Search, Eye, Edit, Trash2,
   Users, CheckCircle2, AlertCircle, Clock, ChevronDown, ChevronUp,
   XCircle, Filter, FileText, Activity, CheckCircle
 } from 'lucide-react';
 import { auditoriaService } from '@/services/auditoria.service';
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 // === MOCK DATA (Solo auditorías completadas) ===
 const MOCK_AUDITORIAS_COMPLETADAS: Auditoria[] = [
@@ -225,99 +233,101 @@ const AuditoriasCompletadas: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
 
-        {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-green-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 rounded-xl shadow-lg">
-                <CheckCircle className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Auditorías Completadas</h1>
-                <p className="text-gray-600 mt-1">
-                  ISO 9001:2015 - Cláusula 9.2 | {auditorias.length} auditoría{auditorias.length !== 1 ? 's' : ''} finalizada{auditorias.length !== 1 ? 's' : ''}
-                </p>
+        {/* Header Profesional */}
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                <CheckCircle className="h-9 w-9 text-[#2563EB]" />
+                Auditorías Completadas
+              </h1>
+              <p className="text-[#6B7280] mt-2 text-lg">
+                Histórico institucional de auditorías finalizadas y verificadas
+              </p>
+              <div className="flex flex-wrap items-center gap-3 mt-4">
+                <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
+                  {auditorias.length} auditorías cerradas
+                </Badge>
+                <Badge className="bg-[#ECFDF5] text-[#22C55E]">
+                  ISO 9001:2015 Cumplida
+                </Badge>
               </div>
             </div>
-            <button
-              disabled
-              className="bg-gray-300 text-gray-500 px-6 py-3 rounded-xl cursor-not-allowed flex items-center gap-2 opacity-60"
-              title="No se crean nuevas auditorías aquí"
-            >
-              <Plus className="w-5 h-5" />
-              Nueva Auditoría
-            </button>
+            <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-white/50 shadow-sm">
+              <p className="text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-1 text-center">Última Auditoría</p>
+              <p className="text-[#1E3A8A] font-bold text-lg text-center">
+                {auditorias.length > 0 ? formatDate(auditorias[0].fechaFin) : '-'}
+              </p>
+            </div>
           </div>
         </div>
-
-        {/* Info */}
-        {error && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-emerald-600" />
-            <p className="text-sm text-emerald-800">{error}</p>
-          </div>
-        )}
 
         {/* Estadísticas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-green-100 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-green-100 p-3 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+          <Card className="bg-[#E0EDFF] border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-semibold text-[#1E3A8A]">Total Histórico</CardDescription>
+                <CheckCircle2 className="h-6 w-6 text-[#2563EB]" />
               </div>
-              <span className="text-3xl font-bold text-green-600">{auditorias.length}</span>
-            </div>
-            <h3 className="text-gray-700 font-semibold">Total Completadas</h3>
-            <p className="text-sm text-gray-500 mt-1">Auditorías finalizadas</p>
-          </div>
+              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{auditorias.length}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xs text-[#6B7280]">Auditorías finalizadas con éxito</div>
+            </CardContent>
+          </Card>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-blue-100 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <FileText className="w-6 h-6 text-blue-600" />
+          <Card className="bg-white border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-semibold text-[#6B7280]">Certificaciones</CardDescription>
+                <FileText className="h-6 w-6 text-[#2563EB]" />
               </div>
-              <span className="text-3xl font-bold text-blue-600">
+              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">
                 {auditorias.filter(a => a.tipo === 'certificacion').length}
-              </span>
-            </div>
-            <h3 className="text-gray-700 font-semibold">Certificaciones</h3>
-            <p className="text-sm text-gray-500 mt-1">Renovadas o logradas</p>
-          </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Badge variant="outline" className="bg-[#F8FAFC] text-[#6B7280] border-[#E5E7EB]">Renovaciones Logradas</Badge>
+            </CardContent>
+          </Card>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-orange-100 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-orange-100 p-3 rounded-lg">
-                <Activity className="w-6 h-6 text-orange-600" />
+          <Card className="bg-white border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-semibold text-[#6B7280]">Seguimientos</CardDescription>
+                <Activity className="h-6 w-6 text-[#2563EB]" />
               </div>
-              <span className="text-3xl font-bold text-orange-600">
+              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">
                 {auditorias.filter(a => a.tipo === 'seguimiento').length}
-              </span>
-            </div>
-            <h3 className="text-gray-700 font-semibold">Seguimientos</h3>
-            <p className="text-sm text-gray-500 mt-1">Acciones correctivas cerradas</p>
-          </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Badge variant="outline" className="bg-[#F8FAFC] text-[#6B7280] border-[#E5E7EB]">Planes de Acción Cerrados</Badge>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Filtros */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar por código u objetivo..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
-              />
-            </div>
+        <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col md:flex-row gap-4 items-center">
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6B7280] w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Buscar por código u objetivo de auditoría..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-4 border border-[#E5E7EB] rounded-xl focus:ring-2 focus:ring-[#2563EB]/20 outline-none text-[#1E3A8A] font-medium"
+            />
+          </div>
+          <div className="flex gap-2 w-full md:w-auto">
             <select
               value={filterTipo}
               onChange={(e) => setFilterTipo(e.target.value)}
-              className="px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none bg-white"
+              className="px-4 py-4 border border-[#E5E7EB] rounded-xl focus:ring-2 focus:ring-[#2563EB]/20 outline-none bg-[#F8FAFC] font-bold text-[#1E3A8A] w-full md:w-64 cursor-pointer"
             >
               <option value="">Todos los tipos</option>
               <option value="interna">Interna</option>
@@ -327,162 +337,242 @@ const AuditoriasCompletadas: React.FC = () => {
             </select>
             <button
               onClick={() => { setSearchTerm(''); setFilterTipo(''); }}
-              className="bg-gradient-to-r from-gray-600 to-gray-700 text-white px-6 py-3 rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all shadow-lg hover:shadow-xl font-medium flex items-center gap-2"
+              className="p-4 bg-[#F8FAFC] hover:bg-[#E0EDFF] text-[#2563EB] rounded-xl transition-all border border-[#E5E7EB]"
+              title="Limpiar Filtros"
             >
               <Filter className="w-5 h-5" />
-              Limpiar
             </button>
           </div>
         </div>
 
-        {/* Tabla */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          {filteredAuditorias.length === 0 ? (
-            <div className="p-12 text-center">
-              <CheckCircle className="w-16 h-16 text-green-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No hay auditorías completadas</h3>
-              <p className="text-gray-600">
-                {searchTerm || filterTipo
-                  ? 'Ajusta los filtros para ver resultados'
-                  : 'Aún no se han completado auditorías'}
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-green-50 to-emerald-100 border-b border-green-200">
+        {/* Tabla principal */}
+        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
+          <div className="bg-[#F8FAFC] border-b border-[#E5E7EB] px-8 py-5 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-[#1E3A8A]">Historial de Auditorías</h2>
+            <Badge variant="outline" className="bg-white text-[#6B7280]">
+              Total: {filteredAuditorias.length}
+            </Badge>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-[#F1F5F9]">
+                <tr>
+                  <th className="w-12 px-8 py-4"></th>
+                  <th className="px-8 py-4 text-left text-xs font-bold text-[#1E3A8A] uppercase tracking-wider">Código</th>
+                  <th className="px-8 py-4 text-left text-xs font-bold text-[#1E3A8A] uppercase tracking-wider">Tipo</th>
+                  <th className="px-8 py-4 text-left text-xs font-bold text-[#1E3A8A] uppercase tracking-wider">Objetivo</th>
+                  <th className="px-8 py-4 text-left text-xs font-bold text-[#1E3A8A] uppercase tracking-wider">Fecha Cierre</th>
+                  <th className="px-8 py-4 text-right text-xs font-bold text-[#1E3A8A] uppercase tracking-wider">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E5E7EB]">
+                {filteredAuditorias.length === 0 ? (
                   <tr>
-                    <th className="w-12 px-6 py-4"></th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Código</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Objetivo</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Finalizada</th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
+                    <td colSpan={6} className="py-20 text-center text-[#6B7280]">
+                      <div className="flex flex-col items-center">
+                        <CheckCircle className="h-16 w-16 text-gray-200 mb-4" />
+                        <p className="text-lg font-medium">No se encontraron auditorías finalizadas</p>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredAuditorias.map((auditoria) => (
+                ) : (
+                  filteredAuditorias.map((auditoria) => (
                     <React.Fragment key={auditoria.id}>
-                      <tr className="hover:bg-green-50 transition-colors">
-                        <td className="px-6 py-4">
+                      <tr className="hover:bg-[#EFF6FF] transition-colors group">
+                        <td className="px-8 py-4">
                           <button
                             onClick={() => toggleRow(auditoria.id)}
-                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                            className="text-[#6B7280] hover:text-[#2563EB] transition-colors p-1 hover:bg-[#E0EDFF] rounded-lg"
                           >
                             {expandedRows.has(auditoria.id) ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                           </button>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm font-bold text-gray-900">{auditoria.codigo}</span>
+                        <td className="px-8 py-4">
+                          <span className="font-bold text-[#1E3A8A] group-hover:text-[#2563EB] transition-colors uppercase">
+                            {auditoria.codigo}
+                          </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-8 py-4">
                           <TipoBadge tipo={auditoria.tipo} />
                         </td>
-                        <td className="px-6 py-4 max-w-md">
-                          <p className="text-sm text-gray-700 line-clamp-2">{auditoria.objetivo || 'Sin objetivo'}</p>
+                        <td className="px-8 py-4">
+                          <p className="text-sm text-[#111827] font-medium line-clamp-1">{auditoria.objetivo || 'Sin objetivo'}</p>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Calendar className="w-4 h-4 mr-2 text-green-600" />
+                        <td className="px-8 py-4">
+                          <div className="flex items-center text-sm text-[#6B7280]">
+                            <Calendar className="w-4 h-4 mr-2" />
                             {formatDate(auditoria.fechaFin)}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button onClick={() => openModal('view', auditoria)} className="p-2 hover:bg-green-50 rounded-lg transition-colors">
-                              <Eye className="w-5 h-5 text-green-600" />
+                        <td className="px-8 py-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => openModal('view', auditoria)} className="p-2 text-[#2563EB] hover:bg-[#E0EDFF] rounded-lg transition-colors">
+                              <Eye className="w-5 h-5" />
                             </button>
-                            <button onClick={() => openModal('edit', auditoria)} className="p-2 hover:bg-emerald-50 rounded-lg transition-colors">
-                              <Edit className="w-5 h-5 text-emerald-600" />
+                            <button onClick={() => openModal('edit', auditoria)} className="p-2 text-[#10B981] hover:bg-[#ECFDF5] rounded-lg transition-colors">
+                              <Edit className="w-5 h-5" />
                             </button>
                           </div>
                         </td>
                       </tr>
                       {expandedRows.has(auditoria.id) && (
-                        <tr className="bg-gradient-to-r from-green-50 to-emerald-50">
-                          <td colSpan={6} className="px-6 py-5">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
-                              <div>
-                                <p className="font-semibold text-gray-700 mb-1">Alcance</p>
-                                <p className="text-gray-600">{auditoria.alcance || 'No definido'}</p>
+                        <tr className="bg-[#F8FAFC]">
+                          <td colSpan={6} className="px-12 py-8 border-l-4 border-l-[#2563EB]">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-sm">
+                              <div className="space-y-1">
+                                <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">Alcance Detallado</p>
+                                <p className="text-[#1E3A8A] font-medium leading-relaxed">{auditoria.alcance || 'No definido'}</p>
                               </div>
-                              <div>
-                                <p className="font-semibold text-gray-700 mb-1">Norma</p>
-                                <p className="text-gray-600">{auditoria.normaReferencia}</p>
+                              <div className="space-y-1">
+                                <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">Normatividad Aplicada</p>
+                                <p className="text-[#1E3A8A] font-medium">{auditoria.normaReferencia}</p>
                               </div>
-                              <div>
-                                <p className="font-semibold text-gray-700 mb-1">Auditor Líder</p>
-                                <p className="text-gray-600">{auditoria.auditorLider?.nombre || 'No asignado'}</p>
+                              <div className="space-y-1">
+                                <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">Equipo Auditor</p>
+                                <p className="text-[#1E3A8A] font-medium flex items-center gap-2">
+                                  <Users size={14} className="text-[#2563EB]" />
+                                  {auditoria.auditorLider?.nombre || 'No asignado'}
+                                </p>
                               </div>
-                              <div>
-                                <p className="font-semibold text-gray-700 mb-1">Inicio</p>
-                                <p className="text-gray-600">{formatDate(auditoria.fechaInicio)}</p>
+                              <div className="space-y-1 pt-4 md:pt-0">
+                                <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">Periodo de Ejecución</p>
+                                <p className="text-[#1E3A8A] font-medium italic">
+                                  {formatDate(auditoria.fechaInicio)} al {formatDate(auditoria.fechaFin)}
+                                </p>
                               </div>
-                              <div>
-                                <p className="font-semibold text-gray-700 mb-1">Fin</p>
-                                <p className="text-gray-600">{formatDate(auditoria.fechaFin)}</p>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-gray-700 mb-1">Creada por</p>
-                                <p className="text-gray-600">{auditoria.creadoPorUsuario?.nombre || 'Sistema'}</p>
+                              <div className="space-y-1 pt-4 md:pt-0">
+                                <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">Autoría / Registro</p>
+                                <p className="text-[#1E3A8A] font-medium">
+                                  Registrado por: {auditoria.creadoPorUsuario?.nombre || 'Sistema de Calidad'}
+                                </p>
                               </div>
                             </div>
                           </td>
                         </tr>
                       )}
                     </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Modal */}
         {showModal && selectedAuditoria && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {modalMode === 'edit' ? 'Editar Auditoría Completada' : 'Detalles de Auditoría'}
-                </h2>
-                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all">
+            <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-[#E5E7EB]">
+              <div className="bg-[#F8FAFC] border-b border-[#E5E7EB] p-8 flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-[#1E3A8A]">
+                    {modalMode === 'edit' ? 'Actualizar Registro' : 'Expediente de Auditoría'}
+                  </h2>
+                  <p className="text-[#6B7280] text-sm mt-1">{selectedAuditoria.codigo} • {selectedAuditoria.tipo.toUpperCase()}</p>
+                </div>
+                <button onClick={() => setShowModal(false)} className="p-2 border border-[#E5E7EB] text-[#6B7280] hover:text-[#2563EB] hover:bg-white rounded-xl transition-all">
                   <XCircle className="w-6 h-6" />
                 </button>
               </div>
-              <div className="p-6">
+              <div className="p-8 overflow-y-auto max-h-[calc(90vh-120px)]">
                 {modalMode === 'view' ? (
-                  <div className="space-y-4 text-sm">
-                    <div><strong>Código:</strong> {selectedAuditoria.codigo}</div>
-                    <div><strong>Tipo:</strong> <TipoBadge tipo={selectedAuditoria.tipo} /></div>
-                    <div><strong>Objetivo:</strong> {selectedAuditoria.objetivo}</div>
-                    <div><strong>Alcance:</strong> {selectedAuditoria.alcance}</div>
-                    <div><strong>Norma:</strong> {selectedAuditoria.normaReferencia}</div>
-                    <div><strong>Inicio:</strong> {formatDate(selectedAuditoria.fechaInicio)}</div>
-                    <div><strong>Fin:</strong> {formatDate(selectedAuditoria.fechaFin)}</div>
-                    <div><strong>Auditor Líder:</strong> {selectedAuditoria.auditorLider?.nombre}</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                      <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
+                        <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Información General</h4>
+                        <div className="space-y-4">
+                          <p className="text-sm text-[#1E3A8A] leading-relaxed"><strong>Objetivo:</strong> {selectedAuditoria.objetivo}</p>
+                          <p className="text-sm text-[#1E3A8A] leading-relaxed"><strong>Alcance:</strong> {selectedAuditoria.alcance}</p>
+                        </div>
+                      </div>
+                      <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
+                        <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Metodología</h4>
+                        <div className="space-y-2 text-sm text-[#1E3A8A]">
+                          <p><strong>Norma:</strong> {selectedAuditoria.normaReferencia}</p>
+                          <p><strong>Tipo:</strong> <span className="capitalize">{selectedAuditoria.tipo}</span></p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-6">
+                      <Card className="rounded-2xl border-[#E5E7EB] bg-[#EFF6FF] border-none shadow-none">
+                        <CardHeader className="pb-2">
+                          <CardDescription className="text-xs font-bold text-[#2563EB] uppercase tracking-widest">Cronología</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="flex justify-between items-center text-sm font-medium">
+                            <span className="text-[#6B7280]">Inicio:</span>
+                            <span className="text-[#1E3A8A]">{formatDate(selectedAuditoria.fechaInicio)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm font-medium">
+                            <span className="text-[#6B7280]">Finalización:</span>
+                            <span className="text-[#1E3A8A]">{formatDate(selectedAuditoria.fechaFin)}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card className="rounded-2xl border-[#E5E7EB] bg-[#F8FAFC] border-none shadow-none">
+                        <CardHeader className="pb-2">
+                          <CardDescription className="text-xs font-bold text-[#6B7280] uppercase tracking-widest">Asignación</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-[#E0EDFF] text-[#2563EB] flex items-center justify-center font-bold">
+                              {selectedAuditoria.auditorLider?.nombre?.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-[#1E3A8A]">{selectedAuditoria.auditorLider?.nombre}</p>
+                              <p className="text-xs text-[#6B7280]">Auditor Líder Asignado</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
                   </div>
                 ) : (
-                  <form onSubmit={handleSubmit} className="space-y-5">
-                    <input type="text" value={formData.codigo} readOnly className="w-full px-4 py-3 border rounded-xl bg-gray-50" />
-                    <select value={formData.tipo} onChange={e => setFormData({...formData, tipo: e.target.value})} className="w-full px-4 py-3 border rounded-xl">
-                      <option value="interna">Interna</option>
-                      <option value="externa">Externa</option>
-                      <option value="certificacion">Certificación</option>
-                      <option value="seguimiento">Seguimiento</option>
-                    </select>
-                    <textarea value={formData.objetivo} onChange={e => setFormData({...formData, objetivo: e.target.value})} rows={3} className="w-full px-4 py-3 border rounded-xl resize-none" />
-                    <textarea value={formData.alcance} onChange={e => setFormData({...formData, alcance: e.target.value})} rows={2} className="w-full px-4 py-3 border rounded-xl resize-none" />
-                    <div className="grid grid-cols-2 gap-4">
-                      <input type="date" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} className="px-4 py-3 border rounded-xl" />
-                      <input type="date" value={formData.fechaFin} onChange={e => setFormData({...formData, fechaFin: e.target.value})} className="px-4 py-3 border rounded-xl" />
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#6B7280] uppercase px-1">Código de Auditoría</label>
+                        <input type="text" value={formData.codigo} readOnly className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl bg-[#F8FAFC] text-[#1E3A8A] font-bold" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#6B7280] uppercase px-1">Tipo de Auditoría</label>
+                        <select
+                          value={formData.tipo}
+                          onChange={e => setFormData({ ...formData, tipo: e.target.value })}
+                          className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold focus:ring-2 focus:ring-[#2563EB]/20 outline-none"
+                        >
+                          <option value="interna">Interna</option>
+                          <option value="externa">Externa</option>
+                          <option value="certificacion">Certificación</option>
+                          <option value="seguimiento">Seguimiento</option>
+                        </select>
+                      </div>
                     </div>
-                    <div className="flex justify-end gap-3 pt-4 border-t">
-                      <button type="button" onClick={() => setShowModal(false)} className="px-6 py-3 border rounded-xl text-gray-700 hover:bg-gray-50">
-                        Cancelar
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-[#6B7280] uppercase px-1">Objetivo del Programa</label>
+                      <textarea
+                        value={formData.objetivo}
+                        onChange={e => setFormData({ ...formData, objetivo: e.target.value })}
+                        rows={3}
+                        className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-medium focus:ring-2 focus:ring-[#2563EB]/20 outline-none resize-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#6B7280] uppercase px-1">Fecha de Inicio</label>
+                        <input type="date" value={formData.fechaInicio} onChange={e => setFormData({ ...formData, fechaInicio: e.target.value })} className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#6B7280] uppercase px-1">Fecha de Cierre</label>
+                        <input type="date" value={formData.fechaFin} onChange={e => setFormData({ ...formData, fechaFin: e.target.value })} className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold" />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-8 border-t border-[#E5E7EB]">
+                      <button type="button" onClick={() => setShowModal(false)} className="px-8 py-4 border border-[#E5E7EB] rounded-2xl text-[#6B7280] font-bold hover:bg-[#F8FAFC] transition-all">
+                        Descartar
                       </button>
-                      <button type="submit" className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700">
-                        Guardar Cambios
+                      <button type="submit" className="px-8 py-4 bg-[#2563EB] text-white rounded-2xl font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-200 transition-all">
+                        Guardar Registro
                       </button>
                     </div>
                   </form>

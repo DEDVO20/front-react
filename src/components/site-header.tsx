@@ -62,7 +62,12 @@ export function SiteHeader() {
     if (path.includes("/acciones-correctivas")) return "Acciones Correctivas";
     if (path.includes("/riesgos")) return "Riesgos";
     if (path.includes("/indicadores")) return "Indicadores";
-    if (path.includes("/capacitaciones")) return "Capacitaciones";
+
+    if (path.includes("/capacitaciones/programadas")) return "Capacitaciones Programadas";
+    if (path.includes("/capacitaciones/historial")) return "Capacitaciones Historial";
+    if (path.includes("/capacitaciones/asistencias")) return "Capacitaciones Asistencias";
+    if (path.includes("/capacitaciones/competencias")) return "Capacitaciones Competencias";
+
     return "Dashboard";
   };
   return (
