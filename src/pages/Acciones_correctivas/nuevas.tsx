@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Save, X, AlertCircle, FileText, Activity, Calendar, User } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -97,7 +98,25 @@ export default function NuevasAccionesCorrectivas() {
     try {
       setSaving(true);
       setError(null);
-      await accionCorrectivaService.create(formData);
+
+      // Mapear a snake_case para el backend
+      const payload = {
+        no_conformidad_id: formData.noConformidadId,
+        codigo: formData.codigo,
+        tipo: formData.tipo,
+        descripcion: formData.descripcion,
+        analisis_causa_raiz: formData.analisisCausaRaiz,
+        plan_accion: formData.planAccion,
+        responsable_id: formData.responsableId || null,
+        fecha_compromiso: formData.fechaCompromiso || null,
+        fecha_implementacion: formData.fechaImplementacion || null,
+        estado: formData.estado,
+        observacion: formData.observacion,
+      };
+
+      const response = await accionCorrectivaService.create(payload as any);
+
+      toast.success("Acción correctiva creada exitosamente");
 
       // Reset form
       setFormData({
@@ -115,7 +134,9 @@ export default function NuevasAccionesCorrectivas() {
       });
     } catch (error: any) {
       console.error("Error:", error);
-      setError(error.message || "Error al crear la acción correctiva");
+      const errorMessage = error.message || "Error al crear la acción correctiva";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }
