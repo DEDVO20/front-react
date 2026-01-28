@@ -59,7 +59,29 @@ export default function AuditoriasEnCurso() {
   const fetchAuditorias = async () => {
     try {
       const data = await auditoriaService.getEnCurso();
-      setAuditorias(data);
+
+      // Mapear datos del servicio a la interfaz local
+      const auditoriasMapeadas: Auditoria[] = data.map(aud => ({
+        id: aud.id,
+        codigo: aud.codigo,
+        nombre: aud.nombre || 'Sin nombre',
+        tipo: aud.tipo,
+        alcance: aud.alcance || '',
+        objetivo: aud.objetivo || '',
+        fechaPlanificada: aud.fechaPlanificada || new Date().toISOString(),
+        fechaInicio: aud.fechaInicio,
+        fechaFin: aud.fechaFin,
+        estado: aud.estado,
+        auditorLider: aud.auditorLider ? {
+          id: aud.auditorLider.id,
+          nombre: aud.auditorLider.nombre,
+          primerApellido: aud.auditorLider.primerApellido || '',
+        } : undefined,
+        hallazgosCount: 0, // Valor por defecto
+        progreso: 0 // Valor por defecto
+      }));
+
+      setAuditorias(auditoriasMapeadas);
       setLoading(false);
     } catch (error) {
       console.error("Error al cargar auditorías:", error);

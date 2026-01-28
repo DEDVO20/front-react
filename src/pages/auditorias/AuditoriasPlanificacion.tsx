@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, Search, Download, Eye, Edit, Trash2, Users, CheckCircle, AlertCircle, Clock, Loader2 } from 'lucide-react';
+import { Calendar, Plus, Search, Download, Eye, Edit, Trash2, Users, CheckCircle, AlertCircle, Clock, Loader2, Save, Activity, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 // Tipos TypeScript
 interface Auditoria {
@@ -147,7 +155,7 @@ const AuditoriasPlanificacion = () => {
     estado: 'planificada'
   });
 
-  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
 
   useEffect(() => {
     cargarDatos();
@@ -264,8 +272,8 @@ const AuditoriasPlanificacion = () => {
   };
 
   // Eliminar auditoría
-  const eliminarAuditoria = async (id: string) => {
-    if (!confirm('¿Está seguro de eliminar esta auditoría?')) return;
+  const eliminarAuditoria = async () => {
+    if (!deleteDialog.id) return;
 
     try {
       await auditoriaService.delete(deleteDialog.id);
@@ -297,6 +305,15 @@ const AuditoriasPlanificacion = () => {
       cancelada: <Trash2 className="w-4 h-4" />
     };
     return iconos[estado] || <Clock className="w-4 h-4" />;
+  };
+
+  const getEstadoBadge = (estado: string) => {
+    return (
+      <Badge className={`${getEstadoColor(estado)} border-none shadow-none flex items-center gap-2 px-3 py-1`}>
+        {getEstadoIcono(estado)}
+        <span className="capitalize">{estado.replace('_', ' ')}</span>
+      </Badge>
+    );
   };
 
   // Formatear fecha
@@ -573,171 +590,169 @@ const AuditoriasPlanificacion = () => {
         </div>
 
         {/* Modal de crear/editar */}
-        {mostrarModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
-                <h2 className="text-xl font-bold text-gray-900">
-                  {auditoriaEditando ? 'Editar Auditoría' : 'Nueva Auditoría'}
-                </h2>
-              </div>
-              <form onSubmit={guardarAuditoria} className="p-6 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Código <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.codigo}
-                      onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="AUD-2025-001"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Tipo <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={formData.tipo}
-                      onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="interna">Interna</option>
-                      <option value="externa">Externa</option>
-                      <option value="certificacion">Certificación</option>
-                      <option value="seguimiento">Seguimiento</option>
-                    </select>
-                  </div>
-                </div>
-
+        <Dialog open={mostrarModal} onOpenChange={setMostrarModal}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {auditoriaEditando ? 'Editar Auditoría' : 'Nueva Auditoría'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={guardarAuditoria} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre
+                    Código <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    value={formData.nombre}
-                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                    value={formData.codigo}
+                    onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Auditoría Interna de Procesos"
+                    placeholder="AUD-2025-001"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Objetivo
+                    Tipo <span className="text-red-500">*</span>
                   </label>
-                  <textarea
-                    value={formData.objetivo}
-                    onChange={(e) => setFormData({ ...formData, objetivo: e.target.value })}
-                    rows={3}
+                  <select
+                    value={formData.tipo}
+                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Verificar el cumplimiento de los requisitos ISO 9001:2015..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Alcance
-                  </label>
-                  <textarea
-                    value={formData.alcance}
-                    onChange={(e) => setFormData({ ...formData, alcance: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Procesos de gestión de calidad, operaciones..."
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Norma de Referencia
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.normaReferencia}
-                      onChange={(e) => setFormData({ ...formData, normaReferencia: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="ISO 9001:2015"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Auditor Líder
-                    </label>
-                    <select
-                      value={formData.auditorLiderId}
-                      onChange={(e) => setFormData({ ...formData, auditorLiderId: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Seleccionar auditor...</option>
-                      {usuarios.map(usuario => (
-                        <SelectItem key={usuario.id} value={usuario.id}>
-                          {usuario.nombre} {usuario.primerApellido}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  >
+                    <option value="interna">Interna</option>
+                    <option value="externa">Externa</option>
+                    <option value="certificacion">Certificación</option>
+                    <option value="seguimiento">Seguimiento</option>
+                  </select>
                 </div>
               </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Fecha Planificada <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.fechaPlanificada}
-                      onChange={(e) => setFormData({ ...formData, fechaPlanificada: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Fecha de Inicio
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.fechaInicio}
-                      onChange={(e) => setFormData({ ...formData, fechaInicio: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Fecha de Fin
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.fechaFin}
-                      onChange={(e) => setFormData({ ...formData, fechaFin: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nombre
+                </label>
+                <input
+                  type="text"
+                  value={formData.nombre}
+                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Auditoría Interna de Procesos"
+                />
+              </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Objetivo
+                </label>
+                <textarea
+                  value={formData.objetivo}
+                  onChange={(e) => setFormData({ ...formData, objetivo: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Verificar el cumplimiento de los requisitos ISO 9001:2015..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Alcance
+                </label>
+                <textarea
+                  value={formData.alcance}
+                  onChange={(e) => setFormData({ ...formData, alcance: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Procesos de gestión de calidad, operaciones..."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Estado
+                    Norma de Referencia
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.normaReferencia}
+                    onChange={(e) => setFormData({ ...formData, normaReferencia: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="ISO 9001:2015"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Auditor Líder
                   </label>
                   <select
-                    value={formData.estado}
-                    onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                    value={formData.auditorLiderId}
+                    onChange={(e) => setFormData({ ...formData, auditorLiderId: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="planificada">Planificada</option>
-                    <option value="en_curso">En Curso</option>
-                    <option value="completada">Completada</option>
-                    <option value="cancelada">Cancelada</option>
+                    <option value="">Seleccionar auditor...</option>
+                    {usuarios.map(usuario => (
+                      <option key={usuario.id} value={usuario.id}>
+                        {usuario.nombre} {usuario.primerApellido}
+                      </option>
+                    ))}
                   </select>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Fecha Planificada <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.fechaPlanificada}
+                    onChange={(e) => setFormData({ ...formData, fechaPlanificada: e.target.value })}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Fecha de Inicio
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.fechaInicio}
+                    onChange={(e) => setFormData({ ...formData, fechaInicio: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Fecha de Fin
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.fechaFin}
+                    onChange={(e) => setFormData({ ...formData, fechaFin: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Estado
+                </label>
+                <select
+                  value={formData.estado}
+                  onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="planificada">Planificada</option>
+                  <option value="en_curso">En Curso</option>
+                  <option value="completada">Completada</option>
+                  <option value="cancelada">Cancelada</option>
+                </select>
+              </div>
 
               <DialogFooter className="gap-4">
                 <Button variant="outline" type="button" onClick={() => setMostrarModal(false)} className="rounded-xl">
@@ -784,3 +799,5 @@ const AuditoriasPlanificacion = () => {
     </div >
   );
 }
+
+export default AuditoriasPlanificacion;
