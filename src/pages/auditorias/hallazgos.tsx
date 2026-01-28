@@ -16,8 +16,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import apiClient from "@/lib/api";
 
-const API_URL = 'http://localhost:8000/api/v1';
+
 
 // Tipos de datos
 interface Auditoria {
@@ -122,8 +127,7 @@ const AuditoriasHallazgosView: React.FC = () => {
     responsableId: ''
   });
 
-  // Token simulado
-  const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+
 
   useEffect(() => {
     fetchAuditorias();
@@ -137,14 +141,9 @@ const AuditoriasHallazgosView: React.FC = () => {
   const fetchAuditorias = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/auditorias`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAuditorias(data.auditorias || data);
-      }
+      setLoading(true);
+      const response = await apiClient.get('/auditorias');
+      setAuditorias(response.data.auditorias || response.data);
     } catch (error) {
       console.error('Error al cargar auditorías:', error);
     } finally {
@@ -154,14 +153,8 @@ const AuditoriasHallazgosView: React.FC = () => {
 
   const fetchHallazgos = async () => {
     try {
-      const response = await fetch(`${API_URL}/hallazgos-auditoria`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setHallazgos(data);
-      }
+      const response = await apiClient.get('/hallazgos-auditoria');
+      setHallazgos(response.data);
     } catch (error) {
       console.error('Error al cargar hallazgos:', error);
     }
@@ -249,10 +242,10 @@ const AuditoriasHallazgosView: React.FC = () => {
     e.preventDefault();
     try {
       const url = modalMode === 'create'
-        ? `${API_URL}/auditorias`
-        : `${API_URL}/auditorias/${selectedAuditoria?.id}`;
+        ? '/auditorias'
+        : `/auditorias/${selectedAuditoria?.id}`;
 
-      const method = modalMode === 'create' ? 'POST' : 'PUT';
+      const method = modalMode === 'create' ? 'post' : 'put';
 
       const payload: any = { ...formData };
 
@@ -263,19 +256,11 @@ const AuditoriasHallazgosView: React.FC = () => {
       if (!payload.fechaFin) payload.fechaFin = null;
       if (!payload.normaReferencia) payload.normaReferencia = null;
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-      if (response.ok) {
-        setShowModal(false);
-        fetchAuditorias();
-        toast.success(modalMode === 'create' ? 'Auditoría creada exitosamente' : 'Auditoría actualizada exitosamente');
-      }
+      // @ts-ignore
+      await apiClient[method](url, payload);
+      setShowModal(false);
+      fetchAuditorias();
+      toast.success(modalMode === 'create' ? 'Auditoría creada exitosamente' : 'Auditoría actualizada exitosamente');
     } catch (error) {
       console.error('Error al guardar auditoría:', error);
       toast.error('Error al guardar la auditoría');
@@ -284,14 +269,9 @@ const AuditoriasHallazgosView: React.FC = () => {
 
   const handleDeleteAuditoria = async (id: string) => {
     try {
-      const response = await fetch(`${API_URL}/auditorias/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        fetchAuditorias();
-        toast.success('Auditoría eliminada exitosamente');
-      }
+      await apiClient.delete(`/auditorias/${id}`);
+      fetchAuditorias();
+      toast.success('Auditoría eliminada exitosamente');
     } catch (error) {
       console.error('Error al eliminar auditoría:', error);
       toast.error('Error al eliminar la auditoría');
@@ -333,24 +313,16 @@ const AuditoriasHallazgosView: React.FC = () => {
     e.preventDefault();
     try {
       const url = modalMode === 'create'
-        ? `${API_URL}/hallazgos-auditoria`
-        : `${API_URL}/hallazgos-auditoria/${selectedHallazgo?.id}`;
+        ? '/hallazgos-auditoria'
+        : `/hallazgos-auditoria/${selectedHallazgo?.id}`;
 
-      const method = modalMode === 'create' ? 'POST' : 'PUT';
+      const method = modalMode === 'create' ? 'post' : 'put';
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(hallazgoFormData)
-      });
-      if (response.ok) {
-        setShowHallazgoModal(false);
-        fetchHallazgos();
-        toast.success(modalMode === 'create' ? 'Hallazgo registrado exitosamente' : 'Hallazgo actualizado exitosamente');
-      }
+      // @ts-ignore
+      await apiClient[method](url, hallazgoFormData);
+      setShowHallazgoModal(false);
+      fetchHallazgos();
+      toast.success(modalMode === 'create' ? 'Hallazgo registrado exitosamente' : 'Hallazgo actualizado exitosamente');
     } catch (error) {
       console.error('Error al guardar hallazgo:', error);
       toast.error('Error al guardar el hallazgo');
@@ -359,14 +331,9 @@ const AuditoriasHallazgosView: React.FC = () => {
 
   const handleDeleteHallazgo = async (id: string) => {
     try {
-      const response = await fetch(`${API_URL}/hallazgos-auditoria/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        fetchHallazgos();
-        toast.success('Hallazgo eliminado exitosamente');
-      }
+      await apiClient.delete(`/hallazgos-auditoria/${id}`);
+      fetchHallazgos();
+      toast.success('Hallazgo eliminado exitosamente');
     } catch (error) {
       console.error('Error al eliminar hallazgo:', error);
       toast.error('Error al eliminar el hallazgo');
@@ -539,8 +506,8 @@ const AuditoriasHallazgosView: React.FC = () => {
             <button
               onClick={() => setActiveTab('auditorias')}
               className={`flex-1 py-4 font-bold text-sm flex items-center justify-center gap-2 transition-all rounded-xl ${activeTab === 'auditorias'
-                  ? 'bg-white text-[#2563EB] shadow-sm'
-                  : 'text-[#6B7280] hover:text-[#1E3A8A]'
+                ? 'bg-white text-[#2563EB] shadow-sm'
+                : 'text-[#6B7280] hover:text-[#1E3A8A]'
                 }`}
             >
               <FileText className="w-5 h-5" />
@@ -549,8 +516,8 @@ const AuditoriasHallazgosView: React.FC = () => {
             <button
               onClick={() => setActiveTab('hallazgos')}
               className={`flex-1 py-4 font-bold text-sm flex items-center justify-center gap-2 transition-all rounded-xl ${activeTab === 'hallazgos'
-                  ? 'bg-white text-[#2563EB] shadow-sm'
-                  : 'text-[#6B7280] hover:text-[#1E3A8A]'
+                ? 'bg-white text-[#2563EB] shadow-sm'
+                : 'text-[#6B7280] hover:text-[#1E3A8A]'
                 }`}
             >
               <AlertTriangle className="w-5 h-5" />
@@ -742,14 +709,13 @@ const AuditoriasHallazgosView: React.FC = () => {
                                         </AlertDialog>
                                       </div>
                                     </div>
+                                    <p className="text-[#1E3A8A] font-bold text-sm mb-3 leading-relaxed">{hallazgo.descripcion}</p>
+                                    <div className="flex items-center gap-4 text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">
+                                      <div className="flex items-center gap-1"><Users size={12} /> Responsable</div>
+                                      <div className="flex items-center gap-1"><Calendar size={12} /> {formatDate(hallazgo.creadoEn)}</div>
+                                    </div>
                                   </div>
-                                  <p className="text-[#1E3A8A] font-bold text-sm mb-3 leading-relaxed">{hallazgo.descripcion}</p>
-                                  <div className="flex items-center gap-4 text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">
-                                    <div className="flex items-center gap-1"><Users size={12} /> Responsable</div>
-                                    <div className="flex items-center gap-1"><Calendar size={12} /> {formatDate(hallazgo.creadoEn)}</div>
-                                  </div>
-                                </div>
-                              ))
+                                ))
                             )}
                           </div>
                         </div>
@@ -771,7 +737,7 @@ const AuditoriasHallazgosView: React.FC = () => {
                     return (
                       <Card key={hallazgo.id} className="rounded-2xl border-[#E5E7EB] shadow-sm hover:shadow-md transition-all bg-white relative overflow-hidden group">
                         <div className={`absolute top-0 left-0 w-1.5 h-full ${hallazgo.tipo === 'no_conformidad_mayor' ? 'bg-[#EF4444]' :
-                            hallazgo.tipo === 'no_conformidad_menor' ? 'bg-[#EAB308]' : 'bg-[#3B82F6]'
+                          hallazgo.tipo === 'no_conformidad_menor' ? 'bg-[#EAB308]' : 'bg-[#3B82F6]'
                           }`} />
                         <CardHeader className="pb-2">
                           <div className="flex justify-between items-center mb-2">
@@ -808,192 +774,195 @@ const AuditoriasHallazgosView: React.FC = () => {
             )}
           </div>
         </Card>
-      </div>
-
+      </div >
       {/* Modal Auditoría */}
-      {showModal && (
-        <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#E5E7EB]">
-            <div className="sticky top-0 bg-[#F8FAFC] border-b p-8 flex justify-between items-center z-10">
-              <h2 className="text-2xl font-bold text-[#1E3A8A]">
-                {modalMode === 'view' ? 'Detalles de Auditoría' : modalMode === 'edit' ? 'Editar Auditoría' : 'Nueva Auditoría'}
-              </h2>
-              <button onClick={() => setShowModal(false)} className="p-2 border border-[#E5E7EB] text-[#6B7280] hover:text-[#2563EB] hover:bg-white rounded-xl transition-all">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmitAuditoria} className="p-8 space-y-6">
-              {modalMode === 'view' && selectedAuditoria ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
-                  <div className="space-y-4">
-                    <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
-                      <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Información General</h4>
-                      <p><strong>Nombre:</strong> {selectedAuditoria.nombre}</p>
-                      <p><strong>Código:</strong> {selectedAuditoria.codigo}</p>
-                      <p><strong>Tipo:</strong> {selectedAuditoria.tipo}</p>
-                    </div>
-                    <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
-                      <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Objetivos y Alcance</h4>
-                      <p><strong>Objetivo:</strong> {selectedAuditoria.objetivo}</p>
-                      <p><strong>Alcance:</strong> {selectedAuditoria.alcance}</p>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
-                      <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Cronograma</h4>
-                      <p><strong>Planificada:</strong> {formatDate(selectedAuditoria.fechaPlanificada)}</p>
-                      <p><strong>Inicio:</strong> {formatDate(selectedAuditoria.fechaInicio)}</p>
-                      <p><strong>Fin:</strong> {formatDate(selectedAuditoria.fechaFin)}</p>
-                    </div>
-                    <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
-                      <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Auditor</h4>
-                      <p><strong>Auditor Líder:</strong> {selectedAuditoria.auditorLider?.nombre || 'No asignado'}</p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-[#6B7280] uppercase">Código</label>
-                      <Input value={formData.codigo} readOnly className="bg-[#F8FAFC] font-bold" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-[#6B7280] uppercase">Tipo</label>
-                      <select value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none">
-                        <option value="interna">Interna</option>
-                        <option value="externa">Externa</option>
-                        <option value="certificacion">Certificación</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-[#6B7280] uppercase">Nombre de Auditoría</label>
-                    <Input placeholder="Nombre" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-[#6B7280] uppercase">Objetivo</label>
-                    <textarea placeholder="Objetivo" value={formData.objetivo} onChange={e => setFormData({ ...formData, objetivo: e.target.value })} rows={3} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-[#6B7280] uppercase">Alcance</label>
-                    <textarea placeholder="Alcance" value={formData.alcance} onChange={e => setFormData({ ...formData, alcance: e.target.value })} rows={3} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none" />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-[#6B7280] uppercase">Norma Referencia</label>
-                      <Input value={formData.normaReferencia} onChange={e => setFormData({ ...formData, normaReferencia: e.target.value })} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-[#6B7280] uppercase">Estado</label>
-                      <select value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none">
-                        <option value="planificada">Planificada</option>
-                        <option value="en_curso">En Curso</option>
-                        <option value="completada">Completada</option>
-                        <option value="cancelada">Cancelada</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-[#6B7280] uppercase px-1">Planificada</label>
-                      <input type="date" value={formData.fechaPlanificada} onChange={e => setFormData({ ...formData, fechaPlanificada: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl font-bold bg-white" />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-[#6B7280] uppercase px-1">Inicio</label>
-                      <input type="date" value={formData.fechaInicio} onChange={e => setFormData({ ...formData, fechaInicio: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl font-bold bg-white" />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-[#6B7280] uppercase px-1">Fin</label>
-                      <input type="date" value={formData.fechaFin} onChange={e => setFormData({ ...formData, fechaFin: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl font-bold bg-white" />
-                    </div>
-                  </div>
-                </>
-              )}
-              <div className="flex justify-end gap-3 pt-8 border-t border-[#E5E7EB]">
-                <button type="button" onClick={() => setShowModal(false)} className="px-8 py-4 border border-[#E5E7EB] rounded-2xl text-[#6B7280] font-bold hover:bg-[#F8FAFC] transition-all">
-                  {modalMode === 'view' ? 'Cerrar' : 'Cancelar'}
+      {
+        showModal && (
+          <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#E5E7EB]">
+              <div className="sticky top-0 bg-[#F8FAFC] border-b p-8 flex justify-between items-center z-10">
+                <h2 className="text-2xl font-bold text-[#1E3A8A]">
+                  {modalMode === 'view' ? 'Detalles de Auditoría' : modalMode === 'edit' ? 'Editar Auditoría' : 'Nueva Auditoría'}
+                </h2>
+                <button onClick={() => setShowModal(false)} className="p-2 border border-[#E5E7EB] text-[#6B7280] hover:text-[#2563EB] hover:bg-white rounded-xl transition-all">
+                  <X className="w-6 h-6" />
                 </button>
-                {modalMode !== 'view' && (
-                  <button type="submit" className="px-8 py-4 bg-[#2563EB] text-white rounded-2xl font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-200 transition-all">
-                    {modalMode === 'edit' ? 'Actualizar Registro' : 'Crear Auditoría'}
-                  </button>
-                )}
               </div>
-            </form>
+              <form onSubmit={handleSubmitAuditoria} className="p-8 space-y-6">
+                {modalMode === 'view' && selectedAuditoria ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+                    <div className="space-y-4">
+                      <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
+                        <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Información General</h4>
+                        <p><strong>Nombre:</strong> {selectedAuditoria.nombre}</p>
+                        <p><strong>Código:</strong> {selectedAuditoria.codigo}</p>
+                        <p><strong>Tipo:</strong> {selectedAuditoria.tipo}</p>
+                      </div>
+                      <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
+                        <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Objetivos y Alcance</h4>
+                        <p><strong>Objetivo:</strong> {selectedAuditoria.objetivo}</p>
+                        <p><strong>Alcance:</strong> {selectedAuditoria.alcance}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
+                        <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Cronograma</h4>
+                        <p><strong>Planificada:</strong> {formatDate(selectedAuditoria.fechaPlanificada)}</p>
+                        <p><strong>Inicio:</strong> {formatDate(selectedAuditoria.fechaInicio)}</p>
+                        <p><strong>Fin:</strong> {formatDate(selectedAuditoria.fechaFin)}</p>
+                      </div>
+                      <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
+                        <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Auditor</h4>
+                        <p><strong>Auditor Líder:</strong> {selectedAuditoria.auditorLider?.nombre || 'No asignado'}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#6B7280] uppercase">Código</label>
+                        <Input value={formData.codigo} readOnly className="bg-[#F8FAFC] font-bold" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#6B7280] uppercase">Tipo</label>
+                        <select value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none">
+                          <option value="interna">Interna</option>
+                          <option value="externa">Externa</option>
+                          <option value="certificacion">Certificación</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-[#6B7280] uppercase">Nombre de Auditoría</label>
+                      <Input placeholder="Nombre" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-[#6B7280] uppercase">Objetivo</label>
+                      <textarea placeholder="Objetivo" value={formData.objetivo} onChange={e => setFormData({ ...formData, objetivo: e.target.value })} rows={3} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-[#6B7280] uppercase">Alcance</label>
+                      <textarea placeholder="Alcance" value={formData.alcance} onChange={e => setFormData({ ...formData, alcance: e.target.value })} rows={3} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#6B7280] uppercase">Norma Referencia</label>
+                        <Input value={formData.normaReferencia} onChange={e => setFormData({ ...formData, normaReferencia: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#6B7280] uppercase">Estado</label>
+                        <select value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none">
+                          <option value="planificada">Planificada</option>
+                          <option value="en_curso">En Curso</option>
+                          <option value="completada">Completada</option>
+                          <option value="cancelada">Cancelada</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[#6B7280] uppercase px-1">Planificada</label>
+                        <input type="date" value={formData.fechaPlanificada} onChange={e => setFormData({ ...formData, fechaPlanificada: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl font-bold bg-white" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[#6B7280] uppercase px-1">Inicio</label>
+                        <input type="date" value={formData.fechaInicio} onChange={e => setFormData({ ...formData, fechaInicio: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl font-bold bg-white" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[#6B7280] uppercase px-1">Fin</label>
+                        <input type="date" value={formData.fechaFin} onChange={e => setFormData({ ...formData, fechaFin: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl font-bold bg-white" />
+                      </div>
+                    </div>
+                  </>
+                )}
+                <div className="flex justify-end gap-3 pt-8 border-t border-[#E5E7EB]">
+                  <button type="button" onClick={() => setShowModal(false)} className="px-8 py-4 border border-[#E5E7EB] rounded-2xl text-[#6B7280] font-bold hover:bg-[#F8FAFC] transition-all">
+                    {modalMode === 'view' ? 'Cerrar' : 'Cancelar'}
+                  </button>
+                  {modalMode !== 'view' && (
+                    <button type="submit" className="px-8 py-4 bg-[#2563EB] text-white rounded-2xl font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-200 transition-all">
+                      {modalMode === 'edit' ? 'Actualizar Registro' : 'Crear Auditoría'}
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Modal Hallazgo */}
-      {showHallazgoModal && (
-        <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-[#E5E7EB]">
-            <div className="sticky top-0 bg-[#F8FAFC] border-b p-8 flex justify-between items-center z-10">
-              <h2 className="text-2xl font-bold text-[#1E3A8A]">
-                {modalMode === 'edit' ? 'Editar Hallazgo' : 'Registro de Hallazgo'}
-              </h2>
-              <button onClick={() => setShowHallazgoModal(false)} className="p-2 border border-[#E5E7EB] text-[#6B7280] hover:text-[#2563EB] hover:bg-white rounded-xl transition-all">
-                <X className="w-6 h-6" />
-              </button>
+      {
+        showHallazgoModal && (
+          <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-[#E5E7EB]">
+              <div className="sticky top-0 bg-[#F8FAFC] border-b p-8 flex justify-between items-center z-10">
+                <h2 className="text-2xl font-bold text-[#1E3A8A]">
+                  {modalMode === 'edit' ? 'Editar Hallazgo' : 'Registro de Hallazgo'}
+                </h2>
+                <button onClick={() => setShowHallazgoModal(false)} className="p-2 border border-[#E5E7EB] text-[#6B7280] hover:text-[#2563EB] hover:bg-white rounded-xl transition-all">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <form onSubmit={handleSubmitHallazgo} className="p-8 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-[#6B7280] uppercase">Clasificación del Hallazgo</label>
+                  <select
+                    value={hallazgoFormData.tipo}
+                    onChange={e => setHallazgoFormData({ ...hallazgoFormData, tipo: e.target.value })}
+                    className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none"
+                  >
+                    <option value="no_conformidad_mayor">No Conformidad Mayor</option>
+                    <option value="no_conformidad_menor">No Conformidad Menor</option>
+                    <option value="observacion">Observación</option>
+                    <option value="oportunidad_mejora">Oportunidad de Mejora</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-[#6B7280] uppercase">Descripción Detallada</label>
+                  <textarea
+                    placeholder="Descripción del hallazgo..."
+                    value={hallazgoFormData.descripcion}
+                    onChange={e => setHallazgoFormData({ ...hallazgoFormData, descripcion: e.target.value })}
+                    rows={4}
+                    required
+                    className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none font-medium"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-[#6B7280] uppercase">Cláusula ISO Asociada</label>
+                  <Input
+                    placeholder="ej: 7.1.3 - Infraestructura"
+                    value={hallazgoFormData.clausulaIso}
+                    onChange={e => setHallazgoFormData({ ...hallazgoFormData, clausulaIso: e.target.value })}
+                    className="w-full px-4 py-3 border rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-[#6B7280] uppercase">Evidencia Objetiva</label>
+                  <textarea
+                    placeholder="Describa la evidencia encontrada..."
+                    value={hallazgoFormData.evidencia}
+                    onChange={e => setHallazgoFormData({ ...hallazgoFormData, evidencia: e.target.value })}
+                    rows={3}
+                    className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none italic text-gray-600"
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-8 border-t border-[#E5E7EB]">
+                  <button type="button" onClick={() => setShowHallazgoModal(false)} className="px-8 py-4 border border-[#E5E7EB] rounded-2xl text-[#6B7280] font-bold hover:bg-[#F8FAFC] transition-all">
+                    Descartar
+                  </button>
+                  <button type="submit" className="px-8 py-4 bg-[#2563EB] text-white rounded-2xl font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-200 transition-all">
+                    {modalMode === 'edit' ? 'Actualizar Hallazgo' : 'Registrar Hallazgo'}
+                  </button>
+                </div>
+              </form>
             </div>
-            <form onSubmit={handleSubmitHallazgo} className="p-8 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-[#6B7280] uppercase">Clasificación del Hallazgo</label>
-                <select
-                  value={hallazgoFormData.tipo}
-                  onChange={e => setHallazgoFormData({ ...hallazgoFormData, tipo: e.target.value })}
-                  className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none"
-                >
-                  <option value="no_conformidad_mayor">No Conformidad Mayor</option>
-                  <option value="no_conformidad_menor">No Conformidad Menor</option>
-                  <option value="observacion">Observación</option>
-                  <option value="oportunidad_mejora">Oportunidad de Mejora</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-[#6B7280] uppercase">Descripción Detallada</label>
-                <textarea
-                  placeholder="Descripción del hallazgo..."
-                  value={hallazgoFormData.descripcion}
-                  onChange={e => setHallazgoFormData({ ...hallazgoFormData, descripcion: e.target.value })}
-                  rows={4}
-                  required
-                  className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none font-medium"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-[#6B7280] uppercase">Cláusula ISO Asociada</label>
-                <Input
-                  placeholder="ej: 7.1.3 - Infraestructura"
-                  value={hallazgoFormData.clausulaIso}
-                  onChange={e => setHallazgoFormData({ ...hallazgoFormData, clausulaIso: e.target.value })}
-                  className="w-full px-4 py-3 border rounded-xl"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-[#6B7280] uppercase">Evidencia Objetiva</label>
-                <textarea
-                  placeholder="Describa la evidencia encontrada..."
-                  value={hallazgoFormData.evidencia}
-                  onChange={e => setHallazgoFormData({ ...hallazgoFormData, evidencia: e.target.value })}
-                  rows={3}
-                  className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none italic text-gray-600"
-                />
-              </div>
-              <div className="flex justify-end gap-3 pt-8 border-t border-[#E5E7EB]">
-                <button type="button" onClick={() => setShowHallazgoModal(false)} className="px-8 py-4 border border-[#E5E7EB] rounded-2xl text-[#6B7280] font-bold hover:bg-[#F8FAFC] transition-all">
-                  Descartar
-                </button>
-                <button type="submit" className="px-8 py-4 bg-[#2563EB] text-white rounded-2xl font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-200 transition-all">
-                  {modalMode === 'edit' ? 'Actualizar Hallazgo' : 'Registrar Hallazgo'}
-                </button>
-              </div>
-            </form>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 
