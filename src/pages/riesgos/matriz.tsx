@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Plus, Eye, Save, X } from "lucide-react";
+import { toast } from "sonner";
 import {
   Card,
   CardHeader,
@@ -60,7 +61,6 @@ export default function MatrizRiesgos() {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedRiesgo, setSelectedRiesgo] = useState<Riesgo | null>(null);
   const [saving, setSaving] = useState(false);
-  const [procesos, setProcesos] = useState<Proceso[]>([]);
 
   const [formData, setFormData] = useState({
     procesoId: "",
@@ -69,7 +69,6 @@ export default function MatrizRiesgos() {
     tipo: "",
     probabilidad: "",
     impacto: "",
-    procesoId: "",
     tratamiento: "",
     estado: "identificado",
     fechaIdentificacion: "",
@@ -94,37 +93,8 @@ export default function MatrizRiesgos() {
       setLoading(true);
       setError(null);
 
-      const token = getAuthToken();
-      if (!token) {
-        throw new Error("No hay sesión activa");
-      }
-
-      const [riesgosResponse, procesosResponse] = await Promise.all([
-        fetch(`${API_URL}/riesgos`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }),
-        fetch(`${API_URL}/procesos`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }),
-      ]);
-
-      if (!riesgosResponse.ok || !procesosResponse.ok) {
-        throw new Error("Error al cargar datos");
-      }
-
-      const [riesgosData, procesosData] = await Promise.all([
-        riesgosResponse.json(),
-        procesosResponse.json(),
-      ]);
-
-      setRiesgos(riesgosData);
-      setProcesos(procesosData);
+      const response = await apiClient.get('/riesgos');
+      setRiesgos(response.data);
     } catch (error: any) {
       console.error("Error:", error);
       setError(error.message);
@@ -176,7 +146,6 @@ export default function MatrizRiesgos() {
         codigo: "",
         descripcion: "",
         tipo: "",
-        procesoId: "",
         probabilidad: "",
         impacto: "",
         tratamiento: "",
