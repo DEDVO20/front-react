@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000/api";
+import apiClient from "@/lib/api";
 
 export interface Indicador {
   id: string;
@@ -26,28 +26,30 @@ export interface Indicador {
   };
 }
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
-};
-
 export const indicadorService = {
   // Obtener todos los indicadores
   async getAll(filters?: { procesoId?: string; tipo?: string; estado?: string }): Promise<Indicador[]> {
     const params = new URLSearchParams();
-    if (filters?.procesoId) params.append("procesoId", filters.procesoId);
+    if (filters?.procesoId) params.append("proceso_id", filters.procesoId);
     if (filters?.tipo) params.append("tipo", filters.tipo);
-    if (filters?.estado) params.append("estado", filters.estado);
+    if (filters?.estado) params.append("estado", filters.estado); // Backend expects snake case for some filters? status? No, "estado" seems same.
 
-    const url = `${API_URL}/indicadores${params.toString() ? `?${params.toString()}` : ""}`;
-    const response = await fetch(url, {
-      headers: getAuthHeaders(),
+    // Note: Backend likely expects snake_case for query params if they map to DB fields, checking previous patterns.
+    // However, let's stick to what was there but cleaned up. API usually handles query params.
+    // Actually, looking at other services, we often just pass params directly to axios.
+
+    // Correction: Backend is FastAPI. It usually takes query params as function arguments.
+    // Let's assume frontend camelCase filter keys might need mapping if backend uses snake_case arguments.
+    // In `calidad.py`: `proceso_id: UUID = None`. So `procesoId` must be `proceso_id`.
+
+    const response = await apiClient.get('/indicadores', {
+      params: {
+        proceso_id: filters?.procesoId,
+        tipo: filters?.tipo,
+        estado: filters?.estado
+      }
     });
-    if (!response.ok) throw new Error("Error al obtener indicadores");
-    return response.json();
+    return response.data;
   },
 
   // Obtener indicadores activos
@@ -57,41 +59,29 @@ export const indicadorService = {
 
   // Obtener un indicador por ID
   async getById(id: string): Promise<Indicador> {
-    const response = await fetch(`${API_URL}/indicadores/${id}`, {
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error("Error al obtener indicador");
-    return response.json();
+    const response = await apiClient.get(`/indicadores/${id}`);
+    return response.data;
   },
 
   // Crear nuevo indicador
   async create(data: Partial<Indicador>): Promise<Indicador> {
-    const response = await fetch(`${API_URL}/indicadores`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Error al crear indicador");
-    return response.json();
+    // Ensure payload is snake_case if needed. 
+    // Usually we might need a mapper, but let's assume for now user data is mostly compatible or handled elsewhere.
+    // Ideally, we should map camelCase to snake_case here if the form sends camelCase.
+    // Given previous tasks, we often did this mapping in the REACT COMPONENT handleSubmit.
+    // So we will just pass data through.
+    const response = await apiClient.post('/indicadores', data);
+    return response.data;
   },
 
   // Actualizar indicador
   async update(id: string, data: Partial<Indicador>): Promise<Indicador> {
-    const response = await fetch(`${API_URL}/indicadores/${id}`, {
-      method: "PUT",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Error al actualizar indicador");
-    return response.json();
+    const response = await apiClient.put(`/indicadores/${id}`, data);
+    return response.data;
   },
 
   // Eliminar indicador
   async delete(id: string): Promise<void> {
-    const response = await fetch(`${API_URL}/indicadores/${id}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error("Error al eliminar indicador");
+    await apiClient.delete(`/indicadores/${id}`);
   },
 };
