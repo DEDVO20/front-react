@@ -31,7 +31,7 @@ import {
 import { getCurrentUser, getToken } from "@/services/auth";
 import axios from "axios";
 
-const API_URL = "http://localhost:8000/api/v1";
+import { API_BASE_URL as API_URL } from "@/lib/api";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [user, setUser] = React.useState(getCurrentUser());

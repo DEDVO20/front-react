@@ -29,7 +29,7 @@ import {
 
 import { toast } from "sonner";
 
-const API_URL = "http://localhost:8000/api/v1";
+import { API_BASE_URL as API_URL } from "@/lib/api";
 
 interface ControlRiesgo {
   id: string;

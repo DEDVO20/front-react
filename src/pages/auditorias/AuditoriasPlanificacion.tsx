@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { toast } from "sonner";
 
 // Tipos TypeScript
 interface Auditoria {
@@ -52,7 +53,7 @@ interface Filters {
 }
 
 // Configuración de la API
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+import { API_BASE_URL } from "@/lib/api";
 
 const auditoriaService = {
   async getAll(filters: Filters = {}): Promise<Auditoria[]> {
@@ -254,9 +255,9 @@ const AuditoriasPlanificacion = () => {
     try {
       setSaving(true);
       if (auditoriaEditando) {
-        await auditoriaService.update(auditoriaEditando.id, payload);
+        await auditoriaService.update(auditoriaEditando.id, formData);
       } else {
-        await auditoriaService.create(payload);
+        await auditoriaService.create(formData);
       }
       setMostrarModal(false);
       await cargarAuditorias();

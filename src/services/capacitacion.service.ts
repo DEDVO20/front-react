@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8000/api/v1";
+import { API_BASE_URL as API_URL } from "@/lib/api";
 
 export interface Capacitacion {
   id: string;                      // UUID from backend
