@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Target, TrendingUp, Calendar, User, Filter, Search, Edit, Trash2, Eye, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { objetivoCalidadService, ObjetivoCalidad } from '@/services/objetivoCalidad.service';
+import { areaService, Area } from '@/services/area.service';
+import { usuarioService, Usuario } from '@/services/usuario.service';
 
 const ObjetivosActivos: React.FC = () => {
   const [objetivos, setObjetivos] = useState<ObjetivoCalidad[]>([]);
@@ -11,6 +14,9 @@ const ObjetivosActivos: React.FC = () => {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [modalTipo, setModalTipo] = useState<'crear' | 'editar' | 'ver'>('crear');
   const [objetivoSeleccionado, setObjetivoSeleccionado] = useState<ObjetivoCalidad | null>(null);
+
+  const [areas, setAreas] = useState<Area[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -30,7 +36,22 @@ const ObjetivosActivos: React.FC = () => {
   // Cargar objetivos
   useEffect(() => {
     cargarObjetivos();
+    cargarListas();
   }, []);
+
+  const cargarListas = async () => {
+    try {
+      const [areasData, usuariosData] = await Promise.all([
+        areaService.getAll(),
+        usuarioService.getAllActive()
+      ]);
+      setAreas(areasData);
+      setUsuarios(usuariosData);
+    } catch (error) {
+      console.error('Error al cargar listas:', error);
+      toast.error('Error al cargar datos auxiliares');
+    }
+  };
 
   const cargarObjetivos = async () => {
     setLoading(true);
@@ -48,7 +69,7 @@ const ObjetivosActivos: React.FC = () => {
   // Filtrar objetivos
   const objetivosFiltrados = objetivos.filter(obj => {
     const cumpleBusqueda = obj.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          obj.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
+      obj.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
     const cumpleEstado = estadoFiltro === 'todos' || obj.estado === estadoFiltro;
     return cumpleBusqueda && cumpleEstado;
   });
@@ -106,55 +127,49 @@ const ObjetivosActivos: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Aquí iría la llamada a la API
-      console.log('Guardando objetivo:', formData);
+      setLoading(true);
+
+      const payload = {
+        codigo: formData.codigo,
+        descripcion: formData.descripcion,
+        area_id: formData.areaId || null,
+        responsable_id: formData.responsableId || null,
+        fecha_inicio: formData.periodoInicio,
+        fecha_fin: formData.periodoFin,
+        estado: formData.estado,
+        // Campos extras no soportados por el backend actual:
+        // meta: formData.meta, 
+        // indicador_id: formData.indicadorId,
+        // valor_meta: formData.valorMeta
+      };
+
       if (modalTipo === 'crear') {
-        const nuevoObjetivo: ObjetivoCalidad = {
-          id: Date.now().toString(),
-          codigo: formData.codigo,
-          descripcion: formData.descripcion,
-          meta: formData.meta,
-          valorMeta: parseFloat(formData.valorMeta) || undefined,
-          periodoInicio: formData.periodoInicio,
-          periodoFin: formData.periodoFin,
-          estado: formData.estado,
-          creadoEn: new Date().toISOString().split('T')[0],
-          area: formData.areaId ? { id: formData.areaId, nombre: getNombreArea(formData.areaId) } : undefined,
-          responsable: formData.responsableId ? { id: formData.responsableId, nombre: getNombreResponsable(formData.responsableId) } : undefined,
-          indicador: formData.indicadorId ? { id: formData.indicadorId, nombre: getNombreIndicador(formData.indicadorId) } : undefined
-        };
-        setObjetivos(prev => [...prev, nuevoObjetivo]);
+        await objetivoCalidadService.create(payload);
+        toast.success('Objetivo creado exitosamente');
       } else if (modalTipo === 'editar' && objetivoSeleccionado) {
-        setObjetivos(prev => prev.map(obj =>
-          obj.id === objetivoSeleccionado.id
-            ? {
-                ...obj,
-                codigo: formData.codigo,
-                descripcion: formData.descripcion,
-                meta: formData.meta,
-                valorMeta: parseFloat(formData.valorMeta) || undefined,
-                periodoInicio: formData.periodoInicio,
-                periodoFin: formData.periodoFin,
-                estado: formData.estado,
-                area: formData.areaId ? { id: formData.areaId, nombre: getNombreArea(formData.areaId) } : undefined,
-                responsable: formData.responsableId ? { id: formData.responsableId, nombre: getNombreResponsable(formData.responsableId) } : undefined,
-                indicador: formData.indicadorId ? { id: formData.indicadorId, nombre: getNombreIndicador(formData.indicadorId) } : undefined
-              }
-            : obj
-        ));
+        await objetivoCalidadService.update(objetivoSeleccionado.id, payload);
+        toast.success('Objetivo actualizado exitosamente');
       }
+
       cerrarModal();
-    } catch (error) {
+      cargarObjetivos();
+    } catch (error: any) {
       console.error('Error al guardar objetivo:', error);
+      toast.error(error.message || 'Error al guardar el objetivo');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleEliminar = async (id: string) => {
     if (window.confirm('¿Está seguro de eliminar este objetivo?')) {
       try {
-        setObjetivos(prev => prev.filter(obj => obj.id !== id));
-      } catch (error) {
+        await objetivoCalidadService.delete(id);
+        toast.success('Objetivo eliminado exitosamente');
+        cargarObjetivos();
+      } catch (error: any) {
         console.error('Error al eliminar objetivo:', error);
+        toast.error('Error al eliminar el objetivo');
       }
     }
   };
@@ -181,48 +196,20 @@ const ObjetivosActivos: React.FC = () => {
     if (objetivo.estado === 'cumplido') return 100;
     if (objetivo.estado === 'no_cumplido') return 0;
     if (objetivo.estado === 'planificado') return 0;
-   
+
     const inicio = new Date(objetivo.periodoInicio || '');
     const fin = new Date(objetivo.periodoFin || '');
     const hoy = new Date();
-   
+
     if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) return 0;
-   
+
     const total = fin.getTime() - inicio.getTime();
     const transcurrido = hoy.getTime() - inicio.getTime();
-   
+
     return Math.min(Math.max((transcurrido / total) * 100, 0), 100);
   };
 
-  // Helpers para nombres
-  const getNombreArea = (id: string) => {
-    const areas: Record<string, string> = {
-      '1': 'Gestión de Calidad',
-      '2': 'Operaciones',
-      '3': 'Recursos Humanos',
-      '4': 'Comercial'
-    };
-    return areas[id] || 'Desconocido';
-  };
 
-  const getNombreResponsable = (id: string) => {
-    const responsables: Record<string, string> = {
-      '1': 'Juan Pérez',
-      '2': 'María García',
-      '3': 'Carlos López',
-      '4': 'Ana Martínez'
-    };
-    return responsables[id] || 'Desconocido';
-  };
-
-  const getNombreIndicador = (id: string) => {
-    const indicadores: Record<string, string> = {
-      '1': 'Satisfacción del Cliente',
-      '2': 'Índice de No Conformidades',
-      '3': 'Eficacia de Capacitación'
-    };
-    return indicadores[id] || 'Sin indicador';
-  };
 
   if (loading) {
     return (
@@ -455,7 +442,7 @@ const ObjetivosActivos: React.FC = () => {
                   <input
                     type="text"
                     value={formData.codigo}
-                    onChange={(e) => setFormData({...formData, codigo: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="OBJ-2024-001"
                     required
@@ -468,7 +455,7 @@ const ObjetivosActivos: React.FC = () => {
                   </label>
                   <select
                     value={formData.estado}
-                    onChange={(e) => setFormData({...formData, estado: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                     disabled={modalTipo === 'ver'}
@@ -488,7 +475,7 @@ const ObjetivosActivos: React.FC = () => {
                 </label>
                 <textarea
                   value={formData.descripcion}
-                  onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={3}
                   placeholder="Descripción del objetivo de calidad"
@@ -503,7 +490,7 @@ const ObjetivosActivos: React.FC = () => {
                 </label>
                 <textarea
                   value={formData.meta}
-                  onChange={(e) => setFormData({...formData, meta: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, meta: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={2}
                   placeholder="Meta específica a alcanzar"
@@ -519,7 +506,7 @@ const ObjetivosActivos: React.FC = () => {
                   <input
                     type="number"
                     value={formData.valorMeta}
-                    onChange={(e) => setFormData({...formData, valorMeta: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, valorMeta: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="90"
                     disabled={modalTipo === 'ver'}
@@ -531,7 +518,7 @@ const ObjetivosActivos: React.FC = () => {
                   </label>
                   <select
                     value={formData.indicadorId}
-                    onChange={(e) => setFormData({...formData, indicadorId: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, indicadorId: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     disabled={modalTipo === 'ver'}
                   >
@@ -551,7 +538,7 @@ const ObjetivosActivos: React.FC = () => {
                   <input
                     type="date"
                     value={formData.periodoInicio}
-                    onChange={(e) => setFormData({...formData, periodoInicio: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, periodoInicio: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     disabled={modalTipo === 'ver'}
                   />
@@ -563,7 +550,7 @@ const ObjetivosActivos: React.FC = () => {
                   <input
                     type="date"
                     value={formData.periodoFin}
-                    onChange={(e) => setFormData({...formData, periodoFin: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, periodoFin: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     disabled={modalTipo === 'ver'}
                   />
@@ -577,15 +564,14 @@ const ObjetivosActivos: React.FC = () => {
                   </label>
                   <select
                     value={formData.areaId}
-                    onChange={(e) => setFormData({...formData, areaId: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, areaId: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     disabled={modalTipo === 'ver'}
                   >
                     <option value="">Seleccionar área</option>
-                    <option value="1">Gestión de Calidad</option>
-                    <option value="2">Operaciones</option>
-                    <option value="3">Recursos Humanos</option>
-                    <option value="4">Comercial</option>
+                    {areas.map(area => (
+                      <option key={area.id} value={area.id}>{area.nombre}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -594,15 +580,14 @@ const ObjetivosActivos: React.FC = () => {
                   </label>
                   <select
                     value={formData.responsableId}
-                    onChange={(e) => setFormData({...formData, responsableId: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, responsableId: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     disabled={modalTipo === 'ver'}
                   >
                     <option value="">Seleccionar responsable</option>
-                    <option value="1">Juan Pérez</option>
-                    <option value="2">María García</option>
-                    <option value="3">Carlos López</option>
-                    <option value="4">Ana Martínez</option>
+                    {usuarios.map(u => (
+                      <option key={u.id} value={u.id}>{u.nombre_completo}</option>
+                    ))}
                   </select>
                 </div>
               </div>

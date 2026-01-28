@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000/api";
+import { apiClient } from "@/lib/api";
 
 export interface ObjetivoCalidad {
   id: string;
@@ -33,112 +33,72 @@ export interface SeguimientoObjetivo {
   objetivo?: ObjetivoCalidad;
 }
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
-};
+
 
 export const objetivoCalidadService = {
   // Obtener todos los objetivos
   async getAll(): Promise<ObjetivoCalidad[]> {
-    const response = await fetch(`${API_URL}/objetivos-calidad`, {
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error("Error al obtener objetivos de calidad");
-    return response.json();
+    const response = await apiClient.get('/objetivos-calidad');
+    return response.data;
   },
 
   // Obtener objetivos activos
+  // Obtener objetivos activos
   async getActivos(): Promise<ObjetivoCalidad[]> {
-    const response = await fetch(
-      `${API_URL}/objetivos-calidad?estado=en_curso,planificado`,
-      {
-        headers: getAuthHeaders(),
-      }
-    );
-    if (!response.ok) throw new Error("Error al obtener objetivos activos");
-    return response.json();
+    const response = await apiClient.get('/objetivos-calidad?estado=en_curso,planificado');
+    return response.data;
   },
 
   // Obtener un objetivo por ID
+  // Obtener un objetivo por ID
   async getById(id: string): Promise<ObjetivoCalidad> {
-    const response = await fetch(`${API_URL}/objetivos-calidad/${id}`, {
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error("Error al obtener objetivo");
-    return response.json();
+    const response = await apiClient.get(`/objetivos-calidad/${id}`);
+    return response.data;
   },
 
   // Crear nuevo objetivo
+  // Crear nuevo objetivo
   async create(data: Partial<ObjetivoCalidad>): Promise<ObjetivoCalidad> {
-    const response = await fetch(`${API_URL}/objetivos-calidad`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Error al crear objetivo");
-    return response.json();
+    const response = await apiClient.post('/objetivos-calidad', data);
+    return response.data;
   },
 
   // Actualizar objetivo
+  // Actualizar objetivo
   async update(id: string, data: Partial<ObjetivoCalidad>): Promise<ObjetivoCalidad> {
-    const response = await fetch(`${API_URL}/objetivos-calidad/${id}`, {
-      method: "PUT",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Error al actualizar objetivo");
-    return response.json();
+    const response = await apiClient.put(`/objetivos-calidad/${id}`, data);
+    return response.data;
   },
 
   // Eliminar objetivo
+  // Eliminar objetivo
   async delete(id: string): Promise<void> {
-    const response = await fetch(`${API_URL}/objetivos-calidad/${id}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error("Error al eliminar objetivo");
+    await apiClient.delete(`/objetivos-calidad/${id}`);
   },
 
   // Obtener seguimientos de un objetivo
+  // Obtener seguimientos de un objetivo
   async getSeguimientos(objetivoId: string): Promise<SeguimientoObjetivo[]> {
-    const response = await fetch(
-      `${API_URL}/seguimientos-objetivo?objetivoId=${objetivoId}`,
-      {
-        headers: getAuthHeaders(),
-      }
-    );
-    if (!response.ok) throw new Error("Error al obtener seguimientos");
-    return response.json();
+    const response = await apiClient.get(`/seguimientos-objetivo?objetivoId=${objetivoId}`);
+    return response.data;
   },
 
+  // Crear seguimiento
   // Crear seguimiento
   async createSeguimiento(
     data: Partial<SeguimientoObjetivo>
   ): Promise<SeguimientoObjetivo> {
-    const response = await fetch(`${API_URL}/seguimientos-objetivo`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Error al crear seguimiento");
-    return response.json();
+    const response = await apiClient.post('/seguimientos-objetivo', data);
+    return response.data;
   },
 
+  // Actualizar seguimiento
   // Actualizar seguimiento
   async updateSeguimiento(
     id: string,
     data: Partial<SeguimientoObjetivo>
   ): Promise<SeguimientoObjetivo> {
-    const response = await fetch(`${API_URL}/seguimientos-objetivo/${id}`, {
-      method: "PUT",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Error al actualizar seguimiento");
-    return response.json();
+    const response = await apiClient.put(`/seguimientos-objetivo/${id}`, data);
+    return response.data;
   },
 };
