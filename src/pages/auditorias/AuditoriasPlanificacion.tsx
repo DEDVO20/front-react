@@ -254,18 +254,18 @@ const AuditoriasPlanificacion = () => {
     try {
       setSaving(true);
       if (auditoriaEditando) {
-        await auditoriaService.update(auditoriaEditando.id, formData);
+        await auditoriaService.update(auditoriaEditando.id, payload);
       } else {
-        await auditoriaService.create(formData);
+        await auditoriaService.create(payload);
       }
       setMostrarModal(false);
       await cargarAuditorias();
 
       // Mostrar mensaje de éxito
-      alert(auditoriaEditando ? 'Auditoría actualizada exitosamente' : 'Auditoría creada exitosamente');
+      toast.success(auditoriaEditando ? 'Auditoría actualizada exitosamente' : 'Auditoría creada exitosamente');
     } catch (err) {
       console.error('Error al guardar auditoría:', err);
-      setError(err instanceof Error ? err.message : 'Error al guardar la auditoría');
+      toast.error(err instanceof Error ? err.message : 'Error al guardar la auditoría');
     } finally {
       setSaving(false);
     }
@@ -281,7 +281,7 @@ const AuditoriasPlanificacion = () => {
       setDeleteDialog({ open: false, id: null });
     } catch (err) {
       console.error('Error al eliminar auditoría:', err);
-      setError(err instanceof Error ? err.message : 'Error al eliminar la auditoría');
+      toast.error(err instanceof Error ? err.message : 'Error al eliminar la auditoría');
     }
   };
 

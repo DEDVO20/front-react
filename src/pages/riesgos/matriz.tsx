@@ -53,6 +53,7 @@ interface Proceso {
 
 export default function MatrizRiesgos() {
   const [riesgos, setRiesgos] = useState<Riesgo[]>([]);
+  const [procesos, setProcesos] = useState<{ id: string; nombre: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showNewDialog, setShowNewDialog] = useState(false);
@@ -68,6 +69,7 @@ export default function MatrizRiesgos() {
     tipo: "",
     probabilidad: "",
     impacto: "",
+    procesoId: "",
     tratamiento: "",
     estado: "identificado",
     fechaIdentificacion: "",
@@ -92,8 +94,37 @@ export default function MatrizRiesgos() {
       setLoading(true);
       setError(null);
 
-      const response = await apiClient.get('/riesgos');
-      setRiesgos(response.data);
+      const token = getAuthToken();
+      if (!token) {
+        throw new Error("No hay sesión activa");
+      }
+
+      const [riesgosResponse, procesosResponse] = await Promise.all([
+        fetch(`${API_URL}/riesgos`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }),
+        fetch(`${API_URL}/procesos`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }),
+      ]);
+
+      if (!riesgosResponse.ok || !procesosResponse.ok) {
+        throw new Error("Error al cargar datos");
+      }
+
+      const [riesgosData, procesosData] = await Promise.all([
+        riesgosResponse.json(),
+        procesosResponse.json(),
+      ]);
+
+      setRiesgos(riesgosData);
+      setProcesos(procesosData);
     } catch (error: any) {
       console.error("Error:", error);
       setError(error.message);
@@ -138,13 +169,14 @@ export default function MatrizRiesgos() {
 
       await apiClient.post('/riesgos', payload);
 
-      alert("Riesgo creado exitosamente");
+      toast.success("Riesgo creado exitosamente");
       setShowNewDialog(false);
       setFormData({
         procesoId: "",
         codigo: "",
         descripcion: "",
         tipo: "",
+        procesoId: "",
         probabilidad: "",
         impacto: "",
         tratamiento: "",
@@ -154,7 +186,7 @@ export default function MatrizRiesgos() {
       fetchRiesgos();
     } catch (error: any) {
       console.error("Error:", error);
-      alert(error.message || "Error al crear riesgo");
+      toast.error(error.message || "Error al crear riesgo");
     } finally {
       setSaving(false);
     }
@@ -452,6 +484,25 @@ export default function MatrizRiesgos() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="proceso">Proceso / Área *</Label>
+                  <Select
+                    value={formData.procesoId}
+                    onValueChange={(value) => setFormData({ ...formData, procesoId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona proceso" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {procesos.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="grid gap-2">
                   <Label htmlFor="codigo">Código *</Label>
                   <Input

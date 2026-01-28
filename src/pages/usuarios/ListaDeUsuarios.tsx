@@ -175,7 +175,6 @@ export default function ListaUsuarios() {
 
       if (!response.ok) throw new Error("Error al eliminar usuario");
 
-      toast.success(`Usuario "${usuario.nombre_usuario}" eliminado`);
       toast.success(`Usuario "${usuario.nombre_usuario}" eliminado correctamente`);
       await fetchUsuarios();
       closeDeleteDialog();
@@ -184,29 +183,7 @@ export default function ListaUsuarios() {
     }
   };
 
-  const handleToggleEstado = async (id: string, nuevoEstado: boolean) => {
-    // Optimistic update
-    setUsuarios(prev => prev.map(u => u.id === id ? { ...u, activo: nuevoEstado } : u));
 
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`/api/v1/usuarios/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ activo: nuevoEstado }),
-      });
-
-      if (!response.ok) throw new Error("Error al actualizar estado");
-
-      toast.success(`Usuario ${nuevoEstado ? "activado" : "desactivado"}`);
-    } catch (error) {
-      toast.error("Error al cambiar el estado");
-      // Rollback
-      setUsuarios(prev => prev.map(u => u.id === id ? { ...u, activo: !nuevoEstado } : u));
-      console.error("Error:", error);
-      toast.error("Error al eliminar el usuario. Por favor intente nuevamente.");
-    }
-  };
 
 
 

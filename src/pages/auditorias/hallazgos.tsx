@@ -4,18 +4,20 @@ import {
   Eye, Edit, Trash2, Users, Clock, TrendingUp, ChevronDown, ChevronUp, AlertCircle, X, Activity
 } from 'lucide-react';
 import { auditoriaService } from '@/services/auditoria.service';
-import { Badge } from "@/components/ui/badge";
+import { toast } from 'sonner';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:8000/api/v1';
 
 // Tipos de datos
 interface Auditoria {
@@ -207,12 +209,12 @@ const AuditoriasHallazgosView: React.FC = () => {
       objetivo: '',
       alcance: '',
       normaReferencia: 'ISO 9001:2015',
-      auditorLiderId: '1',
+      auditorLiderId: '',
       fechaPlanificada: '',
       fechaInicio: '',
       fechaFin: '',
       estado: 'planificada',
-      creadoPor: '1'
+      creadoPor: ''
     });
     setShowModal(true);
   };
@@ -252,25 +254,35 @@ const AuditoriasHallazgosView: React.FC = () => {
 
       const method = modalMode === 'create' ? 'POST' : 'PUT';
 
+      const payload: any = { ...formData };
+
+      // Sanitizar datos para enviar al backend
+      if (!payload.auditorLiderId) payload.auditorLiderId = null;
+      if (!payload.fechaPlanificada) payload.fechaPlanificada = null;
+      if (!payload.fechaInicio) payload.fechaInicio = null;
+      if (!payload.fechaFin) payload.fechaFin = null;
+      if (!payload.normaReferencia) payload.normaReferencia = null;
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       if (response.ok) {
         setShowModal(false);
         fetchAuditorias();
+        toast.success(modalMode === 'create' ? 'Auditoría creada exitosamente' : 'Auditoría actualizada exitosamente');
       }
     } catch (error) {
       console.error('Error al guardar auditoría:', error);
+      toast.error('Error al guardar la auditoría');
     }
   };
 
   const handleDeleteAuditoria = async (id: string) => {
-    if (!confirm('¿Está seguro de eliminar esta auditoría?')) return;
     try {
       const response = await fetch(`${API_URL}/auditorias/${id}`, {
         method: 'DELETE',
@@ -278,9 +290,11 @@ const AuditoriasHallazgosView: React.FC = () => {
       });
       if (response.ok) {
         fetchAuditorias();
+        toast.success('Auditoría eliminada exitosamente');
       }
     } catch (error) {
       console.error('Error al eliminar auditoría:', error);
+      toast.error('Error al eliminar la auditoría');
     }
   };
 
@@ -335,14 +349,15 @@ const AuditoriasHallazgosView: React.FC = () => {
       if (response.ok) {
         setShowHallazgoModal(false);
         fetchHallazgos();
+        toast.success(modalMode === 'create' ? 'Hallazgo registrado exitosamente' : 'Hallazgo actualizado exitosamente');
       }
     } catch (error) {
       console.error('Error al guardar hallazgo:', error);
+      toast.error('Error al guardar el hallazgo');
     }
   };
 
   const handleDeleteHallazgo = async (id: string) => {
-    if (!confirm('¿Eliminar este hallazgo?')) return;
     try {
       const response = await fetch(`${API_URL}/hallazgos-auditoria/${id}`, {
         method: 'DELETE',
@@ -350,9 +365,11 @@ const AuditoriasHallazgosView: React.FC = () => {
       });
       if (response.ok) {
         fetchHallazgos();
+        toast.success('Hallazgo eliminado exitosamente');
       }
     } catch (error) {
       console.error('Error al eliminar hallazgo:', error);
+      toast.error('Error al eliminar el hallazgo');
     }
   };
 
@@ -668,13 +685,62 @@ const AuditoriasHallazgosView: React.FC = () => {
                                 <p className="text-[#6B7280] text-sm italic">Sin hallazgos en esta auditoría</p>
                               </div>
                             ) : (
-                              hallazgos.filter(h => h.auditoriaId === auditoria.id).map(hallazgo => (
-                                <div key={hallazgo.id} className="bg-white p-5 rounded-2xl border border-[#E5E7EB] border-l-4 border-l-[#2563EB] hover:shadow-sm transition-all">
-                                  <div className="flex justify-between items-start mb-3">
-                                    {getTipoHallazgoBadge(hallazgo.tipo)}
-                                    <div className="flex gap-1">
-                                      <button onClick={() => handleEditHallazgo(hallazgo)} className="p-1.5 text-[#10B981] hover:bg-[#ECFDF5] rounded-md transition-all"><Edit size={14} /></button>
-                                      <button onClick={() => handleDeleteHallazgo(hallazgo.id)} className="p-1.5 text-[#EF4444] hover:bg-[#FEF2F2] rounded-md transition-all"><Trash2 size={14} /></button>
+                              hallazgos
+                                .filter(h => h.auditoriaId === auditoria.id)
+                                .map(hallazgo => (
+                                  <div key={hallazgo.id} className="bg-white p-3 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow">
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          {getTipoHallazgoBadge(hallazgo.tipo)}
+                                          <span className="text-xs text-gray-500">
+                                            {formatDate(hallazgo.creadoEn)}
+                                          </span>
+                                        </div>
+                                        <p className="text-gray-900 font-medium">{hallazgo.descripcion}</p>
+                                        {hallazgo.clausulaIso && (
+                                          <p className="text-sm text-gray-600 mt-1">
+                                            Cláusula ISO: <span className="font-medium">{hallazgo.clausulaIso}</span>
+                                          </p>
+                                        )}
+                                        {hallazgo.evidencia && (
+                                          <p className="text-sm text-gray-600 mt-1">
+                                            Evidencia: <span className="italic">{hallazgo.evidencia}</span>
+                                          </p>
+                                        )}
+                                      </div>
+                                      <div className="flex gap-1">
+                                        <button
+                                          onClick={() => handleEditHallazgo(hallazgo)}
+                                          className="p-1 text-gray-600 hover:bg-gray-100 rounded"
+                                        >
+                                          <Edit className="w-4 h-4" />
+                                        </button>
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <button
+                                              className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                              title="Eliminar Hallazgo"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>¿Eliminar hallazgo?</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                Esta acción eliminará permanentemente este hallazgo.
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                              <AlertDialogAction onClick={() => handleDeleteHallazgo(hallazgo.id)} className="bg-red-600 hover:bg-red-700">
+                                                Eliminar
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      </div>
                                     </div>
                                   </div>
                                   <p className="text-[#1E3A8A] font-bold text-sm mb-3 leading-relaxed">{hallazgo.descripcion}</p>
@@ -902,6 +968,7 @@ const AuditoriasHallazgosView: React.FC = () => {
                   placeholder="ej: 7.1.3 - Infraestructura"
                   value={hallazgoFormData.clausulaIso}
                   onChange={e => setHallazgoFormData({ ...hallazgoFormData, clausulaIso: e.target.value })}
+                  className="w-full px-4 py-3 border rounded-xl"
                 />
               </div>
               <div className="space-y-2">

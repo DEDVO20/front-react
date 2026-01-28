@@ -104,14 +104,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         const filteredSubItems = item.items ? filterMenuItems(item.items) : undefined;
 
         // Un ítem es visible si:
-        // 1. Tiene permiso directo y lo tiene el usuario
-        // 2. O NO tiene permiso directo pero tiene hijos permitidos
-        // 3. O no tiene ni permiso ni hijos (ej. Dashboard)
-        const isVisible = hasPermission(item.permiso) || (filteredSubItems && filteredSubItems.length > 0);
+        // 1. Tiene permiso directo y lo tiene el usuario (y no es un simple contenedor '#')
+        // 2. O tiene hijos permitidos visibles
+        // 3. O no tiene permiso requerido (público) y no es un contenedor vacío
 
-        if (isVisible) {
+        const hasDirectPermission = item.permiso ? hasPermission(item.permiso) : true;
+        const hasChildren = filteredSubItems && filteredSubItems.length > 0;
+
+        // Si es un contenedor (#) solo es visible si tiene hijos
+        if (item.url === "#") {
+          if (hasChildren) {
+            return { ...item, items: filteredSubItems };
+          }
+          return null;
+        }
+
+        // Si es un enlace directo
+        if (hasDirectPermission) {
           return { ...item, items: filteredSubItems };
         }
+
         return null;
       })
       .filter((item): item is MenuItem => item !== null);
