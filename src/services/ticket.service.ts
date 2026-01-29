@@ -1,0 +1,56 @@
+import apiClient from "@/lib/api";
+
+export interface Ticket {
+    id: string;
+    titulo: string;
+    descripcion: string;
+    tipo: "soporte" | "consulta" | "mejora";
+    prioridad: "baja" | "media" | "alta" | "critica";
+    estado: "abierto" | "en_progreso" | "resuelto" | "cerrado";
+    solicitante_id: string;
+    asignado_a?: string;
+    creado_en: string;
+    actualizado_en: string;
+}
+
+export interface TicketCreate {
+    titulo: string;
+    descripcion: string;
+    tipo: string;
+    prioridad: string;
+}
+
+export interface TicketUpdate {
+    titulo?: string;
+    descripcion?: string;
+    tipo?: string;
+    prioridad?: string;
+    estado?: string;
+    asignado_a?: string;
+}
+
+const ticketService = {
+    getAll: async (estado?: string): Promise<Ticket[]> => {
+        const params = new URLSearchParams();
+        if (estado) params.append("estado", estado);
+        const response = await apiClient.get<Ticket[]>("/tickets", { params });
+        return response.data;
+    },
+
+    getById: async (id: string): Promise<Ticket> => {
+        const response = await apiClient.get<Ticket>(`/tickets/${id}`);
+        return response.data;
+    },
+
+    create: async (ticket: TicketCreate): Promise<Ticket> => {
+        const response = await apiClient.post<Ticket>("/tickets", ticket);
+        return response.data;
+    },
+
+    update: async (id: string, ticket: TicketUpdate): Promise<Ticket> => {
+        const response = await apiClient.put<Ticket>(`/tickets/${id}`, ticket);
+        return response.data;
+    },
+};
+
+export default ticketService;

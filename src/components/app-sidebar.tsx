@@ -14,6 +14,7 @@ import {
   TrendingUp,
   FileCheck,
   BookOpen,
+  LifeBuoy,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavMain } from "@/components/nav-main";
@@ -281,6 +282,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "/reportes",
         icon: BarChart3,
         permiso: "indicadores.ver",
+      },
+      {
+        title: "Mesa de Ayuda",
+        url: "/mesa-ayuda",
+        icon: LifeBuoy,
       },
       {
         title: "Manual de Usuario",
