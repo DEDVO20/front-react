@@ -27,6 +27,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { getCurrentUser, getToken } from "@/services/auth";
 import axios from "axios";
@@ -36,6 +37,7 @@ import { API_BASE_URL as API_URL } from "@/lib/api";
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [user, setUser] = React.useState(getCurrentUser());
   const [pendingCount] = React.useState(5); // Simulado
+  const { isMobile, setOpenMobile } = useSidebar();
 
   // Cargar perfil completo al montar
   React.useEffect(() => {
@@ -294,7 +296,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild className="hover:bg-white/10 data-[state=open]:bg-white/10">
-              <Link to="/dashboard">
+              <Link to="/dashboard" onClick={() => isMobile && setOpenMobile(false)}>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white text-blue-600 shadow-lg">
                   <Building2 className="size-4" />
                 </div>
