@@ -89,7 +89,9 @@ interface Asignacion {
   creado_en: string;
 }
 
-const API_URL = "/api/v1";
+import { apiClient } from "@/lib/api";
+
+// ... previous interfaces
 
 export default function AsignarResponsables() {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
@@ -115,35 +117,19 @@ export default function AsignarResponsables() {
     fetchData();
   }, []);
 
-  const getAuthToken = () => localStorage.getItem("token");
-
   const fetchData = async () => {
     try {
       setLoading(true);
-      const token = getAuthToken();
-      if (!token) throw new Error("No hay sesión activa");
-
-      const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
       const [asignacionesRes, areasRes, usuariosRes] = await Promise.all([
-        fetch(`${API_URL}/asignaciones`, { headers }),
-        fetch(`${API_URL}/areas`, { headers }),
-        fetch(`${API_URL}/usuarios`, { headers }),
+        apiClient.get<Asignacion[]>("/asignaciones"),
+        apiClient.get<Area[]>("/areas"),
+        apiClient.get<Usuario[]>("/usuarios"),
       ]);
 
-      if (!asignacionesRes.ok || !areasRes.ok || !usuariosRes.ok) {
-        throw new Error("Error al cargar datos");
-      }
-
-      const [asignacionesData, areasData, usuariosData] = await Promise.all([
-        asignacionesRes.json(),
-        areasRes.json(),
-        usuariosRes.json(),
-      ]);
-
-      setAsignaciones(asignacionesData);
-      setAreas(areasData);
-      setUsuarios(usuariosData);
+      setAsignaciones(asignacionesRes.data);
+      setAreas(areasRes.data);
+      setUsuarios(usuariosRes.data);
     } catch (error: any) {
       toast.error(error.message || "Error al cargar datos");
     } finally {
@@ -167,23 +153,12 @@ export default function AsignarResponsables() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const token = getAuthToken();
-      if (!token) throw new Error("No hay sesión activa");
       if (!formData.area_id || !formData.usuario_id) {
         toast.error("Selecciona un área y un usuario");
         return;
       }
 
-      const response = await fetch(`${API_URL}/asignaciones`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || "Error al asignar");
-      }
+      await apiClient.post("/asignaciones", formData);
 
       await fetchData();
       setShowDialog(false);
@@ -208,15 +183,7 @@ export default function AsignarResponsables() {
     if (!asignacion) return;
 
     try {
-      const token = getAuthToken();
-      if (!token) throw new Error("No hay sesión");
-
-      const response = await fetch(`${API_URL}/asignaciones/${asignacion.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) throw new Error("Error al eliminar");
+      await apiClient.delete(`/asignaciones/${asignacion.id}`);
 
       await fetchData();
       toast.success("Asignación eliminada");
