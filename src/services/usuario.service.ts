@@ -2,15 +2,24 @@ import apiClient from "@/lib/api";
 
 export interface Usuario {
   id: string;
-  nombre_usuario: string;  // snake_case
-  email: string;
-  nombre_completo: string; // snake_case
-  cargo?: string;
-  area_id?: string;        // snake_case
+  documento: number;
+  nombre: string;
+  segundo_nombre?: string;
+  primer_apellido: string;
+  segundo_apellido?: string;
+  correo_electronico: string;
+  nombre_usuario: string;
+  area_id?: string;
   activo: boolean;
-  telefono?: string;
-  creado_en?: string;      // snake_case
-  actualizado_en?: string; // snake_case
+  foto_url?: string;
+  area?: {
+    id: string;
+    codigo: string;
+    nombre: string;
+    descripcion?: string;
+  };
+  creado_en: string;
+  actualizado_en: string;
 }
 
 export interface UsuariosListResponse {

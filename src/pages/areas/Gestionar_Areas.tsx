@@ -47,6 +47,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { apiClient } from "@/lib/api";
 
 interface Area {
   id: string;
@@ -56,8 +57,6 @@ interface Area {
   creado_en: string;
   actualizado_en: string;
 }
-
-const API_URL = "/api/v1";
 
 export default function AreasResponsables() {
   const [areas, setAreas] = useState<Area[]>([]);
@@ -81,28 +80,11 @@ export default function AreasResponsables() {
     fetchAreas();
   }, []);
 
-  const getAuthToken = () => localStorage.getItem("token");
-
   const fetchAreas = async () => {
     try {
       setLoading(true);
-      const token = getAuthToken();
-      if (!token) throw new Error("No hay sesión activa. Por favor, inicia sesión.");
-
-      const response = await fetch(`${API_URL}/areas`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) throw new Error("Sesión expirada.");
-        throw new Error(`Error: ${response.status}`);
-      }
-
-      const data: Area[] = await response.json();
-      setAreas(data);
+      const response = await apiClient.get<Area[]>("/areas");
+      setAreas(response.data);
     } catch (error: any) {
       toast.error(error.message || "Error al cargar áreas");
     } finally {
@@ -137,28 +119,15 @@ export default function AreasResponsables() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const token = getAuthToken();
-      if (!token) throw new Error("No hay sesión activa");
       if (!formData.codigo.trim() || !formData.nombre.trim()) {
         toast.error("Código y nombre son obligatorios");
         return;
       }
 
-      const url = dialogMode === 'create' ? `${API_URL}/areas` : `${API_URL}/areas/${selectedArea?.id}`;
-      const method = dialogMode === 'create' ? 'POST' : 'PUT';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || 'Error al guardar');
+      if (dialogMode === 'create') {
+        await apiClient.post("/areas", formData);
+      } else {
+        await apiClient.put(`/areas/${selectedArea?.id}`, formData);
       }
 
       await fetchAreas();
@@ -184,16 +153,7 @@ export default function AreasResponsables() {
     if (!area) return;
 
     try {
-      const token = getAuthToken();
-      if (!token) throw new Error("No hay sesión activa");
-
-      const response = await fetch(`${API_URL}/areas/${area.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) throw new Error('Error al eliminar');
-
+      await apiClient.delete(`/areas/${area.id}`);
       await fetchAreas();
       toast.success('Área eliminada correctamente');
       closeDeleteDialog();

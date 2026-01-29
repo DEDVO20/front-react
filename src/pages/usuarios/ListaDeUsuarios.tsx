@@ -55,28 +55,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { apiClient } from "@/lib/api";
+import { usuarioService, Usuario } from "@/services/usuario.service";
 
-interface Usuario {
-  id: string;
-  documento: number;
-  nombre: string;
-  segundo_nombre?: string;
-  primer_apellido: string;
-  segundo_apellido?: string;
-  correo_electronico: string;
-  nombre_usuario: string;
-  area_id?: string;
-  activo: boolean;
-  foto_url?: string;
-  area?: {
-    id: string;
-    codigo: string;
-    nombre: string;
-    descripcion?: string;
-  };
-  creado_en: string;
-  actualizado_en: string;
-}
+
 
 export default function ListaUsuarios() {
   const navigate = useNavigate();
@@ -106,14 +87,7 @@ export default function ListaUsuarios() {
   const fetchUsuarios = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("/api/v1/usuarios", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) throw new Error("Error al obtener usuarios");
-
-      const data = await response.json();
+      const data = await usuarioService.getAll();
       setUsuarios(Array.isArray(data) ? data : []);
       setTotal(Array.isArray(data) ? data.length : 0);
     } catch (error) {
@@ -167,26 +141,37 @@ export default function ListaUsuarios() {
     if (!usuario) return;
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`/api/v1/usuarios/${usuario.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) throw new Error("Error al eliminar usuario");
+      await usuarioService.delete(usuario.id);
 
       toast.success(`Usuario "${usuario.nombre_usuario}" eliminado correctamente`);
       await fetchUsuarios();
       closeDeleteDialog();
     } catch (error) {
+      console.error(error);
       toast.error("Error al eliminar el usuario");
     }
   };
 
+  const handleToggleEstado = async (id: string, nuevoEstado: boolean) => {
+    // Actualización optimista
+    setUsuarios((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, activo: nuevoEstado } : u))
+    );
 
+    try {
+      // Usar el servicio centralizado (maneja URL base, token y tipos)
+      const updatedUser = await usuarioService.update(id, { activo: nuevoEstado });
 
-
-
+      toast.success(updatedUser.activo ? "Usuario activo" : "Usuario inactivo");
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al actualizar el estado");
+      // Revertir cambio si falla
+      setUsuarios((prev) =>
+        prev.map((u) => (u.id === id ? { ...u, activo: !nuevoEstado } : u))
+      );
+    }
+  };
   const getNombreCompleto = (usuario: Usuario) => {
     const partes = [usuario.nombre, usuario.segundo_nombre, usuario.primer_apellido, usuario.segundo_apellido].filter(Boolean);
     return partes.join(" ");
