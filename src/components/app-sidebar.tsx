@@ -249,7 +249,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "#",
         items: [
           { title: "Tablero", url: "/indicadores/tablero", permiso: "indicadores.ver" },
-          { title: "Mediciones", url: "#", permiso: "indicadores.medir" },
+          { title: "Eficiencia", url: "/indicadores/eficiencia", permiso: "indicadores.ver" },
+          { title: "Cumplimiento", url: "/indicadores/cumplimiento", permiso: "indicadores.medir" },
         ],
       },
       {
