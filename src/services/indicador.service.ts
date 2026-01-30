@@ -2,19 +2,19 @@ import apiClient from "@/lib/api";
 
 export interface Indicador {
   id: string;
-  procesoId?: string;
+  proceso_id: string;
   codigo: string;
   nombre: string;
   descripcion?: string;
-  tipo?: string;
   formula?: string;
-  unidadMedida?: string;
+  unidad_medida?: string;
   meta?: number;
-  frecuenciaMedicion?: string;
-  responsableId?: string;
-  estado?: string;
-  creadoEn: string;
-  actualizadoEn?: string;
+  frecuencia_medicion: string;
+  responsable_medicion_id?: string;
+  activo: boolean;
+  creado_en: string;
+  actualizado_en: string;
+  // Relaciones opcionales
   proceso?: {
     id: string;
     nombre: string;
@@ -22,31 +22,17 @@ export interface Indicador {
   responsable?: {
     id: string;
     nombre: string;
-    primerApellido: string;
+    primer_apellido: string;
   };
 }
 
 export const indicadorService = {
   // Obtener todos los indicadores
-  async getAll(filters?: { procesoId?: string; tipo?: string; estado?: string }): Promise<Indicador[]> {
-    const params = new URLSearchParams();
-    if (filters?.procesoId) params.append("proceso_id", filters.procesoId);
-    if (filters?.tipo) params.append("tipo", filters.tipo);
-    if (filters?.estado) params.append("estado", filters.estado); // Backend expects snake case for some filters? status? No, "estado" seems same.
-
-    // Note: Backend likely expects snake_case for query params if they map to DB fields, checking previous patterns.
-    // However, let's stick to what was there but cleaned up. API usually handles query params.
-    // Actually, looking at other services, we often just pass params directly to axios.
-
-    // Correction: Backend is FastAPI. It usually takes query params as function arguments.
-    // Let's assume frontend camelCase filter keys might need mapping if backend uses snake_case arguments.
-    // In `calidad.py`: `proceso_id: UUID = None`. So `procesoId` must be `proceso_id`.
-
+  async getAll(filters?: { proceso_id?: string; activo?: boolean }): Promise<Indicador[]> {
     const response = await apiClient.get('/indicadores', {
       params: {
-        proceso_id: filters?.procesoId,
-        tipo: filters?.tipo,
-        estado: filters?.estado
+        proceso_id: filters?.proceso_id,
+        activo: filters?.activo
       }
     });
     return response.data;
@@ -54,7 +40,7 @@ export const indicadorService = {
 
   // Obtener indicadores activos
   async getActivos(): Promise<Indicador[]> {
-    return this.getAll({ estado: "activo" });
+    return this.getAll({ activo: true });
   },
 
   // Obtener un indicador por ID
