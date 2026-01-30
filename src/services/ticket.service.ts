@@ -51,6 +51,10 @@ const ticketService = {
         const response = await apiClient.put<Ticket>(`/tickets/${id}`, ticket);
         return response.data;
     },
+
+    delete: async (id: string): Promise<void> => {
+        await apiClient.delete(`/tickets/${id}`);
+    },
 };
 
 export default ticketService;
