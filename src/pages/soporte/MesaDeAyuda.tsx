@@ -48,7 +48,7 @@ export default function MesaDeAyuda() {
     const [newTicket, setNewTicket] = useState<TicketCreate>({
         titulo: "",
         descripcion: "",
-        tipo: "soporte",
+        categoria: "soporte",  // En BD es 'categoria'
         prioridad: "media",
     });
 
@@ -82,7 +82,7 @@ export default function MesaDeAyuda() {
             setNewTicket({
                 titulo: "",
                 descripcion: "",
-                tipo: "soporte",
+                categoria: "soporte",
                 prioridad: "media",
             });
             fetchTickets();
@@ -157,11 +157,11 @@ export default function MesaDeAyuda() {
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="tipo">Tipo</Label>
+                                <Label htmlFor="categoria">Tipo</Label>
                                 <Select
-                                    value={newTicket.tipo}
+                                    value={newTicket.categoria}
                                     onValueChange={(value) =>
-                                        setNewTicket({ ...newTicket, tipo: value })
+                                        setNewTicket({ ...newTicket, categoria: value })
                                     }
                                 >
                                     <SelectTrigger>
@@ -252,7 +252,7 @@ export default function MesaDeAyuda() {
                                             </span>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="capitalize">{ticket.tipo}</TableCell>
+                                    <TableCell className="capitalize">{ticket.categoria}</TableCell>
                                     <TableCell>{getPriorityBadge(ticket.prioridad)}</TableCell>
                                     <TableCell>{getStatusBadge(ticket.estado)}</TableCell>
                                     <TableCell>
