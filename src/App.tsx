@@ -34,6 +34,7 @@ import AuditoriasCompletas from "./pages/auditorias/Completadas";
 
 import ObjetivosActivos from "./pages/objetivosCalidad/Activos";
 import Seguimiento from "./pages/objetivosCalidad/Seguimiento";
+import Historial from "./pages/objetivosCalidad/Historial";
 
 import Dashboard from "./pages/Dashboard";
 import Perfil from "./components/usuarios/Perfil";
@@ -119,6 +120,7 @@ function App() {
             {/* Objetivos de Calidad */}
             <Route path="/Activos" element={<ObjetivosActivos />} />
             <Route path="/Seguimiento" element={<Seguimiento />} />
+            <Route path="/Historial" element={<Historial />} />
 
             {/* No conformidades */}
             <Route path="/No_conformidades_Abiertas" element={<NoConformidadesAbiertas />} />

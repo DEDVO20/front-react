@@ -35,6 +35,9 @@ export function SiteHeader() {
     if (path.includes("/control-versiones")) return "Control de Versiones";
     if (path.includes("/procesos")) return "Procesos";
     if (path.includes("/auditorias")) return "Auditorías";
+    if (path.includes("/Activos")) return "Objetivos Activos";
+    if (path.includes("/Seguimiento")) return "Seguimiento de Objetivos";
+    if (path.includes("/Historial")) return "Historial de Objetivos";
 
     // Gestión de Áreas
     if (path.includes("/gestionar_areas")) return "Gestionar Áreas";
