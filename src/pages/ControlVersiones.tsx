@@ -440,16 +440,136 @@ export default function ControlVersiones() {
                             <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
                               <div className="lg:col-span-2 space-y-6">
                                 <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl p-6 grid grid-cols-2 gap-y-4 gap-x-8">
-                                  {/* contenido original */}
+                                  <div>
+                                    <p className="text-sm font-bold text-[#6B7280] uppercase tracking-wider mb-1">Nombre del Documento</p>
+                                    <p className="font-semibold text-[#1E3A8A] text-lg">{selectedDoc?.nombre}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-bold text-[#6B7280] uppercase tracking-wider mb-1">Código</p>
+                                    <Badge variant="outline" className="font-mono text-[#4B5563] bg-white border-[#9CA3AF]">
+                                      {selectedDoc?.codigo}
+                                    </Badge>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-bold text-[#6B7280] uppercase tracking-wider mb-1">Estado Actual</p>
+                                    <Badge className={`capitalize ${selectedDoc?.estado === 'vigente' ? 'bg-[#ECFDF5] text-[#10B981]' :
+                                        selectedDoc?.estado === 'borrador' ? 'bg-gray-100 text-gray-600' : 'bg-[#FEFCE8] text-[#854D0E]'
+                                      }`}>
+                                      {formatearEstado(selectedDoc?.estado || '')}
+                                    </Badge>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-bold text-[#6B7280] uppercase tracking-wider mb-1">Fecha de Creación</p>
+                                    <div className="flex items-center gap-2 text-[#4B5563] font-medium">
+                                      <Clock className="h-4 w-4" />
+                                      {selectedDoc?.creado_en ? new Date(selectedDoc.creado_en).toLocaleDateString() : '-'}
+                                    </div>
+                                  </div>
+                                  <div className="col-span-2 pt-4 border-t border-[#E5E7EB] mt-2">
+                                    <p className="text-sm font-bold text-[#6B7280] uppercase tracking-wider mb-2">Creado Por</p>
+                                    <div className="flex items-center gap-3">
+                                      <div className="h-10 w-10 rounded-full bg-[#E0EDFF] text-[#2563EB] flex items-center justify-center font-bold">
+                                        {selectedDoc?.creado_por?.nombre?.charAt(0) || "U"}
+                                      </div>
+                                      <div>
+                                        <p className="font-bold text-[#1E3A8A]">{obtenerNombreCompleto(selectedDoc?.creado_por)}</p>
+                                        <p className="text-xs text-[#6B7280]">Propietario del Documento</p>
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
 
                                 <div className="rounded-2xl border border-[#E5E7EB] overflow-hidden">
-                                  {/* tabla de versiones original */}
+                                  <Table>
+                                    <TableHeader className="bg-[#F1F5F9]">
+                                      <TableRow>
+                                        <TableHead className="font-bold text-[#1E3A8A]">Versión</TableHead>
+                                        <TableHead className="font-bold text-[#1E3A8A]">Fecha</TableHead>
+                                        <TableHead className="font-bold text-[#1E3A8A]">Responsable</TableHead>
+                                        <TableHead className="font-bold text-[#1E3A8A]">Cambios</TableHead>
+                                        <TableHead className="text-right font-bold text-[#1E3A8A]">Acciones</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {selectedDoc?.versiones?.map((v) => (
+                                        <TableRow key={v.id} className={selectedVersion?.id === v.id ? "bg-[#EFF6FF]" : ""}>
+                                          <TableCell>
+                                            <Badge variant="outline" className="font-mono font-bold bg-white text-[#4B5563]">
+                                              {v.version}
+                                            </Badge>
+                                          </TableCell>
+                                          <TableCell className="text-[#4B5563] text-sm">
+                                            {new Date(v.creado_en).toLocaleDateString()}
+                                          </TableCell>
+                                          <TableCell>
+                                            <div className="flex items-center gap-2">
+                                              <div className="h-6 w-6 rounded-full bg-[#F3F4F6] text-[#6B7280] flex items-center justify-center text-[10px] font-bold">
+                                                {v.creado_por?.nombre?.charAt(0) || "-"}
+                                              </div>
+                                              <span className="text-sm text-[#4B5563] truncate max-w-[100px]" title={obtenerNombreCompleto(v.creado_por)}>
+                                                {v.creado_por?.nombre || '-'}
+                                              </span>
+                                            </div>
+                                          </TableCell>
+                                          <TableCell className="max-w-[200px]">
+                                            <p className="truncate text-sm text-[#6B7280]" title={v.descripcion_cambios}>
+                                              {v.descripcion_cambios || "Sin descripción"}
+                                            </p>
+                                          </TableCell>
+                                          <TableCell className="text-right">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => verVersion(v)}
+                                              className="hover:bg-[#DBEAFE] text-[#2563EB]"
+                                            >
+                                              <Eye className="h-4 w-4" />
+                                            </Button>
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                      {(!selectedDoc?.versiones || selectedDoc.versiones.length === 0) && (
+                                        <TableRow>
+                                          <TableCell colSpan={5} className="text-center py-8 text-[#9CA3AF]">
+                                            No hay historial de versiones disponible
+                                          </TableCell>
+                                        </TableRow>
+                                      )}
+                                    </TableBody>
+                                  </Table>
                                 </div>
                               </div>
 
                               <div className="lg:col-span-1">
-                                {/* visor PDF original */}
+                                <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm h-full min-h-[500px] flex flex-col">
+                                  <div className="p-4 border-b border-[#E5E7EB] flex items-center justify-between bg-[#F8FAFC] rounded-t-2xl">
+                                    <div className="flex items-center gap-2">
+                                      <FileText className="h-5 w-5 text-[#8B5CF6]" />
+                                      <span className="font-bold text-[#1E3A8A]">
+                                        {selectedVersion ? `Vista Previa: Versión ${selectedVersion.version}` : "Documento Actual"}
+                                      </span>
+                                    </div>
+                                    {selectedVersion && (
+                                      <Badge className="bg-[#8B5CF6] text-white">
+                                        Histórico
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 bg-[#F1F5F9] p-4 flex items-center justify-center rounded-b-2xl overflow-hidden relative">
+                                    {(selectedVersion?.ruta_archivo || selectedDoc?.ruta_archivo) ? (
+                                      <iframe
+                                        src={selectedVersion?.ruta_archivo || selectedDoc?.ruta_archivo}
+                                        className="w-full h-full rounded-xl border border-[#E5E7EB] bg-white shadow-inner"
+                                        title="Visor de Documento"
+                                      />
+                                    ) : (
+                                      <div className="text-center p-8">
+                                        <FileText className="h-16 w-16 text-[#CBD5E1] mx-auto mb-4" />
+                                        <p className="text-[#6B7280] font-medium">No hay archivo disponible para visualizar</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </DialogContent>
