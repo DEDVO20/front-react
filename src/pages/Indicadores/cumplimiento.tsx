@@ -46,19 +46,24 @@ export default function CumplimientoIndicadores() {
 
   const totalIndicadores = indicadores.length;
 
+  const activos = indicadores.filter(i => i.estado === 'activo').length;
+  const sinDatos = indicadores.filter(i => i.valor === null || i.valor === undefined).length;
+  const conIncidencias = indicadores.filter(i => i.valor !== null && i.meta != null && i.meta !== undefined && i.valor < i.meta).length;
+
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-6 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Shield className="h-6 w-6 text-sky-500" />
-            Cumplimiento
-          </h1>
-          <p className="text-gray-500">
-            Verifique adherencia a estándares y regulaciones
-          </p>
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                <Shield className="h-9 w-9 text-[#2563EB]" />
+                Cumplimiento
+              </h1>
+              <p className="text-[#6B7280] mt-2 text-lg">Verifique adherencia a estándares y regulaciones</p>
+            </div>
+          </div>
         </div>
-      </div>
 
       {error && (
         <Card className="border-amber-200 bg-amber-50">
@@ -80,52 +85,96 @@ export default function CumplimientoIndicadores() {
         </Card>
       )}
 
-      {/* Métricas principales */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-3">
+      {/* Métricas (estilo Gestión de Áreas) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Total Indicadores</CardTitle>
-              <FileCheck className="h-4 w-4 text-blue-500" />
+              <CardDescription className="font-bold text-[#1E3A8A]">Total Indicadores</CardDescription>
+              <FileCheck className="h-8 w-8 text-[#2563EB]" />
             </div>
-            <div className="text-2xl font-bold">{totalIndicadores}</div>
-            <p className="text-xs text-gray-500 mt-1">Indicadores de cumplimiento</p>
+            <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{totalIndicadores}</CardTitle>
           </CardHeader>
+          <CardContent>
+            <div className="text-xs text-[#6B7280] font-medium">Indicadores de cumplimiento</div>
+          </CardContent>
         </Card>
 
-        <Card className="border-green-200 bg-green-50">
-          <CardHeader className="pb-3">
+        <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-green-800">Totalmente Cumplidos</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CardDescription className="font-bold text-[#065F46]">Activos</CardDescription>
+              <CheckCircle className="h-8 w-8 text-[#10B981]" />
             </div>
-            <div className="text-2xl font-bold text-green-700">0</div>
-            <p className="text-xs text-green-600 mt-1">Sin datos</p>
+            <CardTitle className="text-4xl font-bold text-[#065F46]">{activos}</CardTitle>
           </CardHeader>
+          <CardContent>
+            <div className="text-xs text-[#6B7280] font-medium mb-2">Cobertura</div>
+            <div className="w-full bg-[#E5E7EB] rounded-full h-3">
+              <div className="bg-[#10B981] h-3 rounded-full" style={{ width: `${totalIndicadores === 0 ? 0 : Math.round((activos / totalIndicadores) * 100)}%` }} />
+            </div>
+          </CardContent>
         </Card>
 
-        <Card className="border-amber-200 bg-amber-50">
-          <CardHeader className="pb-3">
+        <Card className="bg-[#FFF7ED] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-amber-800">Cumplimiento Parcial</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <CardDescription className="font-bold text-[#9A3412]">Sin Datos</CardDescription>
+              <AlertTriangle className="h-8 w-8 text-[#F97316]" />
             </div>
-            <div className="text-2xl font-bold text-amber-700">0</div>
-            <p className="text-xs text-amber-600 mt-1">Sin datos</p>
+            <CardTitle className="text-4xl font-bold text-[#9A3412]">{sinDatos}</CardTitle>
           </CardHeader>
+          <CardContent>
+            <Badge className="bg-white/80 text-[#F97316] border-[#F97316]/20 font-bold uppercase text-[10px]">Revisar</Badge>
+          </CardContent>
         </Card>
 
-        <Card className="border-red-200 bg-red-50">
-          <CardHeader className="pb-3">
+        <Card className="bg-[#FEF2F2] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-red-800">Incumplidos</CardTitle>
-              <XCircle className="h-4 w-4 text-red-600" />
+              <CardDescription className="font-bold text-[#991B1B]">Con Incidencias</CardDescription>
+              <div className="h-6 w-6 rounded-full bg-[#EF4444]/20 flex items-center justify-center"><div className="h-2 w-2 rounded-full bg-[#EF4444] animate-pulse" /></div>
             </div>
-            <div className="text-2xl font-bold text-red-700">0</div>
-            <p className="text-xs text-red-600 mt-1">Sin datos</p>
+            <CardTitle className="text-4xl font-bold text-[#991B1B]">{conIncidencias}</CardTitle>
           </CardHeader>
+          <CardContent>
+            <Badge className="bg-white/80 text-[#EF4444] border-[#EF4444]/20 font-bold uppercase text-[10px]">Atención requerida</Badge>
+          </CardContent>
         </Card>
       </div>
+
+      {/* Guía de Indicadores */}
+      <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
+        <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+          <CardTitle className="text-lg text-[#1E3A8A]">Guía de Indicadores</CardTitle>
+          <CardDescription>Recomendaciones para definir, medir y usar indicadores de cumplimiento</CardDescription>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+            <div className="flex items-start gap-3 p-4 bg-[#EFF6FF] rounded-xl border border-[#DBEAFE]">
+              <div className="h-8 w-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-bold flex-shrink-0">1</div>
+              <div>
+                <span className="font-bold text-[#1E3A8A] block mb-1">Definir Qué Se Mide</span>
+                <span className="text-[#6B7280]">Especifique la norma, requisito y el indicador asociado.</span>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 bg-[#ECFDF5] rounded-xl border border-[#D1FAE5]">
+              <div className="h-8 w-8 rounded-lg bg-[#10B981] text-white flex items-center justify-center font-bold flex-shrink-0">2</div>
+              <div>
+                <span className="font-bold text-[#065F46] block mb-1">Periodicidad y Evidencia</span>
+                <span className="text-[#6B7280]">Defina frecuencia, registro requerido y fuente de verificación.</span>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 bg-[#FFF7ED] rounded-xl border border-[#FBBF24]/20">
+              <div className="h-8 w-8 rounded-lg bg-[#F97316] text-white flex items-center justify-center font-bold flex-shrink-0">3</div>
+              <div>
+                <span className="font-bold text-[#9A3412] block mb-1">Acciones y Umbrales</span>
+                <span className="text-[#6B7280]">Establezca umbrales, responsables y acciones correctivas ante desviaciones.</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Tabla de indicadores de cumplimiento */}
       <Card>
@@ -196,6 +245,7 @@ export default function CumplimientoIndicadores() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
