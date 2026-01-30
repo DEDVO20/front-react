@@ -235,6 +235,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           { title: "Matriz de Riesgos", url: "/riesgos/matriz", permiso: "riesgos.administrar" },
           { title: "Controles", url: "/riesgos/controles", permiso: "riesgos.administrar" },
+          { title: "Tratamientos", url: "/riesgos/tratamiento", permiso: "riesgos.administrar" },
         ],
       },
       {

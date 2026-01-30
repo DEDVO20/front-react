@@ -63,7 +63,11 @@ export function SiteHeader() {
       return "Acciones Correctivas Verificadas";
 
     if (path.includes("/acciones-correctivas")) return "Acciones Correctivas";
-    if (path.includes("/riesgos")) return "Riesgos";
+    // Rutas específicas de riesgos
+    if (path.includes("/riesgos/matriz")) return "Matriz de Riesgo";
+    if (path.includes("/riesgos/controles")) return "Controles de Riesgos";
+    if (path.includes("/riesgos/tratamiento")) return "Tratamiento";
+    
     if (path.includes("/indicadores")) return "Indicadores";
 
     if (path.includes("/capacitaciones/programadas")) return "Capacitaciones Programadas";
