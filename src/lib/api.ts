@@ -4,7 +4,14 @@
 import axios, { AxiosInstance, AxiosError } from "axios";
 
 // Configuración base de la API
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+const rawBase = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+export const API_BASE_URL = rawBase.endsWith("/api/v1") ? rawBase : rawBase.replace(/\/+$/,'') + "/api/v1";
+
+// Debug: mostrar la URL base en la consola del navegador (útil en dev)
+if (import.meta.env.DEV) {
+  console.info("🔧 API_BASE_URL:", API_BASE_URL);
+}
+
 const API_TIMEOUT = parseInt(import.meta.env.VITE_API_TIMEOUT || "30000");
 
 /**

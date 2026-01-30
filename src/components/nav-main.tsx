@@ -16,6 +16,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 export function NavMain({
@@ -41,6 +42,7 @@ export function NavMain({
 }) {
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const { isMobile, setOpenMobile } = useSidebar();
 
   // Determinar qué menús deben estar abiertos basándose en la ruta actual
   useEffect(() => {
@@ -63,6 +65,13 @@ export function NavMain({
       [title]: !prev[title],
     }));
   };
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   return (
     <SidebarGroup>
       {title && <SidebarGroupLabel>{title}</SidebarGroupLabel>}
@@ -89,7 +98,7 @@ export function NavMain({
                     {item.items.map((subItem) => (
                       <SidebarMenuSubItem key={subItem.title}>
                         <SidebarMenuSubButton asChild>
-                          <Link to={subItem.url}>
+                          <Link to={subItem.url} onClick={handleLinkClick}>
                             <span>{subItem.title}</span>
                           </Link>
                         </SidebarMenuSubButton>
@@ -102,7 +111,7 @@ export function NavMain({
           ) : (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton tooltip={item.title} asChild>
-                <Link to={item.url}>
+                <Link to={item.url} onClick={handleLinkClick}>
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
                 </Link>

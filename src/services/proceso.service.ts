@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000/api";
+import { apiClient } from "@/lib/api";
 
 export interface Proceso {
   id: string;
@@ -19,14 +19,6 @@ export interface Proceso {
   };
 }
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
-};
-
 export const procesoService = {
   // Obtener todos los procesos
   async getAll(filters?: { tipo?: string; estado?: string }): Promise<Proceso[]> {
@@ -34,12 +26,8 @@ export const procesoService = {
     if (filters?.tipo) params.append("tipo", filters.tipo);
     if (filters?.estado) params.append("estado", filters.estado);
 
-    const url = `${API_URL}/procesos${params.toString() ? `?${params.toString()}` : ""}`;
-    const response = await fetch(url, {
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error("Error al obtener procesos");
-    return response.json();
+    const response = await apiClient.get<Proceso[]>(`/procesos?${params.toString()}`);
+    return response.data;
   },
 
   // Obtener procesos activos
@@ -49,41 +37,24 @@ export const procesoService = {
 
   // Obtener un proceso por ID
   async getById(id: string): Promise<Proceso> {
-    const response = await fetch(`${API_URL}/procesos/${id}`, {
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error("Error al obtener proceso");
-    return response.json();
+    const response = await apiClient.get<Proceso>(`/procesos/${id}`);
+    return response.data;
   },
 
   // Crear nuevo proceso
   async create(data: Partial<Proceso>): Promise<Proceso> {
-    const response = await fetch(`${API_URL}/procesos`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Error al crear proceso");
-    return response.json();
+    const response = await apiClient.post<Proceso>("/procesos", data);
+    return response.data;
   },
 
   // Actualizar proceso
   async update(id: string, data: Partial<Proceso>): Promise<Proceso> {
-    const response = await fetch(`${API_URL}/procesos/${id}`, {
-      method: "PUT",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Error al actualizar proceso");
-    return response.json();
+    const response = await apiClient.put<Proceso>(`/procesos/${id}`, data);
+    return response.data;
   },
 
   // Eliminar proceso
   async delete(id: string): Promise<void> {
-    const response = await fetch(`${API_URL}/procesos/${id}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error("Error al eliminar proceso");
+    await apiClient.delete(`/procesos/${id}`);
   },
 };

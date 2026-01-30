@@ -58,6 +58,7 @@ import MatrizRiesgos from "./pages/riesgos/matriz";
 import ControlesRiesgos from "./pages/riesgos/controles";
 import TratamientoRiesgos from "./pages/riesgos/tratamiento";
 import MigracionesDB from "./pages/sistema/MigracionesDB";
+import MesaDeAyuda from "./pages/soporte/MesaDeAyuda";
 
 import { ProtectedLayout } from "./components/ProtectedLayout";
 import { AuthProvider } from "./context/AuthContext";
@@ -149,6 +150,9 @@ function App() {
 
             {/* Sistema */}
             <Route path="/sistema/migraciones" element={<MigracionesDB />} />
+
+            {/* Soporte */}
+            <Route path="/mesa-ayuda" element={<MesaDeAyuda />} />
           </Route>
 
           {/* Catch-all */}

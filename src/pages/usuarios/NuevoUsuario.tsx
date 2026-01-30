@@ -32,6 +32,8 @@ import {
   UserCheck,
   Loader2,
 } from "lucide-react";
+import { apiClient } from "@/lib/api";
+import { usuarioService } from "@/services/usuario.service";
 
 interface Area {
   id: string;
@@ -96,65 +98,41 @@ export default function FormularioUsuario() {
     const fetchInitialData = async () => {
       setFetchingData(true);
       try {
-        const token = localStorage.getItem("token");
-
         // Cargar áreas
-        const areasResponse = await fetch("/api/v1/areas", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const areasResponse = await apiClient.get("/areas");
+        const areasData = areasResponse.data;
+        setAreas(Array.isArray(areasData) ? areasData : []);
 
-        if (areasResponse.ok) {
-          const areasData = await areasResponse.json();
-          setAreas(Array.isArray(areasData) ? areasData : []);
-        } else {
-          throw new Error("Error al cargar áreas");
-        }
-
-        // Cargar roles - AQUÍ ESTÁ LA CONEXIÓN A LA BD
-        const rolesResponse = await fetch("/api/v1/roles", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (rolesResponse.ok) {
-          const rolesData = await rolesResponse.json();
-          console.log("Roles cargados desde BD:", rolesData); // Para debug
-          setRoles(Array.isArray(rolesData) ? rolesData : []);
-        } else {
-          throw new Error("Error al cargar roles");
-        }
+        // Cargar roles
+        const rolesResponse = await apiClient.get("/roles");
+        const rolesData = rolesResponse.data;
+        console.log("Roles cargados desde BD:", rolesData); // Para debug
+        setRoles(Array.isArray(rolesData) ? rolesData : []);
 
         // Si es edición, cargar datos del usuario
         if (isEditing && id) {
-          const userResponse = await fetch(`/api/v1/usuarios/${id}`, {
-            headers: { Authorization: `Bearer ${token}` },
+          const userData: any = await usuarioService.getById(id);
+          console.log("Usuario cargado:", userData); // Para debug
+
+          setFormData({
+            documento: String(userData.documento || ""),
+            nombre: userData.nombre || "",
+            segundoNombre: userData.segundo_nombre || "",
+            primerApellido: userData.primer_apellido || "",
+            segundoApellido: userData.segundo_apellido || "",
+            correoElectronico: userData.correo_electronico || "",
+            nombreUsuario: userData.nombre_usuario || "",
+            contrasena: "",
+            confirmarContrasena: "",
+            areaId: userData.area_id || "",
+            activo: userData.activo ?? true,
           });
 
-          if (userResponse.ok) {
-            const userData = await userResponse.json();
-            console.log("Usuario cargado:", userData); // Para debug
-
-            setFormData({
-              documento: String(userData.documento || ""),
-              nombre: userData.nombre || "",
-              segundoNombre: userData.segundo_nombre || "",
-              primerApellido: userData.primer_apellido || "",
-              segundoApellido: userData.segundo_apellido || "",
-              correoElectronico: userData.correo_electronico || "",
-              nombreUsuario: userData.nombre_usuario || "",
-              contrasena: "",
-              confirmarContrasena: "",
-              areaId: userData.area_id || "",
-              activo: userData.activo ?? true,
-            });
-
-            // Cargar roles del usuario
-            if (userData.roles && Array.isArray(userData.roles)) {
-              const roleIds = userData.roles.map((ur: any) => String(ur.rol_id || ur.id));
-              console.log("Roles del usuario:", roleIds); // Para debug
-              setSelectedRoleIds(roleIds);
-            }
-          } else {
-            throw new Error("Error al cargar usuario");
+          // Cargar roles del usuario
+          if (userData.roles && Array.isArray(userData.roles)) {
+            const roleIds = userData.roles.map((ur: any) => String(ur.rol_id || ur.id));
+            console.log("Roles del usuario:", roleIds); // Para debug
+            setSelectedRoleIds(roleIds);
           }
         }
       } catch (error: any) {
@@ -244,8 +222,6 @@ export default function FormularioUsuario() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-
       const payload: any = {
         documento: parseInt(formData.documento, 10),
         nombre: formData.nombre.trim(),
@@ -264,39 +240,15 @@ export default function FormularioUsuario() {
         payload.contrasena = formData.contrasena;
       }
 
-      let response;
-      if (isEditing) {
-        response = await fetch(`/api/v1/usuarios/${id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        });
+      if (isEditing && id) {
+        await usuarioService.update(id, payload);
+        toast.success(`Usuario "${formData.nombreUsuario}" actualizado exitosamente`);
       } else {
-        response = await fetch("/api/v1/usuarios", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        });
+        await usuarioService.create(payload);
+        toast.success(`Usuario "${formData.nombreUsuario}" creado exitosamente`);
       }
 
-      const result = await response.json();
-
-      if (response.ok) {
-        toast.success(isEditing
-          ? `Usuario "${formData.nombreUsuario}" actualizado exitosamente`
-          : `Usuario "${formData.nombreUsuario}" creado exitosamente`
-        );
-        setTimeout(() => navigate("/ListaDeUsuarios"), 1500);
-      } else {
-        const errorDetail = result.detail || "Error al procesar la solicitud";
-        throw new Error(Array.isArray(errorDetail) ? errorDetail[0].msg : errorDetail);
-      }
+      setTimeout(() => navigate("/ListaDeUsuarios"), 1500);
     } catch (error: any) {
       console.error("Error al guardar usuario:", error);
       toast.error(error.message || "Error al guardar el usuario");

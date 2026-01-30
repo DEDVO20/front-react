@@ -22,6 +22,11 @@ export interface TokenResponse {
 
 export async function login(data: LoginData) {
   try {
+    // Debug: mostrar URL completa que se va a pedir
+    try {
+      console.info("🔧 Request URL:", (apiClient.defaults.baseURL || API_BASE_URL) + "/auth/login");
+    } catch {}
+
     const response = await apiClient.post<TokenResponse>("/auth/login", data);
 
     const result = response.data;

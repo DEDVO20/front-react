@@ -35,13 +35,23 @@ export function NavUser({
     fotoUrl?: string;
   };
 }) {
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
   const navigate = useNavigate();
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
       await logout();
       navigate("/login");
+      if (isMobile) {
+        setOpenMobile(false);
+      }
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
       navigate("/login");
@@ -114,7 +124,7 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => navigate("/perfil")}>
+              <DropdownMenuItem onClick={() => handleNavigation("/perfil")}>
                 <UserCircleIcon />
                 Mi Perfil
               </DropdownMenuItem>

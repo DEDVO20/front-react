@@ -143,8 +143,8 @@ npm install
 Crear archivo `.env` en la carpeta `front/`:
 
 ```env
-# URL del backend
-VITE_API_URL=http://localhost:8000
+# URL del backend (asegúrate que termine en /api/v1)
+VITE_API_URL=http://localhost:8000/api/v1
 
 # Supabase (para almacenamiento de archivos) - Opcional
 VITE_SUPABASE_URL=tu_supabase_url

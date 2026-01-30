@@ -45,6 +45,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { apiClient } from "@/lib/api";
+
 
 interface Permiso {
   id: string;
@@ -97,20 +99,20 @@ export default function GestionRolesPermisos() {
     filtrarRoles();
   }, [searchTerm, roles]);
 
+
+
+  // ... component start
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-
       const [rolesRes, permisosRes] = await Promise.all([
-        fetch("/api/v1/roles", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("/api/v1/permisos", { headers: { Authorization: `Bearer ${token}` } }),
+        apiClient.get("/roles"),
+        apiClient.get("/permisos"),
       ]);
 
-      if (!rolesRes.ok || !permisosRes.ok) throw new Error("Error al obtener datos");
-
-      const rolesData = await rolesRes.json();
-      const permisosData = await permisosRes.json();
+      const rolesData = rolesRes.data;
+      const permisosData = permisosRes.data;
 
       setRoles(Array.isArray(rolesData) ? rolesData : []);
       setPermisos(Array.isArray(permisosData) ? permisosData : []);
@@ -157,15 +159,10 @@ export default function GestionRolesPermisos() {
       if (type === "permisos") {
         setIsSaving(true);
         try {
-          const token = localStorage.getItem("token");
-          const response = await fetch(`/api/v1/roles/${rol.id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (response.ok) {
-            const data = await response.json();
-            const ids = data.permisos?.map((p: any) => String(p.permiso_id).toLowerCase()) || [];
-            setPermisosSeleccionados(ids);
-          }
+          const response = await apiClient.get(`/roles/${rol.id}`);
+          const data = response.data;
+          const ids = data.permisos?.map((p: any) => String(p.permiso_id).toLowerCase()) || [];
+          setPermisosSeleccionados(ids);
         } catch (error) {
           console.error("Error:", error);
         } finally {
@@ -192,21 +189,14 @@ export default function GestionRolesPermisos() {
 
     setIsSaving(true);
     try {
-      const token = localStorage.getItem("token");
       const isEditing = dialogState.type === "editar";
-      const url = isEditing ? `/api/v1/roles/${dialogState.rol?.id}` : "/api/v1/roles";
-      const method = isEditing ? "PUT" : "POST";
+      const url = isEditing ? `/roles/${dialogState.rol?.id}` : "/roles";
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) throw new Error("Error al guardar");
+      if (isEditing) {
+        await apiClient.put(url, formData);
+      } else {
+        await apiClient.post(url, formData);
+      }
 
       toast.success(`Rol ${isEditing ? "actualizado" : "creado"} con éxito`);
       await fetchData();
@@ -222,12 +212,7 @@ export default function GestionRolesPermisos() {
     if (!dialogState.rol) return;
     setIsSaving(true);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`/api/v1/roles/${dialogState.rol.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("No se pudo eliminar");
+      await apiClient.delete(`/roles/${dialogState.rol.id}`);
       toast.success(`Rol eliminado`);
       await fetchData();
       closeDialog();
@@ -242,17 +227,9 @@ export default function GestionRolesPermisos() {
     if (!dialogState.rol) return;
     setIsSaving(true);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`/api/v1/roles/${dialogState.rol.id}/permisos`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ permisoIds: permisosSeleccionados }),
+      await apiClient.post(`/roles/${dialogState.rol.id}/permisos`, {
+        permisoIds: permisosSeleccionados
       });
-
-      if (!response.ok) throw new Error("Error al asignar permisos");
 
       toast.success("Permisos actualizados correctamente");
       await fetchData();
