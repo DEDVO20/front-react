@@ -4,6 +4,15 @@ import { toast } from 'sonner';
 import { objetivoCalidadService, ObjetivoCalidad } from '@/services/objetivoCalidad.service';
 import { areaService, Area } from '@/services/area.service';
 import { usuarioService, Usuario } from '@/services/usuario.service';
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer, Legend } from 'recharts';
+import { SeguimientoObjetivo } from '@/services/objetivoCalidad.service';
 
 const ObjetivosActivos: React.FC = () => {
   const [objetivos, setObjetivos] = useState<ObjetivoCalidad[]>([]);
@@ -17,6 +26,8 @@ const ObjetivosActivos: React.FC = () => {
 
   const [areas, setAreas] = useState<Area[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [seguimientosMap, setSeguimientosMap] = useState<Record<string, SeguimientoObjetivo[]>>({});
+  const [chartLoading, setChartLoading] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -63,6 +74,29 @@ const ObjetivosActivos: React.FC = () => {
       setError(error.message);
     } finally {
       setLoading(false);
+    }
+
+    // Cargar seguimientos relacionados para mostrar cumplimiento vs meta
+    cargarSeguimientosForObjetivos();
+  };
+
+  const cargarSeguimientosForObjetivos = async () => {
+    try {
+      setChartLoading(true);
+      const map: Record<string, SeguimientoObjetivo[]> = {};
+      await Promise.all(objetivos.map(async (o) => {
+        try {
+          const segs = await objetivoCalidadService.getSeguimientos(o.id);
+          map[o.id] = Array.isArray(segs) ? segs : [];
+        } catch (err) {
+          map[o.id] = [];
+        }
+      }));
+      setSeguimientosMap(map);
+    } catch (err) {
+      console.error('Error cargando seguimientos para gráficos:', err);
+    } finally {
+      setChartLoading(false);
     }
   };
 
@@ -209,6 +243,31 @@ const ObjetivosActivos: React.FC = () => {
     return Math.min(Math.max((transcurrido / total) * 100, 0), 100);
   };
 
+  // Preparar data para gráfico de metas vs cumplimiento (usa último seguimiento si existe)
+  const buildChartData = () => {
+    const data = objetivos
+      .filter(o => o.valorMeta !== undefined && o.valorMeta !== null)
+      .map(o => {
+        const segs = seguimientosMap[o.id] || [];
+        const last = segs.slice().sort((a,b)=> new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime())[0];
+        const cumplimiento = (() => {
+          if (!last) return 0;
+          const raw = (last as any).porcentajeCumplimiento;
+          if (typeof raw === 'number') return raw;
+          const valorActual = (last as any).valorActual ?? (last as any).valor_actual ?? 0;
+          const valorMeta = o.valorMeta ?? (o as any).valor_meta ?? 0;
+          if (valorMeta && valorActual != null) return (Number(valorActual) / Number(valorMeta)) * 100;
+          return 0;
+        })();
+        return {
+          name: o.codigo,
+          meta: o.valorMeta,
+          cumplimiento
+        };
+      });
+    return data;
+  };
+
 
 
   if (loading) {
@@ -223,104 +282,142 @@ const ObjetivosActivos: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <Target className="w-8 h-8 text-blue-600" />
-              Objetivos de Calidad
-            </h1>
-            <p className="mt-2 text-gray-600">Gestión de objetivos de calidad según ISO 9001 Cláusula 6.2</p>
-          </div>
-          <button
-            onClick={() => abrirModal('crear')}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-          >
-            <Plus className="w-5 h-5" />
-            Nuevo Objetivo
-          </button>
-        </div>
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <TooltipProvider>
+        <div className="max-w-7xl mx-auto space-y-8">
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
+          <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div>
-                <p className="text-sm text-gray-600">Total Objetivos</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
+                <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  <Target className="h-9 w-9 text-[#2563EB]" />
+                  Objetivos de Calidad
+                </h1>
+                <p className="text-[#6B7280] mt-2 text-lg">Gestión de objetivos de calidad según ISO 9001 - Cláusula 6.2</p>
+                <div className="flex flex-wrap items-center gap-3 mt-4">
+                  <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">{stats.total} objetivos</Badge>
+                </div>
               </div>
-              <Target className="w-8 h-8 text-blue-600" />
+              <Button onClick={() => abrirModal('crear')} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold">
+                <Plus className="mr-2 h-5 w-5" />
+                Nuevo Objetivo
+              </Button>
             </div>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">En Curso</p>
-                <p className="text-2xl font-bold text-blue-600 mt-1">{stats.enCurso}</p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-blue-600" />
-            </div>
-          </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Cumplidos</p>
-                <p className="text-2xl font-bold text-green-600 mt-1">{stats.cumplidos}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-600" />
-            </div>
-          </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Planificados</p>
-                <p className="text-2xl font-bold text-gray-600 mt-1">{stats.planificados}</p>
-              </div>
-              <Clock className="w-8 h-8 text-gray-600" />
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Filtros */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Buscar por código o descripción..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription className="font-bold text-[#1E3A8A]">Total Objetivos</CardDescription>
+                  <Target className="h-8 w-8 text-[#2563EB]" />
+                </div>
+                <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{stats.total}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xs text-[#6B7280] font-medium">Registrados en el sistema</div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[#FFF7ED] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription className="font-bold text-[#9A3412]">En Curso</CardDescription>
+                  <TrendingUp className="h-8 w-8 text-[#F97316]/70" />
+                </div>
+                <CardTitle className="text-4xl font-bold text-[#9A3412]">{stats.enCurso}</CardTitle>
+              </CardHeader>
+              <CardContent><div className="text-xs text-[#6B7280] font-medium mb-2">Objetivos actualmente activos</div></CardContent>
+            </Card>
+
+            <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription className="font-bold text-[#065F46]">Cumplidos</CardDescription>
+                  <CheckCircle className="h-8 w-8 text-[#10B981]" />
+                </div>
+                <CardTitle className="text-4xl font-bold text-[#065F46]">{stats.cumplidos}</CardTitle>
+              </CardHeader>
+            </Card>
+
+            <Card className="bg-[#F8FAFC] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription className="font-bold text-[#1E3A8A]">Planificados</CardDescription>
+                  <Clock className="h-8 w-8 text-[#1E3A8A]" />
+                </div>
+                <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{stats.planificados}</CardTitle>
+              </CardHeader>
+            </Card>
+          </div>
+
+          <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
+            <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+              <CardTitle className="text-lg text-[#1E3A8A]">Guía de Gestión de Objetivos</CardTitle>
+              <CardDescription>Buenas prácticas para establecer y revisar objetivos</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                <div className="flex items-start gap-3 p-4 bg-[#EFF6FF] rounded-xl border border-[#DBEAFE]">
+                  <div className="h-8 w-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-bold">1</div>
+                  <div><span className="font-bold text-[#1E3A8A] block mb-1">Definir Meta</span><span className="text-[#6B7280]">Meta clara y medible.</span></div>
+                </div>
+                <div className="flex items-start gap-3 p-4 bg-[#ECFDF5] rounded-xl border border-[#D1FAE5]">
+                  <div className="h-8 w-8 rounded-lg bg-[#10B981] text-white flex items-center justify-center font-bold">2</div>
+                  <div><span className="font-bold text-[#065F46] block mb-1">Asignar Responsable</span><span className="text-[#6B7280]">Responsable claro para seguimiento.</span></div>
+                </div>
+                <div className="flex items-start gap-3 p-4 bg-[#FFF7ED] rounded-xl border border-[#FBBF24]/20">
+                  <div className="h-8 w-8 rounded-lg bg-[#F97316] text-white flex items-center justify-center font-bold">3</div>
+                  <div><span className="font-bold text-[#9A3412] block mb-1">Revisar Progreso</span><span className="text-[#6B7280]">Revisión periódica y ajustes.</span></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+     
+
+          <Card className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
+            <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+              <CardTitle className="text-lg text-[#1E3A8A]">Metas vs Cumplimiento</CardTitle>
+              <CardDescription>Comparativa de valor meta vs último seguimiento</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              {chartLoading ? (
+                <div className="flex items-center justify-center py-8">Cargando gráfico...</div>
+              ) : (
+                (() => {
+                  const data = buildChartData();
+                  if (data.length === 0) return <div className="text-center text-gray-600 py-8">No hay metas registradas para mostrar.</div>
+                  return (
+                    <div className="w-full h-[280px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
+                          <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                          <YAxis />
+                          <ReTooltip />
+                          <Legend />
+                          <Bar dataKey="meta" name="Meta (%)" fill="#2563EB" />
+                          <Bar dataKey="cumplimiento" name="Último Cumplimiento (%)" fill="#10B981" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )
+                })()
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
+              <Input placeholder="Buscar por código o descripción..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 py-6 rounded-xl border-[#E5E7EB]" />
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-400" />
-            <select
-              value={estadoFiltro}
-              onChange={(e) => setEstadoFiltro(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="todos">Todos los estados</option>
-              <option value="planificado">Planificado</option>
-              <option value="en_curso">En Curso</option>
-              <option value="cumplido">Cumplido</option>
-              <option value="no_cumplido">No Cumplido</option>
-              <option value="cancelado">Cancelado</option>
-            </select>
-          </div>
-        </div>
-      </div>
 
       {/* Lista de Objetivos */}
       <div className="space-y-4">
         {objetivosFiltrados.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] p-12 text-center">
             <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No se encontraron objetivos</h3>
             <p className="text-gray-600">No hay objetivos que coincidan con los filtros seleccionados.</p>
@@ -329,7 +426,7 @@ const ObjetivosActivos: React.FC = () => {
           objetivosFiltrados.map((objetivo) => {
             const progreso = calcularProgreso(objetivo);
             return (
-              <div key={objetivo.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              <div key={objetivo.id} className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
@@ -586,7 +683,7 @@ const ObjetivosActivos: React.FC = () => {
                   >
                     <option value="">Seleccionar responsable</option>
                     {usuarios.map(u => (
-                      <option key={u.id} value={u.id}>{u.nombre_completo}</option>
+                      <option key={u.id} value={u.id}>{`${u.nombre} ${u.primer_apellido}`}</option>
                     ))}
                   </select>
                 </div>
@@ -613,6 +710,8 @@ const ObjetivosActivos: React.FC = () => {
           </div>
         </div>
       )}
+        </div>
+      </TooltipProvider>
     </div>
   );
 };

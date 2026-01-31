@@ -34,6 +34,7 @@ import AuditoriasCompletas from "./pages/auditorias/Completadas";
 
 import ObjetivosActivos from "./pages/objetivosCalidad/Activos";
 import Seguimiento from "./pages/objetivosCalidad/Seguimiento";
+import Historial from "./pages/objetivosCalidad/Historial";
 
 import Dashboard from "./pages/Dashboard";
 import Perfil from "./components/usuarios/Perfil";
@@ -59,6 +60,8 @@ import ControlesRiesgos from "./pages/riesgos/controles";
 import TratamientoRiesgos from "./pages/riesgos/tratamiento";
 import MigracionesDB from "./pages/sistema/MigracionesDB";
 import MesaDeAyuda from "./pages/soporte/MesaDeAyuda";
+import Seguridad from "./pages/seguridad";
+import Configuracion from "./pages/configuracion";
 
 import { ProtectedLayout } from "./components/ProtectedLayout";
 import { AuthProvider } from "./context/AuthContext";
@@ -119,6 +122,7 @@ function App() {
             {/* Objetivos de Calidad */}
             <Route path="/Activos" element={<ObjetivosActivos />} />
             <Route path="/Seguimiento" element={<Seguimiento />} />
+            <Route path="/Historial" element={<Historial />} />
 
             {/* No conformidades */}
             <Route path="/No_conformidades_Abiertas" element={<NoConformidadesAbiertas />} />
@@ -153,6 +157,10 @@ function App() {
 
             {/* Soporte */}
             <Route path="/mesa-ayuda" element={<MesaDeAyuda />} />
+
+            {/* Configuración y Seguridad */}
+            <Route path="/configuracion" element={<Configuracion />} />
+            <Route path="/seguridad" element={<Seguridad />} />
           </Route>
 
           {/* Catch-all */}

@@ -79,7 +79,7 @@ export const objetivoCalidadService = {
   // Obtener seguimientos de un objetivo
   // Obtener seguimientos de un objetivo
   async getSeguimientos(objetivoId: string): Promise<SeguimientoObjetivo[]> {
-    const response = await apiClient.get(`/seguimientos-objetivo?objetivoId=${objetivoId}`);
+    const response = await apiClient.get(`/seguimientos-objetivo?objetivo_id=${objetivoId}`);
     return response.data;
   },
 

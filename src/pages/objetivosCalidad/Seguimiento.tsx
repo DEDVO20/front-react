@@ -1,40 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import {
-  Plus,
-  Edit2,
-  Trash2,
-  Search,
-  Filter,
-  TrendingUp,
-  Target,
-  Calendar,
-  CheckCircle,
-  AlertCircle,
-  BarChart3,
-  Eye,
-  X
+  Plus, Edit, Trash2, Eye, Search, RefreshCw, TrendingUp, Target,
+  CheckCircle, Clock, Save, BarChart3
 } from 'lucide-react';
 import { objetivoCalidadService, ObjetivoCalidad, SeguimientoObjetivo } from '@/services/objetivoCalidad.service';
+import {
+  Card, CardHeader, CardTitle, CardDescription, CardContent
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+} from "@/components/ui/alert-dialog";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger
+} from "@/components/ui/tooltip";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from "@/components/ui/table";
 
 interface Seguimiento extends SeguimientoObjetivo {}
 
 const API_URL = 'http://localhost:3000/api';
 
-const ObjetivosCalidadSeguimiento: React.FC = () => {
-  // Estados principales
+const ObjetivosCalidad: React.FC = () => {
   const [objetivos, setObjetivos] = useState<ObjetivoCalidad[]>([]);
   const [seguimientos, setSeguimientos] = useState<Seguimiento[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // Estados para modales
-  const [showObjetivoModal, setShowObjetivoModal] = useState(false);
-  const [showSeguimientoModal, setShowSeguimientoModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [editingObjetivo, setEditingObjetivo] = useState<ObjetivoCalidad | null>(null);
+  // Diálogos
+  const [showObjetivoDialog, setShowObjetivoDialog] = useState(false);
+  const [objetivoDialogMode, setObjetivoDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [selectedObjetivo, setSelectedObjetivo] = useState<ObjetivoCalidad | null>(null);
 
-  // Estados para formularios
+  const [showSeguimientoDialog, setShowSeguimientoDialog] = useState(false);
+
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; objetivo: ObjetivoCalidad | null }>({
+    open: false, objetivo: null
+  });
+
+  // Formularios
   const [objetivoForm, setObjetivoForm] = useState({
     codigo: '',
     descripcion: '',
@@ -51,51 +64,92 @@ const ObjetivosCalidadSeguimiento: React.FC = () => {
     observaciones: ''
   });
 
-  // Estados para filtros y búsqueda
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterEstado, setFilterEstado] = useState('todos');
+  const [savingObjetivo, setSavingObjetivo] = useState(false);
+  const [savingSeguimiento, setSavingSeguimiento] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Cargar datos
   useEffect(() => {
     cargarDatos();
   }, []);
 
   const cargarDatos = async () => {
     setLoading(true);
-    setError(null);
     try {
       const objetivosData = await objetivoCalidadService.getAll();
       setObjetivos(objetivosData);
-      
-      // Cargar todos los seguimientos
+
       const allSeguimientos: Seguimiento[] = [];
       for (const obj of objetivosData) {
         try {
           const segs = await objetivoCalidadService.getSeguimientos(obj.id);
           allSeguimientos.push(...segs);
         } catch (err) {
-          console.error(`Error al cargar seguimientos del objetivo ${obj.id}:`, err);
+          console.error(`Error cargando seguimientos de ${obj.id}`);
         }
       }
       setSeguimientos(allSeguimientos);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
+      toast.error("Error al cargar los objetivos de calidad");
     } finally {
       setLoading(false);
     }
   };
 
-  // Crear/Actualizar Objetivo
-  const handleSaveObjetivo = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreate = () => {
+    setObjetivoDialogMode('create');
+    setObjetivoForm({
+      codigo: '', descripcion: '', meta: '', valorMeta: '', periodoInicio: '', periodoFin: '', estado: 'planificado'
+    });
+    setSelectedObjetivo(null);
+    setShowObjetivoDialog(true);
+  };
+
+  const handleEdit = (obj: ObjetivoCalidad) => {
+    setObjetivoDialogMode('edit');
+    setObjetivoForm({
+      codigo: obj.codigo,
+      descripcion: obj.descripcion || '',
+      meta: obj.meta || '',
+      valorMeta: obj.valorMeta?.toString() || '',
+      periodoInicio: obj.periodoInicio || '',
+      periodoFin: obj.periodoFin || '',
+      estado: obj.estado || 'planificado'
+    });
+    setSelectedObjetivo(obj);
+    setShowObjetivoDialog(true);
+  };
+
+  const handleView = (obj: ObjetivoCalidad) => {
+    setObjetivoDialogMode('view');
+    setSelectedObjetivo(obj);
+    setShowObjetivoDialog(true);
+  };
+
+  const handleAddSeguimiento = (obj: ObjetivoCalidad) => {
+    setSelectedObjetivo(obj);
+    setSeguimientoForm({
+      periodo: new Date().toISOString().split('T')[0],
+      valorAlcanzado: '',
+      observaciones: ''
+    });
+    setShowSeguimientoDialog(true);
+  };
+
+  const handleSaveObjetivo = async () => {
+    if (!objetivoForm.codigo.trim()) {
+      toast.error("El código es obligatorio");
+      return;
+    }
+
     try {
+      setSavingObjetivo(true);
       const token = localStorage.getItem('token');
-      const url = editingObjetivo
-        ? `${API_URL}/objetivos-calidad/${editingObjetivo.id}`
-        : `${API_URL}/objetivos-calidad`;
+      const url = objetivoDialogMode === 'create'
+        ? `${API_URL}/objetivos-calidad`
+        : `${API_URL}/objetivos-calidad/${selectedObjetivo?.id}`;
 
       const response = await fetch(url, {
-        method: editingObjetivo ? 'PUT' : 'POST',
+        method: objetivoDialogMode === 'create' ? 'POST' : 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -106,137 +160,98 @@ const ObjetivosCalidadSeguimiento: React.FC = () => {
         })
       });
 
-      if (!response.ok) throw new Error('Error al guardar el objetivo');
+      if (!response.ok) throw new Error('Error al guardar objetivo');
       await cargarDatos();
-      cerrarModalObjetivo();
+      setShowObjetivoDialog(false);
+      toast.success(objetivoDialogMode === 'create' ? 'Objetivo creado con éxito' : 'Objetivo actualizado con éxito');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al guardar');
+      toast.error(err instanceof Error ? err.message : 'Error al guardar');
+    } finally {
+      setSavingObjetivo(false);
     }
   };
 
-  // Crear Seguimiento
-  const handleSaveSeguimiento = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveSeguimiento = async () => {
     if (!selectedObjetivo) return;
 
-    try {
-      const token = localStorage.getItem('token');
-      const valorAlcanzado = parseFloat(seguimientoForm.valorAlcanzado);
-      const porcentajeCumplimiento = selectedObjetivo.valorMeta
-        ? (valorAlcanzado / selectedObjetivo.valorMeta) * 100
-        : 0;
-
-      const response = await fetch(`${API_URL}/seguimientos-objetivo`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          objetivoId: selectedObjetivo.id,
-          periodo: seguimientoForm.periodo,
-          valorAlcanzado,
-          porcentajeCumplimiento: Math.round(porcentajeCumplimiento * 100) / 100,
-          observaciones: seguimientoForm.observaciones
-        })
-      });
-
-      if (!response.ok) throw new Error('Error al guardar el seguimiento');
-      await cargarDatos();
-      cerrarModalSeguimiento();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al guardar');
+    // Validación básica
+    if (!seguimientoForm.valorAlcanzado || seguimientoForm.valorAlcanzado.toString().trim() === '') {
+      toast.error('El valor alcanzado es obligatorio');
+      return;
     }
+    const valorParsed = parseFloat(seguimientoForm.valorAlcanzado as unknown as string);
+    if (!isFinite(valorParsed)) {
+      toast.error('El valor alcanzado debe ser un número válido');
+      return;
+    }
+
+    try {
+      setSavingSeguimiento(true);
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+
+      await objetivoCalidadService.createSeguimiento({
+        objetivo_calidad_id: selectedObjetivo.id,
+        fecha_seguimiento: seguimientoForm.periodo ? new Date(seguimientoForm.periodo).toISOString() : new Date().toISOString(),
+        valor_actual: valorParsed,
+        observaciones: seguimientoForm.observaciones,
+        responsable_id: user?.id || undefined,
+      } as any);
+
+      toast.success('Seguimiento registrado correctamente');
+      await cargarDatos();
+      setShowSeguimientoDialog(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al guardar seguimiento');
+    } finally {
+      setSavingSeguimiento(false);
+    }
+  }; 
+
+  const openDeleteDialog = (obj: ObjetivoCalidad) => {
+    setDeleteDialog({ open: true, objetivo: obj });
   };
 
-  // Eliminar Objetivo
-  const handleDeleteObjetivo = async (id: string) => {
-    if (!confirm('¿Está seguro de eliminar este objetivo?')) return;
+  const closeDeleteDialog = () => {
+    setDeleteDialog({ open: false, objetivo: null });
+  };
+
+  const handleDelete = async () => {
+    const obj = deleteDialog.objetivo;
+    if (!obj) return;
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/objetivos-calidad/${id}`, {
+      const response = await fetch(`${API_URL}/objetivos-calidad/${obj.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-
       if (!response.ok) throw new Error('Error al eliminar');
       await cargarDatos();
+      toast.success('Objetivo eliminado correctamente');
+      closeDeleteDialog();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al eliminar');
+      toast.error('Error al eliminar el objetivo');
     }
   };
 
-  // Funciones auxiliares
-  const abrirModalObjetivo = (objetivo?: ObjetivoCalidad) => {
-    if (objetivo) {
-      setEditingObjetivo(objetivo);
-      setObjetivoForm({
-        codigo: objetivo.codigo,
-        descripcion: objetivo.descripcion || '',
-        meta: objetivo.meta || '',
-        valorMeta: objetivo.valorMeta?.toString() || '',
-        periodoInicio: objetivo.periodoInicio || '',
-        periodoFin: objetivo.periodoFin || '',
-        estado: objetivo.estado || 'planificado'
-      });
-    } else {
-      setEditingObjetivo(null);
-      setObjetivoForm({
-        codigo: '',
-        descripcion: '',
-        meta: '',
-        valorMeta: '',
-        periodoInicio: '',
-        periodoFin: '',
-        estado: 'planificado'
-      });
-    }
-    setShowObjetivoModal(true);
-  };
-
-  const cerrarModalObjetivo = () => {
-    setShowObjetivoModal(false);
-    setEditingObjetivo(null);
-  };
-
-  const abrirModalSeguimiento = (objetivo: ObjetivoCalidad) => {
-    setSelectedObjetivo(objetivo);
-    setSeguimientoForm({
-      periodo: new Date().toISOString().split('T')[0],
-      valorAlcanzado: '',
-      observaciones: ''
-    });
-    setShowSeguimientoModal(true);
-  };
-
-  const cerrarModalSeguimiento = () => {
-    setShowSeguimientoModal(false);
-    setSelectedObjetivo(null);
-  };
-
-  const verDetalle = (objetivo: ObjetivoCalidad) => {
-    setSelectedObjetivo(objetivo);
-    setShowDetailModal(true);
-  };
-
-  const getSeguimientosObjetivo = (objetivoId: string) => {
-    return seguimientos.filter(s => s.objetivoId === objetivoId);
-  };
-
-  const getUltimoSeguimiento = (objetivoId: string) => {
-    const segs = getSeguimientosObjetivo(objetivoId);
-    return segs.sort((a, b) =>
-      new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime()
-    )[0];
+  const getSeguimientosObjetivo = (id: string) => seguimientos.filter(s => s.objetivoId === id || (s as any).objetivo_calidad_id === id);
+  
+  const getUltimoSeguimiento = (id: string) => {
+    const segs = getSeguimientosObjetivo(id);
+    return segs.sort((a, b) => {
+      const dateA = new Date((a as any).creadoEn || (a as any).fecha_seguimiento || '').getTime();
+      const dateB = new Date((b as any).creadoEn || (b as any).fecha_seguimiento || '').getTime();
+      return dateB - dateA;
+    })[0];
   };
 
   const getEstadoColor = (estado: string) => {
     const colores: { [key: string]: string } = {
-      'planificado': 'bg-blue-100 text-blue-800',
-      'en_curso': 'bg-yellow-100 text-yellow-800',
-      'cumplido': 'bg-green-100 text-green-800',
-      'no_cumplido': 'bg-red-100 text-red-800',
+      'planificado': 'bg-[#F8FAFC] text-[#1E3A8A]',
+      'en_curso': 'bg-[#FFF7ED] text-[#F97316]',
+      'cumplido': 'bg-[#ECFDF5] text-[#065F46]',
+      'no_cumplido': 'bg-[#FEF2F2] text-[#991B1B]',
       'cancelado': 'bg-gray-100 text-gray-800'
     };
     return colores[estado] || 'bg-gray-100 text-gray-800';
@@ -248,588 +263,638 @@ const ObjetivosCalidadSeguimiento: React.FC = () => {
     return 'text-red-600';
   };
 
-  // Filtrar objetivos
-  const objetivosFiltrados = objetivos.filter(obj => {
-    const matchSearch = obj.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       obj.descripcion?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchEstado = filterEstado === 'todos' || obj.estado === filterEstado;
-    return matchSearch && matchEstado;
-  });
+  const lower = searchTerm.toLowerCase();
+  const filteredObjetivos = objetivos.filter(o =>
+    (o.codigo || '').toLowerCase().includes(lower) ||
+    (o.descripcion || '').toLowerCase().includes(lower)
+  );
+
+  const stats = {
+    total: objetivos.length,
+    enCurso: objetivos.filter(o => o.estado === 'en_curso').length,
+    cumplidos: objetivos.filter(o => o.estado === 'cumplido').length,
+    planificados: objetivos.filter(o => o.estado === 'planificado').length
+  };
+
+  const pendientes = stats.enCurso + stats.planificados;
+  const coveragePercentage = stats.total === 0 ? 0 : Math.round((stats.cumplidos / stats.total) * 100);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando datos...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Cargando...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <Target className="w-8 h-8 text-blue-600" />
-              Objetivos de Calidad
-            </h1>
-            <p className="text-gray-600 mt-1">ISO 9001:2015 - Cláusula 6.2</p>
-          </div>
-          <button
-            onClick={() => abrirModalObjetivo()}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-          >
-            <Plus className="w-5 h-5" />
-            Nuevo Objetivo
-          </button>
-        </div>
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <TooltipProvider>
+        <div className="max-w-7xl mx-auto space-y-8">
 
-        {/* Filtros */}
-        <div className="flex gap-4 bg-white p-4 rounded-lg shadow-sm">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Buscar por código o descripción..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-400" />
-            <select
-              value={filterEstado}
-              onChange={(e) => setFilterEstado(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="todos">Todos los estados</option>
-              <option value="planificado">Planificado</option>
-              <option value="en_curso">En Curso</option>
-              <option value="cumplido">Cumplido</option>
-              <option value="no_cumplido">No Cumplido</option>
-              <option value="cancelado">Cancelado</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-          <AlertCircle className="w-5 h-5" />
-          {error}
-        </div>
-      )}
-
-      {/* Grid de Objetivos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {objetivosFiltrados.map((objetivo) => {
-          const ultimoSeguimiento = getUltimoSeguimiento(objetivo.id);
-          const totalSeguimientos = getSeguimientosObjetivo(objetivo.id).length;
-
-          return (
-            <div key={objetivo.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition p-6">
-              {/* Header Card */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm font-semibold text-blue-600">{objetivo.codigo}</span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${getEstadoColor(objetivo.estado || '')}`}>
-                      {objetivo.estado?.replace('_', ' ')}
-                    </span>
-                  </div>
-                  <p className="text-gray-900 font-medium line-clamp-2">{objetivo.descripcion}</p>
-                </div>
-                <div className="flex gap-1 ml-2">
-                  <button
-                    onClick={() => abrirModalObjetivo(objetivo)}
-                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
-                    title="Editar"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteObjetivo(objetivo.id)}
-                    className="p-1.5 text-red-600 hover:bg-red-50 rounded"
-                    title="Eliminar"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Meta */}
-              {objetivo.valorMeta && (
-                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Meta:</span>
-                    <span className="text-lg font-bold text-blue-600">
-                      {objetivo.valorMeta}%
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Último Seguimiento */}
-              {ultimoSeguimiento && (
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600">Último seguimiento:</span>
-                    <span className={`text-lg font-bold ${getCumplimientoColor(Number(ultimoSeguimiento.porcentajeCumplimiento) || 0)}`}>
-                      {Number(ultimoSeguimiento.porcentajeCumplimiento || 0).toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${
-                        (Number(ultimoSeguimiento.porcentajeCumplimiento) || 0) >= 90 ? 'bg-green-500' :
-                        (Number(ultimoSeguimiento.porcentajeCumplimiento) || 0) >= 70 ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}
-                      style={{ width: `${Math.min(Number(ultimoSeguimiento.porcentajeCumplimiento) || 0, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-
-              {/* Periodo */}
-              {(objetivo.periodoInicio || objetivo.periodoFin) && (
-                <div className="mb-4 flex items-center gap-2 text-sm text-gray-600">
-                  <Calendar className="w-4 h-4" />
-                  <span>
-                    {objetivo.periodoInicio && new Date(objetivo.periodoInicio).toLocaleDateString()}
-                    {objetivo.periodoInicio && objetivo.periodoFin && ' - '}
-                    {objetivo.periodoFin && new Date(objetivo.periodoFin).toLocaleDateString()}
-                  </span>
-                </div>
-              )}
-
-              {/* Estadísticas */}
-              <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                <span>{totalSeguimientos} seguimiento(s)</span>
-              </div>
-
-              {/* Acciones */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => abrirModalSeguimiento(objetivo)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition text-sm"
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  Registrar Seguimiento
-                </button>
-                <button
-                  onClick={() => verDetalle(objetivo)}
-                  className="flex items-center justify-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition text-sm"
-                >
-                  <Eye className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {objetivosFiltrados.length === 0 && (
-        <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-          <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 text-lg">No se encontraron objetivos</p>
-          <button
-            onClick={() => abrirModalObjetivo()}
-            className="mt-4 text-blue-600 hover:text-blue-700"
-          >
-            Crear el primer objetivo
-          </button>
-        </div>
-      )}
-
-      {/* Modal Objetivo */}
-      {showObjetivoModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {editingObjetivo ? 'Editar Objetivo' : 'Nuevo Objetivo'}
-                </h2>
-                <button
-                  onClick={cerrarModalObjetivo}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <form onSubmit={handleSaveObjetivo} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Código *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={objetivoForm.codigo}
-                      onChange={(e) => setObjetivoForm({ ...objetivoForm, codigo: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="OBJ-2024-001"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Estado
-                    </label>
-                    <select
-                      value={objetivoForm.estado}
-                      onChange={(e) => setObjetivoForm({ ...objetivoForm, estado: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="planificado">Planificado</option>
-                      <option value="en_curso">En Curso</option>
-                      <option value="cumplido">Cumplido</option>
-                      <option value="no_cumplido">No Cumplido</option>
-                      <option value="cancelado">Cancelado</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Descripción
-                  </label>
-                  <textarea
-                    value={objetivoForm.descripcion}
-                    onChange={(e) => setObjetivoForm({ ...objetivoForm, descripcion: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Describe el objetivo de calidad..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Meta
-                  </label>
-                  <textarea
-                    value={objetivoForm.meta}
-                    onChange={(e) => setObjetivoForm({ ...objetivoForm, meta: e.target.value })}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Describe la meta a alcanzar..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Valor Meta (%)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={objetivoForm.valorMeta}
-                    onChange={(e) => setObjetivoForm({ ...objetivoForm, valorMeta: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="95.00"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Periodo Inicio
-                    </label>
-                    <input
-                      type="date"
-                      value={objetivoForm.periodoInicio}
-                      onChange={(e) => setObjetivoForm({ ...objetivoForm, periodoInicio: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Periodo Fin
-                    </label>
-                    <input
-                      type="date"
-                      value={objetivoForm.periodoFin}
-                      onChange={(e) => setObjetivoForm({ ...objetivoForm, periodoFin: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-                  >
-                    {editingObjetivo ? 'Actualizar' : 'Crear'} Objetivo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={cerrarModalObjetivo}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Seguimiento */}
-      {showSeguimientoModal && selectedObjetivo && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Registrar Seguimiento</h2>
-                <button
-                  onClick={cerrarModalSeguimiento}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Objetivo:</p>
-                <p className="font-semibold text-gray-900">{selectedObjetivo.codigo}</p>
-                <p className="text-sm text-gray-700 mt-1">{selectedObjetivo.descripcion}</p>
-                {selectedObjetivo.valorMeta && (
-                  <p className="text-sm text-blue-600 mt-2">
-                    Meta: {selectedObjetivo.valorMeta}%
-                  </p>
-                )}
-              </div>
-              <form onSubmit={handleSaveSeguimiento} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Periodo *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={seguimientoForm.periodo}
-                    onChange={(e) => setSeguimientoForm({ ...seguimientoForm, periodo: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Valor Alcanzado * {selectedObjetivo.valorMeta && `(Meta: ${selectedObjetivo.valorMeta}%)`}
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={seguimientoForm.valorAlcanzado}
-                    onChange={(e) => setSeguimientoForm({ ...seguimientoForm, valorAlcanzado: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="85.50"
-                  />
-                  {seguimientoForm.valorAlcanzado && selectedObjetivo.valorMeta && (
-                    <p className="mt-1 text-sm text-gray-600">
-                      Cumplimiento: {((parseFloat(seguimientoForm.valorAlcanzado) / selectedObjetivo.valorMeta) * 100).toFixed(1)}%
-                    </p>
+          {/* Header */}
+          <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div>
+                <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  <Target className="h-9 w-9 text-[#2563EB]" />
+                  Seguimiento Objetivos de Calidad 
+                </h1>
+                <p className="text-[#6B7280] mt-2 text-lg">
+                  Administra los objetivos de calidad del sistema
+                </p>
+                <div className="flex flex-wrap items-center gap-3 mt-4">
+                  <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
+                    {stats.total} objetivos
+                  </Badge>
+                  {pendientes > 0 && (
+                    <Badge className="bg-[#FFF7ED] text-[#F97316] border border-[#F97316]/30">
+                      {pendientes} pendientes
+                    </Badge>
                   )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Observaciones
-                  </label>
-                  <textarea
-                    value={seguimientoForm.observaciones}
-                    onChange={(e) => setSeguimientoForm({ ...seguimientoForm, observaciones: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Notas sobre el seguimiento..."
-                  />
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
-                  >
-                    Guardar Seguimiento
-                  </button>
-                  <button
-                    type="button"
-                    onClick={cerrarModalSeguimiento}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </form>
+              </div>
+              <Button onClick={handleCreate} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold">
+                <Plus className="mr-2 h-5 w-5" />
+                Nuevo Objetivo
+              </Button>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Modal Detalle Completo */}
-      {showDetailModal && selectedObjetivo && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  <BarChart3 className="w-7 h-7 text-blue-600" />
-                  Detalle del Objetivo
-                </h2>
-                <button
-                  onClick={() => setShowDetailModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
+          {/* Tarjetas de métricas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription className="font-bold text-[#1E3A8A]">Total Objetivos</CardDescription>
+                  <Target className="h-8 w-8 text-[#2563EB]" />
+                </div>
+                <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{stats.total}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xs text-[#6B7280] font-medium">Registrados en el sistema</div>
+              </CardContent>
+            </Card>
 
-              {/* Información del Objetivo */}
-              <div className="bg-blue-50 p-4 rounded-lg mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription className="font-bold text-[#065F46]">Cumplidos</CardDescription>
+                  <CheckCircle className="h-8 w-8 text-[#10B981]" />
+                </div>
+                <CardTitle className="text-4xl font-bold text-[#065F46]">{stats.cumplidos}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xs text-[#6B7280] font-medium mb-2">
+                  Cobertura: {coveragePercentage}%
+                </div>
+                <div className="w-full bg-[#E5E7EB] rounded-full h-3">
+                  <div className="bg-[#10B981] h-3 rounded-full transition-all" style={{ width: `${coveragePercentage}%` }} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[#FFF7ED] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription className="font-bold text-[#9A3412]">En Curso</CardDescription>
+                  <TrendingUp className="h-8 w-8 text-[#F97316]/70" />
+                </div>
+                <CardTitle className="text-4xl font-bold text-[#9A3412]">{stats.enCurso}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xs text-[#6B7280] font-medium">Con seguimiento activo</div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[#F8FAFC] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription className="font-bold text-[#1E3A8A]">Planificados</CardDescription>
+                  <Clock className="h-8 w-8 text-[#1E3A8A]" />
+                </div>
+                <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{stats.planificados}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xs text-[#6B7280] font-medium">Pendientes de iniciar</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Guía */}
+          <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
+            <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+              <CardTitle className="text-lg text-[#1E3A8A]">Guía de Gestión de Objetivos</CardTitle>
+              <CardDescription>Buenas prácticas para seguimiento y registro de resultados</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                <div className="flex items-start gap-3 p-4 bg-[#EFF6FF] rounded-xl border border-[#DBEAFE]">
+                  <div className="h-8 w-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-bold flex-shrink-0">1</div>
                   <div>
-                    <p className="text-sm text-gray-600">Código</p>
-                    <p className="font-semibold text-lg">{selectedObjetivo.codigo}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Estado</p>
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getEstadoColor(selectedObjetivo.estado || '')}`}>
-                      {selectedObjetivo.estado?.replace('_', ' ').toUpperCase()}
-                    </span>
+                    <span className="font-bold text-[#1E3A8A] block mb-1">Registrar Periodicidad</span>
+                    <span className="text-[#6B7280]">Define frecuencia y responsables del seguimiento.</span>
                   </div>
                 </div>
-                <div className="mt-3">
-                  <p className="text-sm text-gray-600">Descripción</p>
-                  <p className="text-gray-900">{selectedObjetivo.descripcion}</p>
+                <div className="flex items-start gap-3 p-4 bg-[#ECFDF5] rounded-xl border border-[#D1FAE5]">
+                  <div className="h-8 w-8 rounded-lg bg-[#10B981] text-white flex items-center justify-center font-bold flex-shrink-0">2</div>
+                  <div>
+                    <span className="font-bold text-[#065F46] block mb-1">Documentar Evidencias</span>
+                    <span className="text-[#6B7280]">Adjunta datos para justificar el avance.</span>
+                  </div>
                 </div>
-                {selectedObjetivo.meta && (
-                  <div className="mt-3">
-                    <p className="text-sm text-gray-600">Meta</p>
-                    <p className="text-gray-900">{selectedObjetivo.meta}</p>
+                <div className="flex items-start gap-3 p-4 bg-[#FFF7ED] rounded-xl border border-[#FBBF24]/20">
+                  <div className="h-8 w-8 rounded-lg bg-[#F97316] text-white flex items-center justify-center font-bold flex-shrink-0">3</div>
+                  <div>
+                    <span className="font-bold text-[#9A3412] block mb-1">Ajustar Plan</span>
+                    <span className="text-[#6B7280]">Revisa y actualiza metas según resultados.</span>
                   </div>
-                )}
-                {selectedObjetivo.valorMeta && (
-                  <div className="mt-3">
-                    <p className="text-sm text-gray-600">Valor Meta</p>
-                    <p className="text-lg font-bold text-blue-600">{selectedObjetivo.valorMeta}%</p>
-                  </div>
-                )}
-                {(selectedObjetivo.periodoInicio || selectedObjetivo.periodoFin) && (
-                  <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      {selectedObjetivo.periodoInicio && new Date(selectedObjetivo.periodoInicio).toLocaleDateString()}
-                      {selectedObjetivo.periodoInicio && selectedObjetivo.periodoFin && ' - '}
-                      {selectedObjetivo.periodoFin && new Date(selectedObjetivo.periodoFin).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
+                </div>
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Estadísticas */}
-              {(() => {
-                const segs = getSeguimientosObjetivo(selectedObjetivo.id);
-                if (segs.length === 0) return null;
+          {/* Buscador */}
+          <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
+              <Input
+                placeholder="Buscar por código o descripción..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
+              />
+            </div>
+          </div>
 
-                const valores = segs.map(s => s.porcentajeCumplimiento || 0).filter(v => v > 0);
-                const promedio = valores.length > 0 ? valores.reduce((a, b) => a + b, 0) / valores.length : 0;
-                const maximo = valores.length > 0 ? Math.max(...valores) : 0;
-                const minimo = valores.length > 0 ? Math.min(...valores) : 0;
+          {/* Tabla */}
+          <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
+            <div className="p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
+              <h2 className="text-xl font-bold text-[#1E3A8A]">Listado de Objetivos</h2>
+              <div className="flex items-center gap-4">
+                <Button variant="outline" size="sm" onClick={cargarDatos}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Actualizar
+                </Button>
+                <Badge variant="outline" className="bg-white border-[#E5E7EB] text-[#6B7280]">
+                  {filteredObjetivos.length} resultados
+                </Badge>
+              </div>
+            </div>
 
-                return (
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="bg-green-50 p-4 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-green-600">{promedio.toFixed(1)}%</p>
-                      <p className="text-sm text-gray-600">Promedio</p>
-                    </div>
-                    <div className="bg-blue-50 p-4 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-blue-600">{maximo.toFixed(1)}%</p>
-                      <p className="text-sm text-gray-600">Máximo</p>
-                    </div>
-                    <div className="bg-yellow-50 p-4 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-yellow-600">{minimo.toFixed(1)}%</p>
-                      <p className="text-sm text-gray-600">Mínimo</p>
-                    </div>
-                  </div>
-                );
-              })()}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-[#F8FAFC]">
+                  <TableRow>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Código</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Descripción</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Valor Meta</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Periodo</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Estado</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Avance</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]"># Seg.</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A] text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredObjetivos.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-20 text-[#6B7280]">
+                        <div className="flex flex-col items-center">
+                          <Target className="h-16 w-16 text-gray-300 mb-4" />
+                          <p className="text-lg font-medium">
+                            {searchTerm ? "No se encontraron objetivos" : "No hay objetivos registrados"}
+                          </p>
+                          {!searchTerm && (
+                            <Button onClick={handleCreate} className="mt-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl">
+                              <Plus className="mr-2 h-5 w-5" />
+                              Crear primer objetivo
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredObjetivos.map((obj) => {
+                      const ultimo = getUltimoSeguimiento(obj.id);
+                      const numSeg = getSeguimientosObjetivo(obj.id).length;
+                      const porcentaje = (() => {
+                        if (!ultimo) return 0;
+                        const raw = (ultimo as any).porcentajeCumplimiento;
+                        if (typeof raw === 'number') return raw;
+                        const valorActual = (ultimo as any).valorActual ?? (ultimo as any).valor_actual ?? 0;
+                        const valorMeta = obj.valorMeta ?? (obj as any).valor_meta ?? 0;
+                        if (valorMeta && valorActual != null) return (Number(valorActual) / Number(valorMeta)) * 100;
+                        return 0;
+                      })();
 
-              {/* Historial de Seguimientos */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-green-600" />
-                  Historial de Seguimientos ({getSeguimientosObjetivo(selectedObjetivo.id).length})
-                </h3>
-                {getSeguimientosObjetivo(selectedObjetivo.id).length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No hay seguimientos registrados aún.</p>
-                ) : (
-                  <div className="space-y-4">
-                    {getSeguimientosObjetivo(selectedObjetivo.id)
-                      .sort((a, b) => new Date(a.creadoEn).getTime() - new Date(b.creadoEn).getTime())
-                      .map((seg) => (
-                        <div key={seg.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <span className="text-sm font-medium text-gray-700">
-                                  {new Date(seg.creadoEn).toLocaleDateString()} {new Date(seg.creadoEn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      return (
+                        <TableRow key={obj.id} className="hover:bg-[#F5F3FF] transition-colors">
+                          <TableCell className="px-6 py-4">
+                            <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold px-4 py-2">
+                              {obj.codigo}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="px-6 py-4 font-medium max-w-md">
+                            {obj.descripcion || <span className="italic text-[#6B7280]">Sin descripción</span>}
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            {obj.valorMeta ? `${obj.valorMeta}%` : '-'}
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-[#6B7280]">
+                            {obj.periodoInicio ? new Date(obj.periodoInicio).toLocaleDateString('es-CO') : ''} {obj.periodoInicio && obj.periodoFin ? '-' : ''} {obj.periodoFin ? new Date(obj.periodoFin).toLocaleDateString('es-CO') : ''}
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            <Badge className={getEstadoColor(obj.estado || '')}>
+                              {obj.estado?.replace('_', ' ')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            {ultimo ? (
+                              <div className="flex items-center gap-3">
+                                <span className={`font-bold ${getCumplimientoColor(porcentaje)}`}>
+                                  {porcentaje.toFixed(1)}%
                                 </span>
-                                <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
-                                  {seg.periodo}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-4 text-sm">
-                                <span className="text-gray-600">
-                                  Valor: <strong>{seg.valorAlcanzado}</strong>
-                                </span>
-                                <span className={`font-bold ${getCumplimientoColor(seg.porcentajeCumplimiento || 0)}`}>
-                                  {seg.porcentajeCumplimiento?.toFixed(1)}%
-                                </span>
-                              </div>
-                              {seg.observaciones && (
-                                <p className="mt-2 text-sm text-gray-600 italic">"{seg.observaciones}"</p>
-                              )}
-                            </div>
-                            <div className="w-32 ml-4">
-                              <div className="w-full bg-gray-200 rounded-full h-8 relative overflow-hidden">
-                                <div
-                                  className={`h-full transition-all duration-500 rounded-full ${
-                                    (seg.porcentajeCumplimiento || 0) >= 90
-                                      ? 'bg-green-500'
-                                      : (seg.porcentajeCumplimiento || 0) >= 70
-                                      ? 'bg-yellow-500'
-                                      : 'bg-red-500'
-                                  }`}
-                                  style={{ width: `${Math.min(seg.porcentajeCumplimiento || 0, 100)}%` }}
-                                >
-                                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
-                                    {seg.porcentajeCumplimiento?.toFixed(0)}%
-                                  </span>
+                                <div className="w-20 bg-[#E5E7EB] rounded-full h-2">
+                                  <div
+                                    className={`h-2 rounded-full ${porcentaje >= 90 ? 'bg-[#10B981]' : porcentaje >= 70 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                    style={{ width: `${Math.min(porcentaje, 100)}%` }}
+                                  />
                                 </div>
                               </div>
+                            ) : (
+                              <span className="italic text-[#6B7280]">Sin seguimiento</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-[#6B7280]">{numSeg}</TableCell>
+                          <TableCell className="px-6 py-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button size="sm" variant="outline" onClick={() => handleView(obj)} className="rounded-xl">
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Ver detalles</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button size="sm" variant="outline" onClick={() => handleEdit(obj)} className="rounded-xl">
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Editar</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button size="sm" variant="outline" onClick={() => handleAddSeguimiento(obj)} className="rounded-xl">
+                                    <TrendingUp className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Registrar seguimiento</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button size="sm" variant="destructive" onClick={() => openDeleteDialog(obj)} className="rounded-xl">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Eliminar</p></TooltipContent>
+                              </Tooltip>
                             </div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Botón cerrar */}
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setShowDetailModal(false)}
-                  className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
-                >
-                  Cerrar
-                </button>
-              </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </div>
+
+          {/* Diálogo Objetivo (create/edit/view) */}
+          <Dialog open={showObjetivoDialog} onOpenChange={setShowObjetivoDialog}>
+            <DialogContent className="max-w-4xl rounded-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  {objetivoDialogMode === 'create' && <><Plus className="h-7 w-7 text-[#2563EB]" /> Nuevo Objetivo</>}
+                  {objetivoDialogMode === 'edit' && <><Edit className="h-7 w-7 text-[#2563EB]" /> Editar Objetivo</>}
+                  {objetivoDialogMode === 'view' && <><BarChart3 className="h-7 w-7 text-[#2563EB]" /> Detalle del Objetivo</>}
+                </DialogTitle>
+              </DialogHeader>
+
+              {objetivoDialogMode === 'view' && selectedObjetivo ? (
+                // Contenido de vista (detalle + historial)
+                <div className="space-y-8 py-4">
+                  {/* Información principal */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
+                    <div>
+                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Código</Label>
+                      <Badge className="mt-2 text-lg px-6 py-3 bg-[#2563EB]/10 text-[#2563EB] font-bold">
+                        {selectedObjetivo.codigo}
+                      </Badge>
+                    </div>
+                    <div>
+                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Estado</Label>
+                      <Badge className={`mt-2 ${getEstadoColor(selectedObjetivo.estado || '')}`}>
+                        {selectedObjetivo.estado?.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {selectedObjetivo.descripcion && (
+                    <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
+                      <Label className="text-[#6B7280] uppercase text-xs font-bold mb-3 block">Descripción</Label>
+                      <p className="text-[#111827] leading-relaxed">{selectedObjetivo.descripcion}</p>
+                    </div>
+                  )}
+
+                  {selectedObjetivo.meta && (
+                    <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
+                      <Label className="text-[#6B7280] uppercase text-xs font-bold mb-3 block">Meta</Label>
+                      <p className="text-[#111827] leading-relaxed">{selectedObjetivo.meta}</p>
+                    </div>
+                  )}
+
+                  {/* Estadísticas de seguimiento */}
+                  {(() => {
+                    const segs = getSeguimientosObjetivo(selectedObjetivo.id);
+                    if (segs.length === 0) return null;
+                    const valores = segs.map(s => {
+                      const raw = (s as any).porcentajeCumplimiento;
+                      if (typeof raw === 'number' && raw > 0) return raw;
+                      const valAct = (s as any).valorActual ?? (s as any).valor_actual ?? 0;
+                      const valMeta = selectedObjetivo.valorMeta ?? (selectedObjetivo as any).valor_meta ?? 0;
+                      if (valAct && valMeta) return (Number(valAct) / Number(valMeta)) * 100;
+                      return 0;
+                    }).filter(v => v > 0);
+                    const promedio = valores.length > 0 ? valores.reduce((a, b) => a + b, 0) / valores.length : 0;
+                    const maximo = valores.length > 0 ? Math.max(...valores) : 0;
+                    const minimo = valores.length > 0 ? Math.min(...valores) : 0;
+
+                    return (
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="bg-green-50 p-4 rounded-lg text-center">
+                          <p className="text-2xl font-bold text-green-600">{promedio.toFixed(1)}%</p>
+                          <p className="text-sm text-gray-600">Promedio</p>
+                        </div>
+                        <div className="bg-blue-50 p-4 rounded-lg text-center">
+                          <p className="text-2xl font-bold text-blue-600">{maximo.toFixed(1)}%</p>
+                          <p className="text-sm text-gray-600">Máximo</p>
+                        </div>
+                        <div className="bg-yellow-50 p-4 rounded-lg text-center">
+                          <p className="text-2xl font-bold text-yellow-600">{minimo.toFixed(1)}%</p>
+                          <p className="text-sm text-gray-600">Mínimo</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Historial de seguimientos */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#1E3A8A] mb-4">Historial de Seguimientos ({getSeguimientosObjetivo(selectedObjetivo.id).length})</h3>
+                    {getSeguimientosObjetivo(selectedObjetivo.id).length === 0 ? (
+                      <p className="text-[#6B7280] text-center py-8">No hay seguimientos registrados.</p>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Fecha</TableHead>
+                            <TableHead>Valor</TableHead>
+                            <TableHead>Cumplimiento</TableHead>
+                            <TableHead>Observaciones</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {getSeguimientosObjetivo(selectedObjetivo.id)
+                            .sort((a, b) => {
+                              const dateA = new Date((a as any).creadoEn || (a as any).fecha_seguimiento || '').getTime();
+                              const dateB = new Date((b as any).creadoEn || (b as any).fecha_seguimiento || '').getTime();
+                              return dateB - dateA;
+                            })
+                            .map((seg) => {
+                              const valorActual = (seg as any).valorActual ?? (seg as any).valor_actual ?? 0;
+                              const valorMeta = selectedObjetivo.valorMeta ?? (selectedObjetivo as any).valor_meta ?? 0;
+                              const porcentajeSeg = typeof (seg as any).porcentajeCumplimiento === 'number'
+                                ? (seg as any).porcentajeCumplimiento
+                                : (valorMeta && isFinite(Number(valorActual)))
+                                  ? (Number(valorActual) / Number(valorMeta)) * 100
+                                  : 0;
+
+                              const porcentajeDisplay = isFinite(Number(porcentajeSeg)) ? Number(porcentajeSeg) : 0;
+
+                              return (
+                                <TableRow key={seg.id}>
+                                  <TableCell>{new Date((seg as any).creadoEn || (seg as any).fecha_seguimiento || '').toLocaleDateString('es-CO')}</TableCell>
+                                  <TableCell>{valorActual}</TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <span className={`font-bold ${getCumplimientoColor(porcentajeDisplay || 0)}`}>
+                                        {porcentajeDisplay.toFixed(1)}%
+                                      </span>
+                                      <div className="w-20 bg-[#E5E7EB] rounded-full h-2">
+                                        <div className={`h-2 rounded-full ${porcentajeDisplay >= 90 ? 'bg-[#10B981]' : porcentajeDisplay >= 70 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${Math.min(porcentajeDisplay || 0, 100)}%` }} />
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-[#6B7280]">{seg.observaciones || '-'}</TableCell>
+                                </TableRow>
+                              );
+                            })}
+                        </TableBody> 
+                      </Table>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                // Formulario create/edit
+                <div className="space-y-6 py-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="font-bold">Código <span className="text-red-500">*</span></Label>
+                      <Input
+                        value={objetivoForm.codigo}
+                        onChange={(e) => setObjetivoForm({ ...objetivoForm, codigo: e.target.value.toUpperCase() })}
+                        placeholder="OBJ-2025-001"
+                        className="rounded-xl"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-bold">Estado</Label>
+                      <select
+                        value={objetivoForm.estado}
+                        onChange={(e) => setObjetivoForm({ ...objetivoForm, estado: e.target.value })}
+                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-xl focus:ring-2 focus:ring-[#2563EB]"
+                      >
+                        <option value="planificado">Planificado</option>
+                        <option value="en_curso">En Curso</option>
+                        <option value="cumplido">Cumplido</option>
+                        <option value="no_cumplido">No Cumplido</option>
+                        <option value="cancelado">Cancelado</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="font-bold">Descripción</Label>
+                    <Textarea
+                      value={objetivoForm.descripcion}
+                      onChange={(e) => setObjetivoForm({ ...objetivoForm, descripcion: e.target.value })}
+                      rows={4}
+                      placeholder="Describe el objetivo..."
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="font-bold">Meta</Label>
+                    <Textarea
+                      value={objetivoForm.meta}
+                      onChange={(e) => setObjetivoForm({ ...objetivoForm, meta: e.target.value })}
+                      rows={3}
+                      placeholder="Meta detallada a alcanzar..."
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="font-bold">Valor Meta (%)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={objetivoForm.valorMeta}
+                      onChange={(e) => setObjetivoForm({ ...objetivoForm, valorMeta: e.target.value })}
+                      placeholder="95.00"
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="font-bold">Periodo Inicio</Label>
+                      <Input type="date" value={objetivoForm.periodoInicio} onChange={(e) => setObjetivoForm({ ...objetivoForm, periodoInicio: e.target.value })} className="rounded-xl" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-bold">Periodo Fin</Label>
+                      <Input type="date" value={objetivoForm.periodoFin} onChange={(e) => setObjetivoForm({ ...objetivoForm, periodoFin: e.target.value })} className="rounded-xl" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter className="gap-4">
+                <Button variant="outline" onClick={() => setShowObjetivoDialog(false)} className="rounded-xl">
+                  {objetivoDialogMode === 'view' ? 'Cerrar' : 'Cancelar'}
+                </Button>
+                {objetivoDialogMode !== 'view' && (
+                  <Button onClick={handleSaveObjetivo} disabled={savingObjetivo} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-bold">
+                    {savingObjetivo ? (
+                      <>
+                        <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-white border-r-transparent" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-5 w-5" />
+                        Guardar Objetivo
+                      </>
+                    )}
+                  </Button>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Diálogo Seguimiento */}
+          <Dialog open={showSeguimientoDialog} onOpenChange={setShowSeguimientoDialog}>
+            <DialogContent className="max-w-2xl rounded-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  <TrendingUp className="h-7 w-7 text-[#2563EB]" /> Registrar Seguimiento
+                </DialogTitle>
+              </DialogHeader>
+
+              {selectedObjetivo && (
+                <div className="space-y-6 py-4">
+                  <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
+                    <p className="text-sm text-[#6B7280]">Objetivo</p>
+                    <p className="font-bold text-lg">{selectedObjetivo.codigo} - {selectedObjetivo.descripcion}</p>
+                    {selectedObjetivo.valorMeta && <p className="text-sm text-[#2563EB] mt-1">Meta: {selectedObjetivo.valorMeta}%</p>}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="font-bold">Periodo <span className="text-red-500">*</span></Label>
+                      <Input type="date" value={seguimientoForm.periodo} onChange={(e) => setSeguimientoForm({ ...seguimientoForm, periodo: e.target.value })} className="rounded-xl" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-bold">Valor Alcanzado <span className="text-red-500">*</span></Label>
+                      <Input type="number" step="0.01" value={seguimientoForm.valorAlcanzado} onChange={(e) => setSeguimientoForm({ ...seguimientoForm, valorAlcanzado: e.target.value })} placeholder="85.50" className="rounded-xl" />
+                      {seguimientoForm.valorAlcanzado && selectedObjetivo.valorMeta && !isNaN(parseFloat(seguimientoForm.valorAlcanzado as unknown as string)) && Number(selectedObjetivo.valorMeta) > 0 ? (
+                        <p className="text-sm text-[#6B7280]">
+                          Cumplimiento: {((parseFloat(seguimientoForm.valorAlcanzado as unknown as string) / Number(selectedObjetivo.valorMeta)) * 100).toFixed(1)}%
+                        </p>
+                      ) : seguimientoForm.valorAlcanzado ? (
+                        <p className="text-sm text-[#6B7280]">Cumplimiento: -</p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="font-bold">Observaciones</Label>
+                    <Textarea
+                      value={seguimientoForm.observaciones}
+                      onChange={(e) => setSeguimientoForm({ ...seguimientoForm, observaciones: e.target.value })}
+                      rows={4}
+                      placeholder="Notas sobre el seguimiento..."
+                      className="rounded-xl"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter className="gap-4">
+                <Button variant="outline" onClick={() => setShowSeguimientoDialog(false)} className="rounded-xl">Cancelar</Button>
+                <Button onClick={handleSaveSeguimiento} disabled={savingSeguimiento} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-bold">
+                  {savingSeguimiento ? 'Guardando...' : 'Guardar Seguimiento'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* AlertDialog Eliminación */}
+          <AlertDialog open={deleteDialog.open} onOpenChange={closeDeleteDialog}>
+            <AlertDialogContent className="rounded-2xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <Trash2 className="h-5 w-5 text-[#EF4444]" />
+                  ¿Eliminar objetivo?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {deleteDialog.objetivo && (
+                    <div className="bg-[#F8FAFC] p-4 rounded-xl border border-[#E5E7EB] mt-4">
+                      <p className="font-bold">{deleteDialog.objetivo.descripcion || 'Sin descripción'}</p>
+                      <p className="text-sm text-[#6B7280]">Código: {deleteDialog.objetivo.codigo}</p>
+                      <p className="text-sm mt-3 text-[#991B1B] font-medium">
+                        Esta acción es permanente y no se podrá deshacer.
+                      </p>
+                    </div>
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-[#EF4444] hover:bg-[#DC2626] rounded-xl">
+                  Eliminar Objetivo
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
         </div>
-      )}
+      </TooltipProvider>
     </div>
   );
 };
 
-export default ObjetivosCalidadSeguimiento;
+export default ObjetivosCalidad;

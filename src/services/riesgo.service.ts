@@ -7,11 +7,15 @@ export interface Riesgo {
   descripcion?: string;
   categoria?: string;
   tipoRiesgo?: string;
+  tipo?: string;
   probabilidad?: number;
+  fechaIdentificacion?: string;
+  fechaRevision?: string;
   impacto?: number;
   nivelRiesgo?: number;
   causas?: string;
   consecuencias?: string;
+  tratamiento?: string;
   responsableId?: string;
   estado?: string;
   creadoEn: string;

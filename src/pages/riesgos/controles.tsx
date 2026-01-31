@@ -1,33 +1,28 @@
-import { useEffect, useState } from "react";
-import { Shield, Plus, Eye, Search, CheckCircle, AlertCircle, Save, X } from "lucide-react";
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
+  Shield, Plus, Eye, Search, RefreshCw, Save, AlertTriangle, CheckCircle, Clock
+} from 'lucide-react';
+import {
+  Card, CardHeader, CardTitle, CardDescription, CardContent
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
-
-import { toast } from "sonner";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger
+} from "@/components/ui/tooltip";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from "@/components/ui/table";
 
 import { API_BASE_URL as API_URL } from "@/lib/api";
 
@@ -48,17 +43,17 @@ interface Riesgo {
   descripcion?: string;
 }
 
-export default function ControlesRiesgos() {
+const ControlesRiesgos: React.FC = () => {
   const [controles, setControles] = useState<ControlRiesgo[]>([]);
   const [riesgos, setRiesgos] = useState<Riesgo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showNewDialog, setShowNewDialog] = useState(false);
+
+  // Diálogos
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedControl, setSelectedControl] = useState<ControlRiesgo | null>(null);
-  const [saving, setSaving] = useState(false);
 
+  // Formulario crear
   const [formData, setFormData] = useState({
     riesgoId: "",
     descripcion: "",
@@ -67,23 +62,20 @@ export default function ControlesRiesgos() {
     efectividad: "",
   });
 
+  const [saving, setSaving] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
   useEffect(() => {
     fetchData();
   }, []);
 
-  const getAuthToken = () => {
-    return localStorage.getItem("token");
-  };
+  const getAuthToken = () => localStorage.getItem("token");
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      setError(null);
-
       const token = getAuthToken();
-      if (!token) {
-        throw new Error("No hay sesión activa");
-      }
+      if (!token) throw new Error("No hay sesión activa");
 
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -95,9 +87,7 @@ export default function ControlesRiesgos() {
         fetch(`${API_URL}/riesgos`, { headers }),
       ]);
 
-      if (!controlesRes.ok || !riesgosRes.ok) {
-        throw new Error("Error al cargar datos");
-      }
+      if (!controlesRes.ok || !riesgosRes.ok) throw new Error("Error al cargar datos");
 
       const [controlesData, riesgosData] = await Promise.all([
         controlesRes.json(),
@@ -107,28 +97,22 @@ export default function ControlesRiesgos() {
       setControles(controlesData);
       setRiesgos(riesgosData);
     } catch (error: any) {
-      console.error("Error:", error);
-      setError(error.message);
+      toast.error(error.message || "Error al cargar los controles de riesgos");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateControl = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.riesgoId || !formData.descripcion) {
-      toast.error("Por favor completa los campos obligatorios");
+  const handleCreateControl = async () => {
+    if (!formData.riesgoId || !formData.descripcion.trim()) {
+      toast.error("Riesgo y descripción son obligatorios");
       return;
     }
 
     try {
       setSaving(true);
       const token = getAuthToken();
-
-      if (!token) {
-        throw new Error("No hay sesión activa");
-      }
+      if (!token) throw new Error("No hay sesión activa");
 
       const response = await fetch(`${API_URL}/controles-riesgo`, {
         method: "POST",
@@ -145,7 +129,7 @@ export default function ControlesRiesgos() {
       }
 
       toast.success("Control creado exitosamente");
-      setShowNewDialog(false);
+      setShowCreateDialog(false);
       setFormData({
         riesgoId: "",
         descripcion: "",
@@ -155,371 +139,469 @@ export default function ControlesRiesgos() {
       });
       fetchData();
     } catch (error: any) {
-      console.error("Error:", error);
       toast.error(error.message || "Error al crear control");
     } finally {
       setSaving(false);
     }
   };
 
-  const getTipoBadge = (tipo?: string) => {
-    const tipos: Record<string, { label: string; class: string }> = {
-      preventivo: { label: "Preventivo", class: "bg-blue-500" },
-      correctivo: { label: "Correctivo", class: "bg-amber-500" },
-      detectivo: { label: "Detectivo", class: "bg-purple-500" },
-    };
-    const config = tipos[tipo || ""] || { label: tipo || "Sin tipo", class: "bg-gray-500" };
-    return <Badge className={config.class}>{config.label}</Badge>;
-  };
-
-  const getEfectividadBadge = (efectividad?: string) => {
-    const efectividades: Record<string, { label: string; class: string }> = {
-      alta: { label: "Alta", class: "bg-green-500" },
-      media: { label: "Media", class: "bg-amber-500" },
-      baja: { label: "Baja", class: "bg-red-500" },
-    };
-    const config = efectividades[efectividad || ""] || { label: efectividad || "N/A", class: "bg-gray-500" };
-    return <Badge className={config.class}>{config.label}</Badge>;
-  };
-
-  const handleViewControl = (control: ControlRiesgo) => {
+  const handleView = (control: ControlRiesgo) => {
     setSelectedControl(control);
     setShowViewDialog(true);
   };
 
-  const filteredControles = controles.filter(
-    (control) =>
+  // Mapas y helpers
+  const riesgoMap = riesgos.reduce((acc, r) => {
+    acc[r.id] = r;
+    return acc;
+  }, {} as Record<string, Riesgo>);
+
+  const filteredControles = controles.filter((control) => {
+    const riesgo = riesgoMap[control.riesgoId];
+    const riesgoCodigo = riesgo?.codigo || "";
+    const riesgoDesc = riesgo?.descripcion || "";
+    return (
       control.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      control.tipo?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      control.tipo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      riesgoCodigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      riesgoDesc.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   // Estadísticas
-  const totalControles = controles.length;
-  const controlesPreventivos = controles.filter((c) => c.tipo === "preventivo").length;
-  const controlesCorrectivos = controles.filter((c) => c.tipo === "correctivo").length;
-  const controlesAltaEfectividad = controles.filter((c) => c.efectividad === "alta").length;
+  const total = controles.length;
+  const preventivos = controles.filter(c => c.tipo === "preventivo").length;
+  const altaEfectividad = controles.filter(c => c.efectividad === "alta").length;
+  const correctivosDetectivos = controles.filter(c => c.tipo === "correctivo" || c.tipo === "detectivo").length;
+  const efectividadPercentage = total === 0 ? 0 : Math.round((altaEfectividad / total) * 100);
+
+  const getTipoBadge = (tipo?: string) => {
+    const estilos: Record<string, string> = {
+      preventivo: "bg-[#DBEAFE] text-[#2563EB]",
+      correctivo: "bg-[#FFF7ED] text-[#F97316]",
+      detectivo: "bg-[#EDE9FE] text-[#7C3AED]",
+    };
+    const label = tipo ? tipo.charAt(0).toUpperCase() + tipo.slice(1) : "Sin tipo";
+    return <Badge className={estilos[tipo || ""] || "bg-gray-100 text-gray-800"}>{label}</Badge>;
+  };
+
+  const getEfectividadBadge = (efectividad?: string) => {
+    const estilos: Record<string, string> = {
+      alta: "bg-[#ECFDF5] text-[#065F46]",
+      media: "bg-[#FFF7ED] text-[#F97316]",
+      baja: "bg-[#FEF2F2] text-[#991B1B]",
+    };
+    const label = efectividad ? efectividad.charAt(0).toUpperCase() + efectividad.slice(1) : "N/A";
+    return <Badge className={estilos[efectividad || ""] || "bg-gray-100 text-gray-800"}>{label}</Badge>;
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent" />
-          <p className="mt-4 text-sm text-gray-500">Cargando controles...</p>
-        </div>
+        <p>Cargando...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 p-4 md:p-6 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Shield className="h-6 w-6 text-sky-500" />
-            Controles de Riesgos
-          </h1>
-          <p className="text-gray-500">Implemente medidas preventivas</p>
-        </div>
-        <Button onClick={() => setShowNewDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Control
-        </Button>
-      </div>
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <TooltipProvider>
+        <div className="max-w-7xl mx-auto space-y-8">
 
-      {error && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 text-amber-800">
-              <AlertCircle className="h-5 w-5" />
+          {/* Header */}
+          <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div>
-                <p className="font-medium">Error de conexión</p>
-                <p className="text-sm">{error}</p>
-                <button className="text-sm underline mt-1 inline-block" onClick={fetchData}>
-                  Intentar nuevamente
-                </button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Cards de resumen */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Total Controles</CardTitle>
-              <Shield className="h-4 w-4 text-blue-500" />
-            </div>
-            <div className="text-2xl font-bold">{totalControles}</div>
-          </CardHeader>
-        </Card>
-
-        <Card className="border-blue-200 bg-blue-50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-blue-800">Preventivos</CardTitle>
-              <Shield className="h-4 w-4 text-blue-600" />
-            </div>
-            <div className="text-2xl font-bold text-blue-700">{controlesPreventivos}</div>
-          </CardHeader>
-        </Card>
-
-        <Card className="border-amber-200 bg-amber-50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-amber-800">Correctivos</CardTitle>
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-            </div>
-            <div className="text-2xl font-bold text-amber-700">{controlesCorrectivos}</div>
-          </CardHeader>
-        </Card>
-
-        <Card className="border-green-200 bg-green-50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-green-800">Alta Efectividad</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </div>
-            <div className="text-2xl font-bold text-green-700">{controlesAltaEfectividad}</div>
-          </CardHeader>
-        </Card>
-      </div>
-
-      {/* Lista de controles */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Controles Implementados</CardTitle>
-              <CardDescription>Medidas preventivas y correctivas para mitigar riesgos</CardDescription>
-            </div>
-            <div className="w-72">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-                <Input
-                  placeholder="Buscar controles..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="border rounded-md">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="border-b">
-                  <tr>
-                    <th className="text-left p-3 text-sm font-medium">Descripción</th>
-                    <th className="text-left p-3 text-sm font-medium w-32">Tipo</th>
-                    <th className="text-left p-3 text-sm font-medium w-32">Frecuencia</th>
-                    <th className="text-left p-3 text-sm font-medium w-32">Efectividad</th>
-                    <th className="text-right p-3 text-sm font-medium w-24">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredControles.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="text-center p-12 text-gray-500">
-                        {searchTerm ? "No se encontraron resultados" : "No hay controles registrados"}
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredControles.map((control) => (
-                      <tr key={control.id} className="border-b hover:bg-gray-50">
-                        <td className="p-3">
-                          <div className="max-w-md">
-                            <p className="line-clamp-2">{control.descripcion || "Sin descripción"}</p>
-                          </div>
-                        </td>
-                        <td className="p-3">{getTipoBadge(control.tipo)}</td>
-                        <td className="p-3">
-                          <span className="text-sm">{control.frecuencia || "No definida"}</span>
-                        </td>
-                        <td className="p-3">{getEfectividadBadge(control.efectividad)}</td>
-                        <td className="p-3">
-                          <div className="flex items-center justify-end">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => handleViewControl(control)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  <Shield className="h-9 w-9 text-[#2563EB]" />
+                  Controles de Riesgos
+                </h1>
+                <p className="text-[#6B7280] mt-2 text-lg">
+                  Implementa medidas para mitigar riesgos identificados
+                </p>
+                <div className="flex flex-wrap items-center gap-3 mt-4">
+                  <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
+                    {total} controles
+                  </Badge>
+                  {altaEfectividad > 0 && (
+                    <Badge className="bg-[#ECFDF5] text-[#065F46] border border-[#D1FAE5]">
+                      {altaEfectividad} alta efectividad
+                    </Badge>
                   )}
-                </tbody>
-              </table>
+                </div>
+              </div>
+              <Button onClick={() => setShowCreateDialog(true)} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold">
+                <Plus className="mr-2 h-5 w-5" />
+                Nuevo Control
+              </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Dialog Nuevo Control */}
-      <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Nuevo Control de Riesgo</DialogTitle>
-          </DialogHeader>
-
-          <form onSubmit={handleCreateControl}>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="riesgoId">Riesgo Asociado *</Label>
-                <Select
-                  value={formData.riesgoId}
-                  onValueChange={(value) => setFormData({ ...formData, riesgoId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un riesgo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {riesgos.map((riesgo) => (
-                      <SelectItem key={riesgo.id} value={riesgo.id}>
-                        [{riesgo.codigo}] {riesgo.descripcion}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="descripcion">Descripción del Control *</Label>
-                <Textarea
-                  id="descripcion"
-                  placeholder="Describe el control de riesgo..."
-                  rows={3}
-                  value={formData.descripcion}
-                  onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="tipo">Tipo de Control</Label>
-                  <Select
-                    value={formData.tipo}
-                    onValueChange={(value) => setFormData({ ...formData, tipo: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="preventivo">Preventivo</SelectItem>
-                      <SelectItem value="correctivo">Correctivo</SelectItem>
-                      <SelectItem value="detectivo">Detectivo</SelectItem>
-                    </SelectContent>
-                  </Select>
+          {/* Tarjetas de métricas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription className="font-bold text-[#1E3A8A]">Total Controles</CardDescription>
+                  <Shield className="h-8 w-8 text-[#2563EB]" />
                 </div>
+                <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{total}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xs text-[#6B7280] font-medium">Implementados en el sistema</div>
+              </CardContent>
+            </Card>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="frecuencia">Frecuencia</Label>
-                  <Select
-                    value={formData.frecuencia}
-                    onValueChange={(value) => setFormData({ ...formData, frecuencia: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona frecuencia" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="continuo">Continuo</SelectItem>
-                      <SelectItem value="diario">Diario</SelectItem>
-                      <SelectItem value="semanal">Semanal</SelectItem>
-                      <SelectItem value="mensual">Mensual</SelectItem>
-                      <SelectItem value="trimestral">Trimestral</SelectItem>
-                      <SelectItem value="anual">Anual</SelectItem>
-                    </SelectContent>
-                  </Select>
+            <Card className="bg-[#DBEAFE] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription className="font-bold text-[#1E3A8A]">Preventivos</CardDescription>
+                  <Shield className="h-8 w-8 text-[#2563EB]" />
+                </div>
+                <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{preventivos}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xs text-[#6B7280] font-medium">Controles preventivos</div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription className="font-bold text-[#065F46]">Alta Efectividad</CardDescription>
+                  <CheckCircle className="h-8 w-8 text-[#10B981]" />
+                </div>
+                <CardTitle className="text-4xl font-bold text-[#065F46]">{altaEfectividad}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xs text-[#6B7280] font-medium mb-2">
+                  Cobertura: {efectividadPercentage}%
+                </div>
+                <div className="w-full bg-[#E5E7EB] rounded-full h-3">
+                  <div className="bg-[#10B981] h-3 rounded-full transition-all" style={{ width: `${efectividadPercentage}%` }} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[#FFF7ED] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription className="font-bold text-[#9A3412]">Correctivos/Detectivos</CardDescription>
+                  <AlertTriangle className="h-8 w-8 text-[#F97316]/70" />
+                </div>
+                <CardTitle className="text-4xl font-bold text-[#9A3412]">{correctivosDetectivos}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xs text-[#6B7280] font-medium">Requieren seguimiento</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Guía */}
+          <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
+            <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+              <CardTitle className="text-lg text-[#1E3A8A]">Guía de Gestión de Controles</CardTitle>
+              <CardDescription>Mejores prácticas para implementar controles efectivos</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                <div className="flex items-start gap-3 p-4 bg-[#EFF6FF] rounded-xl border border-[#DBEAFE]">
+                  <div className="h-8 w-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-bold flex-shrink-0">1</div>
+                  <div>
+                    <span className="font-bold text-[#1E3A8A] block mb-1">Identificar Riesgo</span>
+                    <span className="text-[#6B7280]">Asocia el control al riesgo correspondiente.</span>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-4 bg-[#ECFDF5] rounded-xl border border-[#D1FAE5]">
+                  <div className="h-8 w-8 rounded-lg bg-[#10B981] text-white flex items-center justify-center font-bold flex-shrink-0">2</div>
+                  <div>
+                    <span className="font-bold text-[#065F46] block mb-1">Definir Tipo y Frecuencia</span>
+                    <span className="text-[#6B7280]">Clasifica y establece periodicidad de aplicación.</span>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-4 bg-[#FFF7ED] rounded-xl border border-[#FBBF24]/20">
+                  <div className="h-8 w-8 rounded-lg bg-[#F97316] text-white flex items-center justify-center font-bold flex-shrink-0">3</div>
+                  <div>
+                    <span className="font-bold text-[#9A3412] block mb-1">Evaluar Efectividad</span>
+                    <span className="text-[#6B7280]">Revisa periódicamente su impacto real.</span>
+                  </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="grid gap-2">
-                <Label htmlFor="efectividad">Efectividad</Label>
-                <Select
-                  value={formData.efectividad}
-                  onValueChange={(value) => setFormData({ ...formData, efectividad: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona efectividad" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="alta">Alta</SelectItem>
-                    <SelectItem value="media">Media</SelectItem>
-                    <SelectItem value="baja">Baja</SelectItem>
-                  </SelectContent>
-                </Select>
+          {/* Buscador */}
+          <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
+              <Input
+                placeholder="Buscar por riesgo, descripción o tipo..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
+              />
+            </div>
+          </div>
+
+          {/* Tabla */}
+          <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
+            <div className="p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
+              <h2 className="text-xl font-bold text-[#1E3A8A]">Listado de Controles</h2>
+              <div className="flex items-center gap-4">
+                <Button variant="outline" size="sm" onClick={fetchData}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Actualizar
+                </Button>
+                <Badge variant="outline" className="bg-white border-[#E5E7EB] text-[#6B7280]">
+                  {filteredControles.length} resultados
+                </Badge>
               </div>
             </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowNewDialog(false)}>
-                <X className="mr-2 h-4 w-4" />
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={saving}>
-                {saving ? (
-                  <>
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
-                    Guardando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Crear Control
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog Ver Detalles */}
-      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Detalles del Control</DialogTitle>
-          </DialogHeader>
-
-          {selectedControl && (
-            <div className="grid gap-4 py-4">
-              <div>
-                <Label className="text-gray-500">Descripción</Label>
-                <p className="mt-1">{selectedControl.descripcion || "Sin descripción"}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-gray-500">Tipo</Label>
-                  <div className="mt-1">{getTipoBadge(selectedControl.tipo)}</div>
-                </div>
-                <div>
-                  <Label className="text-gray-500">Efectividad</Label>
-                  <div className="mt-1">{getEfectividadBadge(selectedControl.efectividad)}</div>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-gray-500">Frecuencia</Label>
-                <p className="mt-1 font-medium">{selectedControl.frecuencia || "No definida"}</p>
-              </div>
-
-              <div className="pt-2 border-t">
-                <Label className="text-gray-500">Creado el</Label>
-                <p className="mt-1">{new Date(selectedControl.creadoEn).toLocaleString("es-CO")}</p>
-              </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-[#F8FAFC]">
+                  <TableRow>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Riesgo</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Descripción</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Tipo</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Frecuencia</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Efectividad</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A] text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredControles.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-20 text-[#6B7280]">
+                        <div className="flex flex-col items-center">
+                          <Shield className="h-16 w-16 text-gray-300 mb-4" />
+                          <p className="text-lg font-medium">
+                            {searchTerm ? "No se encontraron controles" : "No hay controles registrados"}
+                          </p>
+                          {!searchTerm && (
+                            <Button onClick={() => setShowCreateDialog(true)} className="mt-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl">
+                              <Plus className="mr-2 h-5 w-5" />
+                              Crear primer control
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredControles.map((control) => {
+                      const riesgo = riesgoMap[control.riesgoId];
+                      return (
+                        <TableRow key={control.id} className="hover:bg-[#F5F3FF] transition-colors">
+                          <TableCell className="px-6 py-4">
+                            <div>
+                              <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold px-4 py-2">
+                                {riesgo?.codigo || '-'}
+                              </Badge>
+                              <p className="text-sm text-[#6B7280] mt-1">{riesgo?.descripcion || 'Sin descripción'}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-6 py-4 font-medium max-w-md">
+                            {control.descripcion || <span className="italic text-[#6B7280]">Sin descripción</span>}
+                          </TableCell>
+                          <TableCell className="px-6 py-4">{getTipoBadge(control.tipo)}</TableCell>
+                          <TableCell className="px-6 py-4 text-[#6B7280]">
+                            {control.frecuencia ? control.frecuencia.charAt(0).toUpperCase() + control.frecuencia.slice(1) : 'No definida'}
+                          </TableCell>
+                          <TableCell className="px-6 py-4">{getEfectividadBadge(control.efectividad)}</TableCell>
+                          <TableCell className="px-6 py-4 text-right">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="outline" onClick={() => handleView(control)} className="rounded-xl">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Ver detalles</p></TooltipContent>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+
+          {/* Diálogo Crear */}
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <DialogContent className="max-w-4xl rounded-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  <Plus className="h-7 w-7 text-[#2563EB]" />
+                  Nuevo Control de Riesgo
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-6 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="font-bold">Riesgo Asociado <span className="text-red-500">*</span></Label>
+                    <Select value={formData.riesgoId} onValueChange={(v) => setFormData({ ...formData, riesgoId: v })}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder="Selecciona un riesgo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {riesgos.map((riesgo) => (
+                          <SelectItem key={riesgo.id} value={riesgo.id}>
+                            [{riesgo.codigo}] {riesgo.descripcion}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="font-bold">Tipo de Control</Label>
+                    <Select value={formData.tipo} onValueChange={(v) => setFormData({ ...formData, tipo: v })}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder="Selecciona tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="preventivo">Preventivo</SelectItem>
+                        <SelectItem value="correctivo">Correctivo</SelectItem>
+                        <SelectItem value="detectivo">Detectivo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="font-bold">Descripción del Control <span className="text-red-500">*</span></Label>
+                  <Textarea
+                    value={formData.descripcion}
+                    onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                    rows={5}
+                    placeholder="Describe detalladamente el control implementado..."
+                    className="rounded-xl"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="font-bold">Frecuencia</Label>
+                    <Select value={formData.frecuencia} onValueChange={(v) => setFormData({ ...formData, frecuencia: v })}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder="Selecciona frecuencia" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="continuo">Continuo</SelectItem>
+                        <SelectItem value="diario">Diario</SelectItem>
+                        <SelectItem value="semanal">Semanal</SelectItem>
+                        <SelectItem value="mensual">Mensual</SelectItem>
+                        <SelectItem value="trimestral">Trimestral</SelectItem>
+                        <SelectItem value="anual">Anual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="font-bold">Efectividad</Label>
+                    <Select value={formData.efectividad} onValueChange={(v) => setFormData({ ...formData, efectividad: v })}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder="Selecciona efectividad" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="alta">Alta</SelectItem>
+                        <SelectItem value="media">Media</SelectItem>
+                        <SelectItem value="baja">Baja</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter className="gap-4">
+                <Button variant="outline" onClick={() => setShowCreateDialog(false)} className="rounded-xl">
+                  Cancelar
+                </Button>
+                <Button onClick={handleCreateControl} disabled={saving} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-bold">
+                  {saving ? (
+                    <>
+                      <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-white border-r-transparent" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-5 w-5" />
+                      Crear Control
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Diálogo Ver Detalles */}
+          <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+            <DialogContent className="max-w-4xl rounded-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  <Eye className="h-7 w-7 text-[#2563EB]" />
+                  Detalles del Control
+                </DialogTitle>
+              </DialogHeader>
+
+              {selectedControl && (
+                <div className="space-y-8 py-4">
+                  <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
+                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Riesgo Asociado</Label>
+                    <div className="mt-2">
+                      <Badge className="text-lg px-6 py-3 bg-[#2563EB]/10 text-[#2563EB] font-bold">
+                        {riesgoMap[selectedControl.riesgoId]?.codigo || '-'}
+                      </Badge>
+                      <p className="mt-2 text-lg">{riesgoMap[selectedControl.riesgoId]?.descripcion || 'Sin descripción'}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
+                    <Label className="text-[#6B7280] uppercase text-xs font-bold mb-3 block">Descripción del Control</Label>
+                    <p className="text-[#111827] leading-relaxed">{selectedControl.descripcion || 'Sin descripción'}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
+                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Tipo</Label>
+                      <div className="mt-2">{getTipoBadge(selectedControl.tipo)}</div>
+                    </div>
+                    <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
+                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Frecuencia</Label>
+                      <p className="mt-2 text-lg font-medium">
+                        {selectedControl.frecuencia ? selectedControl.frecuencia.charAt(0).toUpperCase() + selectedControl.frecuencia.slice(1) : 'No definida'}
+                      </p>
+                    </div>
+                    <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
+                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Efectividad</Label>
+                      <div className="mt-2">{getEfectividadBadge(selectedControl.efectividad)}</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
+                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Creado el</Label>
+                    <p className="mt-2 text-lg font-medium">
+                      {new Date(selectedControl.creadoEn).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' })}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowViewDialog(false)} className="rounded-xl">
+                  Cerrar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+        </div>
+      </TooltipProvider>
     </div>
   );
-}
+};
+
+export default ControlesRiesgos;
