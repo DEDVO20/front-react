@@ -60,6 +60,8 @@ import ControlesRiesgos from "./pages/riesgos/controles";
 import TratamientoRiesgos from "./pages/riesgos/tratamiento";
 import MigracionesDB from "./pages/sistema/MigracionesDB";
 import MesaDeAyuda from "./pages/soporte/MesaDeAyuda";
+import Seguridad from "./pages/seguridad";
+import Configuracion from "./pages/configuracion";
 
 import { ProtectedLayout } from "./components/ProtectedLayout";
 import { AuthProvider } from "./context/AuthContext";
@@ -155,6 +157,10 @@ function App() {
 
             {/* Soporte */}
             <Route path="/mesa-ayuda" element={<MesaDeAyuda />} />
+
+            {/* Configuración y Seguridad */}
+            <Route path="/configuracion" element={<Configuracion />} />
+            <Route path="/seguridad" element={<Seguridad />} />
           </Route>
 
           {/* Catch-all */}

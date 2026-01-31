@@ -128,11 +128,11 @@ export function NavUser({
                 <UserCircleIcon />
                 Mi Perfil
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleNavigation("/configuracion")}>
                 <Settings />
                 Configuración
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleNavigation("/seguridad")}>
                 <Shield />
                 Seguridad
               </DropdownMenuItem>
