@@ -48,13 +48,13 @@ export default function TableroIndicadores() {
     setDialogMode('edit');
     setSelected(ind);
     setForm({
+      proceso_id: ind.proceso_id,
+      codigo: ind.codigo,
       nombre: ind.nombre,
       descripcion: ind.descripcion,
-      tipo: ind.tipo,
       meta: ind.meta,
-      unidadMedida: ind.unidadMedida,
-      frecuenciaMedicion: ind.frecuenciaMedicion,
-      codigo: ind.codigo,
+      unidad_medida: ind.unidad_medida,
+      frecuencia_medicion: ind.frecuencia_medicion,
     });
     setShowDialog(true);
   };
@@ -90,7 +90,7 @@ export default function TableroIndicadores() {
   const promedioMeta = indicadores.length > 0
     ? indicadores.reduce((sum, ind) => sum + (ind.meta || 0), 0) / indicadores.length
     : 0;
-  const indicadoresActivos = indicadores.filter(ind => ind.estado === "activo").length;
+  const indicadoresActivos = indicadores.filter(ind => ind.activo === true).length;
 
   // Clasificar por rangos de meta
   const excelentes = indicadores.filter(ind => (ind.meta || 0) >= 90).length;
@@ -196,7 +196,7 @@ export default function TableroIndicadores() {
                 <CardDescription className="font-bold text-[#9A3412]">Sin Datos</CardDescription>
                 <AlertCircle className="h-8 w-8 text-[#F97316]" />
               </div>
-              <CardTitle className="text-4xl font-bold text-[#9A3412]">{indicadores.filter(ind => ind.valor === null || ind.valor === undefined).length}</CardTitle>
+              <CardTitle className="text-4xl font-bold text-[#9A3412]">{indicadores.filter(ind => ind.meta === null || ind.meta === undefined).length}</CardTitle>
             </CardHeader>
             <CardContent>
               <Badge className="bg-white/80 text-[#F97316] border-[#F97316]/20 font-bold uppercase text-[10px]">Revisar</Badge>
@@ -211,7 +211,7 @@ export default function TableroIndicadores() {
                   <div className="h-2 w-2 rounded-full bg-[#EF4444] animate-pulse" />
                 </div>
               </div>
-              <CardTitle className="text-4xl font-bold text-[#991B1B]">{indicadores.filter(ind => ind.valor !== null && ind.meta != null && ind.meta !== undefined && ind.valor < ind.meta).length}</CardTitle>
+              <CardTitle className="text-4xl font-bold text-[#991B1B]">0</CardTitle>
             </CardHeader>
             <CardContent>
               <Badge className="bg-white/80 text-[#EF4444] border-[#EF4444]/20 font-bold uppercase text-[10px]">Atención requerida</Badge>
@@ -266,11 +266,11 @@ export default function TableroIndicadores() {
                 <table className="w-full">
                   <thead className="border-b">
                     <tr>
-                      <th className="text-left p-3 text-sm font-medium">Clave</th>
-                      <th className="text-left p-3 text-sm font-medium">Descripción</th>
-                      <th className="text-left p-3 text-sm font-medium w-32">Valor</th>
+                      <th className="text-left p-3 text-sm font-medium">Código</th>
+                      <th className="text-left p-3 text-sm font-medium">Nombre</th>
+                      <th className="text-left p-3 text-sm font-medium w-32">Meta</th>
                       <th className="text-left p-3 text-sm font-medium w-32">Desempeño</th>
-                      <th className="text-left p-3 text-sm font-medium w-40">Período</th>
+                      <th className="text-left p-3 text-sm font-medium w-40">Frecuencia</th>
                       <th className="text-right p-3 text-sm font-medium w-40">Acciones</th>
                     </tr>
                   </thead>
@@ -284,23 +284,19 @@ export default function TableroIndicadores() {
                     ) : (
                       indicadores.map((indicador) => (
                         <tr key={indicador.id} className="border-b hover:bg-gray-50">
-                          <td className="p-3 font-medium">{indicador.clave}</td>
-                          <td className="p-3">{indicador.descripcion || "Sin descripción"}</td>
+                          <td className="p-3 font-medium">{indicador.codigo}</td>
+                          <td className="p-3">{indicador.nombre}</td>
                           <td className="p-3">
                             <span className="text-lg font-bold">
-                              {indicador.valor !== null && indicador.valor !== undefined ? `${indicador.valor.toFixed(1)}%` : "N/A"}
+                              {indicador.meta !== null && indicador.meta !== undefined ? `${Number(indicador.meta).toFixed(1)}%` : "N/A"}
                             </span>
                           </td>
-                          <td className="p-3">{indicador.valor !== null && indicador.valor !== undefined ? getValorBadge(indicador.valor) : <Badge variant="outline">Sin dato</Badge>}</td>
+                          <td className="p-3">{indicador.meta !== null && indicador.meta !== undefined ? getValorBadge(Number(indicador.meta)) : <Badge variant="outline">Sin dato</Badge>}</td>
                           <td className="p-3 text-sm text-gray-600">
-                            {indicador.periodoInicio && indicador.periodoFin ? (
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {new Date(indicador.periodoInicio).toLocaleDateString("es-CO")} - {new Date(indicador.periodoFin).toLocaleDateString("es-CO")}
-                              </div>
-                            ) : (
-                              "Sin período"
-                            )}
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {indicador.frecuencia_medicion}
+                            </div>
                           </td>
                           <td className="p-3 text-right">
                             <div className="flex justify-end gap-2">
@@ -331,12 +327,13 @@ export default function TableroIndicadores() {
                 <button onClick={() => setShowDialog(false)} className="text-sm text-gray-500">Cerrar</button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <input placeholder="Clave / Código" value={form?.codigo || ''} onChange={(e) => setForm({ ...form, codigo: e.target.value })} className="p-3 border rounded-lg" />
+                <input placeholder="Código" value={form?.codigo || ''} onChange={(e) => setForm({ ...form, codigo: e.target.value })} className="p-3 border rounded-lg" />
                 <input placeholder="Nombre" value={form?.nombre || ''} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="p-3 border rounded-lg" />
+                <input placeholder="Proceso ID (UUID)" value={form?.proceso_id || ''} onChange={(e) => setForm({ ...form, proceso_id: e.target.value })} className="p-3 border rounded-lg md:col-span-2" />
                 <input placeholder="Descripción" value={form?.descripcion || ''} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} className="p-3 border rounded-lg md:col-span-2" />
                 <input placeholder="Meta (%)" type="number" value={form?.meta ?? ''} onChange={(e) => setForm({ ...form, meta: Number(e.target.value) })} className="p-3 border rounded-lg" />
-                <input placeholder="Unidad de medida" value={form?.unidadMedida || ''} onChange={(e) => setForm({ ...form, unidadMedida: e.target.value })} className="p-3 border rounded-lg" />
-                <input placeholder="Frecuencia" value={form?.frecuenciaMedicion || ''} onChange={(e) => setForm({ ...form, frecuenciaMedicion: e.target.value })} className="p-3 border rounded-lg" />
+                <input placeholder="Unidad de medida" value={form?.unidad_medida || ''} onChange={(e) => setForm({ ...form, unidad_medida: e.target.value })} className="p-3 border rounded-lg" />
+                <input placeholder="Frecuencia (mensual, trimestral, etc.)" value={form?.frecuencia_medicion || 'mensual'} onChange={(e) => setForm({ ...form, frecuencia_medicion: e.target.value })} className="p-3 border rounded-lg md:col-span-2" />
               </div>
               <div className="flex justify-end gap-3 mt-4">
                 <button onClick={() => setShowDialog(false)} className="px-4 py-2 border rounded-lg">Cancelar</button>
