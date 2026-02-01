@@ -55,9 +55,7 @@ export default function ProfilePage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [oldImagePath, setOldImagePath] = useState<string | null>(null);
 
-  // Campos de cambio de contraseña
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+
 
   const currentUser = getCurrentUser();
   const usuarioId = currentUser?.id;
@@ -140,16 +138,6 @@ export default function ProfilePage() {
 
   /** Guardar cambios */
   const handleGuardar = async () => {
-    if (newPassword && newPassword !== confirmPassword) {
-      toast.error("Las contraseñas no coinciden.");
-      return;
-    }
-
-    if (!usuarioId) {
-      toast.error("Sesión inválida. Inicia sesión nuevamente.");
-      return;
-    }
-
     setSaving(true);
 
     try {
@@ -197,9 +185,7 @@ export default function ProfilePage() {
         foto_url: fotoUrl,
       };
 
-      if (newPassword) {
-        updateData.contrasena = newPassword;
-      }
+
 
       await apiClient.put(`/usuarios/${usuarioId}`, updateData);
 
@@ -219,8 +205,7 @@ export default function ProfilePage() {
       }
 
       toast.success("Perfil actualizado correctamente.");
-      setNewPassword("");
-      setConfirmPassword("");
+
     } catch (error) {
       toast.error("Error al guardar los cambios.");
       console.error("Error saving profile:", error);
@@ -376,41 +361,7 @@ export default function ProfilePage() {
               </FieldContent>
             </Field>
 
-            {/* CAMBIO DE CONTRASEÑA */}
-            <Separator className="my-4" />
-            <h3 className="font-semibold text-sm text-muted-foreground">
-              Cambio de contraseña
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field>
-                <FieldLabel>Nueva contraseña</FieldLabel>
-                <FieldContent>
-                  <Input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                  />
-                </FieldContent>
-              </Field>
 
-              <Field>
-                <FieldLabel>Confirmar contraseña</FieldLabel>
-                <FieldContent>
-                  <Input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                  />
-                </FieldContent>
-                {newPassword &&
-                  confirmPassword &&
-                  newPassword !== confirmPassword && (
-                    <FieldError>Las contraseñas no coinciden.</FieldError>
-                  )}
-              </Field>
-            </div>
           </div>
         </CardContent>
 

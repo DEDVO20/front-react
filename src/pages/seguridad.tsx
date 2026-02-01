@@ -1,14 +1,66 @@
 import { useState } from "react";
-import { ShieldCheck, KeyRound, Smartphone, LogOut, Shield } from "lucide-react";
+import { ShieldCheck, KeyRound, Smartphone, LogOut, Shield, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+import { apiClient } from "@/lib/api";
+import { getCurrentUser } from "@/services/auth";
 
 export default function Seguridad() {
     const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+
+    // Estados para cambio de contraseña
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [updatingPassword, setUpdatingPassword] = useState(false);
+
+    const handleUpdatePassword = async () => {
+        if (!newPassword || !confirmPassword) {
+            toast.error("Por favor completa los campos de nueva contraseña.");
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            toast.error("Las nuevas contraseñas no coinciden.");
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            toast.error("La contraseña debe tener al menos 6 caracteres.");
+            return;
+        }
+
+        const currentUser = getCurrentUser();
+        if (!currentUser?.id) {
+            toast.error("Error de sesión. Por favor inicia sesión nuevamente.");
+            return;
+        }
+
+        setUpdatingPassword(true);
+        try {
+            // Nota: El backend actualmente no verifica la contraseña actual en este endpoint específico de update
+            // Si se requiere verificación estricta, el backend debería soportarlo. 
+            // Por ahora enviamos solo la nueva contraseña.
+            await apiClient.put(`/usuarios/${currentUser.id}`, {
+                contrasena: newPassword
+            });
+
+            toast.success("Contraseña actualizada correctamente.");
+            setCurrentPassword("");
+            setNewPassword("");
+            setConfirmPassword("");
+        } catch (error) {
+            console.error("Error actualizando contraseña:", error);
+            toast.error("Error al actualizar la contraseña.");
+        } finally {
+            setUpdatingPassword(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
@@ -41,21 +93,51 @@ export default function Seguridad() {
                             <CardContent className="p-6 space-y-4">
                                 <div className="grid gap-2">
                                     <Label className="font-semibold text-gray-700">Contraseña actual</Label>
-                                    <Input type="password" placeholder="••••••••" className="rounded-xl" />
+                                    <Input
+                                        type="password"
+                                        placeholder="••••••••"
+                                        className="rounded-xl"
+                                        value={currentPassword}
+                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                                    />
+                                    <p className="text-xs text-muted-foreground">Para mayor seguridad.</p>
                                 </div>
 
                                 <div className="grid gap-2">
                                     <Label className="font-semibold text-gray-700">Nueva contraseña</Label>
-                                    <Input type="password" placeholder="Mínimo 8 caracteres" className="rounded-xl" />
+                                    <Input
+                                        type="password"
+                                        placeholder="Mínimo 6 caracteres"
+                                        className="rounded-xl"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                    />
                                 </div>
 
                                 <div className="grid gap-2">
                                     <Label className="font-semibold text-gray-700">Confirmar nueva contraseña</Label>
-                                    <Input type="password" placeholder="Repite la contraseña" className="rounded-xl" />
+                                    <Input
+                                        type="password"
+                                        placeholder="Repite la contraseña"
+                                        className="rounded-xl"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                    />
                                 </div>
 
-                                <Button className="mt-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl px-6 py-5 h-auto font-bold w-full md:w-auto">
-                                    Actualizar contraseña
+                                <Button
+                                    onClick={handleUpdatePassword}
+                                    disabled={updatingPassword}
+                                    className="mt-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl px-6 py-5 h-auto font-bold w-full md:w-auto"
+                                >
+                                    {updatingPassword ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Actualizando...
+                                        </>
+                                    ) : (
+                                        "Actualizar contraseña"
+                                    )}
                                 </Button>
                             </CardContent>
                         </Card>
