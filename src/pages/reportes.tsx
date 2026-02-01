@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { analyticsService, DashboardMetrics } from "@/services/analytics";
+import { reportsService } from "@/services/reports";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -186,9 +188,18 @@ const ReportesView = () => {
                 </Badge>
               </div>
             </div>
-            <button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold flex items-center gap-2 transition-all">
+            <button
+              onClick={() => {
+                toast.promise(reportsService.downloadNCReport(), {
+                  loading: 'Generando reporte global de No Conformidades...',
+                  success: 'Reporte descargado correctamente',
+                  error: 'Error al generar el reporte'
+                });
+              }}
+              className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold flex items-center gap-2 transition-all"
+            >
               <Download size={20} />
-              Generar Reporte
+              Generar Reporte Global
             </button>
           </div>
         </div>
