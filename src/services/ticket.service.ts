@@ -4,7 +4,7 @@ export interface Ticket {
     id: string;
     titulo: string;
     descripcion: string;
-    tipo: "soporte" | "consulta" | "mejora";
+    categoria: "soporte" | "consulta" | "mejora";
     prioridad: "baja" | "media" | "alta" | "critica";
     estado: "abierto" | "en_progreso" | "resuelto" | "cerrado";
     solicitante_id: string;
@@ -16,14 +16,14 @@ export interface Ticket {
 export interface TicketCreate {
     titulo: string;
     descripcion: string;
-    tipo: string;
+    categoria: string;
     prioridad: string;
 }
 
 export interface TicketUpdate {
     titulo?: string;
     descripcion?: string;
-    tipo?: string;
+    categoria?: string;
     prioridad?: string;
     estado?: string;
     asignado_a?: string;
