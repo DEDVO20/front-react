@@ -483,24 +483,24 @@ const AuditoriasPlanificacion = () => {
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
               />
             </div>
-            <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+            <Select value={filtroTipo || "todos"} onValueChange={(value) => setFiltroTipo(value === "todos" ? "" : value)}>
               <SelectTrigger className="rounded-xl">
                 <SelectValue placeholder="Todos los tipos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los tipos</SelectItem>
+                <SelectItem value="todos">Todos los tipos</SelectItem>
                 <SelectItem value="interna">Interna</SelectItem>
                 <SelectItem value="externa">Externa</SelectItem>
                 <SelectItem value="certificacion">Certificación</SelectItem>
                 <SelectItem value="seguimiento">Seguimiento</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+            <Select value={filtroEstado || "todos"} onValueChange={(value) => setFiltroEstado(value === "todos" ? "" : value)}>
               <SelectTrigger className="rounded-xl">
                 <SelectValue placeholder="Todos los estados" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los estados</SelectItem>
+                <SelectItem value="todos">Todos los estados</SelectItem>
                 <SelectItem value="planificada">Planificada</SelectItem>
                 <SelectItem value="en_curso">En Curso</SelectItem>
                 <SelectItem value="completada">Completada</SelectItem>
