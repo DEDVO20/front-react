@@ -68,6 +68,9 @@ export default function ProfilePage() {
       const res = await apiClient.get("/auth/me");
       const data = res.data;
 
+      console.log("🔍 Datos del perfil recibidos:", data);
+      console.log("🖼️ foto_url recibida:", data.foto_url);
+
       setProfile({
         id: data.id,
         nombre: data.nombre,
@@ -84,6 +87,7 @@ export default function ProfilePage() {
 
       // Usar fotoUrl
       const imageUrl = data.foto_url;
+      console.log("🎨 URL de imagen a mostrar:", imageUrl);
       setPreview(imageUrl || null);
 
       if (imageUrl) {
@@ -366,7 +370,8 @@ export default function ProfilePage() {
                 <Input
                   name="areaId"
                   value={profile.areaNombre}
-                //onChange={handleChange}
+                  readOnly
+                  className="bg-muted cursor-not-allowed"
                 />
               </FieldContent>
             </Field>
