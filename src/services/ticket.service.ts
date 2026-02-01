@@ -11,6 +11,9 @@ export interface Ticket {
     asignado_a?: string;
     creado_en: string;
     actualizado_en: string;
+    solucion?: string;
+    fecha_resolucion?: string;
+    satisfaccion_cliente?: number;
 }
 
 export interface TicketCreate {
@@ -27,6 +30,11 @@ export interface TicketUpdate {
     prioridad?: string;
     estado?: string;
     asignado_a?: string;
+}
+
+export interface TicketResolver {
+    solucion: string;
+    satisfaccion_cliente?: number;
 }
 
 const ticketService = {
@@ -49,6 +57,11 @@ const ticketService = {
 
     update: async (id: string, ticket: TicketUpdate): Promise<Ticket> => {
         const response = await apiClient.put<Ticket>(`/tickets/${id}`, ticket);
+        return response.data;
+    },
+
+    resolver: async (id: string, data: TicketResolver): Promise<Ticket> => {
+        const response = await apiClient.post<Ticket>(`/tickets/${id}/resolver`, data);
         return response.data;
     },
 
