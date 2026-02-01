@@ -54,9 +54,9 @@ export function NotificationBell() {
       // Navegar según el tipo de referencia
       if (notificacion.referencia_tipo && notificacion.referencia_id) {
         const rutas: Record<string, string> = {
-          ticket: `/soporte/tickets/${notificacion.referencia_id}`,
+          ticket: `/mesa-ayuda?ticket_id=${notificacion.referencia_id}`,
           documento: `/documentos/${notificacion.referencia_id}`,
-          auditoria: `/auditorias/${notificacion.referencia_id}`,
+          auditoria: `/AuditoriasPlanificacion`, // Temporalmente a la lista principal
         };
 
         const ruta = rutas[notificacion.referencia_tipo];

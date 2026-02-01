@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
     Plus, Search, RefreshCw, LifeBuoy, Headset, Clock, CheckCircle,
     AlertTriangle, MoreHorizontal, Ticket as TicketIcon, Edit, Eye, Trash2, Save
@@ -81,9 +82,26 @@ export default function MesaDeAyuda() {
     const [resolutionText, setResolutionText] = useState("");
 
 
+    const [searchParams] = useSearchParams();
+
     useEffect(() => {
         fetchTickets();
     }, []);
+
+    // Efecto para abrir ticket desde URL
+    useEffect(() => {
+        if (!loading && tickets.length > 0) {
+            const ticketId = searchParams.get("ticket_id");
+            if (ticketId) {
+                const ticket = tickets.find(t => t.id === ticketId);
+                if (ticket) {
+                    handleView(ticket);
+                    // Opcional: limpiar la URL sin recargar
+                    // window.history.replaceState(null, "", "/mesa-ayuda");
+                }
+            }
+        }
+    }, [loading, tickets, searchParams]);
 
     const fetchTickets = async () => {
         setLoading(true);
