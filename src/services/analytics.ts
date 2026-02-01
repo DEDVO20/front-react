@@ -11,7 +11,11 @@ export interface DashboardMetrics {
     };
     auditorias: {
         hallazgos_por_tipo: Record<string, number>;
-    }
+        total_auditorias: number;
+    };
+    riesgos_stats: {
+        total_riesgos: number;
+    };
 }
 
 export interface HeatmapPoint {
@@ -43,18 +47,20 @@ export const analyticsService = {
 
     // Helper to fetch all at once for the main dashboard
     getAllDashboardData: async (): Promise<DashboardMetrics> => {
-        const [calidad, riesgos, documentos, auditorias] = await Promise.all([
+        const [calidad, riesgos, documentos, auditorias, riesgos_stats] = await Promise.all([
             apiClient.get("/analytics/calidad"),
             apiClient.get("/analytics/riesgos/heatmap"),
             apiClient.get("/analytics/documentos/stats"),
-            apiClient.get("/analytics/auditorias/stats")
+            apiClient.get("/analytics/auditorias/stats"),
+            apiClient.get("/analytics/riesgos/stats")
         ]);
 
         return {
             calidad: calidad.data,
             riesgos: riesgos.data,
             documentos: documentos.data,
-            auditorias: auditorias.data
+            auditorias: auditorias.data,
+            riesgos_stats: riesgos_stats.data
         };
     }
 };

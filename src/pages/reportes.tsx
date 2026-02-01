@@ -16,6 +16,7 @@ import {
   Activity
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import { analyticsService, DashboardMetrics } from "@/services/analytics";
 import {
   Card,
   CardContent,
@@ -99,11 +100,37 @@ const ReportesView = () => {
     }
   ];
 
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const data = await analyticsService.getAllDashboardData();
+        setMetrics(data);
+      } catch (error) {
+        console.error("Error fetching metrics:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMetrics();
+  }, []);
+
+  // Calculate totals from metrics
+  const totalDocumentos = metrics?.documentos?.por_estado
+    ? Object.values(metrics.documentos.por_estado).reduce((a, b) => a + b, 0)
+    : 0;
+
+  const totalAuditorias = metrics?.auditorias?.total_auditorias || 0;
+  const ncCerradas = metrics?.calidad?.noconformidades?.['cerrada'] || 0;
+  const ncEnTratamiento = metrics?.calidad?.noconformidades?.['en_tratamiento'] || 0;
+
   const stats = [
-    { label: 'Reportes Generados', value: '156', change: '+12%', icon: FileText, color: 'bg-blue-500' },
-    { label: 'Auditorías Realizadas', value: '24', change: '+8%', icon: FileCheck, color: 'bg-green-500' },
-    { label: 'NC Cerradas', value: '18', change: '+15%', icon: CheckCircle, color: 'bg-purple-500' },
-    { label: 'En Proceso', value: '7', change: '-3%', icon: Clock, color: 'bg-orange-500' }
+    { label: 'Documentos Totales', value: loading ? '...' : totalDocumentos.toString(), change: 'Activos', icon: FileText, color: 'bg-blue-500' },
+    { label: 'Auditorías Realizadas', value: loading ? '...' : totalAuditorias.toString(), change: 'Anuales', icon: FileCheck, color: 'bg-green-500' },
+    { label: 'NC Cerradas', value: loading ? '...' : ncCerradas.toString(), change: 'Verificadas', icon: CheckCircle, color: 'bg-purple-500' },
+    { label: 'NC En Tratamiento', value: loading ? '...' : ncEnTratamiento.toString(), change: 'Pendientes', icon: Clock, color: 'bg-orange-500' }
   ];
 
   const quickActions = [
