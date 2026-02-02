@@ -162,9 +162,12 @@ export function ChartAreaInteractive() {
 
   return (
     <Card className="@container/card">
-      <CardHeader className="relative">
-        <CardTitle>Indicadores de Gestión de Calidad</CardTitle>
-        <CardDescription>
+      <CardHeader className="relative pb-2">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="h-6 w-1 rounded-full bg-blue-600" />
+          <CardTitle className="text-xl font-extrabold tracking-tight text-slate-800 dark:text-slate-100">Indicadores de Gestión de Calidad</CardTitle>
+        </div>
+        <CardDescription className="text-slate-500 font-medium ml-3">
           <span className="@[540px]/card:block hidden">
             Evolución de No Conformidades y Acciones Correctivas
           </span>
@@ -176,16 +179,16 @@ export function ChartAreaInteractive() {
             value={timeRange}
             onValueChange={setTimeRange}
             variant="outline"
-            className="@[767px]/card:flex hidden"
+            className="@[767px]/card:flex hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-1 rounded-xl shadow-sm"
           >
-            <ToggleGroupItem value="90d" className="h-8 px-2.5">
-              Últimos 3 meses
+            <ToggleGroupItem value="90d" className="h-8 px-4 rounded-lg data-[state=on]:bg-blue-600 data-[state=on]:text-white transition-all text-xs font-bold">
+              90 Días
             </ToggleGroupItem>
-            <ToggleGroupItem value="30d" className="h-8 px-2.5">
-              Últimos 30 días
+            <ToggleGroupItem value="30d" className="h-8 px-4 rounded-lg data-[state=on]:bg-blue-600 data-[state=on]:text-white transition-all text-xs font-bold">
+              30 Días
             </ToggleGroupItem>
-            <ToggleGroupItem value="7d" className="h-8 px-2.5">
-              Últimos 7 días
+            <ToggleGroupItem value="7d" className="h-8 px-4 rounded-lg data-[state=on]:bg-blue-600 data-[state=on]:text-white transition-all text-xs font-bold">
+              7 Días
             </ToggleGroupItem>
           </ToggleGroup>
           <Select value={timeRange} onValueChange={setTimeRange}>

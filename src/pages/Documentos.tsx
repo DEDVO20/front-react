@@ -15,6 +15,7 @@ import {
   AlertCircle,
   XCircle,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface Documento {
   id: string;
@@ -181,34 +182,40 @@ export default function Documentos() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header Profesional */}
-        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="premium-gradient rounded-3xl shadow-sm p-8 md:p-12 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 -mt-20 -mr-20 h-64 w-64 bg-white/40 rounded-full blur-3xl group-hover:bg-white/60 transition-all duration-700" />
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div>
-              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                <FileText className="h-9 w-9 text-[#2563EB]" />
+              <div className="flex items-center gap-2 mb-4">
+                <Badge variant="outline" className="bg-blue-600/10 text-blue-700 border-blue-200 backdrop-blur-md rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider">
+                  Inventario Oficial
+                </Badge>
+              </div>
+              <h1 className="text-3xl md:text-4xl font-black text-slate-900 flex items-center gap-3">
+                <FileText className="h-10 w-10 text-blue-600" />
                 Gestión Documental
               </h1>
-              <p className="text-[#6B7280] mt-2 text-lg">
-                Administra todos los documentos del sistema de gestión de calidad ISO 9001
+              <p className="text-slate-600 mt-3 text-lg max-w-2xl font-medium">
+                Administra el ciclo de vida de los documentos del sistema ISO 9001 con integridad y control de versiones.
               </p>
-              <div className="flex flex-wrap items-center gap-3 mt-4">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white text-[#2563EB] border border-[#E5E7EB]">
-                  {documentos.length} documentos totales
+              <div className="flex flex-wrap items-center gap-3 mt-6">
+                <span className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold bg-white/50 text-blue-800 border border-blue-200 backdrop-blur-md shadow-sm">
+                  {documentos.length} Documentos totales
                 </span>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#ECFDF5] text-[#22C55E]">
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  {documentos.filter((d) => d.estado === "aprobado").length} aprobados
+                <span className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-700 border border-emerald-200 backdrop-blur-md shadow-sm">
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  {documentos.filter((d) => d.estado === "aprobado").length} Validados
                 </span>
               </div>
             </div>
             <button
               onClick={() => navigate("/documentos/crear")}
-              className="flex items-center gap-2 px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all"
+              className="px-8 py-4 bg-blue-600 text-white hover:bg-blue-700 rounded-2xl font-bold shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-6 h-6" />
               Nuevo Documento
             </button>
           </div>
@@ -266,30 +273,36 @@ export default function Documentos() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-[#E0EDFF] p-6 rounded-2xl border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
+          <div className="premium-card p-6 rounded-2xl bg-blue-50/50 dark:bg-blue-900/10">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-[#1E3A8A] font-semibold">Total Documentos</p>
-              <FileText className="w-8 h-8 text-[#2563EB]" />
+              <p className="text-blue-900 dark:text-blue-100 font-bold uppercase text-[10px] tracking-widest">Total Documentos</p>
+              <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600">
+                <FileText className="w-6 h-6" />
+              </div>
             </div>
-            <p className="text-4xl font-bold text-[#1E3A8A]">{documentos.length}</p>
+            <p className="text-4xl font-black text-blue-900 dark:text-white">{documentos.length}</p>
           </div>
 
-          <div className="bg-[#ECFDF5] p-6 rounded-2xl border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
+          <div className="premium-card p-6 rounded-2xl bg-emerald-50/50 dark:bg-emerald-900/10">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-[#1E3A8A] font-semibold">Aprobados</p>
-              <CheckCircle className="w-8 h-8 text-[#22C55E]" />
+              <p className="text-emerald-900 dark:text-emerald-100 font-bold uppercase text-[10px] tracking-widest">Validados</p>
+              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                <CheckCircle className="w-6 h-6" />
+              </div>
             </div>
-            <p className="text-4xl font-bold text-[#1E3A8A]">
+            <p className="text-4xl font-black text-emerald-900 dark:text-white">
               {documentos.filter((d) => d.estado === "aprobado").length}
             </p>
           </div>
 
-          <div className="bg-[#FFF7ED] p-6 rounded-2xl border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
+          <div className="premium-card p-6 rounded-2xl bg-amber-50/50 dark:bg-amber-900/10">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-[#1E3A8A] font-semibold">En Proceso</p>
-              <AlertCircle className="w-8 h-8 text-[#F59E0B]" />
+              <p className="text-amber-900 dark:text-amber-100 font-bold uppercase text-[10px] tracking-widest">En Proceso</p>
+              <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600">
+                <AlertCircle className="w-6 h-6" />
+              </div>
             </div>
-            <p className="text-4xl font-bold text-[#1E3A8A]">
+            <p className="text-4xl font-black text-amber-900 dark:text-white">
               {
                 documentos.filter(
                   (d) =>
@@ -300,12 +313,14 @@ export default function Documentos() {
             </p>
           </div>
 
-          <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
+          <div className="premium-card p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-[#1E3A8A] font-semibold">Borradores</p>
-              <Clock className="w-8 h-8 text-[#6B7280]" />
+              <p className="text-slate-600 dark:text-slate-300 font-bold uppercase text-[10px] tracking-widest">Borradores</p>
+              <div className="h-10 w-10 rounded-xl bg-slate-500/10 flex items-center justify-center text-slate-600">
+                <Clock className="w-6 h-6" />
+              </div>
             </div>
-            <p className="text-4xl font-bold text-[#1E3A8A]">
+            <p className="text-4xl font-black text-slate-900 dark:text-white">
               {documentos.filter((d) => d.estado === "borrador").length}
             </p>
           </div>
