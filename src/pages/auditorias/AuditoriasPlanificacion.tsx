@@ -185,12 +185,22 @@ const AuditoriasPlanificacion = () => {
     }
   };
 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'No definida';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Fecha inválida';
+    return date.toLocaleDateString('es-CO');
+  };
+
   const cargarAuditorias = async () => {
     try {
+      console.log('📡 Cargando auditorías con filtros:', { tipo: filtroTipo, estado: filtroEstado });
       const data = await auditoriaService.getAll({ tipo: filtroTipo, estado: filtroEstado });
+      console.log('✅ Auditorías recibidas:', data);
       setAuditorias(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error(err);
+      console.error('❌ Error al cargar auditorías:', err);
+      toast.error('Error al cargar auditorías');
     }
   };
 
@@ -570,7 +580,7 @@ const AuditoriasPlanificacion = () => {
                         </div>
                       </TableCell>
                       <TableCell className="px-6 py-4 text-[#6B7280]">
-                        {new Date(auditoria.fechaPlanificada).toLocaleDateString('es-ES')}
+                        {formatDate(auditoria.fechaPlanificada)}
                       </TableCell>
                       <TableCell className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
