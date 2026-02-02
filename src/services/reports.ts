@@ -5,7 +5,7 @@ export const reportsService = {
     downloadAuditoriaReport: async (id: string, codigo: string) => {
         try {
             const response = await apiClient.get(`/reportes/auditorias/${id}/pdf`, {
-                responseType: 'blob' // Important for binary data
+                responseType: 'blob'
             });
 
             // Create download link
@@ -41,5 +41,10 @@ export const reportsService = {
             console.error("Error downloading report:", error);
             throw error;
         }
+    },
+
+    getAvailableReports: async () => {
+        const response = await apiClient.get("/reportes/list");
+        return response.data;
     }
 };

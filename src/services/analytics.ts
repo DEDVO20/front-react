@@ -4,6 +4,7 @@ export interface DashboardMetrics {
     calidad: {
         noconformidades: Record<string, number>;
         objetivos_total: number;
+        indicadores_total: number;
     };
     riesgos: HeatmapPoint[];
     documentos: {
