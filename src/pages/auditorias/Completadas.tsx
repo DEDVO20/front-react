@@ -215,9 +215,11 @@ const AuditoriasCompletadas: React.FC = () => {
     );
   };
 
-  const formatDate = (date?: string) => {
-    if (!date) return 'No definida';
-    return new Date(date).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'No definida';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Fecha inválida';
+    return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
   // === RENDER ===
@@ -280,36 +282,67 @@ const AuditoriasCompletadas: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
+          <Card className="bg-[#ECFDF5] border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardDescription className="font-semibold text-[#6B7280]">Certificaciones</CardDescription>
-                <FileText className="h-6 w-6 text-[#2563EB]" />
+                <CardDescription className="font-semibold text-[#065F46]">Certificaciones</CardDescription>
+                <FileText className="h-6 w-6 text-[#10B981]" />
               </div>
-              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">
+              <CardTitle className="text-4xl font-bold text-[#065F46]">
                 {auditorias.filter(a => a.tipo === 'certificacion').length}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Badge variant="outline" className="bg-[#F8FAFC] text-[#6B7280] border-[#E5E7EB]">Renovaciones Logradas</Badge>
+              <Badge variant="outline" className="bg-white/80 text-[#10B981] border-[#10B981]/20 font-bold uppercase text-[10px]">Renovaciones Logradas</Badge>
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
+          <Card className="bg-[#FFF7ED] border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardDescription className="font-semibold text-[#6B7280]">Seguimientos</CardDescription>
-                <Activity className="h-6 w-6 text-[#2563EB]" />
+                <CardDescription className="font-semibold text-[#9A3412]">Seguimientos</CardDescription>
+                <Activity className="h-6 w-6 text-[#F97316]/50" />
               </div>
-              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">
+              <CardTitle className="text-4xl font-bold text-[#9A3412]">
                 {auditorias.filter(a => a.tipo === 'seguimiento').length}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Badge variant="outline" className="bg-[#F8FAFC] text-[#6B7280] border-[#E5E7EB]">Planes de Acción Cerrados</Badge>
+              <Badge variant="outline" className="bg-white/80 text-[#F97316] border-[#F97316]/20 font-bold uppercase text-[10px]">Planes de Acción Cerrados</Badge>
             </CardContent>
           </Card>
         </div>
+        <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
+          <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+            <CardTitle className="text-lg text-[#1E3A8A]">Proceso de Planificación</CardTitle>
+            <CardDescription>Pasos clave según la norma ISO 9001:2015 (Cláusula 9.2)</CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+              <div className="flex items-start gap-3 p-4 bg-[#EFF6FF] rounded-xl border border-[#DBEAFE]">
+                <div className="h-8 w-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-bold flex-shrink-0">1</div>
+                <div>
+                  <span className="font-bold text-[#1E3A8A] block mb-1">Definir Objetivos</span>
+                  <span className="text-[#6B7280]">Establecer alcance y criterios claros.</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-4 bg-[#ECFDF5] rounded-xl border border-[#D1FAE5]">
+                <div className="h-8 w-8 rounded-lg bg-[#10B981] text-white flex items-center justify-center font-bold flex-shrink-0">2</div>
+                <div>
+                  <span className="font-bold text-[#065F46] block mb-1">Asignar Recursos</span>
+                  <span className="text-[#6B7280]">Seleccionar auditor líder y equipo.</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-4 bg-[#FFF7ED] rounded-xl border border-[#FBBF24]/20">
+                <div className="h-8 w-8 rounded-lg bg-[#F97316] text-white flex items-center justify-center font-bold flex-shrink-0">3</div>
+                <div>
+                  <span className="font-bold text-[#9A3412] block mb-1">Programar Fechas</span>
+                  <span className="text-[#6B7280]">Definir cronograma y seguimiento.</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Filtros */}
         <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col md:flex-row gap-4 items-center">

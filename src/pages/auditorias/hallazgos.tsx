@@ -141,11 +141,14 @@ const AuditoriasHallazgosView: React.FC = () => {
   const fetchAuditorias = async () => {
     try {
       setLoading(true);
-      setLoading(true);
       const response = await apiClient.get('/auditorias');
-      setAuditorias(response.data.auditorias || response.data);
+      // Asegurar que manejamos correctamente la estructura de respuesta
+      const data = response.data;
+      const auditoriasList = Array.isArray(data) ? data : (data.auditorias || []);
+      setAuditorias(auditoriasList);
     } catch (error) {
       console.error('Error al cargar auditorías:', error);
+      toast.error('Error al cargar auditorías');
     } finally {
       setLoading(false);
     }
@@ -154,9 +157,11 @@ const AuditoriasHallazgosView: React.FC = () => {
   const fetchHallazgos = async () => {
     try {
       const response = await apiClient.get('/hallazgos-auditoria');
-      setHallazgos(response.data);
+      const data = response.data;
+      setHallazgos(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error al cargar hallazgos:', error);
+      toast.error('Error al cargar hallazgos');
     }
   };
 
@@ -378,9 +383,11 @@ const AuditoriasHallazgosView: React.FC = () => {
     );
   };
 
-  const formatDate = (date?: string) => {
-    if (!date) return '-';
-    return new Date(date).toLocaleDateString('es-ES', {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Fecha inválida';
+    return date.toLocaleDateString('es-ES', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -452,31 +459,31 @@ const AuditoriasHallazgosView: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
+          <Card className="bg-[#ECFDF5] border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardDescription className="font-semibold text-[#6B7280]">Completadas</CardDescription>
-                <CheckCircle className="h-6 w-6 text-[#22C55E]" />
+                <CardDescription className="font-semibold text-[#065F46]">Completadas</CardDescription>
+                <CheckCircle className="h-6 w-6 text-[#10B981]" />
               </div>
-              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{stats.completadas}</CardTitle>
+              <CardTitle className="text-4xl font-bold text-[#065F46]">{stats.completadas}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="w-full bg-gray-100 rounded-full h-1.5 mt-2">
                 <div
-                  className="bg-[#22C55E] h-1.5 rounded-full"
+                  className="bg-[#10B981] h-1.5 rounded-full"
                   style={{ width: stats.totalAuditorias > 0 ? `${(stats.completadas / stats.totalAuditorias) * 100}%` : '0%' }}
                 />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
+          <Card className="bg-[#FFF7ED] border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardDescription className="font-semibold text-[#6B7280]">Total Hallazgos</CardDescription>
-                <AlertTriangle className="h-6 w-6 text-[#2563EB]" />
+                <CardDescription className="font-semibold text-[#9A3412]">Total Hallazgos</CardDescription>
+                <AlertTriangle className="h-6 w-6 text-[#F97316]/50" />
               </div>
-              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{stats.totalHallazgos}</CardTitle>
+              <CardTitle className="text-4xl font-bold text-[#9A3412]">{stats.totalHallazgos}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex gap-1 mt-2">
@@ -486,19 +493,50 @@ const AuditoriasHallazgosView: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#C7D2FE]/20 border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
+          <Card className="bg-[#FEFCE8] border-[#E5E7EB] shadow-sm hover:shadow-md transition-all rounded-2xl">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardDescription className="font-semibold text-[#1E3A8A]">Observaciones</CardDescription>
-                <AlertCircle className="h-6 w-6 text-[#2563EB]" />
+                <CardDescription className="font-semibold text-[#854D0E]">Observaciones</CardDescription>
+                <AlertCircle className="h-6 w-6 text-[#EAB308]" />
               </div>
-              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{stats.observaciones}</CardTitle>
+              <CardTitle className="text-4xl font-bold text-[#854D0E]">{stats.observaciones}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Áreas de Mejora</div>
+              <div className="text-[10px] font-bold text-[#854D0E] uppercase tracking-wider">Áreas de Mejora</div>
             </CardContent>
           </Card>
         </div>
+        <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
+          <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+            <CardTitle className="text-lg text-[#1E3A8A]">Proceso de Planificación</CardTitle>
+            <CardDescription>Pasos clave según la norma ISO 9001:2015 (Cláusula 9.2)</CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+              <div className="flex items-start gap-3 p-4 bg-[#EFF6FF] rounded-xl border border-[#DBEAFE]">
+                <div className="h-8 w-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-bold flex-shrink-0">1</div>
+                <div>
+                  <span className="font-bold text-[#1E3A8A] block mb-1">Definir Objetivos</span>
+                  <span className="text-[#6B7280]">Establecer alcance y criterios claros.</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-4 bg-[#ECFDF5] rounded-xl border border-[#D1FAE5]">
+                <div className="h-8 w-8 rounded-lg bg-[#10B981] text-white flex items-center justify-center font-bold flex-shrink-0">2</div>
+                <div>
+                  <span className="font-bold text-[#065F46] block mb-1">Asignar Recursos</span>
+                  <span className="text-[#6B7280]">Seleccionar auditor líder y equipo.</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-4 bg-[#FFF7ED] rounded-xl border border-[#FBBF24]/20">
+                <div className="h-8 w-8 rounded-lg bg-[#F97316] text-white flex items-center justify-center font-bold flex-shrink-0">3</div>
+                <div>
+                  <span className="font-bold text-[#9A3412] block mb-1">Programar Fechas</span>
+                  <span className="text-[#6B7280]">Definir cronograma y seguimiento.</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Tab Interface */}
         <Card className="rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
