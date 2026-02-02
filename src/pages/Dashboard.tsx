@@ -1,263 +1,160 @@
-
 import { useEffect, useState } from "react";
-import { analyticsService, DashboardMetrics, HeatmapPoint } from "@/services/analytics";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  FileText,
-  Activity,
-  Search,
-  ArrowUpRight
-} from "lucide-react";
-import { toast } from "sonner";
+import { getCurrentUser } from "@/services/auth";
+import { SectionCards } from "@/components/section-cards";
+import { DataTable } from "@/components/data-table";
+import { ChartAreaInteractive } from "@/components/chart-area-interactive";
+import tableData from "@/app/dashboard/data.json";
+import { Badge } from "@/components/ui/badge";
+import { Activity, ShieldCheck, User, Mail, Smartphone, Globe } from "lucide-react";
+
+interface User {
+  id: string;
+  documento: string;
+  nombre: string;
+  segundoNombre?: string;
+  primerApellido: string;
+  segundoApellido?: string;
+  correoElectronico: string;
+  nombreUsuario: string;
+  areaId?: string;
+  activo: boolean;
+}
 
 export default function Dashboard() {
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const loadMetrics = async () => {
-      try {
-        const data = await analyticsService.getAllDashboardData();
-        setMetrics(data);
-      } catch (error) {
-        console.error("Error loading dashboard metrics:", error);
-        toast.error("No se pudieron cargar las métricas del tablero.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadMetrics();
+    // Obtener datos del usuario
+    const currentUser = getCurrentUser();
+    setUser(currentUser);
   }, []);
 
-  if (loading) {
-    return <div className="p-8 flex justify-center items-center h-full">Cargando tablero...</div>;
-  }
-
-  // --- Data Transformations for Recharts ---
-
-  // 1. NC Status Data
-  const ncData = metrics?.calidad?.noconformidades
-    ? Object.entries(metrics.calidad.noconformidades).map(([name, value]) => ({ name: name.replace('_', ' '), value }))
-    : [];
-
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-
-  // 2. Document Status Data
-  const docData = metrics?.documentos?.por_estado
-    ? Object.entries(metrics.documentos.por_estado).map(([name, value]) => ({ name: name.replace('_', ' '), cantidad: value }))
-    : [];
-
-  // 3. Risk Heatmap Data
-  // Create a 5x5 grid (1-5 for probability and impact)
-  const heatmapGrid = [];
-  for (let i = 5; i >= 1; i--) { // Impact 5 (top) to 1 (bottom)
-    const row = [];
-    for (let p = 1; p <= 5; p++) { // Probability 1 (left) to 5 (right)
-      const point = metrics?.riesgos?.find((r: HeatmapPoint) => r.probabilidad == p && r.impacto == i);
-      row.push({
-        prob: p,
-        imp: i,
-        count: point ? point.cantidad : 0,
-        riskLevel: calculateRiskLevel(p, i)
-      });
-    }
-    heatmapGrid.push(row);
-  }
-
-  function calculateRiskLevel(prob: number, imp: number) {
-    const score = prob * imp;
-    if (score >= 15) return "bg-red-500 text-white"; // Critical
-    if (score >= 8) return "bg-orange-400 text-white"; // High
-    if (score >= 4) return "bg-yellow-300 text-slate-900"; // Medium
-    return "bg-green-400 text-slate-900"; // Low
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="h-12 w-12 rounded-full bg-slate-200" />
+          <p className="text-slate-400 font-medium">Cargando...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Tablero de Control</h2>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-slate-500">Última actualización: {new Date().toLocaleTimeString()}</span>
+    <div className="space-y-8 animate-in fade-in duration-700">
+      {/* Hero Welcome Section */}
+      <div className="premium-gradient p-8 md:p-12 rounded-3xl shadow-sm relative overflow-hidden group">
+        <div className="absolute top-0 right-0 -mt-20 -mr-20 h-64 w-64 bg-white/40 rounded-full blur-3xl group-hover:bg-white/60 transition-all duration-700" />
+        <div className="absolute bottom-0 left-0 -mb-20 -ml-20 h-64 w-64 bg-blue-400/10 rounded-full blur-3xl group-hover:bg-blue-400/20 transition-all duration-700" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Badge variant="outline" className="bg-blue-600/10 text-blue-700 border-blue-200 backdrop-blur-md rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider">
+                Sistema Activo
+              </Badge>
+              <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-2 text-slate-900">
+              Hola, {user.nombre}
+            </h1>
+            <p className="text-slate-600 text-lg md:text-xl max-w-2xl font-medium leading-relaxed">
+              Gestión estratégica para ISO 9001:2015. Tienes <span className="text-blue-700 font-bold underline decoration-blue-500/30">3 tareas</span> pendientes que requieren tu atención hoy.
+            </p>
+          </div>
+          <div className="bg-white/40 backdrop-blur-xl border border-white/60 p-4 rounded-2xl flex items-center gap-4 group-hover:scale-105 transition-transform duration-500 shadow-sm">
+            <div className="h-14 w-14 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg">
+              <ShieldCheck className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <p className="text-slate-500 text-sm font-bold uppercase tracking-tighter">Estado de Calidad</p>
+              <p className="text-3xl font-black text-blue-900">96%</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Resumen Ejecutivo</TabsTrigger>
-          <TabsTrigger value="quality">Calidad</TabsTrigger>
-          <TabsTrigger value="risks">Riesgos</TabsTrigger>
-          <TabsTrigger value="documents">Documentos</TabsTrigger>
-        </TabsList>
+      <SectionCards />
 
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Objetivos Activos</CardTitle>
-                <TargetIcon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{metrics?.calidad?.objetivos_total || 0}</div>
-                <p className="text-xs text-muted-foreground">Objetivos de calidad definidos</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">No Conformidades</CardTitle>
-                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {Object.values(metrics?.calidad?.noconformidades || {}).reduce((a, b) => a + b, 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">Reportadas en total</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Documentos</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {Object.values(metrics?.documentos?.por_estado || {}).reduce((a, b) => a + b, 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">En el sistema</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Hallazgos</CardTitle>
-                <Search className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {Object.values(metrics?.auditorias?.hallazgos_por_tipo || {}).reduce((a, b) => a + b, 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">Detectados en auditorías</p>
-              </CardContent>
-            </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 premium-card rounded-2xl p-1">
+          <ChartAreaInteractive />
+        </div>
+
+        <div className="premium-card rounded-3xl p-8 bg-slate-50 dark:bg-slate-900/50 flex flex-col">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <User className="h-5 w-5 text-blue-500" /> Mi Perfil
+            </h3>
+            <Badge className={user.activo ? "bg-green-500/10 text-green-600 border-none" : "bg-red-500/10 text-red-600 border-none"}>
+              {user.activo ? "En línea" : "Inactivo"}
+            </Badge>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-4">
-              <CardHeader>
-                <CardTitle>Estado de Documentos</CardTitle>
-                <CardDescription>Distribución de documentos por su estado actual</CardDescription>
-              </CardHeader>
-              <CardContent className="pl-2">
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={docData}>
-                    <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
-                    <Tooltip />
-                    <Bar dataKey="cantidad" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            <Card className="col-span-3">
-              <CardHeader>
-                <CardTitle>No Conformidades</CardTitle>
-                <CardDescription>Distribución por estado</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie data={ncData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} fill="#8884d8" paddingAngle={5} dataKey="value" label>
-                      {ncData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="risks" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Matriz de Calor de Riesgos</CardTitle>
-              <CardDescription>Visualización de Riesgos por Probabilidad e Impacto</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center">
-                <div className="flex mb-2">
-                  <span className="font-bold mr-2 w-20 text-right">Impacto</span>
-                </div>
-                <div className="grid gap-1" style={{ gridTemplateColumns: 'auto repeat(5, minmax(60px, 1fr))' }}>
-                  {/* Y Axis Labels */}
-                  <div className="flex flex-col justify-between h-80 py-4 mr-2">
-                    {[5, 4, 3, 2, 1].map(n => <span key={n} className="font-bold flex items-center justify-center h-full">{n}</span>)}
-                  </div>
-
-                  {/* Grid */}
-                  <div className="col-span-5 grid grid-rows-5 gap-1 h-80 w-full max-w-lg">
-                    {heatmapGrid.map((row, i) => (
-                      row.map((cell, j) => (
-                        <div
-                          key={`${i}-${j}`}
-                          className={`${cell.riskLevel} flex items-center justify-center rounded-md font-bold shadow-sm transition-all hover:scale-105 cursor-pointer relative group`}
-                        >
-                          {cell.count > 0 ? cell.count : ''}
-                          {cell.count > 0 && (
-                            <div className="absolute hidden group-hover:block bg-black text-white text-xs p-1 rounded -top-8 w-max z-10">
-                              Prob: {cell.prob}, Imp: {cell.imp} ({cell.count} riesgos)
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    ))}
-                  </div>
-                </div>
-                {/* X Axis Labels */}
-                <div className="grid grid-cols-5 gap-1 w-full max-w-lg mt-2 ml-8 pl-1">
-                  {[1, 2, 3, 4, 5].map(n => <span key={n} className="font-bold text-center">{n}</span>)}
-                </div>
-                <div className="mt-2 text-center font-bold">Probabilidad</div>
-
-                <div className="flex gap-4 mt-8 text-sm">
-                  <div className="flex items-center"><div className="w-4 h-4 bg-green-400 mr-2 rounded"></div> Bajo (1-3)</div>
-                  <div className="flex items-center"><div className="w-4 h-4 bg-yellow-300 mr-2 rounded"></div> Medio (4-6)</div>
-                  <div className="flex items-center"><div className="w-4 h-4 bg-orange-400 mr-2 rounded"></div> Alto (8-12)</div>
-                  <div className="flex items-center"><div className="w-4 h-4 bg-red-500 mr-2 rounded"></div> Crítico (15-25)</div>
-                </div>
+          <div className="space-y-6 flex-1">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                <User size={20} />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              <div className="flex-1">
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Nombre Completo</p>
+                <p className="font-bold text-slate-700 dark:text-slate-200">
+                  {user.nombre} {user.primerApellido}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
+                <Mail size={20} />
+              </div>
+              <div className="flex-1">
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Correo Institucional</p>
+                <p className="font-bold text-slate-700 dark:text-slate-200 truncate max-w-[180px]">
+                  {user.correoElectronico}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+                <Smartphone size={20} />
+              </div>
+              <div className="flex-1">
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Identificación</p>
+                <p className="font-bold text-slate-700 dark:text-slate-200">{user.documento}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
+                <Globe size={20} />
+              </div>
+              <div className="flex-1">
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Usuario</p>
+                <p className="font-bold text-slate-700 dark:text-slate-200">@{user.nombreUsuario}</p>
+              </div>
+            </div>
+          </div>
+
+          <button className="mt-8 w-full py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 shadow-sm">
+            Ver Configuración <Globe className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="premium-card rounded-2xl overflow-hidden">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Activity className="h-5 w-5 text-red-500" /> Registro de Seguimiento
+          </h3>
+          <button className="text-sm font-bold text-blue-600 hover:text-blue-700">Ver todo</button>
+        </div>
+        <div className="p-0 overflow-x-auto">
+          <DataTable data={tableData} />
+        </div>
+      </div>
     </div>
   );
 }
 
-// Icon wrapper
-function TargetIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="12" r="6" />
-      <circle cx="12" cy="12" r="2" />
-    </svg>
-  )
-}

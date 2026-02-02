@@ -113,9 +113,27 @@
     ::-webkit-scrollbar-thumb:hover {
         @apply bg-muted-foreground/50;
     }
+
+    /* Premium Design Utilities */
+    .glass-effect {
+        @apply bg-white/70 dark:bg-black/70 backdrop-blur-md border border-white/20 dark:border-white/10;
+    }
+
+    .premium-card {
+        @apply bg-card transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-border/50;
+    }
+
+    .premium-gradient {
+        @apply bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] text-[#1E3A8A] border border-[#C7D2FE]/50 shadow-sm;
+    }
+
+    .subtle-gradient {
+        @apply bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800;
+    }
 }
 
 @layer utilities {
+
     /* Hide scrollbar but keep functionality */
     .scrollbar-hide {
         -ms-overflow-style: none;
