@@ -27,6 +27,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { NotificationBell } from "./notifications/NotificationBell";
 
 export function SiteHeader() {
   const location = useLocation();
@@ -176,71 +177,16 @@ export function SiteHeader() {
               </Tooltip>
 
               {/* Notificaciones */}
-              <DropdownMenu>
+              <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="relative h-9 w-9 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl"
-                      >
-                        <Bell className="h-4 w-4" />
-                        <Badge
-                          variant="destructive"
-                          className="absolute right-1 top-1 h-4 w-4 rounded-full p-0 text-[10px] flex items-center justify-center border-2 border-background"
-                        >
-                          3
-                        </Badge>
-                      </Button>
-                    </DropdownMenuTrigger>
+                    <div>
+                      <NotificationBell />
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent>Notificaciones</TooltipContent>
                 </Tooltip>
-                <DropdownMenuContent align="end" className="w-80 rounded-2xl p-2 shadow-xl border-[#E5E7EB]">
-                  <DropdownMenuLabel className="px-4 py-2 font-bold text-[#1E3A8A]">Notificaciones</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="mx-2" />
-                  <div className="max-h-[300px] overflow-y-auto">
-                    <DropdownMenuItem className="rounded-xl p-3 cursor-pointer">
-                      <div className="flex flex-col gap-1 w-full">
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm font-bold text-[#1E3A8A]">Nueva No Conformidad</p>
-                          <span className="text-[10px] text-muted-foreground">Hace 5 min</span>
-                        </div>
-                        <p className="text-xs text-[#6B7280]">
-                          NC-2024-003 requiere atención inmediata
-                        </p>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="rounded-xl p-3 cursor-pointer">
-                      <div className="flex flex-col gap-1 w-full">
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm font-bold text-[#1E3A8A]">Auditoría Programada</p>
-                          <span className="text-[10px] text-muted-foreground">Hace 2 h</span>
-                        </div>
-                        <p className="text-xs text-[#6B7280]">
-                          AUD-2024-004 inicia el 15 de noviembre
-                        </p>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="rounded-xl p-3 cursor-pointer">
-                      <div className="flex flex-col gap-1 w-full">
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm font-bold text-[#1E3A8A]">Documento Aprobado</p>
-                          <span className="text-[10px] text-muted-foreground">Hace 4 h</span>
-                        </div>
-                        <p className="text-xs text-[#6B7280]">
-                          Manual de Calidad Rev. 3.0 aprobado
-                        </p>
-                      </div>
-                    </DropdownMenuItem>
-                  </div>
-                  <DropdownMenuSeparator className="mx-2" />
-                  <DropdownMenuItem className="justify-center text-sm font-medium text-[#2563EB] rounded-xl hover:bg-[#E0EDFF]">
-                    Ver todas las notificaciones
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              </TooltipProvider>
             </TooltipProvider>
           </div>
         </div>

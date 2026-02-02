@@ -4,29 +4,37 @@ export interface Ticket {
     id: string;
     titulo: string;
     descripcion: string;
-    categoria: "soporte" | "consulta" | "mejora";  // En BD es 'categoria', no 'tipo'
+    categoria: "soporte" | "consulta" | "mejora";
     prioridad: "baja" | "media" | "alta" | "critica";
     estado: "abierto" | "en_progreso" | "resuelto" | "cerrado";
     solicitante_id: string;
     asignado_a?: string;
     creado_en: string;
     actualizado_en: string;
+    solucion?: string;
+    fecha_resolucion?: string;
+    satisfaccion_cliente?: number;
 }
 
 export interface TicketCreate {
     titulo: string;
     descripcion: string;
-    categoria: string;  // En BD es 'categoria'
+    categoria: string;
     prioridad: string;
 }
 
 export interface TicketUpdate {
     titulo?: string;
     descripcion?: string;
-    categoria?: string;  // En BD es 'categoria'
+    categoria?: string;
     prioridad?: string;
     estado?: string;
     asignado_a?: string;
+}
+
+export interface TicketResolver {
+    solucion: string;
+    satisfaccion_cliente?: number;
 }
 
 const ticketService = {
@@ -49,6 +57,11 @@ const ticketService = {
 
     update: async (id: string, ticket: TicketUpdate): Promise<Ticket> => {
         const response = await apiClient.put<Ticket>(`/tickets/${id}`, ticket);
+        return response.data;
+    },
+
+    resolver: async (id: string, data: TicketResolver): Promise<Ticket> => {
+        const response = await apiClient.post<Ticket>(`/tickets/${id}/resolver`, data);
         return response.data;
     },
 

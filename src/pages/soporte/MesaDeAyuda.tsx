@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
     Plus, Search, RefreshCw, LifeBuoy, Headset, Clock, CheckCircle,
     AlertTriangle, MoreHorizontal, Ticket as TicketIcon, Edit, Eye, Trash2, Save
@@ -77,9 +78,30 @@ export default function MesaDeAyuda() {
         ticket: null,
     });
 
+    const [showResolveForm, setShowResolveForm] = useState(false);
+    const [resolutionText, setResolutionText] = useState("");
+
+
+    const [searchParams] = useSearchParams();
+
     useEffect(() => {
         fetchTickets();
     }, []);
+
+    // Efecto para abrir ticket desde URL
+    useEffect(() => {
+        if (!loading && tickets.length > 0) {
+            const ticketId = searchParams.get("ticket_id");
+            if (ticketId) {
+                const ticket = tickets.find(t => t.id === ticketId);
+                if (ticket) {
+                    handleView(ticket);
+                    // Opcional: limpiar la URL sin recargar
+                    // window.history.replaceState(null, "", "/mesa-ayuda");
+                }
+            }
+        }
+    }, [loading, tickets, searchParams]);
 
     const fetchTickets = async () => {
         setLoading(true);
@@ -120,8 +142,12 @@ export default function MesaDeAyuda() {
     const handleView = (ticket: Ticket) => {
         setDialogMode('view');
         setSelectedTicket(ticket);
+        setShowResolveForm(false);
+        setResolutionText("");
         setOpenDialog(true);
     };
+
+
 
     const handleSave = async () => {
         if (!formData.titulo.trim() || !formData.descripcion.trim()) {
@@ -142,6 +168,24 @@ export default function MesaDeAyuda() {
             fetchTickets();
         } catch (error) {
             toast.error(dialogMode === 'create' ? "Error al crear el ticket" : "Error al actualizar el ticket");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleResolve = async () => {
+        if (!selectedTicket || !resolutionText.trim()) return;
+
+        setSaving(true);
+        try {
+            await ticketService.resolver(selectedTicket.id, { solucion: resolutionText });
+            toast.success("Ticket resuelto exitosamente");
+            setOpenDialog(false);
+            setShowResolveForm(false);
+            setResolutionText("");
+            fetchTickets();
+        } catch (error) {
+            toast.error("Error al resolver el ticket");
         } finally {
             setSaving(false);
         }
@@ -506,6 +550,62 @@ export default function MesaDeAyuda() {
                                         <Label className="text-[#6B7280] uppercase text-xs font-bold mb-2 block">Descripción</Label>
                                         <p className="text-[#111827] leading-relaxed whitespace-pre-wrap">{selectedTicket.descripcion}</p>
                                     </div>
+                                    {selectedTicket.estado !== 'resuelto' && selectedTicket.estado !== 'cerrado' && (
+                                        <div className="space-y-4 pt-4 border-t border-[#E5E7EB]">
+                                            {!showResolveForm ? (
+                                                <Button
+                                                    onClick={() => setShowResolveForm(true)}
+                                                    className="w-full bg-[#10B981] hover:bg-[#059669] text-white rounded-xl font-bold"
+                                                >
+                                                    <CheckCircle className="mr-2 h-5 w-5" />
+                                                    Resolver Ticket
+                                                </Button>
+                                            ) : (
+                                                <div className="space-y-4 bg-[#F0FDF4] p-4 rounded-xl border border-[#BBF7D0]">
+                                                    <div className="space-y-2">
+                                                        <Label className="font-bold text-[#166534]">Solución Técnica</Label>
+                                                        <Textarea
+                                                            value={resolutionText}
+                                                            onChange={(e) => setResolutionText(e.target.value)}
+                                                            placeholder="Describe cómo se solucionó el problema..."
+                                                            className="bg-white"
+                                                            rows={4}
+                                                        />
+                                                    </div>
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            onClick={() => setShowResolveForm(false)}
+                                                            className="text-[#6B7280]"
+                                                        >
+                                                            Cancelar
+                                                        </Button>
+                                                        <Button
+                                                            onClick={handleResolve}
+                                                            disabled={saving || !resolutionText.trim()}
+                                                            className="bg-[#10B981] hover:bg-[#059669] text-white"
+                                                        >
+                                                            {saving ? "Guardando..." : "Confirmar Solución"}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {(selectedTicket.estado === 'resuelto' || selectedTicket.estado === 'cerrado') && selectedTicket.solucion && (
+                                        <div className="mt-4 bg-[#F0FDF4] rounded-xl p-6 border border-[#BBF7D0]">
+                                            <Label className="text-[#166534] uppercase text-xs font-bold mb-2 block flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4" /> Solución
+                                            </Label>
+                                            <p className="text-[#14532D] leading-relaxed whitespace-pre-wrap">{selectedTicket.solucion}</p>
+                                            {selectedTicket.fecha_resolucion && (
+                                                <p className="text-xs text-[#166534] mt-2 opacity-80">
+                                                    Resuelto el {new Date(selectedTicket.fecha_resolucion).toLocaleString('es-CO')}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="space-y-6 py-4">

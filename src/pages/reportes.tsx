@@ -16,6 +16,9 @@ import {
   Activity
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import { analyticsService, DashboardMetrics } from "@/services/analytics";
+import { reportsService } from "@/services/reports";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -28,82 +31,57 @@ const ReportesView = () => {
   const [selectedCategory, setSelectedCategory] = useState('todos');
   const [selectedPeriod, setSelectedPeriod] = useState('mes');
 
-  const reportCategories = [
-    { id: 'todos', name: 'Todos los Reportes', icon: FileText, count: 24 },
-    { id: 'auditorias', name: 'Auditorías', icon: FileCheck, count: 8 },
-    { id: 'noconformidades', name: 'No Conformidades', icon: AlertCircle, count: 5 },
-    { id: 'objetivos', name: 'Objetivos de Calidad', icon: Target, count: 6 },
-    { id: 'indicadores', name: 'Indicadores', icon: TrendingUp, count: 5 }
-  ];
 
-  const reportsList = [
-    {
-      id: 1,
-      title: 'Reporte de Auditorías Internas Q4 2024',
-      category: 'auditorias',
-      date: '2024-11-15',
-      status: 'completado',
-      format: 'PDF',
-      size: '2.4 MB',
-      description: 'Resultados de auditorías internas del cuarto trimestre'
-    },
-    {
-      id: 2,
-      title: 'Estado de No Conformidades Octubre 2024',
-      category: 'noconformidades',
-      date: '2024-11-01',
-      status: 'completado',
-      format: 'XLSX',
-      size: '856 KB',
-      description: 'Seguimiento y cierre de no conformidades del mes'
-    },
-    {
-      id: 3,
-      title: 'Avance de Objetivos de Calidad 2024',
-      category: 'objetivos',
-      date: '2024-11-18',
-      status: 'procesando',
-      format: 'PDF',
-      size: '1.8 MB',
-      description: 'Progreso anual de objetivos de calidad establecidos'
-    },
-    {
-      id: 4,
-      title: 'Indicadores de Desempeño Mensual',
-      category: 'indicadores',
-      date: '2024-11-20',
-      status: 'completado',
-      format: 'XLSX',
-      size: '1.2 MB',
-      description: 'KPIs y métricas de calidad del mes actual'
-    },
-    {
-      id: 5,
-      title: 'Análisis de Riesgos y Oportunidades',
-      category: 'auditorias',
-      date: '2024-11-10',
-      status: 'completado',
-      format: 'PDF',
-      size: '3.1 MB',
-      description: 'Evaluación de riesgos identificados y planes de acción'
-    },
-    {
-      id: 6,
-      title: 'Capacitaciones del Personal',
-      category: 'indicadores',
-      date: '2024-11-05',
-      status: 'completado',
-      format: 'PDF',
-      size: '1.5 MB',
-      description: 'Registro de capacitaciones y competencias del personal'
-    }
-  ];
+
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [reportsList, setReportsList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [dashData, reportData] = await Promise.all([
+          analyticsService.getAllDashboardData(),
+          reportsService.getAvailableReports()
+        ]);
+        setMetrics(dashData);
+        setReportsList(reportData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("Error al cargar los datos");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Calculate totals from metrics
+  const totalDocumentos = metrics?.documentos?.por_estado
+    ? Object.values(metrics.documentos.por_estado).reduce((a, b) => a + b, 0)
+    : 0;
+
+  const totalAuditorias = metrics?.auditorias?.total_auditorias || 0;
+  const ncCerradas = metrics?.calidad?.noconformidades?.['cerrada'] || 0;
+  const ncEnTratamiento = metrics?.calidad?.noconformidades?.['en_tratamiento'] || 0;
 
   const stats = [
-    { label: 'Reportes Generados', value: '156', change: '+12%', icon: FileText, color: 'bg-blue-500' },
-    { label: 'Auditorías Realizadas', value: '24', change: '+8%', icon: FileCheck, color: 'bg-green-500' },
-    { label: 'NC Cerradas', value: '18', change: '+15%', icon: CheckCircle, color: 'bg-purple-500' },
-    { label: 'En Proceso', value: '7', change: '-3%', icon: Clock, color: 'bg-orange-500' }
+    { label: 'Documentos Totales', value: loading ? '...' : totalDocumentos.toString(), change: 'Activos', icon: FileText, color: 'bg-blue-500' },
+    { label: 'Auditorías Realizadas', value: loading ? '...' : totalAuditorias.toString(), change: 'Anuales', icon: FileCheck, color: 'bg-green-500' },
+    { label: 'NC Cerradas', value: loading ? '...' : ncCerradas.toString(), change: 'Verificadas', icon: CheckCircle, color: 'bg-purple-500' },
+    { label: 'NC En Tratamiento', value: loading ? '...' : ncEnTratamiento.toString(), change: 'Pendientes', icon: Clock, color: 'bg-orange-500' }
+  ];
+
+  const totalIndicadores = metrics?.calidad?.indicadores_total || 0;
+  const totalObjetivos = metrics?.calidad?.objetivos_total || 0;
+  const totalNC = Object.values(metrics?.calidad?.noconformidades || {}).reduce((a, b) => a + b, 0);
+
+  const reportCategories = [
+    { id: 'todos', name: 'Todos los Reportes', icon: FileText, count: reportsList.length },
+    { id: 'auditorias', name: 'Auditorías', icon: FileCheck, count: totalAuditorias },
+    { id: 'noconformidades', name: 'No Conformidades', icon: AlertCircle, count: totalNC },
+    { id: 'objetivos', name: 'Objetivos de Calidad', icon: Target, count: totalObjetivos },
+    { id: 'indicadores', name: 'Indicadores', icon: TrendingUp, count: totalIndicadores }
   ];
 
   const quickActions = [
@@ -159,9 +137,18 @@ const ReportesView = () => {
                 </Badge>
               </div>
             </div>
-            <button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold flex items-center gap-2 transition-all">
+            <button
+              onClick={() => {
+                toast.promise(reportsService.downloadNCReport(), {
+                  loading: 'Generando reporte global de No Conformidades...',
+                  success: 'Reporte descargado correctamente',
+                  error: 'Error al generar el reporte'
+                });
+              }}
+              className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold flex items-center gap-2 transition-all"
+            >
               <Download size={20} />
-              Generar Reporte
+              Generar Reporte Global
             </button>
           </div>
         </div>
@@ -290,9 +277,9 @@ const ReportesView = () => {
                             })}
                           </span>
                           <Badge className="bg-[#F8FAFC] border-[#E5E7EB] text-[#1E3A8A] font-bold">
-                            {report.format}
+                            {report.format || 'PDF'}
                           </Badge>
-                          <span className="text-[#6B7280] font-mono">{report.size}</span>
+                          {report.size && <span className="text-[#6B7280] font-mono">{report.size}</span>}
                           <span className={`px-3 py-1 rounded-lg text-xs font-bold border ${report.status === 'completado' ? 'bg-[#ECFDF5] text-[#10B981] border-[#10B981]/20' :
                             report.status === 'procesando' ? 'bg-[#EFF6FF] text-[#2563EB] border-[#2563EB]/20' :
                               'bg-[#FEF2F2] text-[#EF4444] border-[#EF4444]/20'
@@ -302,7 +289,26 @@ const ReportesView = () => {
                         </div>
                       </div>
 
-                      <button className="p-4 rounded-xl bg-[#F8FAFC] hover:bg-[#2563EB] text-[#6B7280] hover:text-white border border-[#E5E7EB] transition-all">
+                      <button
+                        onClick={() => {
+                          if (report.category === 'auditorias') {
+                            const codigo = report.codigo || report.id || 'report';
+                            toast.promise(reportsService.downloadAuditoriaReport(String(report.id), String(codigo)), {
+                              loading: 'Generando reporte de auditoría...',
+                              success: 'Descargado correctamente',
+                              error: 'Error al generar reporte'
+                            })
+                          } else if (report.category === 'noconformidades') {
+                            toast.promise(reportsService.downloadNCReport(), {
+                              loading: 'Generando reporte...',
+                              success: 'Descargado correctamente',
+                              error: 'Error al generar reporte'
+                            })
+                          } else {
+                            toast.info("Descarga no disponible para este tipo de reporte aún");
+                          }
+                        }}
+                        className="p-4 rounded-xl bg-[#F8FAFC] hover:bg-[#2563EB] text-[#6B7280] hover:text-white border border-[#E5E7EB] transition-all">
                         <Download size={22} />
                       </button>
                     </div>

@@ -1,0 +1,57 @@
+import api from "@/lib/api";
+
+export interface Notificacion {
+    id: string;
+    usuario_id: string;
+    titulo: string;
+    mensaje: string;
+    tipo: string;
+    leida: boolean;
+    fecha_lectura: string | null;
+    referencia_tipo: string | null;
+    referencia_id: string | null;
+    creado_en: string;
+}
+
+class NotificacionService {
+    /**
+     * Obtener lista de notificaciones del usuario actual
+     */
+    async getNotificaciones(soloNoLeidas: boolean = false): Promise<Notificacion[]> {
+        const params = soloNoLeidas ? { solo_no_leidas: true } : {};
+        const response = await api.get<Notificacion[]>("/notificaciones", { params });
+        return response.data;
+    }
+
+    /**
+     * Obtener contador de notificaciones no leídas
+     */
+    async getNoLeidas(): Promise<number> {
+        const response = await api.get<{ count: number }>("/notificaciones/no-leidas/count");
+        return response.data.count;
+    }
+
+    /**
+     * Marcar una notificación como leída
+     */
+    async marcarComoLeida(id: string): Promise<Notificacion> {
+        const response = await api.put<Notificacion>(`/notificaciones/${id}/marcar-leida`);
+        return response.data;
+    }
+
+    /**
+     * Marcar todas las notificaciones como leídas
+     */
+    async marcarTodasLeidas(): Promise<void> {
+        await api.put("/notificaciones/marcar-todas-leidas");
+    }
+
+    /**
+     * Eliminar una notificación
+     */
+    async eliminarNotificacion(id: string): Promise<void> {
+        await api.delete(`/notificaciones/${id}`);
+    }
+}
+
+export default new NotificacionService();
