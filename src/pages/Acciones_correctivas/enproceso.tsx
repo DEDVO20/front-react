@@ -103,14 +103,16 @@ export default function EnProcesoAccionesCorrectivas() {
 
   const totalEnProceso = acciones.length;
   const porVencer = acciones.filter(a => {
-    if (!a.fechaCompromiso) return false;
-    const diff = new Date(a.fechaCompromiso).getTime() - new Date().getTime();
+    const fechaCompromiso = a.fechaCompromiso || (a as any).fecha_compromiso;
+    if (!fechaCompromiso) return false;
+    const diff = new Date(fechaCompromiso).getTime() - new Date().getTime();
     const days = diff / (1000 * 60 * 60 * 24);
     return days <= 7 && days > 0;
   }).length;
   const vencidas = acciones.filter(a => {
-    if (!a.fechaCompromiso) return false;
-    return new Date(a.fechaCompromiso) < new Date();
+    const fechaCompromiso = a.fechaCompromiso || (a as any).fecha_compromiso;
+    if (!fechaCompromiso) return false;
+    return new Date(fechaCompromiso) < new Date();
   }).length;
 
   return (
@@ -286,9 +288,10 @@ export default function EnProcesoAccionesCorrectivas() {
                   </TableRow>
                 ) : (
                   filteredAcciones.map((accion) => {
-                    const isVencida = accion.fechaCompromiso && new Date(accion.fechaCompromiso) < new Date();
-                    const isPorVencer = accion.fechaCompromiso &&
-                      new Date(accion.fechaCompromiso).getTime() - new Date().getTime() <= 7 * 24 * 60 * 60 * 1000 &&
+                    const fechaCompromiso = accion.fechaCompromiso || (accion as any).fecha_compromiso;
+                    const isVencida = fechaCompromiso && new Date(fechaCompromiso) < new Date();
+                    const isPorVencer = fechaCompromiso &&
+                      new Date(fechaCompromiso).getTime() - new Date().getTime() <= 7 * 24 * 60 * 60 * 1000 &&
                       !isVencida;
 
                     return (
@@ -305,12 +308,12 @@ export default function EnProcesoAccionesCorrectivas() {
                           </p>
                         </TableCell>
                         <TableCell className="px-6 py-4">
-                          {accion.fechaCompromiso ? (
+                          {accion.fechaCompromiso || (accion as any).fecha_compromiso ? (
                             <div className="flex items-center gap-2">
                               {isVencida && <AlertCircle className="h-4 w-4 text-[#EF4444]" />}
                               {isPorVencer && <Calendar className="h-4 w-4 text-[#F97316]" />}
                               <span className={isVencida ? "text-[#EF4444] font-bold" : isPorVencer ? "text-[#F97316] font-medium" : ""}>
-                                {new Date(accion.fechaCompromiso).toLocaleDateString("es-CO")}
+                                {new Date(accion.fechaCompromiso || (accion as any).fecha_compromiso).toLocaleDateString("es-CO")}
                               </span>
                             </div>
                           ) : (
@@ -369,16 +372,16 @@ export default function EnProcesoAccionesCorrectivas() {
                   <div>
                     <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha Compromiso</Label>
                     <p className="text-lg font-medium mt-1">
-                      {selectedAccion.fechaCompromiso
-                        ? new Date(selectedAccion.fechaCompromiso).toLocaleDateString("es-CO")
+                      {selectedAccion.fechaCompromiso || (selectedAccion as any).fecha_compromiso
+                        ? new Date(selectedAccion.fechaCompromiso || (selectedAccion as any).fecha_compromiso).toLocaleDateString("es-CO")
                         : "No definida"}
                     </p>
                   </div>
                   <div>
                     <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha Implementación</Label>
                     <p className="text-lg font-medium mt-1">
-                      {selectedAccion.fechaImplementacion
-                        ? new Date(selectedAccion.fechaImplementacion).toLocaleDateString("es-CO")
+                      {selectedAccion.fechaImplementacion || (selectedAccion as any).fecha_implementacion
+                        ? new Date(selectedAccion.fechaImplementacion || (selectedAccion as any).fecha_implementacion).toLocaleDateString("es-CO")
                         : "No definida"}
                     </p>
                   </div>
