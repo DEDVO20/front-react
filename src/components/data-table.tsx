@@ -342,7 +342,7 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
 
 export interface DataTableAction {
   label: string
-  onClick: (row: z.infer<typeof schema>) => void
+  onClick: (row: z.infer<typeof schema>) => void | Promise<void>
   variant?: "default" | "destructive"
 }
 
@@ -371,6 +371,11 @@ export function DataTable({
     useSensor(TouchSensor, {}),
     useSensor(KeyboardSensor, {})
   )
+
+  // Sync internal state with external data prop
+  React.useEffect(() => {
+    setData(initialData)
+  }, [initialData])
 
   const dataIds = React.useMemo<UniqueIdentifier[]>(
     () => data?.map(({ id }) => id) || [],

@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { NuevaNoConformidadForm } from "@/components/calidad/NuevaNoConformidadForm";
+import { toast } from "sonner";
 
 interface NoConformidadUI {
   id: string;
@@ -43,6 +44,7 @@ export default function NoConformidadesAbiertas() {
 
   const fetchNoConformidadesAbiertas = async () => {
     try {
+      console.log("📊 Cargando no conformidades abiertas...");
       const data = await noConformidadService.getAbiertas();
       const dataArray = Array.isArray(data) ? data : [];
 
@@ -73,13 +75,14 @@ export default function NoConformidadesAbiertas() {
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleIniciarTratamiento = async (id: string) => {
     try {
       await noConformidadService.iniciarTratamiento(id);
+      toast.success("Tratamiento iniciado exitosamente");
       fetchNoConformidadesAbiertas();
     } catch (error) {
       console.error("Error:", error);
+      toast.error("Error al iniciar tratamiento");
     }
   };
 
@@ -138,10 +141,15 @@ export default function NoConformidadesAbiertas() {
                 <DialogHeader>
                   <DialogTitle>Nueva No Conformidad</DialogTitle>
                 </DialogHeader>
-                <NuevaNoConformidadForm onSuccess={() => {
-                  fetchNoConformidadesAbiertas();
-                  setIsDialogOpen(false);
-                }} />
+                <NuevaNoConformidadForm 
+                  onSuccess={() => {
+                    console.log("🔄 onSuccess llamado - recargando datos...");
+                    fetchNoConformidadesAbiertas();
+                    setIsDialogOpen(false);
+                    console.log("🔄 Diálogo cerrado");
+                  }} 
+                  onCancel={() => setIsDialogOpen(false)}
+                />
               </DialogContent>
             </Dialog>
           </div>
@@ -282,9 +290,16 @@ export default function NoConformidadesAbiertas() {
                 },
                 {
                   label: "Eliminar",
-                  onClick: (row) => {
+                  onClick: async (row) => {
                     if (confirm(`¿Eliminar no conformidad ${row.codigo}?`)) {
-                      console.log("Eliminar:", row);
+                      try {
+                        await noConformidadService.delete(row.id);
+                        toast.success("No conformidad eliminada exitosamente");
+                        fetchNoConformidadesAbiertas();
+                      } catch (error) {
+                        console.error("Error al eliminar:", error);
+                        toast.error("Error al eliminar la no conformidad");
+                      }
                     }
                   },
                   variant: "destructive" as const,

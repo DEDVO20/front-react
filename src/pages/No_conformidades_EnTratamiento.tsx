@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { NuevaNoConformidadForm } from "@/components/calidad/NuevaNoConformidadForm";
+import { toast } from "sonner";
 
 interface NoConformidadUI {
   id: string;
@@ -73,14 +74,14 @@ export default function NoConformidadesEnTratamiento() {
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleFinalizarTratamiento = async (id: string) => {
     try {
       await noConformidadService.cerrar(id);
-      // Recargar datos
+      toast.success("Tratamiento finalizado exitosamente");
       fetchNoConformidadesEnTratamiento();
     } catch (error) {
       console.error("Error:", error);
+      toast.error("Error al finalizar tratamiento");
     }
   };
 
@@ -137,10 +138,13 @@ export default function NoConformidadesEnTratamiento() {
                 <DialogHeader>
                   <DialogTitle>Nueva No Conformidad</DialogTitle>
                 </DialogHeader>
-                <NuevaNoConformidadForm onSuccess={() => {
-                  fetchNoConformidadesEnTratamiento();
-                  setIsDialogOpen(false);
-                }} />
+                <NuevaNoConformidadForm 
+                  onSuccess={() => {
+                    fetchNoConformidadesEnTratamiento();
+                    setIsDialogOpen(false);
+                  }} 
+                  onCancel={() => setIsDialogOpen(false)}
+                />
               </DialogContent>
             </Dialog>
           </div>

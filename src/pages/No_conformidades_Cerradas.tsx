@@ -148,10 +148,13 @@ export default function NoConformidadesCerradas() {
                 <DialogHeader>
                   <DialogTitle>Nueva No Conformidad</DialogTitle>
                 </DialogHeader>
-                <NuevaNoConformidadForm onSuccess={() => {
-                  fetchNoConformidadesCerradas();
-                  setIsDialogOpen(false);
-                }} />
+                <NuevaNoConformidadForm 
+                  onSuccess={() => {
+                    fetchNoConformidadesCerradas();
+                    setIsDialogOpen(false);
+                  }} 
+                  onCancel={() => setIsDialogOpen(false)}
+                />
               </DialogContent>
             </Dialog>
           </div>
