@@ -21,6 +21,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -32,6 +33,7 @@ import { NotificationBell } from "./notifications/NotificationBell";
 export function SiteHeader() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [notificationOpen, setNotificationOpen] = useState(false);
 
   // Obtener el nombre de la página actual desde la ruta
   const getPageName = () => {
@@ -177,7 +179,14 @@ export function SiteHeader() {
               </Tooltip>
 
               {/* Notificaciones */}
-              <NotificationBell />
+              <Tooltip open={notificationOpen ? false : undefined}>
+                <TooltipTrigger asChild>
+                  <div>
+                    <NotificationBell onOpenChange={setNotificationOpen} />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>Notificaciones</TooltipContent>
+              </Tooltip>
             </TooltipProvider>
           </div>
         </div>

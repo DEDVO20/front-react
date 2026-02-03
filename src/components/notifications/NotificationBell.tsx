@@ -16,7 +16,11 @@ import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
-export function NotificationBell() {
+interface NotificationBellProps {
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function NotificationBell({ onOpenChange }: NotificationBellProps) {
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [noLeidas, setNoLeidas] = useState(0);
   const [open, setOpen] = useState(false);
@@ -92,7 +96,10 @@ export function NotificationBell() {
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen);
+      onOpenChange?.(isOpen);
+    }}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
