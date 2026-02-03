@@ -17,6 +17,7 @@ import { apiClient } from "@/lib/api";
 
 interface NuevaNoConformidadFormProps {
     onSuccess: () => void;
+    onCancel?: () => void;
 }
 
 interface Usuario {
@@ -25,7 +26,7 @@ interface Usuario {
     primerApellido: string;
 }
 
-export function NuevaNoConformidadForm({ onSuccess }: NuevaNoConformidadFormProps) {
+export function NuevaNoConformidadForm({ onSuccess, onCancel }: NuevaNoConformidadFormProps) {
     const [usuarios, setUsuarios] = useState<Usuario[]>([]);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -71,8 +72,10 @@ export function NuevaNoConformidadForm({ onSuccess }: NuevaNoConformidadFormProp
             };
 
             await noConformidadService.create(payload);
+            console.log("✅ No conformidad creada, llamando onSuccess...");
             toast.success("No conformidad creada correctamente");
             onSuccess();
+            console.log("✅ onSuccess ejecutado");
         } catch (error: any) {
             console.error("Error creating no conformidad:", error);
             setError(error.message || "Error al crear la no conformidad");
@@ -202,7 +205,7 @@ export function NuevaNoConformidadForm({ onSuccess }: NuevaNoConformidadFormProp
                 <Button
                     type="button"
                     variant="outline"
-                    onClick={onSuccess} // Just close/cancel
+                    onClick={() => onCancel?.()} 
                     disabled={saving}
                 >
                     <X className="mr-2 h-4 w-4" />

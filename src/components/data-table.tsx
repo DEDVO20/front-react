@@ -134,7 +134,8 @@ function DragHandle({ id }: { id: string | number }) {
   )
 }
 
-const columns: ColumnDef<z.infer<typeof schema>>[] = [
+function createColumns(actions?: DataTableAction[]): ColumnDef<z.infer<typeof schema>>[] {
+  return [
   {
     id: "drag",
     header: () => null,
@@ -279,29 +280,40 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     id: "actions",
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
-            size="icon"
-          >
-            <MoreVerticalIcon />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Ver Detalles</DropdownMenuItem>
-          <DropdownMenuItem>Editar</DropdownMenuItem>
-          <DropdownMenuItem>Duplicar</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-red-600">Eliminar</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
+    cell: ({ row }) => {
+      if (!actions || actions.length === 0) return null;
+      
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
+              size="icon"
+            >
+              <MoreVerticalIcon />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            {actions.map((action, index) => (
+              <React.Fragment key={index}>
+                {index > 0 && action.variant === "destructive" && <DropdownMenuSeparator />}
+                <DropdownMenuItem
+                  onClick={() => action.onClick(row.original)}
+                  className={action.variant === "destructive" ? "text-red-600" : ""}
+                >
+                  {action.label}
+                </DropdownMenuItem>
+              </React.Fragment>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
   },
 ]
+}
 
 function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
@@ -328,10 +340,18 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   )
 }
 
+export interface DataTableAction {
+  label: string
+  onClick: (row: z.infer<typeof schema>) => void | Promise<void>
+  variant?: "default" | "destructive"
+}
+
 export function DataTable({
   data: initialData,
+  actions,
 }: {
   data: z.infer<typeof schema>[]
+  actions?: DataTableAction[]
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
@@ -352,10 +372,17 @@ export function DataTable({
     useSensor(KeyboardSensor, {})
   )
 
+  // Sync internal state with external data prop
+  React.useEffect(() => {
+    setData(initialData)
+  }, [initialData])
+
   const dataIds = React.useMemo<UniqueIdentifier[]>(
     () => data?.map(({ id }) => id) || [],
     [data]
   )
+
+  const columns = React.useMemo(() => createColumns(actions), [actions])
 
   const table = useReactTable({
     data,

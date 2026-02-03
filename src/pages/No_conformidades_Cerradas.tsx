@@ -148,10 +148,13 @@ export default function NoConformidadesCerradas() {
                 <DialogHeader>
                   <DialogTitle>Nueva No Conformidad</DialogTitle>
                 </DialogHeader>
-                <NuevaNoConformidadForm onSuccess={() => {
-                  fetchNoConformidadesCerradas();
-                  setIsDialogOpen(false);
-                }} />
+                <NuevaNoConformidadForm 
+                  onSuccess={() => {
+                    fetchNoConformidadesCerradas();
+                    setIsDialogOpen(false);
+                  }} 
+                  onCancel={() => setIsDialogOpen(false)}
+                />
               </DialogContent>
             </Dialog>
           </div>
@@ -268,7 +271,23 @@ export default function NoConformidadesCerradas() {
             </Badge>
           </div>
           <div className="p-0">
-            <DataTable data={noConformidades} />
+            <DataTable 
+              data={noConformidades}
+              actions={[
+                {
+                  label: "Ver Detalles",
+                  onClick: (row) => {
+                    console.log("Ver detalles de:", row);
+                  },
+                },
+                {
+                  label: "Generar Reporte",
+                  onClick: (row) => {
+                    console.log("Generar reporte de:", row);
+                  },
+                },
+              ]}
+            />
           </div>
         </div>
       </div>
