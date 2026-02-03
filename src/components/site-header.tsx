@@ -177,16 +177,7 @@ export function SiteHeader() {
               </Tooltip>
 
               {/* Notificaciones */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <NotificationBell />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>Notificaciones</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <NotificationBell />
             </TooltipProvider>
           </div>
         </div>
