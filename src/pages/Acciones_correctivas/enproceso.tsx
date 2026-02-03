@@ -419,7 +419,11 @@ export default function EnProcesoAccionesCorrectivas() {
                 <div className="pt-4 border-t border-[#E5E7EB] text-sm text-[#6B7280]">
                   <div className="flex justify-between">
                     <span>Creada el:</span>
-                    <span>{new Date(selectedAccion.creadoEn).toLocaleString("es-CO")}</span>
+                    <span>
+                      {selectedAccion.creadoEn || (selectedAccion as any).creado_en 
+                        ? new Date(selectedAccion.creadoEn || (selectedAccion as any).creado_en).toLocaleString("es-CO")
+                        : "Sin fecha"}
+                    </span>
                   </div>
                 </div>
               </div>
