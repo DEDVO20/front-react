@@ -1,5 +1,13 @@
 import apiClient from "@/lib/api";
 
+export interface UsuarioBasic {
+    id: string;
+    nombre: string;
+    primer_apellido: string;
+    segundo_apellido?: string;
+    correo_electronico: string;
+}
+
 export interface Ticket {
     id: string;
     titulo: string;
@@ -9,6 +17,12 @@ export interface Ticket {
     estado: "abierto" | "en_progreso" | "resuelto" | "cerrado";
     solicitante_id: string;
     asignado_a?: string;
+    area_destino_id?: string;
+
+    // Información de usuarios (nested)
+    solicitante?: UsuarioBasic;
+    asignado?: UsuarioBasic;
+
     creado_en: string;
     actualizado_en: string;
     solucion?: string;
