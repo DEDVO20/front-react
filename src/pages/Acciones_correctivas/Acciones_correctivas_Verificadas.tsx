@@ -166,7 +166,12 @@ export default function AccionesCorrectivasVerificadas() {
                 <DialogHeader>
                   <DialogTitle>Nueva Acción Correctiva</DialogTitle>
                 </DialogHeader>
-                <NuevasAccionesCorrectivas />
+                <NuevasAccionesCorrectivas 
+                  onSuccess={() => {
+                    setIsModalOpen(false);
+                    fetchAccionesCorrectivasVerificadas();
+                  }}
+                />
               </DialogContent>
             </Dialog>
           </div>

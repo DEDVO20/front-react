@@ -35,7 +35,11 @@ interface Usuario {
   primerApellido: string;
 }
 
-export default function NuevasAccionesCorrectivas() {
+interface NuevasAccionesCorrectivasProps {
+  onSuccess?: () => void;
+}
+
+export default function NuevasAccionesCorrectivas({ onSuccess }: NuevasAccionesCorrectivasProps) {
   const [noConformidades, setNoConformidades] = useState<NoConformidad[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,6 +136,11 @@ export default function NuevasAccionesCorrectivas() {
         estado: "pendiente",
         observacion: "",
       });
+
+      // Llamar al callback si existe
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error: any) {
       console.error("Error:", error);
       const errorMessage = error.message || "Error al crear la acción correctiva";

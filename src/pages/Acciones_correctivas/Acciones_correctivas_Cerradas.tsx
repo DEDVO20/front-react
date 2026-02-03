@@ -157,7 +157,12 @@ export default function AccionesCorrectivasCerradas() {
                 <DialogHeader>
                   <DialogTitle>Nueva Acción Correctiva</DialogTitle>
                 </DialogHeader>
-                <NuevasAccionesCorrectivas />
+                <NuevasAccionesCorrectivas 
+                  onSuccess={() => {
+                    setIsModalOpen(false);
+                    fetchAccionesCorrectivasCerradas();
+                  }}
+                />
               </DialogContent>
             </Dialog>
           </div>
