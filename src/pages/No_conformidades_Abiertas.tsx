@@ -258,7 +258,39 @@ export default function NoConformidadesAbiertas() {
             </Badge>
           </div>
           <div className="p-0">
-            <DataTable data={noConformidades} />
+            <DataTable 
+              data={noConformidades}
+              actions={[
+                {
+                  label: "Ver Detalles",
+                  onClick: (row) => {
+                    console.log("Ver detalles de:", row);
+                    // Aquí puedes abrir un modal o navegar a los detalles
+                  },
+                },
+                {
+                  label: "Iniciar Tratamiento",
+                  onClick: async (row) => {
+                    await handleIniciarTratamiento(row.id);
+                  },
+                },
+                {
+                  label: "Editar",
+                  onClick: (row) => {
+                    console.log("Editar:", row);
+                  },
+                },
+                {
+                  label: "Eliminar",
+                  onClick: (row) => {
+                    if (confirm(`¿Eliminar no conformidad ${row.codigo}?`)) {
+                      console.log("Eliminar:", row);
+                    }
+                  },
+                  variant: "destructive" as const,
+                },
+              ]}
+            />
           </div>
         </div>
       </div>

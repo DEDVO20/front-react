@@ -257,7 +257,31 @@ export default function NoConformidadesEnTratamiento() {
             </Badge>
           </div>
           <div className="p-0">
-            <DataTable data={noConformidades} />
+            <DataTable 
+              data={noConformidades}
+              actions={[
+                {
+                  label: "Ver Detalles",
+                  onClick: (row) => {
+                    console.log("Ver detalles de:", row);
+                  },
+                },
+                {
+                  label: "Finalizar Tratamiento",
+                  onClick: async (row) => {
+                    if (confirm(`¿Finalizar tratamiento de ${row.codigo}?`)) {
+                      await handleFinalizarTratamiento(row.id);
+                    }
+                  },
+                },
+                {
+                  label: "Editar",
+                  onClick: (row) => {
+                    console.log("Editar:", row);
+                  },
+                },
+              ]}
+            />
           </div>
         </div>
       </div>
