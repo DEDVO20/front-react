@@ -14,12 +14,24 @@ export interface AccionCorrectiva {
   fechaVerificacion?: string;
   eficaciaVerificada?: number;
   verificadoPor?: string;
+  implementadoPor?: string;
   estado: string;
   observacion?: string;
+  evidencias?: string; // URLs o descripciones de evidencias
   creadoEn: string;
   actualizadoEn?: string;
-  // TODO: Update backend to include relationship data or fetch separately
+  // Relaciones con usuarios
   responsable?: {
+    id: string;
+    nombre: string;
+    primerApellido: string;
+  };
+  implementador?: {
+    id: string;
+    nombre: string;
+    primerApellido: string;
+  };
+  verificador?: {
     id: string;
     nombre: string;
     primerApellido: string;

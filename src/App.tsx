@@ -15,6 +15,7 @@ import AccionesCorrectivasVerificadas from "./pages/Acciones_correctivas/Accione
 import NuevasAccionesCorrectivas from "./pages/Acciones_correctivas/nuevas";
 import EnProcesoAccionesCorrectivas from "./pages/Acciones_correctivas/enproceso";
 import SolucionarAccionCorrectiva from "./pages/Acciones_correctivas/SolucionarAccionCorrectiva";
+import DashboardAccionesCorrectivas from "./pages/Acciones_correctivas/DashboardAccionesCorrectivas";
 
 import AprobacionesPendientes from "./pages/documentos/Aprobaciones_Pendientes";
 import DocumentosObsoletos from "./pages/documentos/Documentos_Obsoletos";
@@ -131,6 +132,7 @@ function App() {
             <Route path="/No_conformidades_Cerradas" element={<NoConformidadesCerradas />} />
 
             {/* Acciones Correctivas */}
+            <Route path="/acciones-correctivas/dashboard" element={<DashboardAccionesCorrectivas />} />
             <Route path="/Acciones_correctivas_Cerradas" element={<AccionesCorrectivasCerradas />} />
             <Route path="/Acciones_correctivas_Verificadas" element={<AccionesCorrectivasVerificadas />} />
             <Route path="/Acciones_correctivas_Nuevas" element={<NuevasAccionesCorrectivas />} />

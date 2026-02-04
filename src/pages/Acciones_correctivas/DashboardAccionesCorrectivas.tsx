@@ -1,0 +1,435 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+    BarChart3,
+    TrendingUp,
+    Clock,
+    CheckCircle,
+    AlertTriangle,
+    Activity,
+    Calendar,
+    Users,
+    Target,
+    ArrowRight,
+} from "lucide-react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { accionCorrectivaService, AccionCorrectiva } from "@/services/accionCorrectiva.service";
+
+export default function DashboardAccionesCorrectivas() {
+    const navigate = useNavigate();
+    const [acciones, setAcciones] = useState<AccionCorrectiva[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchAcciones();
+    }, []);
+
+    const fetchAcciones = async () => {
+        try {
+            setLoading(true);
+            const data = await accionCorrectivaService.getAll();
+            setAcciones(data);
+        } catch (error) {
+            console.error("Error al cargar acciones:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Calcular métricas
+    const totalAcciones = acciones.length;
+    const enProceso = acciones.filter(a => ["pendiente", "en_proceso", "en_ejecucion"].includes(a.estado)).length;
+    const implementadas = acciones.filter(a => a.estado === "implementada").length;
+    const verificadas = acciones.filter(a => a.estado === "verificada").length;
+    const cerradas = acciones.filter(a => a.estado === "cerrada").length;
+
+    // Acciones vencidas
+    const vencidas = acciones.filter(a => {
+        if (!a.fechaCompromiso) return false;
+        return new Date(a.fechaCompromiso) < new Date() && !["verificada", "cerrada"].includes(a.estado);
+    }).length;
+
+    // Acciones por vencer (próximos 7 días)
+    const porVencer = acciones.filter(a => {
+        if (!a.fechaCompromiso) return false;
+        const diff = new Date(a.fechaCompromiso).getTime() - new Date().getTime();
+        const days = diff / (1000 * 60 * 60 * 24);
+        return days <= 7 && days > 0 && !["verificada", "cerrada"].includes(a.estado);
+    }).length;
+
+    // Tasa de cumplimiento
+    const tasaCumplimiento = totalAcciones > 0
+        ? Math.round(((verificadas + cerradas) / totalAcciones) * 100)
+        : 0;
+
+    // Acciones por tipo
+    const porTipo = {
+        correctiva: acciones.filter(a => a.tipo === "correctiva").length,
+        preventiva: acciones.filter(a => a.tipo === "preventiva").length,
+        mejora: acciones.filter(a => a.tipo === "mejora").length,
+    };
+
+    // Tiempo promedio de implementación (en días)
+    const tiempoPromedioImplementacion = () => {
+        const implementadasConFechas = acciones.filter(
+            a => a.fechaImplementacion && a.creadoEn
+        );
+
+        if (implementadasConFechas.length === 0) return 0;
+
+        const totalDias = implementadasConFechas.reduce((sum, a) => {
+            const inicio = new Date(a.creadoEn).getTime();
+            const fin = new Date(a.fechaImplementacion!).getTime();
+            const dias = (fin - inicio) / (1000 * 60 * 60 * 24);
+            return sum + dias;
+        }, 0);
+
+        return Math.round(totalDias / implementadasConFechas.length);
+    };
+
+    const promedioImplementacion = tiempoPromedioImplementacion();
+
+    // Acciones recientes (últimas 5)
+    const accionesRecientes = [...acciones]
+        .sort((a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime())
+        .slice(0, 5);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-[#F5F7FA]">
+                <div className="text-center">
+                    <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-[#2563EB] border-t-transparent" />
+                    <p className="mt-4 text-lg font-medium text-[#6B7280]">Cargando dashboard...</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+            <div className="max-w-7xl mx-auto space-y-8">
+                {/* Header */}
+                <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                        <div>
+                            <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                                <BarChart3 className="h-9 w-9 text-[#2563EB]" />
+                                Dashboard de Acciones Correctivas
+                            </h1>
+                            <p className="text-[#6B7280] mt-2 text-lg">
+                                Seguimiento y métricas de acciones correctivas
+                            </p>
+                        </div>
+                        <Button
+                            onClick={() => navigate("/Acciones_correctivas_Nuevas")}
+                            className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm"
+                        >
+                            Nueva Acción Correctiva
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Métricas Principales */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Total de Acciones */}
+                    <Card className="bg-gradient-to-br from-[#E0EDFF] to-white border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardDescription className="font-bold text-[#1E3A8A]">Total Acciones</CardDescription>
+                                <Activity className="h-8 w-8 text-[#2563EB]" />
+                            </div>
+                            <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{totalAcciones}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-xs text-[#6B7280] font-medium">
+                                Todas las acciones registradas
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* En Proceso */}
+                    <Card className="bg-gradient-to-br from-[#FFF7ED] to-white border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardDescription className="font-bold text-[#9A3412]">En Proceso</CardDescription>
+                                <Clock className="h-8 w-8 text-[#F97316]" />
+                            </div>
+                            <CardTitle className="text-4xl font-bold text-[#9A3412]">{enProceso}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate("/Acciones_correctivas_EnProceso")}
+                                className="text-xs text-[#F97316] hover:text-[#EA580C] p-0 h-auto"
+                            >
+                                Ver detalles <ArrowRight className="h-3 w-3 ml-1" />
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    {/* Verificadas */}
+                    <Card className="bg-gradient-to-br from-[#ECFDF5] to-white border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardDescription className="font-bold text-[#065F46]">Verificadas</CardDescription>
+                                <CheckCircle className="h-8 w-8 text-[#10B981]" />
+                            </div>
+                            <CardTitle className="text-4xl font-bold text-[#065F46]">{verificadas}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate("/Acciones_correctivas_Verificadas")}
+                                className="text-xs text-[#10B981] hover:text-[#059669] p-0 h-auto"
+                            >
+                                Ver detalles <ArrowRight className="h-3 w-3 ml-1" />
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    {/* Tasa de Cumplimiento */}
+                    <Card className="bg-gradient-to-br from-[#F0FDF4] to-white border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardDescription className="font-bold text-[#065F46]">Cumplimiento</CardDescription>
+                                <Target className="h-8 w-8 text-[#22C55E]" />
+                            </div>
+                            <CardTitle className="text-4xl font-bold text-[#065F46]">{tasaCumplimiento}%</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-xs text-[#6B7280] font-medium">
+                                Acciones completadas
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Alertas y Estadísticas */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Alertas */}
+                    <Card className="rounded-2xl shadow-sm border-[#E5E7EB]">
+                        <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+                            <CardTitle className="text-lg text-[#1E3A8A] flex items-center gap-2">
+                                <AlertTriangle className="h-5 w-5" />
+                                Alertas y Prioridades
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-4">
+                            {/* Vencidas */}
+                            <div className="flex items-center justify-between p-4 bg-[#FEF2F2] rounded-xl border border-[#EF4444]/20">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-full bg-[#EF4444]/20 flex items-center justify-center">
+                                        <AlertTriangle className="h-5 w-5 text-[#EF4444]" />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-[#991B1B]">Acciones Vencidas</p>
+                                        <p className="text-sm text-[#6B7280]">Requieren atención inmediata</p>
+                                    </div>
+                                </div>
+                                <div className="text-3xl font-bold text-[#EF4444]">{vencidas}</div>
+                            </div>
+
+                            {/* Por Vencer */}
+                            <div className="flex items-center justify-between p-4 bg-[#FFF7ED] rounded-xl border border-[#F97316]/20">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-full bg-[#F97316]/20 flex items-center justify-center">
+                                        <Calendar className="h-5 w-5 text-[#F97316]" />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-[#9A3412]">Por Vencer (7 días)</p>
+                                        <p className="text-sm text-[#6B7280]">Próximas a vencer</p>
+                                    </div>
+                                </div>
+                                <div className="text-3xl font-bold text-[#F97316]">{porVencer}</div>
+                            </div>
+
+                            {/* Tiempo Promedio */}
+                            <div className="flex items-center justify-between p-4 bg-[#EFF6FF] rounded-xl border border-[#2563EB]/20">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-full bg-[#2563EB]/20 flex items-center justify-center">
+                                        <TrendingUp className="h-5 w-5 text-[#2563EB]" />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-[#1E3A8A]">Tiempo Promedio</p>
+                                        <p className="text-sm text-[#6B7280]">De implementación</p>
+                                    </div>
+                                </div>
+                                <div className="text-3xl font-bold text-[#2563EB]">{promedioImplementacion}d</div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Distribución por Tipo */}
+                    <Card className="rounded-2xl shadow-sm border-[#E5E7EB]">
+                        <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+                            <CardTitle className="text-lg text-[#1E3A8A]">Distribución por Tipo</CardTitle>
+                            <CardDescription>Clasificación de acciones correctivas</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-4">
+                            {/* Correctivas */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm font-medium text-[#1E3A8A]">Correctivas</span>
+                                    <span className="text-sm font-bold text-[#1E3A8A]">{porTipo.correctiva}</span>
+                                </div>
+                                <div className="w-full bg-[#E5E7EB] rounded-full h-3">
+                                    <div
+                                        className="bg-[#EF4444] h-3 rounded-full transition-all"
+                                        style={{ width: `${totalAcciones > 0 ? (porTipo.correctiva / totalAcciones) * 100 : 0}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Preventivas */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm font-medium text-[#1E3A8A]">Preventivas</span>
+                                    <span className="text-sm font-bold text-[#1E3A8A]">{porTipo.preventiva}</span>
+                                </div>
+                                <div className="w-full bg-[#E5E7EB] rounded-full h-3">
+                                    <div
+                                        className="bg-[#F59E0B] h-3 rounded-full transition-all"
+                                        style={{ width: `${totalAcciones > 0 ? (porTipo.preventiva / totalAcciones) * 100 : 0}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Mejora */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm font-medium text-[#1E3A8A]">Mejora</span>
+                                    <span className="text-sm font-bold text-[#1E3A8A]">{porTipo.mejora}</span>
+                                </div>
+                                <div className="w-full bg-[#E5E7EB] rounded-full h-3">
+                                    <div
+                                        className="bg-[#10B981] h-3 rounded-full transition-all"
+                                        style={{ width: `${totalAcciones > 0 ? (porTipo.mejora / totalAcciones) * 100 : 0}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Leyenda */}
+                            <div className="pt-4 border-t border-[#E5E7EB] flex flex-wrap gap-4 text-xs">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-3 w-3 rounded-full bg-[#EF4444]" />
+                                    <span className="text-[#6B7280]">Correctiva</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-3 w-3 rounded-full bg-[#F59E0B]" />
+                                    <span className="text-[#6B7280]">Preventiva</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-3 w-3 rounded-full bg-[#10B981]" />
+                                    <span className="text-[#6B7280]">Mejora</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Acciones Recientes */}
+                <Card className="rounded-2xl shadow-sm border-[#E5E7EB]">
+                    <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+                        <CardTitle className="text-lg text-[#1E3A8A]">Acciones Recientes</CardTitle>
+                        <CardDescription>Últimas 5 acciones correctivas creadas</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                        {accionesRecientes.length === 0 ? (
+                            <div className="text-center py-12 text-[#6B7280]">
+                                <Activity className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                                <p>No hay acciones correctivas registradas</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {accionesRecientes.map((accion) => (
+                                    <div
+                                        key={accion.id}
+                                        className="flex items-center justify-between p-4 bg-[#F8FAFC] hover:bg-[#F1F5F9] rounded-xl border border-[#E5E7EB] transition-colors cursor-pointer"
+                                        onClick={() => navigate(`/acciones-correctivas/${accion.id}/solucionar`)}
+                                    >
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="font-mono font-bold text-[#1E3A8A]">{accion.codigo}</span>
+                                                <Badge variant="outline" className="text-xs capitalize">
+                                                    {accion.tipo}
+                                                </Badge>
+                                            </div>
+                                            <p className="text-sm text-[#6B7280] line-clamp-1">
+                                                {accion.descripcion || "Sin descripción"}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-3 ml-4">
+                                            <div className="text-right">
+                                                <p className="text-xs text-[#6B7280]">
+                                                    {new Date(accion.creadoEn).toLocaleDateString("es-CO")}
+                                                </p>
+                                            </div>
+                                            <Badge
+                                                variant="outline"
+                                                className={
+                                                    accion.estado === "verificada"
+                                                        ? "bg-[#ECFDF5] text-[#10B981] border-[#10B981]/30"
+                                                        : accion.estado === "implementada"
+                                                            ? "bg-[#EFF6FF] text-[#2563EB] border-[#2563EB]/30"
+                                                            : "bg-[#FFF7ED] text-[#F97316] border-[#F97316]/30"
+                                                }
+                                            >
+                                                {accion.estado}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Accesos Rápidos */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Button
+                        onClick={() => navigate("/Acciones_correctivas_EnProceso")}
+                        variant="outline"
+                        className="h-auto py-6 rounded-xl border-[#E5E7EB] hover:bg-[#F8FAFC] flex flex-col items-center gap-2"
+                    >
+                        <Clock className="h-6 w-6 text-[#F97316]" />
+                        <span className="font-semibold">En Proceso</span>
+                        <span className="text-2xl font-bold text-[#F97316]">{enProceso}</span>
+                    </Button>
+
+                    <Button
+                        onClick={() => navigate("/Acciones_correctivas_Verificadas")}
+                        variant="outline"
+                        className="h-auto py-6 rounded-xl border-[#E5E7EB] hover:bg-[#F8FAFC] flex flex-col items-center gap-2"
+                    >
+                        <CheckCircle className="h-6 w-6 text-[#10B981]" />
+                        <span className="font-semibold">Verificadas</span>
+                        <span className="text-2xl font-bold text-[#10B981]">{verificadas}</span>
+                    </Button>
+
+                    <Button
+                        onClick={() => navigate("/Acciones_correctivas_Cerradas")}
+                        variant="outline"
+                        className="h-auto py-6 rounded-xl border-[#E5E7EB] hover:bg-[#F8FAFC] flex flex-col items-center gap-2"
+                    >
+                        <Activity className="h-6 w-6 text-[#6B7280]" />
+                        <span className="font-semibold">Cerradas</span>
+                        <span className="text-2xl font-bold text-[#6B7280]">{cerradas}</span>
+                    </Button>
+
+                    <Button
+                        onClick={() => navigate("/Acciones_correctivas_Nuevas")}
+                        className="h-auto py-6 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white flex flex-col items-center gap-2"
+                    >
+                        <Users className="h-6 w-6" />
+                        <span className="font-semibold">Nueva Acción</span>
+                        <span className="text-sm">Crear</span>
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+}
