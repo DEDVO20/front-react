@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { ClipboardList, Search, Eye, AlertCircle, Calendar, Activity, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ClipboardList, Search, Eye, AlertCircle, Calendar, Activity, RefreshCw, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,6 +31,7 @@ import {
 import { accionCorrectivaService, AccionCorrectiva } from "@/services/accionCorrectiva.service";
 
 export default function EnProcesoAccionesCorrectivas() {
+  const navigate = useNavigate();
   const [acciones, setAcciones] = useState<AccionCorrectiva[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -322,15 +324,25 @@ export default function EnProcesoAccionesCorrectivas() {
                         </TableCell>
                         <TableCell className="px-6 py-4">{getEstadoBadge(accion.estado)}</TableCell>
                         <TableCell className="px-6 py-4 text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleView(accion)}
-                            className="rounded-xl"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Ver Detalles
-                          </Button>
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleView(accion)}
+                              className="rounded-xl"
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Ver
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => navigate(`/acciones-correctivas/${accion.id}/solucionar`)}
+                              className="rounded-xl bg-[#10B981] hover:bg-[#059669] text-white"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Dar Solución
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -423,7 +435,7 @@ export default function EnProcesoAccionesCorrectivas() {
                   <div className="flex justify-between">
                     <span>Creada el:</span>
                     <span>
-                      {selectedAccion.creadoEn || (selectedAccion as any).creado_en 
+                      {selectedAccion.creadoEn || (selectedAccion as any).creado_en
                         ? new Date(selectedAccion.creadoEn || (selectedAccion as any).creado_en).toLocaleString("es-CO")
                         : "Sin fecha"}
                     </span>

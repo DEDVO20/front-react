@@ -14,6 +14,7 @@ import AccionesCorrectivasCerradas from "./pages/Acciones_correctivas/Acciones_c
 import AccionesCorrectivasVerificadas from "./pages/Acciones_correctivas/Acciones_correctivas_Verificadas";
 import NuevasAccionesCorrectivas from "./pages/Acciones_correctivas/nuevas";
 import EnProcesoAccionesCorrectivas from "./pages/Acciones_correctivas/enproceso";
+import SolucionarAccionCorrectiva from "./pages/Acciones_correctivas/SolucionarAccionCorrectiva";
 
 import AprobacionesPendientes from "./pages/documentos/Aprobaciones_Pendientes";
 import DocumentosObsoletos from "./pages/documentos/Documentos_Obsoletos";
@@ -134,6 +135,7 @@ function App() {
             <Route path="/Acciones_correctivas_Verificadas" element={<AccionesCorrectivasVerificadas />} />
             <Route path="/Acciones_correctivas_Nuevas" element={<NuevasAccionesCorrectivas />} />
             <Route path="/Acciones_correctivas_EnProceso" element={<EnProcesoAccionesCorrectivas />} />
+            <Route path="/acciones-correctivas/:id/solucionar" element={<SolucionarAccionCorrectiva />} />
 
             {/* Capacitaciones */}
             <Route path="/capacitaciones/programadas" element={<CapacitacionesProgramadas />} />
