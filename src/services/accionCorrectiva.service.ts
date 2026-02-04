@@ -1,5 +1,19 @@
 import { apiClient } from "@/lib/api";
 
+export interface ComentarioAccion {
+  id: string;
+  accion_correctiva_id: string;
+  usuario_id: string;
+  comentario: string;
+  creadoEn: string;
+  usuario?: {
+    id: string;
+    nombre: string;
+    primerApellido?: string;
+    correoElectronico?: string;
+  };
+}
+
 export interface AccionCorrectiva {
   id: string;
   noConformidadId: string;
@@ -36,9 +50,18 @@ export interface AccionCorrectiva {
     nombre: string;
     primerApellido: string;
   };
+  comentarios?: ComentarioAccion[];
 }
 
 export const accionCorrectivaService = {
+  // ... (métodos existentes)
+
+  // Crear comentario
+  async createComentario(id: string, comentario: string): Promise<ComentarioAccion> {
+    const response = await apiClient.post(`/acciones-correctivas/${id}/comentarios`, { comentario });
+    return response.data;
+  },
+
   // Obtener todas las acciones correctivas
   async getAll(): Promise<AccionCorrectiva[]> {
     const response = await apiClient.get("/acciones-correctivas");

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { accionCorrectivaService, AccionCorrectiva } from "@/services/accionCorrectiva.service";
+import ComentariosAccion from "@/components/calidad/ComentariosAccion";
 
 export default function SolucionarAccionCorrectiva() {
     const { id } = useParams<{ id: string }>();
@@ -165,7 +166,7 @@ export default function SolucionarAccionCorrectiva() {
 
     return (
         <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
-            <div className="max-w-5xl mx-auto space-y-8">
+            <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
                     <button
@@ -196,282 +197,297 @@ export default function SolucionarAccionCorrectiva() {
                     </div>
                 </div>
 
-                {/* Información de la Acción Correctiva */}
-                <Card className="rounded-2xl shadow-sm border-[#E5E7EB]">
-                    <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
-                        <CardTitle className="text-lg text-[#1E3A8A]">Información de la Acción</CardTitle>
-                        <CardDescription>Detalles de la acción correctiva</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-6 space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <Label className="text-[#6B7280] uppercase text-xs font-bold">Descripción</Label>
-                                <p className="mt-2 text-[#111827]">{accion.descripcion || "Sin descripción"}</p>
-                            </div>
-                            <div>
-                                <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha Compromiso</Label>
-                                <p className="mt-2 text-[#111827]">
-                                    {accion.fechaCompromiso
-                                        ? new Date(accion.fechaCompromiso).toLocaleDateString("es-CO")
-                                        : "No definida"}
-                                </p>
-                            </div>
-                        </div>
-
-                        {accion.analisisCausaRaiz && (
-                            <div>
-                                <Label className="text-[#6B7280] uppercase text-xs font-bold">Análisis de Causa Raíz</Label>
-                                <div className="mt-2 p-4 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB]">
-                                    <p className="text-[#111827] leading-relaxed">{accion.analisisCausaRaiz}</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {accion.planAccion && (
-                            <div>
-                                <Label className="text-[#6B7280] uppercase text-xs font-bold">Plan de Acción</Label>
-                                <div className="mt-2 p-4 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB]">
-                                    <p className="text-[#111827] leading-relaxed">{accion.planAccion}</p>
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Historial de Cambios - Timeline */}
-                <Card className="rounded-2xl shadow-sm border-[#E5E7EB]">
-                    <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
-                        <CardTitle className="text-lg text-[#1E3A8A]">Historial de Cambios</CardTitle>
-                        <CardDescription>Línea de tiempo de la acción correctiva</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                        <div className="space-y-4">
-                            {/* Creación */}
-                            <div className="flex gap-4">
-                                <div className="flex flex-col items-center">
-                                    <div className="h-10 w-10 rounded-full bg-[#E0EDFF] text-[#2563EB] flex items-center justify-center flex-shrink-0">
-                                        <FileText className="h-5 w-5" />
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Columna Principal */}
+                    <div className="lg:col-span-2 space-y-8">
+                        {/* Información de la Acción Correctiva */}
+                        <Card className="rounded-2xl shadow-sm border-[#E5E7EB]">
+                            <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+                                <CardTitle className="text-lg text-[#1E3A8A]">Información de la Acción</CardTitle>
+                                <CardDescription>Detalles de la acción correctiva</CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-6 space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <Label className="text-[#6B7280] uppercase text-xs font-bold">Descripción</Label>
+                                        <p className="mt-2 text-[#111827]">{accion.descripcion || "Sin descripción"}</p>
                                     </div>
-                                    {(accion.fechaImplementacion || accion.fechaVerificacion) && (
-                                        <div className="w-0.5 flex-1 bg-[#E5E7EB] mt-2 min-h-[20px]" />
+                                    <div>
+                                        <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha Compromiso</Label>
+                                        <p className="mt-2 text-[#111827]">
+                                            {accion.fechaCompromiso
+                                                ? new Date(accion.fechaCompromiso).toLocaleDateString("es-CO")
+                                                : "No definida"}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {accion.analisisCausaRaiz && (
+                                    <div>
+                                        <Label className="text-[#6B7280] uppercase text-xs font-bold">Análisis de Causa Raíz</Label>
+                                        <div className="mt-2 p-4 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB]">
+                                            <p className="text-[#111827] leading-relaxed">{accion.analisisCausaRaiz}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {accion.planAccion && (
+                                    <div>
+                                        <Label className="text-[#6B7280] uppercase text-xs font-bold">Plan de Acción</Label>
+                                        <div className="mt-2 p-4 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB]">
+                                            <p className="text-[#111827] leading-relaxed">{accion.planAccion}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Historial de Cambios - Timeline */}
+                        <Card className="rounded-2xl shadow-sm border-[#E5E7EB]">
+                            <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+                                <CardTitle className="text-lg text-[#1E3A8A]">Historial de Cambios</CardTitle>
+                                <CardDescription>Línea de tiempo de la acción correctiva</CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                <div className="space-y-4">
+                                    {/* Creación */}
+                                    <div className="flex gap-4">
+                                        <div className="flex flex-col items-center">
+                                            <div className="h-10 w-10 rounded-full bg-[#E0EDFF] text-[#2563EB] flex items-center justify-center flex-shrink-0">
+                                                <FileText className="h-5 w-5" />
+                                            </div>
+                                            {(accion.fechaImplementacion || accion.fechaVerificacion) && (
+                                                <div className="w-0.5 flex-1 bg-[#E5E7EB] mt-2 min-h-[20px]" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 pb-4">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="font-semibold text-[#1E3A8A]">Acción Creada</span>
+                                                <Badge variant="outline" className="bg-[#E0EDFF] text-[#2563EB] border-[#2563EB]/30 text-xs">
+                                                    Inicial
+                                                </Badge>
+                                            </div>
+                                            <p className="text-sm text-[#6B7280]">
+                                                {new Date(accion.creadoEn).toLocaleString("es-CO", {
+                                                    year: "numeric",
+                                                    month: "long",
+                                                    day: "numeric",
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                })}
+                                            </p>
+                                            {accion.responsable && (
+                                                <p className="text-sm text-[#6B7280] mt-1">
+                                                    Por: <span className="font-medium text-[#111827]">
+                                                        {accion.responsable.nombre} {accion.responsable.primerApellido}
+                                                    </span>
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Implementación */}
+                                    {accion.fechaImplementacion && (
+                                        <div className="flex gap-4">
+                                            <div className="flex flex-col items-center">
+                                                <div className="h-10 w-10 rounded-full bg-[#ECFDF5] text-[#10B981] flex items-center justify-center flex-shrink-0">
+                                                    <CheckCircle className="h-5 w-5" />
+                                                </div>
+                                                {accion.fechaVerificacion && (
+                                                    <div className="w-0.5 flex-1 bg-[#E5E7EB] mt-2 min-h-[20px]" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 pb-4">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="font-semibold text-[#1E3A8A]">Implementada</span>
+                                                    <Badge variant="outline" className="bg-[#ECFDF5] text-[#10B981] border-[#10B981]/30 text-xs">
+                                                        Completada
+                                                    </Badge>
+                                                </div>
+                                                <p className="text-sm text-[#6B7280]">
+                                                    {new Date(accion.fechaImplementacion).toLocaleString("es-CO", {
+                                                        year: "numeric",
+                                                        month: "long",
+                                                        day: "numeric",
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })}
+                                                </p>
+                                                {accion.implementador && (
+                                                    <p className="text-sm text-[#6B7280] mt-1">
+                                                        Por: <span className="font-medium text-[#111827]">
+                                                            {accion.implementador.nombre} {accion.implementador.primerApellido}
+                                                        </span>
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Verificación */}
+                                    {accion.fechaVerificacion && (
+                                        <div className="flex gap-4">
+                                            <div className="flex flex-col items-center">
+                                                <div className="h-10 w-10 rounded-full bg-[#FFF7ED] text-[#F59E0B] flex items-center justify-center flex-shrink-0">
+                                                    <Activity className="h-5 w-5" />
+                                                </div>
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="font-semibold text-[#1E3A8A]">Verificada</span>
+                                                    <Badge variant="outline" className="bg-[#FFF7ED] text-[#F59E0B] border-[#F59E0B]/30 text-xs">
+                                                        Finalizada
+                                                    </Badge>
+                                                </div>
+                                                <p className="text-sm text-[#6B7280]">
+                                                    {new Date(accion.fechaVerificacion).toLocaleString("es-CO", {
+                                                        year: "numeric",
+                                                        month: "long",
+                                                        day: "numeric",
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })}
+                                                </p>
+                                                {accion.verificador && (
+                                                    <p className="text-sm text-[#6B7280] mt-1">
+                                                        Por: <span className="font-medium text-[#111827]">
+                                                            {accion.verificador.nombre} {accion.verificador.primerApellido}
+                                                        </span>
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Estado pendiente */}
+                                    {!accion.fechaImplementacion && (
+                                        <div className="flex gap-4">
+                                            <div className="flex flex-col items-center">
+                                                <div className="h-10 w-10 rounded-full bg-[#F8FAFC] text-[#6B7280] flex items-center justify-center border-2 border-dashed border-[#E5E7EB] flex-shrink-0">
+                                                    <Clock className="h-5 w-5" />
+                                                </div>
+                                            </div>
+                                            <div className="flex-1">
+                                                <span className="font-semibold text-[#6B7280]">Pendiente de Implementación</span>
+                                                <p className="text-sm text-[#6B7280] mt-1">
+                                                    Completa el formulario abajo para registrar la implementación
+                                                </p>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
-                                <div className="flex-1 pb-4">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-semibold text-[#1E3A8A]">Acción Creada</span>
-                                        <Badge variant="outline" className="bg-[#E0EDFF] text-[#2563EB] border-[#2563EB]/30 text-xs">
-                                            Inicial
-                                        </Badge>
+                            </CardContent>
+                        </Card>
+
+                        {/* Formulario de Implementación */}
+                        <form onSubmit={handleSubmit}>
+                            <Card className="rounded-2xl shadow-sm border-[#E5E7EB]">
+                                <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+                                    <CardTitle className="text-lg text-[#1E3A8A]">Registro de Implementación</CardTitle>
+                                    <CardDescription>
+                                        Completa la información sobre la implementación de la acción correctiva
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="p-6 space-y-6">
+                                    {/* Fecha de Implementación */}
+                                    <div>
+                                        <Label htmlFor="fechaImplementacion" className="text-[#1E3A8A] font-semibold">
+                                            Fecha de Implementación <span className="text-red-500">*</span>
+                                        </Label>
+                                        <div className="relative mt-2">
+                                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
+                                            <Input
+                                                id="fechaImplementacion"
+                                                type="date"
+                                                value={fechaImplementacion}
+                                                onChange={(e) => setFechaImplementacion(e.target.value)}
+                                                className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
+                                                required
+                                            />
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-[#6B7280]">
-                                        {new Date(accion.creadoEn).toLocaleString("es-CO", {
-                                            year: "numeric",
-                                            month: "long",
-                                            day: "numeric",
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                        })}
-                                    </p>
-                                    {accion.responsable && (
-                                        <p className="text-sm text-[#6B7280] mt-1">
-                                            Por: <span className="font-medium text-[#111827]">
-                                                {accion.responsable.nombre} {accion.responsable.primerApellido}
+
+                                    {/* Observaciones */}
+                                    <div>
+                                        <Label htmlFor="observaciones" className="text-[#1E3A8A] font-semibold">
+                                            Observaciones de Implementación
+                                        </Label>
+                                        <Textarea
+                                            id="observaciones"
+                                            value={observaciones}
+                                            onChange={(e) => setObservaciones(e.target.value)}
+                                            placeholder="Describe cómo se implementó la acción correctiva, resultados obtenidos, etc."
+                                            className="mt-2 min-h-[150px] rounded-xl border-[#E5E7EB]"
+                                        />
+                                    </div>
+
+                                    {/* Evidencias */}
+                                    <div>
+                                        <Label htmlFor="evidencias" className="text-[#1E3A8A] font-semibold flex items-center gap-2">
+                                            <Upload className="h-4 w-4" />
+                                            Evidencias (Opcional)
+                                        </Label>
+                                        <Textarea
+                                            id="evidencias"
+                                            value={evidencias}
+                                            onChange={(e) => setEvidencias(e.target.value)}
+                                            placeholder="Enlaces a documentos, fotos, registros, etc. Ejemplo:&#10;- https://drive.google.com/file/...&#10;- Foto del proceso implementado&#10;- Registro de capacitación realizada"
+                                            className="mt-2 min-h-[100px] rounded-xl border-[#E5E7EB] font-mono text-sm"
+                                        />
+                                        <p className="text-xs text-[#6B7280] mt-2 flex items-start gap-2">
+                                            <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                                            <span>
+                                                Puedes incluir enlaces a Google Drive, OneDrive, o descripciones de las evidencias físicas de implementación
                                             </span>
                                         </p>
-                                    )}
-                                </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Botones de Acción */}
+                            <div className="flex flex-col sm:flex-row gap-4 mt-8">
+                                <Button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white py-6 rounded-xl font-semibold shadow-sm transition-all"
+                                >
+                                    <Save className="w-5 h-5 mr-2" />
+                                    {submitting ? "Guardando..." : "Marcar como Implementada"}
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    onClick={handleMarcarVerificada}
+                                    disabled={submitting || !fechaImplementacion}
+                                    className="flex-1 bg-[#10B981] hover:bg-[#059669] text-white py-6 rounded-xl font-semibold shadow-sm transition-all"
+                                >
+                                    <CheckCircle className="w-5 h-5 mr-2" />
+                                    {submitting ? "Verificando..." : "Marcar como Verificada"}
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    onClick={() => navigate("/Acciones_correctivas_EnProceso")}
+                                    variant="outline"
+                                    className="sm:w-auto py-6 rounded-xl font-semibold border-[#E5E7EB]"
+                                >
+                                    Cancelar
+                                </Button>
                             </div>
-
-                            {/* Implementación */}
-                            {accion.fechaImplementacion && (
-                                <div className="flex gap-4">
-                                    <div className="flex flex-col items-center">
-                                        <div className="h-10 w-10 rounded-full bg-[#ECFDF5] text-[#10B981] flex items-center justify-center flex-shrink-0">
-                                            <CheckCircle className="h-5 w-5" />
-                                        </div>
-                                        {accion.fechaVerificacion && (
-                                            <div className="w-0.5 flex-1 bg-[#E5E7EB] mt-2 min-h-[20px]" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1 pb-4">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-semibold text-[#1E3A8A]">Implementada</span>
-                                            <Badge variant="outline" className="bg-[#ECFDF5] text-[#10B981] border-[#10B981]/30 text-xs">
-                                                Completada
-                                            </Badge>
-                                        </div>
-                                        <p className="text-sm text-[#6B7280]">
-                                            {new Date(accion.fechaImplementacion).toLocaleString("es-CO", {
-                                                year: "numeric",
-                                                month: "long",
-                                                day: "numeric",
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            })}
-                                        </p>
-                                        {accion.implementador && (
-                                            <p className="text-sm text-[#6B7280] mt-1">
-                                                Por: <span className="font-medium text-[#111827]">
-                                                    {accion.implementador.nombre} {accion.implementador.primerApellido}
-                                                </span>
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Verificación */}
-                            {accion.fechaVerificacion && (
-                                <div className="flex gap-4">
-                                    <div className="flex flex-col items-center">
-                                        <div className="h-10 w-10 rounded-full bg-[#FFF7ED] text-[#F59E0B] flex items-center justify-center flex-shrink-0">
-                                            <Activity className="h-5 w-5" />
-                                        </div>
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-semibold text-[#1E3A8A]">Verificada</span>
-                                            <Badge variant="outline" className="bg-[#FFF7ED] text-[#F59E0B] border-[#F59E0B]/30 text-xs">
-                                                Finalizada
-                                            </Badge>
-                                        </div>
-                                        <p className="text-sm text-[#6B7280]">
-                                            {new Date(accion.fechaVerificacion).toLocaleString("es-CO", {
-                                                year: "numeric",
-                                                month: "long",
-                                                day: "numeric",
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            })}
-                                        </p>
-                                        {accion.verificador && (
-                                            <p className="text-sm text-[#6B7280] mt-1">
-                                                Por: <span className="font-medium text-[#111827]">
-                                                    {accion.verificador.nombre} {accion.verificador.primerApellido}
-                                                </span>
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Estado pendiente */}
-                            {!accion.fechaImplementacion && (
-                                <div className="flex gap-4">
-                                    <div className="flex flex-col items-center">
-                                        <div className="h-10 w-10 rounded-full bg-[#F8FAFC] text-[#6B7280] flex items-center justify-center border-2 border-dashed border-[#E5E7EB] flex-shrink-0">
-                                            <Clock className="h-5 w-5" />
-                                        </div>
-                                    </div>
-                                    <div className="flex-1">
-                                        <span className="font-semibold text-[#6B7280]">Pendiente de Implementación</span>
-                                        <p className="text-sm text-[#6B7280] mt-1">
-                                            Completa el formulario abajo para registrar la implementación
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Formulario de Implementación */}
-                <form onSubmit={handleSubmit}>
-                    <Card className="rounded-2xl shadow-sm border-[#E5E7EB]">
-                        <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
-                            <CardTitle className="text-lg text-[#1E3A8A]">Registro de Implementación</CardTitle>
-                            <CardDescription>
-                                Completa la información sobre la implementación de la acción correctiva
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-6 space-y-6">
-                            {/* Fecha de Implementación */}
-                            <div>
-                                <Label htmlFor="fechaImplementacion" className="text-[#1E3A8A] font-semibold">
-                                    Fecha de Implementación <span className="text-red-500">*</span>
-                                </Label>
-                                <div className="relative mt-2">
-                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
-                                    <Input
-                                        id="fechaImplementacion"
-                                        type="date"
-                                        value={fechaImplementacion}
-                                        onChange={(e) => setFechaImplementacion(e.target.value)}
-                                        className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Observaciones */}
-                            <div>
-                                <Label htmlFor="observaciones" className="text-[#1E3A8A] font-semibold">
-                                    Observaciones de Implementación
-                                </Label>
-                                <Textarea
-                                    id="observaciones"
-                                    value={observaciones}
-                                    onChange={(e) => setObservaciones(e.target.value)}
-                                    placeholder="Describe cómo se implementó la acción correctiva, resultados obtenidos, etc."
-                                    className="mt-2 min-h-[150px] rounded-xl border-[#E5E7EB]"
-                                />
-                            </div>
-
-                            {/* Evidencias */}
-                            <div>
-                                <Label htmlFor="evidencias" className="text-[#1E3A8A] font-semibold flex items-center gap-2">
-                                    <Upload className="h-4 w-4" />
-                                    Evidencias (Opcional)
-                                </Label>
-                                <Textarea
-                                    id="evidencias"
-                                    value={evidencias}
-                                    onChange={(e) => setEvidencias(e.target.value)}
-                                    placeholder="Enlaces a documentos, fotos, registros, etc. Ejemplo:&#10;- https://drive.google.com/file/...&#10;- Foto del proceso implementado&#10;- Registro de capacitación realizada"
-                                    className="mt-2 min-h-[100px] rounded-xl border-[#E5E7EB] font-mono text-sm"
-                                />
-                                <p className="text-xs text-[#6B7280] mt-2 flex items-start gap-2">
-                                    <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                                    <span>
-                                        Puedes incluir enlaces a Google Drive, OneDrive, o descripciones de las evidencias físicas de implementación
-                                    </span>
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Botones de Acción */}
-                    <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                        <Button
-                            type="submit"
-                            disabled={submitting}
-                            className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white py-6 rounded-xl font-semibold shadow-sm transition-all"
-                        >
-                            <Save className="w-5 h-5 mr-2" />
-                            {submitting ? "Guardando..." : "Marcar como Implementada"}
-                        </Button>
-
-                        <Button
-                            type="button"
-                            onClick={handleMarcarVerificada}
-                            disabled={submitting || !fechaImplementacion}
-                            className="flex-1 bg-[#10B981] hover:bg-[#059669] text-white py-6 rounded-xl font-semibold shadow-sm transition-all"
-                        >
-                            <CheckCircle className="w-5 h-5 mr-2" />
-                            {submitting ? "Verificando..." : "Marcar como Verificada"}
-                        </Button>
-
-                        <Button
-                            type="button"
-                            onClick={() => navigate("/Acciones_correctivas_EnProceso")}
-                            variant="outline"
-                            className="sm:w-auto py-6 rounded-xl font-semibold border-[#E5E7EB]"
-                        >
-                            Cancelar
-                        </Button>
+                        </form>
                     </div>
-                </form>
-            </div>
-        </div>
+
+                    {/* Columna Lateral */}
+                    <div className="lg:col-span-1 space-y-8">
+                        <div className="sticky top-8">
+                            <ComentariosAccion
+                                accionId={accion.id}
+                                comentariosIniciales={accion.comentarios}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div >
+        </div >
     );
 }
