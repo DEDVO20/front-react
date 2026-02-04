@@ -34,7 +34,7 @@ type Version = {
   version: string;
   descripcion_cambios?: string;
   creado_en: string;
-  creado_por?: {
+  creador?: {
     nombre?: string;
     primerApellido?: string;
     segundoApellido?: string;
@@ -49,7 +49,7 @@ type Documento = {
   estado: string;
   creado_en: string;
   version_actual: string;
-  creado_por?: {
+  creador?: {
     nombre?: string;
     primerApellido?: string;
     segundoApellido?: string;
@@ -101,8 +101,8 @@ export default function ControlVersiones() {
         !term ||
         doc.nombre.toLowerCase().includes(term) ||
         doc.codigo.toLowerCase().includes(term) ||
-        (doc.creado_por &&
-          `${doc.creado_por.nombre} ${doc.creado_por.primerApellido}`.toLowerCase().includes(term));
+        (doc.creador &&
+          `${doc.creador.nombre} ${doc.creador.primerApellido}`.toLowerCase().includes(term));
 
       const docFecha = new Date(doc.creado_en).toISOString().split('T')[0];
       const matchesDate = !filterDate || docFecha === filterDate;
@@ -403,10 +403,10 @@ export default function ControlVersiones() {
                       <TableCell className="px-8 py-4">
                         <div className="flex items-center gap-2">
                           <div className="h-8 w-8 rounded-full bg-[#8B5CF6] text-white flex items-center justify-center text-xs font-bold">
-                            {doc.creado_por?.nombre?.charAt(0) || "-"}
+                            {doc.creador?.nombre?.charAt(0) || "-"}
                           </div>
                           <span className="text-sm font-medium text-[#1E3A8A]">
-                            {obtenerNombreCompleto(doc.creado_por)}
+                            {obtenerNombreCompleto(doc.creador)}
                           </span>
                         </div>
                       </TableCell>
@@ -453,7 +453,7 @@ export default function ControlVersiones() {
                                   <div>
                                     <p className="text-sm font-bold text-[#6B7280] uppercase tracking-wider mb-1">Estado Actual</p>
                                     <Badge className={`capitalize ${selectedDoc?.estado === 'vigente' ? 'bg-[#ECFDF5] text-[#10B981]' :
-                                        selectedDoc?.estado === 'borrador' ? 'bg-gray-100 text-gray-600' : 'bg-[#FEFCE8] text-[#854D0E]'
+                                      selectedDoc?.estado === 'borrador' ? 'bg-gray-100 text-gray-600' : 'bg-[#FEFCE8] text-[#854D0E]'
                                       }`}>
                                       {formatearEstado(selectedDoc?.estado || '')}
                                     </Badge>
@@ -469,10 +469,10 @@ export default function ControlVersiones() {
                                     <p className="text-sm font-bold text-[#6B7280] uppercase tracking-wider mb-2">Creado Por</p>
                                     <div className="flex items-center gap-3">
                                       <div className="h-10 w-10 rounded-full bg-[#E0EDFF] text-[#2563EB] flex items-center justify-center font-bold">
-                                        {selectedDoc?.creado_por?.nombre?.charAt(0) || "U"}
+                                        {selectedDoc?.creador?.nombre?.charAt(0) || "U"}
                                       </div>
                                       <div>
-                                        <p className="font-bold text-[#1E3A8A]">{obtenerNombreCompleto(selectedDoc?.creado_por)}</p>
+                                        <p className="font-bold text-[#1E3A8A]">{obtenerNombreCompleto(selectedDoc?.creador)}</p>
                                         <p className="text-xs text-[#6B7280]">Propietario del Documento</p>
                                       </div>
                                     </div>
@@ -504,10 +504,10 @@ export default function ControlVersiones() {
                                           <TableCell>
                                             <div className="flex items-center gap-2">
                                               <div className="h-6 w-6 rounded-full bg-[#F3F4F6] text-[#6B7280] flex items-center justify-center text-[10px] font-bold">
-                                                {v.creado_por?.nombre?.charAt(0) || "-"}
+                                                {v.creador?.nombre?.charAt(0) || "-"}
                                               </div>
-                                              <span className="text-sm text-[#4B5563] truncate max-w-[100px]" title={obtenerNombreCompleto(v.creado_por)}>
-                                                {v.creado_por?.nombre || '-'}
+                                              <span className="text-sm text-[#4B5563] truncate max-w-[100px]" title={obtenerNombreCompleto(v.creador)}>
+                                                {v.creador?.nombre || '-'}
                                               </span>
                                             </div>
                                           </TableCell>
