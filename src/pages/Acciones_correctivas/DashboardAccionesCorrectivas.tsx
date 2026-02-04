@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     BarChart3,
@@ -11,16 +11,23 @@ import {
     Users,
     Target,
     ArrowRight,
+    FileDown,
+    FileSpreadsheet,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { accionCorrectivaService, AccionCorrectiva } from "@/services/accionCorrectiva.service";
+import FiltrosAccionesCorrectivas, { FiltrosAcciones } from "@/components/FiltrosAccionesCorrectivas";
+import { exportarAccionesAExcel } from "@/utils/exportToExcel";
+import { exportarDashboardAPDF } from "@/utils/exportToPDF";
+import { toast } from "sonner";
 
 export default function DashboardAccionesCorrectivas() {
     const navigate = useNavigate();
     const [acciones, setAcciones] = useState<AccionCorrectiva[]>([]);
     const [loading, setLoading] = useState(true);
+    const [filtros, setFiltros] = useState<FiltrosAcciones>({});
 
     useEffect(() => {
         fetchAcciones();
@@ -33,26 +40,88 @@ export default function DashboardAccionesCorrectivas() {
             setAcciones(data);
         } catch (error) {
             console.error("Error al cargar acciones:", error);
+            toast.error("No se pudieron cargar las acciones correctivas");
         } finally {
             setLoading(false);
         }
     };
 
-    // Calcular métricas
-    const totalAcciones = acciones.length;
-    const enProceso = acciones.filter(a => ["pendiente", "en_proceso", "en_ejecucion"].includes(a.estado)).length;
-    const implementadas = acciones.filter(a => a.estado === "implementada").length;
-    const verificadas = acciones.filter(a => a.estado === "verificada").length;
-    const cerradas = acciones.filter(a => a.estado === "cerrada").length;
+    // Filtrar acciones según los filtros aplicados
+    const accionesFiltradas = useMemo(() => {
+        return acciones.filter(accion => {
+            // Filtro por búsqueda
+            if (filtros.busqueda) {
+                const busqueda = filtros.busqueda.toLowerCase();
+                const coincide =
+                    accion.codigo.toLowerCase().includes(busqueda) ||
+                    (accion.descripcion?.toLowerCase().includes(busqueda) || false);
+                if (!coincide) return false;
+            }
+
+            // Filtro por tipo
+            if (filtros.tipo && accion.tipo !== filtros.tipo) {
+                return false;
+            }
+
+            // Filtro por estado
+            if (filtros.estado && accion.estado !== filtros.estado) {
+                return false;
+            }
+
+            // Filtro por responsable
+            if (filtros.responsable && accion.responsableId !== filtros.responsable) {
+                return false;
+            }
+
+            // Filtro por fecha desde
+            if (filtros.fechaDesde) {
+                const fechaCreacion = new Date(accion.creadoEn);
+                const fechaDesde = new Date(filtros.fechaDesde);
+                if (fechaCreacion < fechaDesde) return false;
+            }
+
+            // Filtro por fecha hasta
+            if (filtros.fechaHasta) {
+                const fechaCreacion = new Date(accion.creadoEn);
+                const fechaHasta = new Date(filtros.fechaHasta);
+                fechaHasta.setHours(23, 59, 59, 999);
+                if (fechaCreacion > fechaHasta) return false;
+            }
+
+            return true;
+        });
+    }, [acciones, filtros]);
+
+    // Obtener lista única de responsables para el filtro
+    const responsables = useMemo(() => {
+        const uniqueResponsables = new Map();
+        acciones.forEach(accion => {
+            if (accion.responsable) {
+                uniqueResponsables.set(accion.responsable.id, {
+                    id: accion.responsable.id,
+                    nombre: `${accion.responsable.nombre} ${accion.responsable.primerApellido || ''}`.trim(),
+                });
+            }
+        });
+        return Array.from(uniqueResponsables.values());
+    }, [acciones]);
+
+    // Calcular métricas (usar accionesFiltradas)
+    const totalAcciones = accionesFiltradas.length;
+    const enProceso = accionesFiltradas.filter(a => ["pendiente", "en_proceso", "en_ejecucion"].includes(a.estado)).length;
+    const implementadas = accionesFiltradas.filter(a => a.estado === "implementada").length;
+    const verificadas = accionesFiltradas.filter(a => a.estado === "verificada").length;
+    const cerradas = accionesFiltradas.filter(a => a.estado === "cerrada").length;
 
     // Acciones vencidas
-    const vencidas = acciones.filter(a => {
+    const accionesVencidas = accionesFiltradas.filter(a => {
         if (!a.fechaCompromiso) return false;
         return new Date(a.fechaCompromiso) < new Date() && !["verificada", "cerrada"].includes(a.estado);
-    }).length;
+    });
+    const vencidas = accionesVencidas.length;
 
     // Acciones por vencer (próximos 7 días)
-    const porVencer = acciones.filter(a => {
+    const porVencer = accionesFiltradas.filter(a => {
         if (!a.fechaCompromiso) return false;
         const diff = new Date(a.fechaCompromiso).getTime() - new Date().getTime();
         const days = diff / (1000 * 60 * 60 * 24);
@@ -66,14 +135,14 @@ export default function DashboardAccionesCorrectivas() {
 
     // Acciones por tipo
     const porTipo = {
-        correctiva: acciones.filter(a => a.tipo === "correctiva").length,
-        preventiva: acciones.filter(a => a.tipo === "preventiva").length,
-        mejora: acciones.filter(a => a.tipo === "mejora").length,
+        correctiva: accionesFiltradas.filter(a => a.tipo === "correctiva").length,
+        preventiva: accionesFiltradas.filter(a => a.tipo === "preventiva").length,
+        mejora: accionesFiltradas.filter(a => a.tipo === "mejora").length,
     };
 
     // Tiempo promedio de implementación (en días)
     const tiempoPromedioImplementacion = () => {
-        const implementadasConFechas = acciones.filter(
+        const implementadasConFechas = accionesFiltradas.filter(
             a => a.fechaImplementacion && a.creadoEn
         );
 
@@ -92,9 +161,53 @@ export default function DashboardAccionesCorrectivas() {
     const promedioImplementacion = tiempoPromedioImplementacion();
 
     // Acciones recientes (últimas 5)
-    const accionesRecientes = [...acciones]
+    const accionesRecientes = [...accionesFiltradas]
         .sort((a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime())
         .slice(0, 5);
+
+    // Funciones de exportación
+    const handleExportarExcel = () => {
+        try {
+            exportarAccionesAExcel(accionesFiltradas, 'acciones_correctivas');
+            toast.success("Archivo Excel descargado correctamente");
+        } catch (error) {
+            console.error("Error al exportar:", error);
+            toast.error("No se pudo exportar el archivo Excel");
+        }
+    };
+
+    const handleExportarPDF = () => {
+        try {
+            const metricas = {
+                totalAcciones,
+                enProceso,
+                implementadas,
+                verificadas,
+                cerradas,
+                vencidas,
+                porVencer,
+                tasaCumplimiento,
+                promedioImplementacion,
+                porTipo,
+            };
+
+            const accionesVencidasPDF = accionesVencidas.map(a => ({
+                codigo: a.codigo,
+                descripcion: a.descripcion || '',
+                fechaCompromiso: a.fechaCompromiso || '',
+                estado: a.estado,
+                responsable: a.responsable
+                    ? `${a.responsable.nombre} ${a.responsable.primerApellido || ''}`.trim()
+                    : undefined,
+            }));
+
+            exportarDashboardAPDF(metricas, accionesVencidasPDF);
+            toast.success("Archivo PDF descargado correctamente");
+        } catch (error) {
+            console.error("Error al exportar:", error);
+            toast.error("No se pudo exportar el archivo PDF");
+        }
+    };
 
     if (loading) {
         return (
@@ -122,14 +235,39 @@ export default function DashboardAccionesCorrectivas() {
                                 Seguimiento y métricas de acciones correctivas
                             </p>
                         </div>
-                        <Button
-                            onClick={() => navigate("/Acciones_correctivas_Nuevas")}
-                            className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm"
-                        >
-                            Nueva Acción Correctiva
-                        </Button>
+                        <div className="flex gap-3">
+                            <Button
+                                onClick={handleExportarExcel}
+                                variant="outline"
+                                className="rounded-xl border-[#E5E7EB] hover:bg-[#F8FAFC]"
+                            >
+                                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                Exportar Excel
+                            </Button>
+                            <Button
+                                onClick={handleExportarPDF}
+                                variant="outline"
+                                className="rounded-xl border-[#E5E7EB] hover:bg-[#F8FAFC]"
+                            >
+                                <FileDown className="h-4 w-4 mr-2" />
+                                Exportar PDF
+                            </Button>
+                            <Button
+                                onClick={() => navigate("/Acciones_correctivas_Nuevas")}
+                                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm"
+                            >
+                                Nueva Acción Correctiva
+                            </Button>
+                        </div>
                     </div>
                 </div>
+
+                {/* Filtros */}
+                <FiltrosAccionesCorrectivas
+                    filtros={filtros}
+                    onFiltrosChange={setFiltros}
+                    responsables={responsables}
+                />
 
                 {/* Métricas Principales */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
