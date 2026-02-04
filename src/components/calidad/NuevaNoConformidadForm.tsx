@@ -72,10 +72,8 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel }: NuevaNoConformid
             };
 
             await noConformidadService.create(payload);
-            console.log("✅ No conformidad creada, llamando onSuccess...");
             toast.success("No conformidad creada correctamente");
             onSuccess();
-            console.log("✅ onSuccess ejecutado");
         } catch (error: any) {
             console.error("Error creating no conformidad:", error);
             setError(error.message || "Error al crear la no conformidad");
