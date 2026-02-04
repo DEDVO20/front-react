@@ -49,6 +49,20 @@ import {
 } from "@/components/ui/table";
 import { apiClient } from "@/lib/api";
 
+interface Usuario {
+  id: string;
+  nombre: string;
+  primer_apellido: string;
+  correo_electronico: string;
+}
+
+interface Asignacion {
+  id: string;
+  usuario_id: string;
+  es_principal: boolean;
+  usuario: Usuario;
+}
+
 interface Area {
   id: string;
   codigo: string;
@@ -56,6 +70,7 @@ interface Area {
   descripcion: string;
   creado_en: string;
   actualizado_en: string;
+  asignaciones: Asignacion[];
 }
 
 export default function AreasResponsables() {
@@ -178,7 +193,7 @@ export default function AreasResponsables() {
   }
 
   const total = areas.length;
-  const asignadas = 0; // Placeholder
+  const asignadas = areas.filter(a => a.asignaciones && a.asignaciones.length > 0).length;
   const sinAsignar = total - asignadas;
   const conIncidencias = 0;
   const coveragePercentage = total === 0 ? 0 : Math.round((asignadas / total) * 100);
@@ -360,6 +375,7 @@ export default function AreasResponsables() {
                   <TableRow>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Código</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Nombre</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Responsables</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Descripción</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Creado</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A] text-right">Acciones</TableHead>
@@ -368,7 +384,7 @@ export default function AreasResponsables() {
                 <TableBody>
                   {filteredAreas.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-20 text-[#6B7280]">
+                      <TableCell colSpan={6} className="text-center py-20 text-[#6B7280]">
                         <div className="flex flex-col items-center">
                           <Building2 className="h-16 w-16 text-gray-300 mb-4" />
                           <p className="text-lg font-medium">
@@ -392,6 +408,27 @@ export default function AreasResponsables() {
                           </Badge>
                         </TableCell>
                         <TableCell className="px-6 py-4 font-bold">{area.nombre}</TableCell>
+                        <TableCell className="px-6 py-4">
+                          {area.asignaciones && area.asignaciones.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {area.asignaciones.map((asig) => (
+                                <Badge 
+                                  key={asig.id} 
+                                  className={asig.es_principal ? "bg-[#10B981] text-white" : "bg-[#E0EDFF] text-[#2563EB]"}
+                                >
+                                  <UserCheck className="h-3 w-3 mr-1" />
+                                  {asig.usuario.nombre} {asig.usuario.primer_apellido}
+                                  {asig.es_principal && " ★"}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <Badge className="bg-[#FEF3C7] text-[#92400E]">
+                              <UserX className="h-3 w-3 mr-1" />
+                              Sin asignar
+                            </Badge>
+                          )}
+                        </TableCell>
                         <TableCell className="px-6 py-4 text-[#6B7280] max-w-md">
                           {area.descripcion || <span className="italic">Sin descripción</span>}
                         </TableCell>
