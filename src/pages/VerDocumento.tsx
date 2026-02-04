@@ -457,9 +457,10 @@ export default function VerDocumento() {
           </div>
           <div className="p-8">
             {documento.descripcion ? (
-              <div className="prose prose-sm max-w-none">
-                <p className="text-[#6B7280]">{documento.descripcion}</p>
-              </div>
+              <div
+                className="prose prose-sm max-w-none text-[#6B7280]"
+                dangerouslySetInnerHTML={{ __html: documento.descripcion }}
+              />
             ) : (
               <div className="text-center py-12 text-[#6B7280]">
                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-30 text-gray-300" />
