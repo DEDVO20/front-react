@@ -44,7 +44,6 @@ export default function NoConformidadesAbiertas() {
 
   const fetchNoConformidadesAbiertas = async () => {
     try {
-      console.log("📊 Cargando no conformidades abiertas...");
       const data = await noConformidadService.getAbiertas();
       const dataArray = Array.isArray(data) ? data : [];
 
@@ -143,10 +142,8 @@ export default function NoConformidadesAbiertas() {
                 </DialogHeader>
                 <NuevaNoConformidadForm 
                   onSuccess={() => {
-                    console.log("🔄 onSuccess llamado - recargando datos...");
                     fetchNoConformidadesAbiertas();
                     setIsDialogOpen(false);
-                    console.log("🔄 Diálogo cerrado");
                   }} 
                   onCancel={() => setIsDialogOpen(false)}
                 />

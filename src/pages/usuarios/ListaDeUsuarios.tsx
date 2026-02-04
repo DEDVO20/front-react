@@ -267,7 +267,7 @@ export default function ListaUsuarios() {
                 <div className="flex flex-wrap items-center gap-3">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="outline" onClick={() => navigate("/usuarios/importar")}>
+                      <Button variant="outline" onClick={() => navigate("/usuarios/carga-masiva")}>
                         <FileSpreadsheet className="mr-2 h-4 w-4" />
                         Importar Usuarios
                       </Button>
