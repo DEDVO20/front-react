@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { DataTable } from "@/components/data-table";
+import { useNavigate } from "react-router-dom";
+import { DataTable, DataTableAction } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, CheckCircle2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +22,7 @@ import NuevasAccionesCorrectivas from "./nuevas";
 import { accionCorrectivaService, AccionCorrectiva as IAccionCorrectiva } from "@/services/accionCorrectiva.service";
 
 interface AccionCorrectivaUI {
-  id: number;
+  id: string | number;
   codigo: string;
   tipo: string;
   descripcion: string;
@@ -32,6 +33,7 @@ interface AccionCorrectivaUI {
 }
 
 export default function AccionesCorrectivasVerificadas() {
+  const navigate = useNavigate();
   const [accionesCorrectivas, setAccionesCorrectivas] = useState<AccionCorrectivaUI[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -41,11 +43,18 @@ export default function AccionesCorrectivasVerificadas() {
     fetchAccionesCorrectivasVerificadas();
   }, []);
 
+  const actions: DataTableAction[] = [
+    {
+      label: "Ver Detalle / Evidencias",
+      onClick: (row) => navigate(`/acciones-correctivas/${row.id}/solucionar`),
+    }
+  ];
+
   const fetchAccionesCorrectivasVerificadas = async () => {
     try {
       const accionesVerificadas = await accionCorrectivaService.getVerificadas();
 
-      const transformedData = accionesVerificadas.map((ac: IAccionCorrectiva, index: number) => {
+      const transformedData = accionesVerificadas.map((ac: IAccionCorrectiva) => {
         let fechaFormateada = "Sin fecha";
         const fechaAUsar = ac.fechaVerificacion || ac.fechaCompromiso;
 
@@ -59,14 +68,14 @@ export default function AccionesCorrectivasVerificadas() {
         }
 
         return {
-          id: index + 1,
+          id: ac.id,
           codigo: ac.codigo,
           tipo: ac.tipo || "Correctiva",
           descripcion: ac.descripcion || "Sin descripción",
           estado: "Verificada",
           gravedad: "Eficacia Comprobada",
           fechaDeteccion: fechaFormateada,
-          responsable: "Sin asignar",
+          responsable: ac.responsable ? `${ac.responsable.nombre} ${ac.responsable.primerApellido}` : "Sin asignar",
         };
       });
 
@@ -166,7 +175,7 @@ export default function AccionesCorrectivasVerificadas() {
                 <DialogHeader>
                   <DialogTitle>Nueva Acción Correctiva</DialogTitle>
                 </DialogHeader>
-                <NuevasAccionesCorrectivas 
+                <NuevasAccionesCorrectivas
                   onSuccess={() => {
                     setIsModalOpen(false);
                     fetchAccionesCorrectivasVerificadas();
@@ -290,7 +299,7 @@ export default function AccionesCorrectivasVerificadas() {
             </div>
           </div>
           <div className="p-0">
-            <DataTable data={accionesCorrectivas} />
+            <DataTable data={accionesCorrectivas} actions={actions} />
           </div>
         </div>
       </div>
