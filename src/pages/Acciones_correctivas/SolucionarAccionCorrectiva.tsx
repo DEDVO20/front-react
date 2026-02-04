@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { accionCorrectivaService, AccionCorrectiva } from "@/services/accionCorrectiva.service";
 import ComentariosAccion from "@/components/calidad/ComentariosAccion";
+import GestorEvidencias from "@/components/calidad/GestorEvidencias";
 
 export default function SolucionarAccionCorrectiva() {
     const { id } = useParams<{ id: string }>();
@@ -424,20 +425,17 @@ export default function SolucionarAccionCorrectiva() {
                                     {/* Evidencias */}
                                     <div>
                                         <Label htmlFor="evidencias" className="text-[#1E3A8A] font-semibold flex items-center gap-2">
-                                            <Upload className="h-4 w-4" />
-                                            Evidencias (Opcional)
+                                            Evidencias
                                         </Label>
-                                        <Textarea
-                                            id="evidencias"
+                                        <GestorEvidencias
                                             value={evidencias}
-                                            onChange={(e) => setEvidencias(e.target.value)}
-                                            placeholder="Enlaces a documentos, fotos, registros, etc. Ejemplo:&#10;- https://drive.google.com/file/...&#10;- Foto del proceso implementado&#10;- Registro de capacitación realizada"
-                                            className="mt-2 min-h-[100px] rounded-xl border-[#E5E7EB] font-mono text-sm"
+                                            onChange={setEvidencias}
+                                            readOnly={accion.estado === 'verificada' || accion.estado === 'cerrada'}
                                         />
                                         <p className="text-xs text-[#6B7280] mt-2 flex items-start gap-2">
                                             <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
                                             <span>
-                                                Puedes incluir enlaces a Google Drive, OneDrive, o descripciones de las evidencias físicas de implementación
+                                                Agrega enlaces a los documentos que soporten la implementación.
                                             </span>
                                         </p>
                                     </div>
