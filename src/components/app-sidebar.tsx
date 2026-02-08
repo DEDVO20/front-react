@@ -15,8 +15,8 @@ import {
   FileCheck,
   BookOpen,
   LifeBuoy,
-} from "lucide-react";
-import { Link } from "react-router-dom";
+  Upload,
+} from "lucide-react"; import { Link } from "react-router-dom";
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
@@ -34,11 +34,15 @@ import { getCurrentUser, getToken } from "@/services/auth";
 import axios from "axios";
 
 import { API_BASE_URL as API_URL } from "@/lib/api";
+import { configuracionService } from "@/services/configuracion.service";
+import { uploadSystemLogo } from "@/services/storage";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [user, setUser] = React.useState(getCurrentUser());
   const [pendingCount] = React.useState(5); // Simulado
   const { isMobile, setOpenMobile } = useSidebar();
+  const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Cargar perfil completo al montar
   React.useEffect(() => {
@@ -76,6 +80,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       clearInterval(interval);
     };
   }, [user]);
+
+  // Cargar logo
+  React.useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const config = await configuracionService.get("logo_universidad");
+        if (config && config.valor) {
+          setLogoUrl(config.valor);
+        }
+      } catch (error) {
+        console.error("Error cargando logo:", error);
+      }
+    };
+    fetchLogo();
+  }, []);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const url = await uploadSystemLogo(file);
+      await configuracionService.save("logo_universidad", url, "Logo Universidad");
+      setLogoUrl(url);
+    } catch (error) {
+      console.error("Error subiendo logo:", error);
+    }
+  };
 
   // Lógica de Permisos Detallada
   const userPermisos = user?.permisos || [];
@@ -307,8 +339,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild className="hover:bg-white/10 data-[state=open]:bg-white/10">
               <Link to="/dashboard" onClick={() => isMobile && setOpenMobile(false)}>
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white text-blue-600 shadow-lg">
-                  <Building2 className="size-4" />
+                <div className="relative group flex aspect-square size-8 items-center justify-center rounded-lg bg-white text-blue-600 shadow-lg overflow-hidden">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Logo Universidad" className="w-full h-full object-contain" />
+                  ) : (
+                    <Building2 className="size-4" />
+                  )}
+                  {isAdmin && (
+                    <>
+                      <div
+                        className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          fileInputRef.current?.click();
+                        }}
+                      >
+                        <Upload className="size-3 text-white" />
+                      </div>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                      />
+                    </>
+                  )}
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-bold text-white">SGC ISO 9001</span>

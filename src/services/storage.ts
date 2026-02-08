@@ -23,6 +23,10 @@ export async function uploadProfileImage(
       throw new Error("El archivo debe ser una imagen");
     }
 
+    if (!supabase) {
+      throw new Error("Supabase no está configurado");
+    }
+
     // Validar tamaño máximo (5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
@@ -68,6 +72,10 @@ export async function uploadProfileImage(
  */
 export async function deleteProfileImage(filePath: string): Promise<void> {
   try {
+    if (!supabase) {
+      throw new Error("Supabase no está configurado");
+    }
+
     const { error } = await supabase.storage
       .from(BUCKET_NAME)
       .remove([filePath]);
@@ -88,6 +96,7 @@ export async function deleteProfileImage(filePath: string): Promise<void> {
  * @returns URL pública de la imagen
  */
 export function getProfileImageUrl(filePath: string): string {
+  if (!supabase) return "";
   const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
 
   return data.publicUrl;
@@ -98,6 +107,8 @@ export function getProfileImageUrl(filePath: string): string {
  */
 export async function ensureProfileImagesBucket(): Promise<void> {
   try {
+    if (!supabase) return;
+
     const { data: buckets, error: listError } =
       await supabase.storage.listBuckets();
 
@@ -132,5 +143,57 @@ export async function ensureProfileImagesBucket(): Promise<void> {
     }
   } catch (error) {
     console.error("Error en ensureProfileImagesBucket:", error);
+  }
+}
+
+/**
+ * Sube el logo del sistema a Supabase Storage
+ * @param file - Archivo de imagen a subir
+ * @returns URL pública de la imagen subida
+ */
+export async function uploadSystemLogo(file: File): Promise<string> {
+  try {
+    if (!supabase) {
+      throw new Error("Supabase no está configurado");
+    }
+
+    await ensureProfileImagesBucket();
+
+    // Validar que sea una imagen
+    if (!file.type.startsWith("image/")) {
+      throw new Error("El archivo debe ser una imagen");
+    }
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new Error("La imagen no debe superar los 5MB");
+    }
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `system-logo-${Date.now()}.${fileExt}`;
+    const filePath = `system/${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+    if (error) {
+      console.error("Error al subir logo:", error);
+      throw new Error(`Error al subir el logo: ${error.message}`);
+    }
+
+    // Obtener URL pública
+    const { data: urlData } = supabase.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(data.path);
+
+    // Retorna solo la URL
+    return urlData.publicUrl;
+  } catch (error) {
+    console.error("Error en uploadSystemLogo:", error);
+    throw error;
   }
 }

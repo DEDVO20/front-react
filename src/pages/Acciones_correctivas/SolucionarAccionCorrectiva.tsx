@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle, Calendar, FileText, AlertCircle, Save, Clock, Activity, Upload } from "lucide-react";
+import { ArrowLeft, CheckCircle, Calendar, FileText, AlertCircle, Save, Clock, Activity, Upload, Lock, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -96,6 +96,20 @@ export default function SolucionarAccionCorrectiva() {
         } catch (error: any) {
             console.error("Error al verificar acción:", error);
             toast.error(error.response?.data?.detail || "Error al verificar la acción correctiva");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleCerrarAccion = async () => {
+        try {
+            setSubmitting(true);
+            await accionCorrectivaService.cambiarEstado(id!, 'cerrada');
+            toast.success("Acción correctiva cerrada exitosamente");
+            navigate("/Acciones_correctivas_Cerradas");
+        } catch (error: any) {
+            console.error("Error al cerrar acción:", error);
+            toast.error(error.response?.data?.detail || "Error al cerrar la acción correctiva");
         } finally {
             setSubmitting(false);
         }
@@ -456,12 +470,24 @@ export default function SolucionarAccionCorrectiva() {
                                 <Button
                                     type="button"
                                     onClick={handleMarcarVerificada}
-                                    disabled={submitting || !fechaImplementacion}
-                                    className="flex-1 bg-[#10B981] hover:bg-[#059669] text-white py-6 rounded-xl font-semibold shadow-sm transition-all"
+                                    disabled={submitting || !fechaImplementacion || accion.estado === 'verificada' || accion.estado === 'cerrada'}
+                                    className={`flex-1 ${accion.estado === 'verificada' || accion.estado === 'cerrada' ? 'bg-gray-400' : 'bg-[#10B981] hover:bg-[#059669]'} text-white py-6 rounded-xl font-semibold shadow-sm transition-all`}
                                 >
                                     <CheckCircle className="w-5 h-5 mr-2" />
-                                    {submitting ? "Verificando..." : "Marcar como Verificada"}
+                                    {accion.estado === 'verificada' ? "Verificada" : submitting ? "Verificando..." : "Marcar como Verificada"}
                                 </Button>
+
+                                {accion.estado === 'verificada' && (
+                                    <Button
+                                        type="button"
+                                        onClick={handleCerrarAccion}
+                                        disabled={submitting}
+                                        className="flex-1 bg-[#6366f1] hover:bg-[#4f46e5] text-white py-6 rounded-xl font-semibold shadow-sm transition-all"
+                                    >
+                                        <Lock className="w-5 h-5 mr-2" />
+                                        {submitting ? "Cerrando..." : "Cerrar Acción"}
+                                    </Button>
+                                )}
 
                                 <Button
                                     type="button"
