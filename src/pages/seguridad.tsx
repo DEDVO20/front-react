@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ShieldCheck, KeyRound, Smartphone, LogOut, Shield, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ShieldCheck, KeyRound, Smartphone, LogOut, Shield, Loader2, Building, Upload } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
 import { getCurrentUser } from "@/services/auth";
+import { configuracionService } from "@/services/configuracion.service";
+import { uploadSystemLogo } from "@/services/storage";
 
 export default function Seguridad() {
     const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -18,6 +20,49 @@ export default function Seguridad() {
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [updatingPassword, setUpdatingPassword] = useState(false);
+
+    // Estados para Logo
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const currentUser = getCurrentUser();
+    const isAdmin = currentUser?.permisos?.includes("sistema.admin");
+
+    useEffect(() => {
+        const fetchLogo = async () => {
+            try {
+                const config = await configuracionService.get("logo_universidad");
+                if (config && config.valor) {
+                    setLogoUrl(config.valor);
+                }
+            } catch (error) {
+                console.error("Error cargando logo:", error);
+            }
+        };
+        fetchLogo();
+    }, []);
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingLogo(true);
+        try {
+            const url = await uploadSystemLogo(file);
+            await configuracionService.save("logo_universidad", url, "Logo Universidad");
+            setLogoUrl(url);
+            toast.success("Logo actualizado correctamente");
+
+            // Disparar evento para actualizar sidebar
+            window.dispatchEvent(new Event("system-logo-change"));
+        } catch (error) {
+            console.error("Error subiendo logo:", error);
+            toast.error("Error al actualizar el logo");
+        } finally {
+            setUploadingLogo(false);
+        }
+    };
 
     const handleUpdatePassword = async () => {
         if (!newPassword || !confirmPassword) {
@@ -35,8 +80,8 @@ export default function Seguridad() {
             return;
         }
 
-        const currentUser = getCurrentUser();
-        if (!currentUser?.id) {
+        const currentUserData = getCurrentUser();
+        if (!currentUserData?.id) {
             toast.error("Error de sesión. Por favor inicia sesión nuevamente.");
             return;
         }
@@ -82,6 +127,61 @@ export default function Seguridad() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="space-y-8">
+                        {/* Personalización del Sistema (Solo Admin) */}
+                        {isAdmin && (
+                            <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
+                                <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB] flex flex-row items-center gap-3">
+                                    <div className="p-2 bg-blue-100 rounded-lg">
+                                        <Building className="h-5 w-5 text-blue-600" />
+                                    </div>
+                                    <CardTitle className="text-lg text-[#1E3A8A]">Personalización del Sistema</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-6 space-y-4">
+                                    <div className="flex items-center gap-6">
+                                        <div className="relative group flex aspect-square size-24 items-center justify-center rounded-lg bg-white border border-gray-200 shadow-sm overflow-hidden">
+                                            {logoUrl ? (
+                                                <img src={logoUrl} alt="Logo Universidad" className="w-full h-full object-contain p-2" />
+                                            ) : (
+                                                <Building className="size-10 text-gray-300" />
+                                            )}
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <h3 className="font-semibold text-gray-900">Logo de la Universidad</h3>
+                                                <p className="text-sm text-gray-500">Visible en la barra lateral y reportes.</p>
+                                            </div>
+                                            <div>
+                                                <input
+                                                    type="file"
+                                                    ref={fileInputRef}
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    onChange={handleLogoUpload}
+                                                />
+                                                <Button
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    disabled={uploadingLogo}
+                                                    variant="outline"
+                                                    className="rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                                                >
+                                                    {uploadingLogo ? (
+                                                        <>
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                            Subiendo...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Upload className="mr-2 h-4 w-4" />
+                                                            Cambiar Logo
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
                         {/* Cambio de contraseña */}
                         <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
                             <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB] flex flex-row items-center gap-3">
