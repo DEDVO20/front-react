@@ -34,9 +34,19 @@ class NotificacionService {
     /**
      * Marcar una notificación como leída
      */
-    async marcarComoLeida(id: string): Promise<Notificacion> {
-        const response = await api.put<Notificacion>(`/notificaciones/${id}/marcar-leida`);
-        return response.data;
+    async marcarComoLeida(id: string): Promise<Notificacion | null> {
+        try {
+            const response = await api.put<Notificacion>(`/notificaciones/${id}/marcar-leida`);
+            return response.data;
+        } catch (error: any) {
+            // Si la notificación no existe (404), retornar null silenciosamente
+            if (error.response?.status === 404) {
+                console.warn(`Notificación ${id} no encontrada, posiblemente ya fue eliminada`);
+                return null;
+            }
+            // Re-lanzar otros errores
+            throw error;
+        }
     }
 
     /**
