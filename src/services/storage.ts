@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { apiClient } from "@/lib/api";
 
 const BUCKET_NAME = "imagenes";
 
@@ -153,12 +154,6 @@ export async function ensureProfileImagesBucket(): Promise<void> {
  */
 export async function uploadSystemLogo(file: File): Promise<string> {
   try {
-    if (!supabase) {
-      throw new Error("Supabase no está configurado");
-    }
-
-    await ensureProfileImagesBucket();
-
     // Validar que sea una imagen
     if (!file.type.startsWith("image/")) {
       throw new Error("El archivo debe ser una imagen");
@@ -169,29 +164,16 @@ export async function uploadSystemLogo(file: File): Promise<string> {
       throw new Error("La imagen no debe superar los 5MB");
     }
 
-    const fileExt = file.name.split(".").pop();
-    const fileName = `system-logo-${Date.now()}.${fileExt}`;
-    const filePath = `system/${fileName}`;
+    const formData = new FormData();
+    formData.append("file", file);
 
-    const { data, error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: true,
-      });
+    const response = await apiClient.post("/uploads/logo", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
 
-    if (error) {
-      console.error("Error al subir logo:", error);
-      throw new Error(`Error al subir el logo: ${error.message}`);
-    }
-
-    // Obtener URL pública
-    const { data: urlData } = supabase.storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(data.path);
-
-    // Retorna solo la URL
-    return urlData.publicUrl;
+    return response.data.url;
   } catch (error) {
     console.error("Error en uploadSystemLogo:", error);
     throw error;
