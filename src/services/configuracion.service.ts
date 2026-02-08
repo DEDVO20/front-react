@@ -17,7 +17,8 @@ export const configuracionService = {
             const response = await axios.get(`${API_URL}/${clave}`);
             return response.data;
         } catch (error: any) {
-            if (error.response && error.response.status === 404) {
+            // Manejar 404 (no encontrado) como retorno nulo, no como error
+            if (error.response?.status === 404) {
                 return null;
             }
             throw error;

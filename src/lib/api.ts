@@ -5,7 +5,7 @@ import axios, { AxiosInstance, AxiosError } from "axios";
 
 // Configuración base de la API
 const rawBase = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
-export const API_BASE_URL = rawBase.endsWith("/api/v1") ? rawBase : rawBase.replace(/\/+$/,'') + "/api/v1";
+export const API_BASE_URL = rawBase.endsWith("/api/v1") ? rawBase : rawBase.replace(/\/+$/, '') + "/api/v1";
 
 // Debug: mostrar la URL base en la consola del navegador (útil en dev)
 if (import.meta.env.DEV) {
@@ -60,7 +60,9 @@ apiClient.interceptors.response.use(
       error.message ||
       "Error desconocido";
 
-    return Promise.reject(new Error(errorMessage));
+    const errorObj = new Error(errorMessage) as any;
+    errorObj.response = error.response;
+    return Promise.reject(errorObj);
   }
 );
 
