@@ -166,8 +166,8 @@ export default function Seguridad() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="space-y-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-6">
                         {/* Personalización del Sistema (Solo Admin) */}
                         {isAdmin && (
                             <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
