@@ -29,6 +29,11 @@ export default function Seguridad() {
     const currentUser = getCurrentUser();
     const isAdmin = currentUser?.permisos?.includes("sistema.admin");
 
+    // Estados para textos del sistema
+    const [systemTitle, setSystemTitle] = useState<string>("SGC ISO 9001");
+    const [systemSubtitle, setSystemSubtitle] = useState<string>("Sistema de Calidad");
+    const [savingTexts, setSavingTexts] = useState(false);
+
     useEffect(() => {
         const fetchLogo = async () => {
             try {
@@ -40,7 +45,25 @@ export default function Seguridad() {
                 console.error("Error cargando logo:", error);
             }
         };
+
+        const fetchSystemTexts = async () => {
+            try {
+                const titleConfig = await configuracionService.get("sistema_titulo");
+                if (titleConfig && titleConfig.valor) {
+                    setSystemTitle(titleConfig.valor);
+                }
+
+                const subtitleConfig = await configuracionService.get("sistema_subtitulo");
+                if (subtitleConfig && subtitleConfig.valor) {
+                    setSystemSubtitle(subtitleConfig.valor);
+                }
+            } catch (error) {
+                console.error("Error cargando textos del sistema:", error);
+            }
+        };
+
         fetchLogo();
+        fetchSystemTexts();
     }, []);
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,6 +84,24 @@ export default function Seguridad() {
             toast.error("Error al actualizar el logo");
         } finally {
             setUploadingLogo(false);
+        }
+    };
+
+    const handleSaveSystemTexts = async () => {
+        setSavingTexts(true);
+        try {
+            await configuracionService.save("sistema_titulo", systemTitle, "Título del Sistema");
+            await configuracionService.save("sistema_subtitulo", systemSubtitle, "Subtítulo del Sistema");
+
+            toast.success("Textos del sistema actualizados correctamente");
+
+            // Disparar evento para actualizar sidebar
+            window.dispatchEvent(new Event("system-config-change"));
+        } catch (error) {
+            console.error("Error guardando textos:", error);
+            toast.error("Error al guardar los textos");
+        } finally {
+            setSavingTexts(false);
         }
     };
 
@@ -136,7 +177,8 @@ export default function Seguridad() {
                                     </div>
                                     <CardTitle className="text-lg text-[#1E3A8A]">Personalización del Sistema</CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-6 space-y-4">
+                                <CardContent className="p-6 space-y-6">
+                                    {/* Logo Section */}
                                     <div className="flex items-center gap-6">
                                         <div className="relative group flex aspect-square size-24 items-center justify-center rounded-lg bg-white border border-gray-200 shadow-sm overflow-hidden">
                                             {logoUrl ? (
@@ -177,6 +219,57 @@ export default function Seguridad() {
                                                     )}
                                                 </Button>
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    <Separator className="bg-gray-100" />
+
+                                    {/* System Title and Subtitle Section */}
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900 mb-4">Textos del Sistema</h3>
+                                            <p className="text-sm text-gray-500 mb-4">Personaliza los textos que aparecen en la barra lateral.</p>
+                                        </div>
+
+                                        <div className="grid gap-4">
+                                            <div className="grid gap-2">
+                                                <Label className="font-semibold text-gray-700">Título Principal</Label>
+                                                <Input
+                                                    type="text"
+                                                    placeholder="SGC ISO 9001"
+                                                    className="rounded-xl"
+                                                    value={systemTitle}
+                                                    onChange={(e) => setSystemTitle(e.target.value)}
+                                                />
+                                                <p className="text-xs text-muted-foreground">Aparece en la parte superior de la barra lateral.</p>
+                                            </div>
+
+                                            <div className="grid gap-2">
+                                                <Label className="font-semibold text-gray-700">Subtítulo</Label>
+                                                <Input
+                                                    type="text"
+                                                    placeholder="Sistema de Calidad"
+                                                    className="rounded-xl"
+                                                    value={systemSubtitle}
+                                                    onChange={(e) => setSystemSubtitle(e.target.value)}
+                                                />
+                                                <p className="text-xs text-muted-foreground">Texto secundario debajo del título.</p>
+                                            </div>
+
+                                            <Button
+                                                onClick={handleSaveSystemTexts}
+                                                disabled={savingTexts}
+                                                className="mt-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl px-6 py-5 h-auto font-bold w-full md:w-auto"
+                                            >
+                                                {savingTexts ? (
+                                                    <>
+                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        Guardando...
+                                                    </>
+                                                ) : (
+                                                    "Guardar Cambios"
+                                                )}
+                                            </Button>
                                         </div>
                                     </div>
                                 </CardContent>

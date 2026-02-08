@@ -40,6 +40,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [pendingCount] = React.useState(5); // Simulado
   const { isMobile, setOpenMobile } = useSidebar();
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
+  const [systemTitle, setSystemTitle] = React.useState<string>("SGC ISO 9001");
+  const [systemSubtitle, setSystemSubtitle] = React.useState<string>("Sistema de Calidad");
 
   // Cargar perfil completo al montar
   React.useEffect(() => {
@@ -78,23 +80,40 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     };
   }, [user]);
 
-  // Cargar logo
+  // Cargar configuraciones del sistema (logo, título, subtítulo)
   React.useEffect(() => {
-    const fetchLogo = async () => {
+    const fetchSystemConfig = async () => {
       try {
-        const config = await configuracionService.get("logo_universidad");
-        if (config && config.valor) {
-          setLogoUrl(config.valor);
+        // Cargar logo
+        const logoConfig = await configuracionService.get("logo_universidad");
+        if (logoConfig && logoConfig.valor) {
+          setLogoUrl(logoConfig.valor);
+        }
+
+        // Cargar título del sistema
+        const titleConfig = await configuracionService.get("sistema_titulo");
+        if (titleConfig && titleConfig.valor) {
+          setSystemTitle(titleConfig.valor);
+        }
+
+        // Cargar subtítulo del sistema
+        const subtitleConfig = await configuracionService.get("sistema_subtitulo");
+        if (subtitleConfig && subtitleConfig.valor) {
+          setSystemSubtitle(subtitleConfig.valor);
         }
       } catch (error) {
-        console.error("Error cargando logo:", error);
+        console.error("Error cargando configuración del sistema:", error);
       }
     };
-    fetchLogo();
+    fetchSystemConfig();
 
     // Escuchar cambios
-    window.addEventListener("system-logo-change", fetchLogo);
-    return () => window.removeEventListener("system-logo-change", fetchLogo);
+    window.addEventListener("system-logo-change", fetchSystemConfig);
+    window.addEventListener("system-config-change", fetchSystemConfig);
+    return () => {
+      window.removeEventListener("system-logo-change", fetchSystemConfig);
+      window.removeEventListener("system-config-change", fetchSystemConfig);
+    };
   }, []);
 
 
@@ -337,8 +356,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   )}
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-bold text-white">SGC ISO 9001</span>
-                  <span className="truncate text-xs text-blue-100">Sistema de Calidad</span>
+                  <span className="truncate font-bold text-white">{systemTitle}</span>
+                  <span className="truncate text-xs text-blue-100">{systemSubtitle}</span>
                 </div>
               </Link>
             </SidebarMenuButton>
