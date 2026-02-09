@@ -2,24 +2,23 @@ import { API_BASE_URL as API_URL } from "@/lib/api";
 
 export interface Riesgo {
   id: string;
-  procesoId?: string;
+  proceso_id?: string;
   codigo: string;
   descripcion?: string;
   categoria?: string;
-  tipoRiesgo?: string;
-  tipo?: string;
+  tipo_riesgo?: string;
   probabilidad?: number;
-  fechaIdentificacion?: string;
-  fechaRevision?: string;
+  fecha_identificacion?: string;
+  fecha_revision?: string;
   impacto?: number;
-  nivelRiesgo?: number;
+  nivel_riesgo?: string;  // Cambiado a string para coincidir con backend
   causas?: string;
   consecuencias?: string;
   tratamiento?: string;
-  responsableId?: string;
+  responsable_id?: string;
   estado?: string;
-  creadoEn: string;
-  actualizadoEn?: string;
+  creado_en: string;
+  actualizado_en?: string;
   proceso?: {
     id: string;
     nombre: string;

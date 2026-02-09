@@ -66,20 +66,18 @@ const TratamientoRiesgos: React.FC = () => {
   const mitigados = riesgos.filter(r => r.estado === "mitigado").length;
   const coveragePercentage = total === 0 ? 0 : Math.round((mitigados / total) * 100);
 
-  const getNivelColor = (nivel?: number) => {
-    if (!nivel) return "bg-gray-200 text-gray-800";
-    if (nivel >= 15) return "bg-[#FEF2F2] text-[#991B1B] border border-[#EF4444]/30";
-    if (nivel >= 10) return "bg-[#FFF7ED] text-[#F97316] border border-[#F97316]/30";
-    if (nivel >= 5) return "bg-[#FFFBEB] text-[#F59E0B] border border-[#F59E0B]/30";
+  const getNivelColor = (nivel?: string) => {
+    if (!nivel) return "bg-gray-200 text-gray-700";
+    const nivelLower = nivel.toLowerCase();
+    if (nivelLower === 'crítico' || nivelLower === 'critico') return "bg-[#FEF2F2] text-[#991B1B] border border-[#EF4444]/30";
+    if (nivelLower === 'alto') return "bg-[#FFF7ED] text-[#9A3412] border border-[#F97316]/30";
+    if (nivelLower === 'medio') return "bg-[#FFFBEB] text-[#92400E] border border-[#F59E0B]/30";
     return "bg-[#ECFDF5] text-[#065F46] border border-[#10B981]/30";
   };
 
-  const getNivelLabel = (nivel?: number) => {
+  const getNivelLabel = (nivel?: string) => {
     if (!nivel) return "Sin evaluar";
-    if (nivel >= 15) return "Crítico";
-    if (nivel >= 10) return "Alto";
-    if (nivel >= 5) return "Medio";
-    return "Bajo";
+    return nivel.charAt(0).toUpperCase() + nivel.slice(1);
   };
 
   const getEstadoBadge = (estado?: string) => {
@@ -305,8 +303,8 @@ const TratamientoRiesgos: React.FC = () => {
                           )}
                         </TableCell>
                         <TableCell className="px-6 py-4">
-                          <Badge className={getNivelColor(r.nivelRiesgo)}>
-                            {getNivelLabel(r.nivelRiesgo)} {r.nivelRiesgo ? `(${r.nivelRiesgo})` : ''}
+                          <Badge className={getNivelColor(r.nivel_riesgo)}>
+                            {getNivelLabel(r.nivel_riesgo)}
                           </Badge>
                         </TableCell>
                         <TableCell className="px-6 py-4">
@@ -350,8 +348,8 @@ const TratamientoRiesgos: React.FC = () => {
                       </Badge>
                     </div>
                     <div className="flex gap-4">
-                      <Badge className={`text-xl px-6 py-3 ${getNivelColor(selectedRiesgo.nivelRiesgo)}`}>
-                        {getNivelLabel(selectedRiesgo.nivelRiesgo)} {selectedRiesgo.nivelRiesgo ? `(${selectedRiesgo.nivelRiesgo})` : ''}
+                      <Badge className={`text-xl px-6 py-3 ${getNivelColor(selectedRiesgo.nivel_riesgo)}`}>
+                        {getNivelLabel(selectedRiesgo.nivel_riesgo)}
                       </Badge>
                       {getEstadoBadge(selectedRiesgo.estado)}
                     </div>
@@ -375,7 +373,7 @@ const TratamientoRiesgos: React.FC = () => {
                     </div>
                     <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
                       <Label className="text-[#6B7280] uppercase text-xs font-bold">Nivel de Riesgo</Label>
-                      <p className="mt-2 text-3xl font-bold text-[#1E3A8A]">{selectedRiesgo.nivelRiesgo || '-'}</p>
+                      <p className="mt-2 text-3xl font-bold text-[#1E3A8A]">{selectedRiesgo.nivel_riesgo || '-'}</p>
                     </div>
                   </div>
 
@@ -391,27 +389,27 @@ const TratamientoRiesgos: React.FC = () => {
                     </div>
                   )}
 
-                  {selectedRiesgo.tipo && (
+                  {selectedRiesgo.tipo_riesgo && (
                     <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
                       <Label className="text-[#6B7280] uppercase text-xs font-bold">Tipo de Riesgo</Label>
-                      <p className="mt-2 text-lg font-medium capitalize">{selectedRiesgo.tipo}</p>
+                      <p className="mt-2 text-lg font-medium capitalize">{selectedRiesgo.tipo_riesgo}</p>
                     </div>
                   )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {selectedRiesgo.fechaIdentificacion && (
+                    {selectedRiesgo.fecha_identificacion && (
                       <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
                         <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha de Identificación</Label>
                         <p className="mt-2 text-lg font-medium">
-                          {new Date(selectedRiesgo.fechaIdentificacion).toLocaleDateString('es-CO', { dateStyle: 'long' })}
+                          {new Date(selectedRiesgo.fecha_identificacion).toLocaleDateString('es-CO', { dateStyle: 'long' })}
                         </p>
                       </div>
                     )}
-                    {selectedRiesgo.fechaRevision && (
+                    {selectedRiesgo.fecha_revision && (
                       <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
                         <Label className="text-[#6B7280] uppercase text-xs font-bold">Próxima Revisión</Label>
                         <p className="mt-2 text-lg font-medium">
-                          {new Date(selectedRiesgo.fechaRevision).toLocaleDateString('es-CO', { dateStyle: 'long' })}
+                          {new Date(selectedRiesgo.fecha_revision).toLocaleDateString('es-CO', { dateStyle: 'long' })}
                         </p>
                       </div>
                     )}
