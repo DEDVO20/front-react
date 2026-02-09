@@ -183,7 +183,7 @@ export default function MapaProcesos() {
                         size="sm"
                         variant="outline"
                         className="flex-1"
-                        onClick={() => navigate(`/procesos/${proceso.id}`)}
+                        onClick={() => navigate(`/procesos/${proceso.id}/editar`)}
                     >
                         <Eye className="h-4 w-4 mr-1" />
                         Ver
