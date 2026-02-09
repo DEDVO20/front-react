@@ -55,9 +55,9 @@ const ControlesRiesgos: React.FC = () => {
 
   // Formulario crear
   const [formData, setFormData] = useState({
-    riesgoId: "",
+    riesgo_id: "",
     descripcion: "",
-    tipo: "",
+    tipo_control: "",
     frecuencia: "",
     efectividad: "",
   });
@@ -104,7 +104,7 @@ const ControlesRiesgos: React.FC = () => {
   };
 
   const handleCreateControl = async () => {
-    if (!formData.riesgoId || !formData.descripcion.trim()) {
+    if (!formData.riesgo_id || !formData.descripcion.trim()) {
       toast.error("Riesgo y descripción son obligatorios");
       return;
     }
@@ -131,9 +131,9 @@ const ControlesRiesgos: React.FC = () => {
       toast.success("Control creado exitosamente");
       setShowCreateDialog(false);
       setFormData({
-        riesgoId: "",
+        riesgo_id: "",
         descripcion: "",
-        tipo: "",
+        tipo_control: "",
         frecuencia: "",
         efectividad: "",
       });
@@ -442,7 +442,7 @@ const ControlesRiesgos: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label className="font-bold">Riesgo Asociado <span className="text-red-500">*</span></Label>
-                    <Select value={formData.riesgoId} onValueChange={(v) => setFormData({ ...formData, riesgoId: v })}>
+                    <Select value={formData.riesgo_id} onValueChange={(v) => setFormData({ ...formData, riesgo_id: v })}>
                       <SelectTrigger className="rounded-xl">
                         <SelectValue placeholder="Selecciona un riesgo" />
                       </SelectTrigger>
@@ -458,7 +458,7 @@ const ControlesRiesgos: React.FC = () => {
 
                   <div className="space-y-2">
                     <Label className="font-bold">Tipo de Control</Label>
-                    <Select value={formData.tipo} onValueChange={(v) => setFormData({ ...formData, tipo: v })}>
+                    <Select value={formData.tipo_control} onValueChange={(v) => setFormData({ ...formData, tipo_control: v })}>
                       <SelectTrigger className="rounded-xl">
                         <SelectValue placeholder="Selecciona tipo" />
                       </SelectTrigger>
