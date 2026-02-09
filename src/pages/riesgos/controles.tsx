@@ -28,13 +28,15 @@ import { API_BASE_URL as API_URL } from "@/lib/api";
 
 interface ControlRiesgo {
   id: string;
-  riesgoId: string;
+  riesgo_id: string;
   descripcion?: string;
-  tipo?: string;
-  responsableId?: string;
+  tipo_control?: string;
+  responsable_id?: string;
   frecuencia?: string;
   efectividad?: string;
-  creadoEn: string;
+  activo?: boolean;
+  creado_en: string;
+  actualizado_en?: string;
 }
 
 interface Riesgo {
@@ -157,12 +159,12 @@ const ControlesRiesgos: React.FC = () => {
   }, {} as Record<string, Riesgo>);
 
   const filteredControles = controles.filter((control) => {
-    const riesgo = riesgoMap[control.riesgoId];
+    const riesgo = riesgoMap[control.riesgo_id];
     const riesgoCodigo = riesgo?.codigo || "";
     const riesgoDesc = riesgo?.descripcion || "";
     return (
       control.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      control.tipo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      control.tipo_control?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       riesgoCodigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       riesgoDesc.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -170,9 +172,9 @@ const ControlesRiesgos: React.FC = () => {
 
   // Estadísticas
   const total = controles.length;
-  const preventivos = controles.filter(c => c.tipo === "preventivo").length;
+  const preventivos = controles.filter(c => c.tipo_control === "preventivo").length;
   const altaEfectividad = controles.filter(c => c.efectividad === "alta").length;
-  const correctivosDetectivos = controles.filter(c => c.tipo === "correctivo" || c.tipo === "detectivo").length;
+  const correctivosDetectivos = controles.filter(c => c.tipo_control === "correctivo" || c.tipo_control === "detectivo").length;
   const efectividadPercentage = total === 0 ? 0 : Math.round((altaEfectividad / total) * 100);
 
   const getTipoBadge = (tipo?: string) => {
@@ -390,7 +392,7 @@ const ControlesRiesgos: React.FC = () => {
                     </TableRow>
                   ) : (
                     filteredControles.map((control) => {
-                      const riesgo = riesgoMap[control.riesgoId];
+                      const riesgo = riesgoMap[control.riesgo_id];
                       return (
                         <TableRow key={control.id} className="hover:bg-[#F5F3FF] transition-colors">
                           <TableCell className="px-6 py-4">
@@ -404,7 +406,7 @@ const ControlesRiesgos: React.FC = () => {
                           <TableCell className="px-6 py-4 font-medium max-w-md">
                             {control.descripcion || <span className="italic text-[#6B7280]">Sin descripción</span>}
                           </TableCell>
-                          <TableCell className="px-6 py-4">{getTipoBadge(control.tipo)}</TableCell>
+                          <TableCell className="px-6 py-4">{getTipoBadge(control.tipo_control)}</TableCell>
                           <TableCell className="px-6 py-4 text-[#6B7280]">
                             {control.frecuencia ? control.frecuencia.charAt(0).toUpperCase() + control.frecuencia.slice(1) : 'No definida'}
                           </TableCell>
@@ -553,9 +555,9 @@ const ControlesRiesgos: React.FC = () => {
                     <Label className="text-[#6B7280] uppercase text-xs font-bold">Riesgo Asociado</Label>
                     <div className="mt-2">
                       <Badge className="text-lg px-6 py-3 bg-[#2563EB]/10 text-[#2563EB] font-bold">
-                        {riesgoMap[selectedControl.riesgoId]?.codigo || '-'}
+                        {riesgoMap[selectedControl.riesgo_id]?.codigo || '-'}
                       </Badge>
-                      <p className="mt-2 text-lg">{riesgoMap[selectedControl.riesgoId]?.descripcion || 'Sin descripción'}</p>
+                      <p className="mt-2 text-lg">{riesgoMap[selectedControl.riesgo_id]?.descripcion || 'Sin descripción'}</p>
                     </div>
                   </div>
 
@@ -567,7 +569,7 @@ const ControlesRiesgos: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
                       <Label className="text-[#6B7280] uppercase text-xs font-bold">Tipo</Label>
-                      <div className="mt-2">{getTipoBadge(selectedControl.tipo)}</div>
+                      <div className="mt-2">{getTipoBadge(selectedControl.tipo_control)}</div>
                     </div>
                     <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
                       <Label className="text-[#6B7280] uppercase text-xs font-bold">Frecuencia</Label>
@@ -584,7 +586,7 @@ const ControlesRiesgos: React.FC = () => {
                   <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
                     <Label className="text-[#6B7280] uppercase text-xs font-bold">Creado el</Label>
                     <p className="mt-2 text-lg font-medium">
-                      {new Date(selectedControl.creadoEn).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' })}
+                      {new Date(selectedControl.creado_en).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' })}
                     </p>
                   </div>
                 </div>
