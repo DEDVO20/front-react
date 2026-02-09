@@ -202,12 +202,12 @@ const MatrizRiesgos: React.FC = () => {
   const coveragePercentage = total === 0 ? 0 : Math.round(((medios + bajos) / total) * 100);
 
   const getNivelColor = (nivel?: string) => {
-    if (!nivel) return "bg-gray-200";
+    if (!nivel) return "bg-gray-200 text-gray-700";
     const nivelLower = nivel.toLowerCase();
-    if (nivelLower === 'crítico' || nivelLower === 'critico') return "bg-[#FEF2F2] border-[#EF4444]";
-    if (nivelLower === 'alto') return "bg-[#FFF7ED] border-[#F97316]";
-    if (nivelLower === 'medio') return "bg-[#FFFBEB] border-[#F59E0B]";
-    return "bg-[#ECFDF5] border-[#10B981]";
+    if (nivelLower === 'crítico' || nivelLower === 'critico') return "bg-[#FEF2F2] border-[#EF4444] text-[#991B1B]";
+    if (nivelLower === 'alto') return "bg-[#FFF7ED] border-[#F97316] text-[#9A3412]";
+    if (nivelLower === 'medio') return "bg-[#FFFBEB] border-[#F59E0B] text-[#92400E]";
+    return "bg-[#ECFDF5] border-[#10B981] text-[#065F46]";
   };
 
   const getNivelLabel = (nivel?: string) => {
@@ -217,10 +217,10 @@ const MatrizRiesgos: React.FC = () => {
 
   // Helper functions for numeric levels (used in matrix)
   const getNivelColorNumeric = (nivel: number) => {
-    if (nivel >= 15) return "bg-[#FEF2F2] border-[#EF4444]";
-    if (nivel >= 10) return "bg-[#FFF7ED] border-[#F97316]";
-    if (nivel >= 5) return "bg-[#FFFBEB] border-[#F59E0B]";
-    return "bg-[#ECFDF5] border-[#10B981]";
+    if (nivel >= 15) return "bg-[#FEF2F2] border-[#EF4444] text-[#991B1B]";
+    if (nivel >= 10) return "bg-[#FFF7ED] border-[#F97316] text-[#9A3412]";
+    if (nivel >= 5) return "bg-[#FFFBEB] border-[#F59E0B] text-[#92400E]";
+    return "bg-[#ECFDF5] border-[#10B981] text-[#065F46]";
   };
 
   const getNivelLabelNumeric = (nivel: number) => {
