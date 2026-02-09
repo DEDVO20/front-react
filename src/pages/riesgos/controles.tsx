@@ -96,6 +96,9 @@ const ControlesRiesgos: React.FC = () => {
         riesgosRes.json(),
       ]);
 
+      console.log('Datos de controles recibidos:', controlesData);
+      console.log('Primer control:', controlesData[0]);
+
       setControles(controlesData);
       setRiesgos(riesgosData);
     } catch (error: any) {
@@ -369,13 +372,14 @@ const ControlesRiesgos: React.FC = () => {
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Tipo</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Frecuencia</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Efectividad</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Fecha Creación</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A] text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredControles.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-20 text-[#6B7280]">
+                      <TableCell colSpan={7} className="text-center py-20 text-[#6B7280]">
                         <div className="flex flex-col items-center">
                           <Shield className="h-16 w-16 text-gray-300 mb-4" />
                           <p className="text-lg font-medium">
@@ -411,6 +415,17 @@ const ControlesRiesgos: React.FC = () => {
                             {control.frecuencia ? control.frecuencia.charAt(0).toUpperCase() + control.frecuencia.slice(1) : 'No definida'}
                           </TableCell>
                           <TableCell className="px-6 py-4">{getEfectividadBadge(control.efectividad)}</TableCell>
+                          <TableCell className="px-6 py-4 text-[#6B7280]">
+                            {control.creado_en ? (
+                              new Date(control.creado_en).toLocaleDateString('es-CO', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })
+                            ) : (
+                              <span className="italic text-[#9CA3AF]">Fecha no registrada</span>
+                            )}
+                          </TableCell>
                           <TableCell className="px-6 py-4 text-right">
                             <Tooltip>
                               <TooltipTrigger asChild>

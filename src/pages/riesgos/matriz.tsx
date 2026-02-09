@@ -29,18 +29,19 @@ interface Riesgo {
   id: string;
   codigo: string;
   descripcion?: string;
-  tipo?: string;
-  procesoId?: string;
-  areaId?: string;
+  tipo_riesgo?: string;
+  proceso_id?: string;
+  area_id?: string;
   probabilidad?: number;
   impacto?: number;
-  nivelRiesgo?: number;
+  nivel_riesgo?: string;
   tratamiento?: string;
-  responsableId?: string;
+  responsable_id?: string;
   estado?: string;
-  fechaIdentificacion?: string;
-  fechaRevision?: string;
-  creadoEn: string;
+  fecha_identificacion?: string;
+  fecha_revision?: string;
+  creado_en: string;
+  actualizado_en?: string;
 }
 
 interface Proceso {
@@ -162,37 +163,74 @@ const MatrizRiesgos: React.FC = () => {
     return acc;
   }, {} as Record<string, Proceso | undefined>);
 
-  const filteredRiesgos = riesgos.filter(r => 
+  const filteredRiesgos = riesgos.filter(r =>
     r.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (r.descripcion || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ((r.procesoId && procesoMap[r.procesoId]?.nombre) || "").toLowerCase().includes(searchTerm.toLowerCase())
+    ((r.proceso_id && procesoMap[r.proceso_id]?.nombre) || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Estadísticas
   const total = riesgos.length;
-  const criticos = riesgos.filter(r => (r.nivelRiesgo || 0) >= 15).length;
-  const altos = riesgos.filter(r => (r.nivelRiesgo || 0) >= 10 && (r.nivelRiesgo || 0) < 15).length;
-  const medios = riesgos.filter(r => (r.nivelRiesgo || 0) >= 5 && (r.nivelRiesgo || 0) < 10).length;
-  const bajos = riesgos.filter(r => (r.nivelRiesgo || 0) < 5).length;
+  const criticos = riesgos.filter(r => {
+    const nivel = r.nivel_riesgo;
+    if (typeof nivel === 'string') {
+      return nivel.toLowerCase() === 'crítico' || nivel.toLowerCase() === 'critico';
+    }
+    return false;
+  }).length;
+  const altos = riesgos.filter(r => {
+    const nivel = r.nivel_riesgo;
+    if (typeof nivel === 'string') {
+      return nivel.toLowerCase() === 'alto';
+    }
+    return false;
+  }).length;
+  const medios = riesgos.filter(r => {
+    const nivel = r.nivel_riesgo;
+    if (typeof nivel === 'string') {
+      return nivel.toLowerCase() === 'medio';
+    }
+    return false;
+  }).length;
+  const bajos = riesgos.filter(r => {
+    const nivel = r.nivel_riesgo;
+    if (typeof nivel === 'string') {
+      return nivel.toLowerCase() === 'bajo';
+    }
+    return false;
+  }).length;
   const coveragePercentage = total === 0 ? 0 : Math.round(((medios + bajos) / total) * 100);
 
-  const getNivelColor = (nivel?: number) => {
+  const getNivelColor = (nivel?: string) => {
     if (!nivel) return "bg-gray-200";
+    const nivelLower = nivel.toLowerCase();
+    if (nivelLower === 'crítico' || nivelLower === 'critico') return "bg-[#FEF2F2] border-[#EF4444]";
+    if (nivelLower === 'alto') return "bg-[#FFF7ED] border-[#F97316]";
+    if (nivelLower === 'medio') return "bg-[#FFFBEB] border-[#F59E0B]";
+    return "bg-[#ECFDF5] border-[#10B981]";
+  };
+
+  const getNivelLabel = (nivel?: string) => {
+    if (!nivel) return "Sin evaluar";
+    return nivel.charAt(0).toUpperCase() + nivel.slice(1);
+  };
+
+  // Helper functions for numeric levels (used in matrix)
+  const getNivelColorNumeric = (nivel: number) => {
     if (nivel >= 15) return "bg-[#FEF2F2] border-[#EF4444]";
     if (nivel >= 10) return "bg-[#FFF7ED] border-[#F97316]";
     if (nivel >= 5) return "bg-[#FFFBEB] border-[#F59E0B]";
     return "bg-[#ECFDF5] border-[#10B981]";
   };
 
-  const getNivelLabel = (nivel?: number) => {
-    if (!nivel) return "Sin evaluar";
+  const getNivelLabelNumeric = (nivel: number) => {
     if (nivel >= 15) return "Crítico";
     if (nivel >= 10) return "Alto";
     if (nivel >= 5) return "Medio";
     return "Bajo";
   };
 
-  const getCeldasMatriz = (prob: number, imp: number) => 
+  const getCeldasMatriz = (prob: number, imp: number) =>
     filteredRiesgos.filter(r => r.probabilidad === prob && r.impacto === imp);
 
   if (loading) {
@@ -373,12 +411,12 @@ const MatrizRiesgos: React.FC = () => {
                         {[1, 2, 3, 4, 5].map((imp) => {
                           const nivel = prob * imp;
                           const riesgosCelda = getCeldasMatriz(prob, imp);
-                          const bgColor = getNivelColor(nivel);
+                          const bgColor = getNivelColorNumeric(nivel);
 
                           return (
                             <td key={imp} className={`border-2 ${bgColor} p-4 min-h-32 align-top transition-all`}>
                               <div className="font-bold text-[#1E3A8A] mb-2">
-                                {getNivelLabel(nivel)} ({nivel})
+                                {getNivelLabelNumeric(nivel)} ({nivel})
                               </div>
                               <div className="space-y-2">
                                 {riesgosCelda.map((r) => (
@@ -480,7 +518,7 @@ const MatrizRiesgos: React.FC = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="px-6 py-4 text-[#6B7280]">
-                          {r.procesoId ? procesoMap[r.procesoId]?.nombre || '-' : '-'}
+                          {r.proceso_id ? procesoMap[r.proceso_id]?.nombre || '-' : '-'}
                         </TableCell>
                         <TableCell className="px-6 py-4 font-medium max-w-md">
                           {r.descripcion || <span className="italic text-[#6B7280]">Sin descripción</span>}
@@ -497,8 +535,8 @@ const MatrizRiesgos: React.FC = () => {
                         <TableCell className="px-6 py-4 text-center">{r.probabilidad || '-'}</TableCell>
                         <TableCell className="px-6 py-4 text-center">{r.impacto || '-'}</TableCell>
                         <TableCell className="px-6 py-4">
-                          <Badge className={getNivelColor(r.nivelRiesgo)}>
-                            {getNivelLabel(r.nivelRiesgo)} {r.nivelRiesgo ? `(${r.nivelRiesgo})` : ''}
+                          <Badge className={getNivelColor(r.nivel_riesgo)}>
+                            {getNivelLabel(r.nivel_riesgo)}
                           </Badge>
                         </TableCell>
                         <TableCell className="px-6 py-4 text-right">
@@ -671,19 +709,19 @@ const MatrizRiesgos: React.FC = () => {
                         {selectedRiesgo.codigo}
                       </Badge>
                     </div>
-                    <Badge className={`text-xl px-6 py-3 ${getNivelColor(selectedRiesgo.nivelRiesgo)}`}>
-                      {getNivelLabel(selectedRiesgo.nivelRiesgo)} {selectedRiesgo.nivelRiesgo ? `(${selectedRiesgo.nivelRiesgo})` : ''}
+                    <Badge className={`text-xl px-6 py-3 ${getNivelColor(selectedRiesgo.nivel_riesgo)}`}>
+                      {getNivelLabel(selectedRiesgo.nivel_riesgo)}
                     </Badge>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
                       <Label className="text-[#6B7280] uppercase text-xs font-bold mb-3 block">Proceso</Label>
-                      <p className="text-xl font-medium">{selectedRiesgo.procesoId ? procesoMap[selectedRiesgo.procesoId]?.nombre || 'Sin proceso' : 'Sin proceso'}</p>
+                      <p className="text-xl font-medium">{selectedRiesgo.proceso_id ? procesoMap[selectedRiesgo.proceso_id]?.nombre || 'Sin proceso' : 'Sin proceso'}</p>
                     </div>
                     <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
                       <Label className="text-[#6B7280] uppercase text-xs font-bold mb-3 block">Tipo</Label>
-                      <p className="text-xl font-medium capitalize">{selectedRiesgo.tipo || 'No definido'}</p>
+                      <p className="text-xl font-medium capitalize">{selectedRiesgo.tipo_riesgo || 'No definido'}</p>
                     </div>
                   </div>
 
@@ -705,7 +743,7 @@ const MatrizRiesgos: React.FC = () => {
                     </div>
                     <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
                       <Label className="text-[#6B7280] uppercase text-xs font-bold">Nivel de Riesgo</Label>
-                      <p className="mt-2 text-3xl font-bold text-[#1E3A8A]">{selectedRiesgo.nivelRiesgo || '-'}</p>
+                      <p className="mt-2 text-3xl font-bold text-[#1E3A8A]">{selectedRiesgo.nivel_riesgo || '-'}</p>
                     </div>
                   </div>
 
@@ -719,7 +757,7 @@ const MatrizRiesgos: React.FC = () => {
                   <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
                     <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha de Identificación</Label>
                     <p className="mt-2 text-lg font-medium">
-                      {selectedRiesgo.fechaIdentificacion ? new Date(selectedRiesgo.fechaIdentificacion).toLocaleDateString('es-CO') : 'No registrada'}
+                      {selectedRiesgo.fecha_identificacion ? new Date(selectedRiesgo.fecha_identificacion).toLocaleDateString('es-CO') : 'No registrada'}
                     </p>
                   </div>
                 </div>
