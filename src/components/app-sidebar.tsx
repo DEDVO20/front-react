@@ -230,9 +230,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "#",
         icon: FolderOpen,
         items: [
-          { title: "Mapa de Procesos", url: "#", permiso: "procesos.gestionar" },
-          { title: "Gestionar Procesos", url: "#", permiso: "procesos.gestionar" },
-          { title: "Instancias Activas", url: "#", permiso: "procesos.gestionar" },
+          { title: "Mapa de Procesos", url: "/procesos", permiso: "procesos.admin" },
+          { title: "Gestionar Procesos", url: "/procesos", permiso: "procesos.admin" },
         ],
       },
     ]),

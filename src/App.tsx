@@ -60,6 +60,7 @@ import ReportesView from "./pages/reportes";
 import MatrizRiesgos from "./pages/riesgos/matriz";
 import ControlesRiesgos from "./pages/riesgos/controles";
 import TratamientoRiesgos from "./pages/riesgos/tratamiento";
+import MapaProcesos from "./pages/MapaProcesos";
 import MigracionesDB from "./pages/sistema/MigracionesDB";
 import MesaDeAyuda from "./pages/soporte/MesaDeAyuda";
 import Seguridad from "./pages/seguridad";
@@ -155,6 +156,9 @@ function App() {
             <Route path="/riesgos/matriz" element={<MatrizRiesgos />} />
             <Route path="/riesgos/controles" element={<ControlesRiesgos />} />
             <Route path="/riesgos/tratamiento" element={<TratamientoRiesgos />} />
+
+            {/* Procesos */}
+            <Route path="/procesos" element={<MapaProcesos />} />
 
             {/* Sistema */}
             <Route path="/sistema/migraciones" element={<MigracionesDB />} />
