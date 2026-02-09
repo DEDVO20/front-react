@@ -73,6 +73,7 @@ const MatrizRiesgos: React.FC = () => {
 
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCell, setSelectedCell] = useState<{ prob: number, imp: number } | null>(null);
 
   useEffect(() => {
     fetchProcesos();
@@ -412,24 +413,45 @@ const MatrizRiesgos: React.FC = () => {
                           const nivel = prob * imp;
                           const riesgosCelda = getCeldasMatriz(prob, imp);
                           const bgColor = getNivelColorNumeric(nivel);
+                          const isSelected = selectedCell?.prob === prob && selectedCell?.imp === imp;
+                          const hasRiesgos = riesgosCelda.length > 0;
 
                           return (
-                            <td key={imp} className={`border-2 ${bgColor} p-4 min-h-32 align-top transition-all`}>
-                              <div className="font-bold text-[#1E3A8A] mb-2">
-                                {getNivelLabelNumeric(nivel)} ({nivel})
-                              </div>
-                              <div className="space-y-2">
-                                {riesgosCelda.map((r) => (
-                                  <div
-                                    key={r.id}
-                                    onClick={() => handleView(r)}
-                                    className="bg-white/90 p-3 rounded-lg shadow hover:shadow-md cursor-pointer transition-all"
-                                  >
-                                    <div className="font-bold text-[#2563EB]">{r.codigo}</div>
-                                    <div className="text-xs text-[#6B7280] truncate">{r.descripcion}</div>
-                                  </div>
-                                ))}
-                              </div>
+                            <td
+                              key={imp}
+                              className={`border-2 ${bgColor} p-4 min-h-32 align-top transition-all cursor-pointer hover:opacity-80 ${isSelected ? 'ring-4 ring-blue-500' : ''
+                                }`}
+                              onClick={() => setSelectedCell(isSelected ? null : { prob, imp })}
+                            >
+                              {/* Solo mostrar el label si hay riesgos o si está seleccionado */}
+                              {(hasRiesgos || isSelected) && (
+                                <div className="font-bold text-[#1E3A8A] mb-2">
+                                  {getNivelLabelNumeric(nivel)} ({nivel})
+                                  {hasRiesgos && (
+                                    <span className="ml-2 text-xs bg-white/80 px-2 py-1 rounded-full">
+                                      {riesgosCelda.length}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              {/* Solo mostrar los riesgos si la celda está seleccionada */}
+                              {isSelected && (
+                                <div className="space-y-2">
+                                  {riesgosCelda.map((r) => (
+                                    <div
+                                      key={r.id}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleView(r);
+                                      }}
+                                      className="bg-white/90 p-3 rounded-lg shadow hover:shadow-md cursor-pointer transition-all"
+                                    >
+                                      <div className="font-bold text-[#2563EB]">{r.codigo}</div>
+                                      <div className="text-xs text-[#6B7280] truncate">{r.descripcion}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </td>
                           );
                         })}
