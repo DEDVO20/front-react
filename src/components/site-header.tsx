@@ -38,7 +38,7 @@ export function SiteHeader() {
   // Obtener el nombre de la página actual desde la ruta
   const getPageName = () => {
     const path = location.pathname;
-    if (path === "/dashboard") return "Dashboard";
+    if (path === "/dashboard") return "Panel de Control";
     if (path.includes("/perfil")) return "Mi Perfil";
     if (path.includes("/usuarios")) return "Usuarios";
     if (path.includes("/documentos")) return "Documentos";
@@ -89,7 +89,7 @@ export function SiteHeader() {
     if (path.includes("/configuracion")) return "Ajustes";
     if (path.includes("/seguridad")) return "Seguridad";
 
-    return "Dashboard";
+    return "Panel de Control";
   };
   return (
     <header className="sticky top-0 z-50 group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear bg-background">

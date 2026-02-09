@@ -182,7 +182,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
     navMain: filterMenuItems([
       {
-        title: "Dashboard",
+        title: "Panel de Control",
         url: "/dashboard",
         icon: LayoutDashboard,
         badge: "Nuevo",
@@ -242,7 +242,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: AlertTriangle,
         url: "#",
         items: [
-          { title: "Dashboard", url: "/acciones-correctivas/dashboard", permiso: "acciones_correctivas.gestionar" },
+          { title: "Tablero", url: "/acciones-correctivas/dashboard", permiso: "acciones_correctivas.gestionar" },
           { title: "Nuevas", url: "/Acciones_correctivas_Nuevas", permiso: "acciones_correctivas.gestionar" },
           { title: "En Proceso", url: "/Acciones_correctivas_EnProceso", permiso: "acciones_correctivas.gestionar" },
           { title: "Cerradas", url: "/Acciones_correctivas_Cerradas", permiso: "acciones_correctivas.gestionar" },

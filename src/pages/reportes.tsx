@@ -86,7 +86,7 @@ const ReportesView = () => {
 
   const quickActions = [
     { icon: BarChart3, label: 'Reporte Ejecutivo', color: 'bg-blue-500' },
-    { icon: PieChart, label: 'Dashboard Analítico', color: 'bg-purple-500' },
+    { icon: PieChart, label: 'Panel Analítico', color: 'bg-purple-500' },
     { icon: Users, label: 'Reporte de Personal', color: 'bg-green-500' },
     { icon: Activity, label: 'Métricas en Tiempo Real', color: 'bg-orange-500' }
   ];

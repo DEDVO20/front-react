@@ -53,7 +53,7 @@ export const exportarDashboardAPDF = (
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('Dashboard de Acciones Correctivas', 105, 20, { align: 'center' });
+    doc.text('Tablero de Acciones Correctivas', 105, 20, { align: 'center' });
 
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');

@@ -233,7 +233,7 @@ export default function DashboardAccionesCorrectivas() {
                         <div>
                             <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
                                 <BarChart3 className="h-9 w-9 text-[#2563EB]" />
-                                Dashboard de Acciones Correctivas
+                                Tablero de Acciones Correctivas
                             </h1>
                             <p className="text-[#6B7280] mt-2 text-lg">
                                 Seguimiento y métricas de acciones correctivas
