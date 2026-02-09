@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  FileText, Eye, Search, RefreshCw, AlertTriangle, CheckCircle, XCircle, Shield
+  FileText, Eye, Search, RefreshCw, AlertTriangle, CheckCircle, XCircle, Shield, Edit, Play, Check, Ban
 } from 'lucide-react';
 import {
   Card, CardHeader, CardTitle, CardDescription, CardContent
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from "@/components/ui/dialog";
@@ -28,6 +29,15 @@ const TratamientoRiesgos: React.FC = () => {
   // Diálogo vista
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedRiesgo, setSelectedRiesgo] = useState<Riesgo | null>(null);
+
+  // Diálogo edición
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    tratamiento: "",
+    estado: "",
+    fecha_revision: "",
+  });
+  const [saving, setSaving] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -50,6 +60,42 @@ const TratamientoRiesgos: React.FC = () => {
   const handleView = (riesgo: Riesgo) => {
     setSelectedRiesgo(riesgo);
     setShowViewDialog(true);
+  };
+
+  const handleEdit = (riesgo: Riesgo) => {
+    setSelectedRiesgo(riesgo);
+    setEditFormData({
+      tratamiento: riesgo.tratamiento || "",
+      estado: riesgo.estado || "identificado",
+      fecha_revision: riesgo.fecha_revision || "",
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleUpdateTratamiento = async () => {
+    if (!selectedRiesgo) return;
+
+    try {
+      setSaving(true);
+      await riesgoService.update(selectedRiesgo.id, editFormData);
+      toast.success("Tratamiento actualizado exitosamente");
+      setShowEditDialog(false);
+      fetchRiesgos();
+    } catch (error: any) {
+      toast.error(error.message || "Error al actualizar tratamiento");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleQuickStatusChange = async (riesgo: Riesgo, nuevoEstado: string) => {
+    try {
+      await riesgoService.update(riesgo.id, { estado: nuevoEstado });
+      toast.success(`Estado cambiado a: ${nuevoEstado.replace('_', ' ')}`);
+      fetchRiesgos();
+    } catch (error: any) {
+      toast.error(error.message || "Error al cambiar estado");
+    }
   };
 
   // Helpers
@@ -311,14 +357,71 @@ const TratamientoRiesgos: React.FC = () => {
                           {getEstadoBadge(r.estado)}
                         </TableCell>
                         <TableCell className="px-6 py-4 text-right">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button size="sm" variant="outline" onClick={() => handleView(r)} className="rounded-xl">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Ver detalles</p></TooltipContent>
-                          </Tooltip>
+                          <div className="flex items-center justify-end gap-2">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="outline" onClick={() => handleView(r)} className="rounded-xl">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Ver detalles</p></TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="outline" onClick={() => handleEdit(r)} className="rounded-xl">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Editar tratamiento</p></TooltipContent>
+                            </Tooltip>
+
+                            {r.estado === 'identificado' && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    size="sm" 
+                                    className="rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white"
+                                    onClick={() => handleQuickStatusChange(r, 'en_tratamiento')}
+                                  >
+                                    <Play className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Iniciar tratamiento</p></TooltipContent>
+                              </Tooltip>
+                            )}
+
+                            {r.estado === 'en_tratamiento' && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    size="sm" 
+                                    className="rounded-xl bg-[#10B981] hover:bg-[#059669] text-white"
+                                    onClick={() => handleQuickStatusChange(r, 'mitigado')}
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Marcar como mitigado</p></TooltipContent>
+                              </Tooltip>
+                            )}
+
+                            {(r.estado === 'identificado' || r.estado === 'en_tratamiento') && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    className="rounded-xl"
+                                    onClick={() => handleQuickStatusChange(r, 'aceptado')}
+                                  >
+                                    <Ban className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Aceptar riesgo</p></TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -420,6 +523,93 @@ const TratamientoRiesgos: React.FC = () => {
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowViewDialog(false)} className="rounded-xl">
                   Cerrar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+
+          {/* Diálogo de Edición de Tratamiento */}
+          <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+            <DialogContent className="max-w-3xl rounded-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  <Edit className="h-7 w-7 text-[#2563EB]" />
+                  Editar Tratamiento
+                </DialogTitle>
+              </DialogHeader>
+
+              {selectedRiesgo && (
+                <div className="space-y-6 py-4">
+                  <div className="bg-[#F8FAFC] rounded-xl p-4 border border-[#E5E7EB]">
+                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Riesgo</Label>
+                    <Badge className="mt-2 text-lg px-4 py-2 bg-[#2563EB]/10 text-[#2563EB] font-bold">
+                      {selectedRiesgo.codigo}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tratamiento" className="text-[#1E3A8A] font-bold">
+                      Plan de Tratamiento
+                    </Label>
+                    <Textarea
+                      id="tratamiento"
+                      value={editFormData.tratamiento}
+                      onChange={(e) => setEditFormData({ ...editFormData, tratamiento: e.target.value })}
+                      placeholder="Describe el plan de tratamiento para este riesgo..."
+                      className="min-h-[150px] rounded-xl border-[#E5E7EB]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="estado" className="text-[#1E3A8A] font-bold">
+                        Estado del Riesgo
+                      </Label>
+                      <select
+                        id="estado"
+                        value={editFormData.estado}
+                        onChange={(e) => setEditFormData({ ...editFormData, estado: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                      >
+                        <option value="identificado">Identificado</option>
+                        <option value="en_tratamiento">En Tratamiento</option>
+                        <option value="mitigado">Mitigado</option>
+                        <option value="aceptado">Aceptado</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="fecha_revision" className="text-[#1E3A8A] font-bold">
+                        Próxima Revisión
+                      </Label>
+                      <Input
+                        id="fecha_revision"
+                        type="date"
+                        value={editFormData.fecha_revision}
+                        onChange={(e) => setEditFormData({ ...editFormData, fecha_revision: e.target.value })}
+                        className="rounded-xl border-[#E5E7EB]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowEditDialog(false)} 
+                  className="rounded-xl"
+                  disabled={saving}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleUpdateTratamiento} 
+                  className="rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8]"
+                  disabled={saving}
+                >
+                  {saving ? "Guardando..." : "Guardar Cambios"}
                 </Button>
               </DialogFooter>
             </DialogContent>
