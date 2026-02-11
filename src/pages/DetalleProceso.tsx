@@ -22,6 +22,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import procesoService, { Proceso, TipoProceso, EtapaPHVA, EstadoProceso } from "@/services/proceso.service";
 
@@ -30,6 +40,7 @@ export default function DetalleProceso() {
     const { id } = useParams();
     const [proceso, setProceso] = useState<Proceso | null>(null);
     const [loading, setLoading] = useState(true);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -53,20 +64,18 @@ export default function DetalleProceso() {
         }
     };
 
-    const handleEliminar = async () => {
+    const confirmarEliminar = async () => {
         if (!id || !proceso) return;
-
-        if (!confirm(`¿Estás seguro de eliminar el proceso "${proceso.nombre}"?`)) {
-            return;
-        }
 
         try {
             await procesoService.eliminar(id);
-            toast.success("Proceso eliminado exitosamente");
+            toast.success(`Proceso "${proceso.nombre}" eliminado exitosamente`);
             navigate("/procesos");
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error eliminando proceso:", error);
-            toast.error("Error al eliminar el proceso");
+            toast.error(error.response?.data?.detail || "Error al eliminar el proceso");
+        } finally {
+            setDeleteDialogOpen(false);
         }
     };
 
@@ -187,7 +196,7 @@ export default function DetalleProceso() {
                         </Button>
                         <Button
                             variant="destructive"
-                            onClick={handleEliminar}
+                            onClick={() => setDeleteDialogOpen(true)}
                             className="rounded-xl"
                         >
                             <Trash2 className="h-4 w-4 mr-2" />
@@ -397,6 +406,39 @@ export default function DetalleProceso() {
                     </Card>
                 )}
             </div>
+
+            {/* Diálogo de confirmación de eliminación */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-[#1E3A8A]">
+                            ¿Eliminar proceso?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-4">
+                            <p>
+                                ¿Estás seguro de que deseas eliminar el proceso{" "}
+                                <span className="font-semibold text-gray-900">
+                                    {proceso?.nombre}
+                                </span>{" "}
+                                ({proceso?.codigo})?
+                            </p>
+                            <p className="text-red-600 font-medium">
+                                Esta acción no se puede deshacer. Se eliminarán también todas las etapas,
+                                indicadores y relaciones asociadas a este proceso.
+                            </p>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmarEliminar}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            Eliminar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

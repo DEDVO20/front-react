@@ -28,6 +28,16 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import procesoService, { Proceso, TipoProceso, EstadoProceso } from "@/services/proceso.service";
 
@@ -38,6 +48,15 @@ export default function MapaProcesos() {
     const [busqueda, setBusqueda] = useState("");
     const [filtroTipo, setFiltroTipo] = useState<string>("todos");
     const [filtroEstado, setFiltroEstado] = useState<string>("todos");
+    
+    // Estado para el diálogo de eliminación
+    const [deleteDialog, setDeleteDialog] = useState<{
+        open: boolean;
+        proceso: Proceso | null;
+    }>({
+        open: false,
+        proceso: null
+    });
 
     useEffect(() => {
         cargarProcesos();
@@ -53,6 +72,34 @@ export default function MapaProcesos() {
             toast.error("Error al cargar los procesos");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const abrirDialogoEliminar = (proceso: Proceso) => {
+        setDeleteDialog({
+            open: true,
+            proceso
+        });
+    };
+
+    const cerrarDialogoEliminar = () => {
+        setDeleteDialog({
+            open: false,
+            proceso: null
+        });
+    };
+
+    const confirmarEliminar = async () => {
+        if (!deleteDialog.proceso) return;
+
+        try {
+            await procesoService.eliminar(deleteDialog.proceso.id);
+            toast.success(`Proceso "${deleteDialog.proceso.nombre}" eliminado exitosamente`);
+            cerrarDialogoEliminar();
+            cargarProcesos(); // Recargar la lista
+        } catch (error: any) {
+            console.error("Error eliminando proceso:", error);
+            toast.error(error.response?.data?.detail || "Error al eliminar el proceso");
         }
     };
 
@@ -194,6 +241,14 @@ export default function MapaProcesos() {
                         onClick={() => navigate(`/procesos/${proceso.id}/editar`)}
                     >
                         <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => abrirDialogoEliminar(proceso)}
+                    >
+                        <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>
             </CardContent>
@@ -346,6 +401,41 @@ export default function MapaProcesos() {
                     </div>
                 )}
             </div>
+
+            {/* Diálogo de confirmación de eliminación */}
+            <AlertDialog open={deleteDialog.open} onOpenChange={cerrarDialogoEliminar}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-[#1E3A8A]">
+                            ¿Eliminar proceso?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-4">
+                            <p>
+                                ¿Estás seguro de que deseas eliminar el proceso{" "}
+                                <span className="font-semibold text-gray-900">
+                                    {deleteDialog.proceso?.nombre}
+                                </span>{" "}
+                                ({deleteDialog.proceso?.codigo})?
+                            </p>
+                            <p className="text-red-600 font-medium">
+                                Esta acción no se puede deshacer. Se eliminarán también todas las etapas,
+                                indicadores y relaciones asociadas a este proceso.
+                            </p>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={cerrarDialogoEliminar}>
+                            Cancelar
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmarEliminar}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            Eliminar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
