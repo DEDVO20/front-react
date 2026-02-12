@@ -569,6 +569,119 @@ export default function GestionRolesPermisos() {
             </DialogContent>
           </Dialog>
 
+          {/* Dialog Ver Detalles */}
+          <Dialog open={dialogState.open && dialogState.type === "ver"} onOpenChange={closeDialog}>
+            <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle className="text-2xl text-[#1E3A8A] flex items-center gap-3">
+                  <Eye className="h-7 w-7 text-[#2563EB]" />
+                  Detalles del Rol
+                </DialogTitle>
+              </DialogHeader>
+              {dialogState.rol && (
+                <div className="flex-1 overflow-y-auto space-y-6 py-4">
+                  {/* Información básica */}
+                  <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-xl p-6 border border-[#2563EB]/30">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-4 bg-white rounded-xl shadow-sm">
+                        <Shield className="h-10 w-10 text-[#2563EB]" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-2xl font-bold text-[#1E3A8A]">{dialogState.rol.nombre}</h3>
+                        <Badge className="mt-2 bg-white text-[#2563EB] font-mono text-base px-3 py-1">
+                          {dialogState.rol.clave}
+                        </Badge>
+                      </div>
+                    </div>
+                    {dialogState.rol.descripcion && (
+                      <p className="text-[#1E3A8A] leading-relaxed mt-4">
+                        {dialogState.rol.descripcion}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Información adicional */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-[#F8FAFC] rounded-xl p-5 border border-[#E5E7EB]">
+                      <p className="text-sm text-[#6B7280] mb-1">Fecha de Creación</p>
+                      <p className="text-lg font-semibold text-[#1E3A8A]">
+                        {new Date(dialogState.rol.creado_en).toLocaleDateString("es-CO", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <div className="bg-[#F8FAFC] rounded-xl p-5 border border-[#E5E7EB]">
+                      <p className="text-sm text-[#6B7280] mb-1">Permisos Asignados</p>
+                      <p className="text-lg font-semibold text-[#1E3A8A] flex items-center gap-2">
+                        <Lock className="h-5 w-5 text-[#2563EB]" />
+                        {dialogState.rol.permisos?.length || 0} permisos
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Lista de permisos */}
+                  {dialogState.rol.permisos && dialogState.rol.permisos.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-semibold text-[#1E3A8A] mb-4 flex items-center gap-2">
+                        <Lock className="h-5 w-5" />
+                        Permisos del Rol
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+                        {dialogState.rol.permisos.map((rp: any) => {
+                          const permiso = permisos.find(p => p.id === rp.permiso_id);
+                          if (!permiso) return null;
+                          return (
+                            <div
+                              key={rp.permiso_id}
+                              className="bg-[#E0EDFF] rounded-lg p-4 border border-[#2563EB]/30"
+                            >
+                              <div className="flex items-start gap-3">
+                                <CheckCircle className="h-5 w-5 text-[#2563EB] mt-0.5 flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-[#1E3A8A] truncate">{permiso.nombre}</p>
+                                  <p className="text-sm font-mono text-[#6B7280] mt-1">{permiso.codigo}</p>
+                                  {permiso.descripcion && (
+                                    <p className="text-sm text-[#6B7280] mt-2 line-clamp-2">{permiso.descripcion}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {(!dialogState.rol.permisos || dialogState.rol.permisos.length === 0) && (
+                    <div className="bg-[#FFF7ED] rounded-xl p-6 border border-[#F59E0B]/30 text-center">
+                      <Lock className="h-12 w-12 text-[#F59E0B] mx-auto mb-3" />
+                      <p className="text-[#F59E0B] font-medium">Este rol no tiene permisos asignados</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              <DialogFooter>
+                <Button variant="outline" onClick={closeDialog}>
+                  Cerrar
+                </Button>
+                {dialogState.rol && (
+                  <Button
+                    onClick={() => {
+                      closeDialog();
+                      setTimeout(() => openDialog("permisos", dialogState.rol), 100);
+                    }}
+                    className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
+                  >
+                    <Lock className="mr-2 h-4 w-4" />
+                    Gestionar Permisos
+                  </Button>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           {/* Alerta Eliminar */}
           <AlertDialog open={dialogState.open && dialogState.type === "eliminar"} onOpenChange={closeDialog}>
             <AlertDialogContent>
