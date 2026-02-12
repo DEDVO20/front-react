@@ -69,9 +69,21 @@ export function NotificationBell({ onOpenChange }: NotificationBellProps) {
           setOpen(false);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error marcando notificación:", error);
-      toast.error("Error al marcar notificación");
+
+      // Manejar errores específicos
+      if (error.response?.status === 403) {
+        console.warn(`Notificación ${notificacion.id} no pertenece al usuario actual`);
+        // Recargar notificaciones para actualizar la lista
+        await cargarNotificaciones();
+      } else if (error.response?.status === 404) {
+        console.warn(`Notificación ${notificacion.id} no encontrada`);
+        // Recargar notificaciones para actualizar la lista
+        await cargarNotificaciones();
+      } else {
+        toast.error(error.response?.data?.detail || "Error al marcar notificación");
+      }
     }
   };
 
