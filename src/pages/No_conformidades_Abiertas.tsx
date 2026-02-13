@@ -21,6 +21,16 @@ import {
 import { NuevaNoConformidadForm } from "@/components/calidad/NuevaNoConformidadForm";
 import { VerNoConformidad } from "@/components/calidad/VerNoConformidad";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface NoConformidadUI {
   id: string;
@@ -40,6 +50,7 @@ export default function NoConformidadesAbiertas() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedNoConformidad, setSelectedNoConformidad] = useState<INoConformidad | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchNoConformidadesAbiertas();
@@ -113,6 +124,20 @@ export default function NoConformidadesAbiertas() {
   const handleCrear = () => {
     setSelectedNoConformidad(null);
     setIsDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await noConformidadService.delete(deleteId);
+      toast.success("No conformidad eliminada exitosamente");
+      fetchNoConformidadesAbiertas();
+    } catch (error) {
+      console.error("Error al eliminar:", error);
+      toast.error("Error al eliminar la no conformidad. Verifique si tiene acciones relacionadas.");
+    } finally {
+      setDeleteId(null);
+    }
   };
 
   if (loading) {
@@ -321,18 +346,7 @@ export default function NoConformidadesAbiertas() {
                 },
                 {
                   label: "Eliminar",
-                  onClick: async (row) => {
-                    if (confirm(`¿Eliminar no conformidad ${row.codigo}?`)) {
-                      try {
-                        await noConformidadService.delete(String(row.id));
-                        toast.success("No conformidad eliminada exitosamente");
-                        fetchNoConformidadesAbiertas();
-                      } catch (error) {
-                        console.error("Error al eliminar:", error);
-                        toast.error("Error al eliminar la no conformidad. Verifique si tiene acciones relacionadas.");
-                      }
-                    }
-                  },
+                  onClick: (row) => setDeleteId(String(row.id)),
                   variant: "destructive" as const,
                 },
               ]}
@@ -340,6 +354,23 @@ export default function NoConformidadesAbiertas() {
           </div>
         </div>
       </div>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Esto eliminará permanentemente la no conformidad.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

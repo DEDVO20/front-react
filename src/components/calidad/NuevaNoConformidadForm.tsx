@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Save, X } from "lucide-react";
+import { Save, X, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import {
 import { noConformidadService, NoConformidad } from "@/services/noConformidad.service";
 import { default as procesoService, Proceso } from "@/services/proceso.service";
 import { apiClient } from "@/lib/api";
+import { uploadService } from "@/services/upload.service";
 
 interface NuevaNoConformidadFormProps {
     onSuccess: () => void;
@@ -34,6 +35,8 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
     const [procesos, setProcesos] = useState<Proceso[]>([]);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
     const [formData, setFormData] = useState({
         codigo: "",
@@ -47,6 +50,7 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
         detectado_por: "",
         analisis_causa: "",
         plan_accion: "",
+        evidencias: "", // JSON string with [{name, url, date}]
     });
 
     useEffect(() => {
@@ -76,7 +80,8 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
                 proceso_id: getValidId(initialData, "proceso_id", "proceso") || prev.proceso_id,
                 detectado_por: detectadoPorId || prev.detectado_por,
                 analisis_causa: initialData.analisis_causa || prev.analisis_causa,
-                plan_accion: initialData.plan_accion || prev.plan_accion,
+                plan_accion: (initialData as any).plan_accion || prev.plan_accion,
+                evidencias: (initialData as any).evidencias || prev.evidencias,
             }));
         }
     }, [initialData, usuarios]);
@@ -105,6 +110,29 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
         }
     };
 
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setPendingFiles([...pendingFiles, file]);
+            // Clear input so same file can be selected again if needed (though unlikely)
+            e.target.value = "";
+        }
+    };
+
+    const removePendingFile = (index: number) => {
+        setPendingFiles(pendingFiles.filter((_, i) => i !== index));
+    };
+
+    const removeEvidence = (index: number) => {
+        try {
+            const currentEvidences = JSON.parse(formData.evidencias || "[]");
+            const updatedEvidences = currentEvidences.filter((_: any, i: number) => i !== index);
+            setFormData({ ...formData, evidencias: JSON.stringify(updatedEvidences) });
+        } catch (error) {
+            console.error("Error removing evidence:", error);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.codigo || !formData.tipo || !formData.descripcion || !formData.fuente || !formData.gravedad) {
@@ -116,14 +144,43 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
             setSaving(true);
             setError(null);
 
+            // Upload pending files first
+            let finalEvidences = [];
+            try {
+                if (formData.evidencias) {
+                    finalEvidences = JSON.parse(formData.evidencias);
+                }
+            } catch (e) { finalEvidences = []; }
+
+            if (pendingFiles.length > 0) {
+                setUploading(true); // Reusing state for UI feedback
+                for (const file of pendingFiles) {
+                    try {
+                        const response = await uploadService.uploadEvidencia(file);
+                        finalEvidences.push({
+                            name: response.filename,
+                            url: response.url,
+                            date: new Date().toISOString()
+                        });
+                    } catch (err) {
+                        console.error("Error uploading file:", file.name, err);
+                        toast.error(`Error al subir ${file.name}`);
+                        // Continue with other files or abort? Let's continue but warn.
+                    }
+                }
+                setUploading(false);
+                setPendingFiles([]); // Clear pending files after attempt to upload
+            }
+
             const payload = {
                 ...formData,
                 fecha_deteccion: new Date(formData.fecha_deteccion).toISOString(),
-                responsable_id: formData.responsable_id && formData.responsable_id !== "none" ? formData.responsable_id : undefined,
-                proceso_id: formData.proceso_id && formData.proceso_id !== "none" ? formData.proceso_id : undefined,
-                detectado_por: formData.detectado_por && formData.detectado_por !== "none" ? formData.detectado_por : undefined,
-                analisis_causa: formData.analisis_causa || undefined,
-                plan_accion: formData.plan_accion || undefined,
+                responsable_id: formData.responsable_id && formData.responsable_id !== "none" ? formData.responsable_id : null,
+                proceso_id: formData.proceso_id && formData.proceso_id !== "none" ? formData.proceso_id : null,
+                detectado_por: formData.detectado_por && formData.detectado_por !== "none" ? formData.detectado_por : null,
+                analisis_causa: formData.analisis_causa || null,
+                plan_accion: formData.plan_accion || null,
+                evidencias: JSON.stringify(finalEvidences) || null,
             };
 
             if (initialData) {
@@ -313,14 +370,86 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
             </div>
 
             <div className="grid gap-2">
-                <Label htmlFor="plan_accion">Plan de Acción</Label>
+                <Label htmlFor="plan_accion">Plan de Acción / Cronograma</Label>
                 <Textarea
                     id="plan_accion"
-                    placeholder="Detalles del plan de acción..."
+                    placeholder="Detalles del plan de acción o referencia al plan de acciones correctivas..."
                     rows={3}
                     value={formData.plan_accion}
                     onChange={(e) => setFormData({ ...formData, plan_accion: e.target.value })}
                 />
+            </div>
+
+            <div className="grid gap-2">
+                <Label>Evidencias</Label>
+                <div className="flex items-center gap-4">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById("evidence-upload")?.click()}
+                        disabled={uploading}
+                    >
+                        {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                        Adjuntar Archivo
+                    </Button>
+                    <input
+                        id="evidence-upload"
+                        type="file"
+                        className="hidden"
+                        onChange={handleFileSelect}
+                    />
+                </div>
+
+                {/* Pending Files */}
+                {pendingFiles.length > 0 && (
+                    <div className="space-y-2 mt-2">
+                        <p className="text-sm font-semibold text-gray-500">Archivos por subir:</p>
+                        {pendingFiles.map((file: File, index: number) => (
+                            <div key={`pending-${index}`} className="flex items-center justify-between p-2 bg-yellow-50 rounded border border-yellow-200 text-sm">
+                                <span className="truncate max-w-[200px] text-gray-700">{file.name}</span>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removePendingFile(index)}
+                                    className="text-red-500 hover:text-red-700 h-6 w-6 p-0"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Existing Evidences */}
+                {formData.evidencias && (
+                    <div className="space-y-2 mt-2">
+                        <p className="text-sm font-semibold text-gray-500">Evidencias guardadas:</p>
+                        {(() => {
+                            try {
+                                const evidences = JSON.parse(formData.evidencias);
+                                return evidences.map((ev: any, index: number) => (
+                                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded border text-sm">
+                                        <a href={ev.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate max-w-[200px]">
+                                            {ev.name}
+                                        </a>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => removeEvidence(index)}
+                                            className="text-red-500 hover:text-red-700 h-6 w-6 p-0"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ));
+                            } catch (e) {
+                                return null;
+                            }
+                        })()}
+                    </div>
+                )}
             </div>
 
             <div className="flex justify-end gap-3 pt-4">

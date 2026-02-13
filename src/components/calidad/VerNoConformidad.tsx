@@ -123,6 +123,40 @@ export function VerNoConformidad({
                                 </div>
                             </div>
                         )}
+
+                        {noConformidad.evidencias && (
+                            <div>
+                                <h4 className="text-sm font-semibold text-gray-500 mb-2">
+                                    Evidencias
+                                </h4>
+                                <div className="flex flex-col gap-2">
+                                    {(() => {
+                                        try {
+                                            const evidencias = typeof noConformidad.evidencias === 'string'
+                                                ? JSON.parse(noConformidad.evidencias)
+                                                : noConformidad.evidencias;
+
+                                            if (!Array.isArray(evidencias)) return null;
+
+                                            return evidencias.map((ev: any, index: number) => (
+                                                <a
+                                                    key={index}
+                                                    href={ev.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center p-2 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors w-fit border border-blue-200"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>
+                                                    {ev.name}
+                                                </a>
+                                            ));
+                                        } catch (e) {
+                                            return <p className="text-sm text-gray-500 italic">Error al mostrar evidencias</p>;
+                                        }
+                                    })()}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </DialogContent>

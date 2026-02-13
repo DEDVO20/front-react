@@ -9,13 +9,15 @@ export interface NoConformidad {
   gravedad?: string;
   fuente?: string;
   fecha_deteccion: string;
-  responsable_id?: string;
+  responsable_id?: string | null;
   area_id?: string;
   documento_id?: string;
-  proceso_id?: string;
-  detectado_por?: string;
-  analisis_causa?: string;
-  plan_accion?: string;
+  proceso_id?: string | null;
+  detectado_por?: string | null;
+  analisis_causa?: string | null;
+  plan_accion?: string | null;
+  acciones_correctivas?: any[]; // To be typed properly with AccionCorrectiva
+  evidencias?: string | null; // URL o JSON string
   creado_en?: string;
   actualizado_en?: string;
   responsable?: {
