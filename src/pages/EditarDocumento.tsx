@@ -106,7 +106,7 @@ export default function EditarDocumento() {
         nombre: formData.get("nombreArchivo") as string,
         descripcion: nuevoContenido || `Documento ${formData.get("nombreArchivo")}`,
         tipo_documento: formData.get("tipo_documento") as string,
-        version_actual: versionActual,
+        version_actual: versionActual || "1.0",
         estado: formData.get("estado") as string,
       };
 

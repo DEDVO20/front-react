@@ -22,7 +22,7 @@ export default function CreateDocument() {
         nombre: formData.get("nombreArchivo") as string,
         descripcion: `Documento ${formData.get("nombreArchivo")}`,
         tipo_documento: formData.get("tipo_documento") as string,
-        version_actual: formData.get("version") as string || "1.0",
+        version_actual: formData.get("version_actual") as string || "1.0",
         estado: formData.get("estado") as string || "borrador",
       };
 
