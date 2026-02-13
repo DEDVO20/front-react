@@ -4,7 +4,7 @@ import { TipTapEditor } from "./TipTapEditor";
 import { FileUpload } from "./FileUpload";
 import { usuarioService, Usuario } from "@/services/usuario.service";
 import { toast } from "sonner";
-import { Save, Eye, Download, FileText, Upload as UploadIcon, Edit } from "lucide-react";
+import { Save, Eye, Download, FileText, Upload as UploadIcon, Edit, AlertCircle } from "lucide-react";
 
 interface InitialData {
   nombreArchivo?: string;
@@ -141,6 +141,17 @@ export const DocumentFormWithTipTap = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  // Lógica de permisos
+  const isCreator = user?.id === formData.subidoPor;
+  const isReviewer = user?.id === formData.revisadoPor;
+  const isApprover = user?.id === formData.aprobadoPor;
+
+  // En modo creación, todo es editable. En edición, depende del rol.
+  const canEditMetadata = mode === 'create' || isCreator;
+  const canEditContent = mode === 'create' || isCreator || isReviewer;
+  const canAssign = mode === 'create' || isCreator;
+  const canchangeStatus = mode === 'create'; // El estado se cambia por flujo, no manualmente en edición
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -164,7 +175,9 @@ export const DocumentFormWithTipTap = ({
       data.append("version", formData.version);
       data.append("visibilidad", formData.visibilidad);
       data.append("estado", formData.estado);
-      data.append("subidoPor", formData.subidoPor);
+
+      // En edición, no enviar subidoPor si no se ha cambiado (aunque esté deshabilitado)
+      if (formData.subidoPor) data.append("subidoPor", formData.subidoPor);
 
       // Add content based on mode
       if (documentMode === 'editor') {
@@ -326,8 +339,9 @@ export const DocumentFormWithTipTap = ({
               name="nombreArchivo"
               value={formData.nombreArchivo}
               onChange={handleInputChange}
+              disabled={!canEditMetadata}
               className={`w-full px-3 py-2 border rounded-md bg-background ${errors.nombreArchivo ? "border-destructive" : "border-input"
-                }`}
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               placeholder="Ej: Formato de Solicitud de Equipos"
             />
             {errors.nombreArchivo && (
@@ -347,8 +361,9 @@ export const DocumentFormWithTipTap = ({
               name="codigoDocumento"
               value={formData.codigoDocumento}
               onChange={handleInputChange}
+              disabled={!canEditMetadata}
               className={`w-full px-3 py-2 border rounded-md bg-background ${errors.codigoDocumento ? "border-destructive" : "border-input"
-                }`}
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               placeholder="Ej: FO-GC-001"
             />
             {errors.codigoDocumento && (
@@ -366,8 +381,9 @@ export const DocumentFormWithTipTap = ({
               name="version"
               value={formData.version}
               onChange={handleInputChange}
+              disabled={!canEditMetadata}
               className={`w-full px-3 py-2 border rounded-md bg-background ${errors.version ? "border-destructive" : "border-input"
-                }`}
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               placeholder="Ej: 1.0"
             />
             {errors.version && (
@@ -384,7 +400,8 @@ export const DocumentFormWithTipTap = ({
               name="tipoDocumento"
               value={formData.tipoDocumento}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              disabled={!canEditMetadata}
+              className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="formato">Formato</option>
               <option value="procedimiento">Procedimiento</option>
@@ -403,7 +420,8 @@ export const DocumentFormWithTipTap = ({
               name="estado"
               value={formData.estado}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              disabled={!canchangeStatus}
+              className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="borrador">Borrador (Creado)</option>
               <option value="en_revision">En Revisión (Revisado)</option>
@@ -429,7 +447,8 @@ export const DocumentFormWithTipTap = ({
               name="visibilidad"
               value={formData.visibilidad}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              disabled={!canEditMetadata}
+              className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="privado">Privado</option>
               <option value="publico">Público</option>
@@ -446,7 +465,8 @@ export const DocumentFormWithTipTap = ({
               name="proximaRevision"
               value={formData.proximaRevision}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              disabled={!canEditMetadata}
+              className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
         </div>
@@ -476,13 +496,14 @@ export const DocumentFormWithTipTap = ({
               name="subidoPor"
               value={formData.subidoPor}
               onChange={handleInputChange}
+              disabled={mode === 'edit'} // Siempre deshabilitado en edición
               className={`w-full px-3 py-2 border rounded-md bg-background ${errors.subidoPor ? "border-destructive" : "border-input"
-                }`}
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <option value="">Seleccionar usuario</option>
               {usuarios?.map((usuario) => (
                 <option key={usuario.id} value={usuario.id}>
-                  {usuario.nombre_completo || usuario.nombre_usuario}
+                  {`${usuario.nombre} ${usuario.primer_apellido}`}
                 </option>
               ))}
             </select>
@@ -510,12 +531,13 @@ export const DocumentFormWithTipTap = ({
               name="revisadoPor"
               value={formData.revisadoPor}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              disabled={!canAssign}
+              className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="">Seleccionar (opcional)</option>
               {usuarios?.map((usuario) => (
                 <option key={usuario.id} value={usuario.id}>
-                  {usuario.nombre_completo || usuario.nombre_usuario}
+                  {`${usuario.nombre} ${usuario.primer_apellido}`}
                 </option>
               ))}
             </select>
@@ -538,12 +560,13 @@ export const DocumentFormWithTipTap = ({
               name="aprobadoPor"
               value={formData.aprobadoPor}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              disabled={!canAssign}
+              className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="">Seleccionar (opcional)</option>
               {usuarios?.map((usuario) => (
                 <option key={usuario.id} value={usuario.id}>
-                  {usuario.nombre_completo || usuario.nombre_usuario}
+                  {`${usuario.nombre} ${usuario.primer_apellido}`}
                 </option>
               ))}
             </select>
@@ -597,10 +620,11 @@ export const DocumentFormWithTipTap = ({
             <button
               type="button"
               onClick={() => setDocumentMode('editor')}
+              disabled={!canEditContent}
               className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${documentMode === 'editor'
                 ? 'border-primary text-primary font-medium'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <Edit className="w-4 h-4" />
               Crear con Editor
@@ -608,10 +632,11 @@ export const DocumentFormWithTipTap = ({
             <button
               type="button"
               onClick={() => setDocumentMode('upload')}
+              disabled={!canEditContent}
               className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${documentMode === 'upload'
                 ? 'border-primary text-primary font-medium'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <UploadIcon className="w-4 h-4" />
               Subir Archivo
@@ -644,11 +669,21 @@ export const DocumentFormWithTipTap = ({
               </div>
             </div>
 
-            <TipTapEditor
-              content={content}
-              onChange={setContent}
-              editable={!preview}
-            />
+            <div className={!canEditContent ? "opacity-75 pointer-events-none" : ""}>
+              <TipTapEditor
+                content={content}
+                onChange={setContent}
+                editable={canEditContent && !preview}
+              />
+            </div>
+
+            {!canEditContent && (
+              <p className="text-amber-600 text-sm mt-2 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                Solo lectura: No tienes permisos para editar el contenido.
+              </p>
+            )}
+
             {errors.content && (
               <p className="text-destructive text-sm mt-2">{errors.content}</p>
             )}
@@ -665,12 +700,14 @@ export const DocumentFormWithTipTap = ({
               </p>
             </div>
 
-            <FileUpload
-              onFileSelect={setUploadedFile}
-              selectedFile={uploadedFile}
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-              maxSize={10}
-            />
+            {canEditContent && (
+              <FileUpload
+                onFileSelect={setUploadedFile}
+                selectedFile={uploadedFile}
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                maxSize={10}
+              />
+            )}
             {errors.file && (
               <p className="text-destructive text-sm mt-2">{errors.file}</p>
             )}
@@ -693,9 +730,11 @@ export const DocumentFormWithTipTap = ({
                     </a>
                   </div>
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  Sube un nuevo archivo para reemplazarlo
-                </span>
+                {canEditContent && (
+                  <span className="text-xs text-muted-foreground">
+                    Sube un nuevo archivo para reemplazarlo
+                  </span>
+                )}
               </div>
             )}
           </>
@@ -712,18 +751,20 @@ export const DocumentFormWithTipTap = ({
         >
           Cancelar
         </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
-        >
-          <Save className="w-4 h-4" />
-          {loading
-            ? "Guardando..."
-            : mode === "create"
-              ? "Crear Documento"
-              : "Actualizar Documento"}
-        </button>
+        {(canEditMetadata || canEditContent || canAssign) && (
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {loading
+              ? "Guardando..."
+              : mode === "create"
+                ? "Crear Documento"
+                : "Actualizar Documento"}
+          </button>
+        )}
       </div>
     </form>
   );
