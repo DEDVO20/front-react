@@ -222,6 +222,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             permiso: "documentos.aprobar",
             badge: pendingCount > 0 ? pendingCount.toString() : undefined,
           },
+          {
+            title: "Revisiones Pendientes",
+            url: "/Revisiones_Pendientes",
+            permiso: "documentos.editar",
+          },
           { title: "Documentos Obsoletos", url: "/Documentos_Obsoletos", permiso: "documentos.eliminar" },
         ],
       },

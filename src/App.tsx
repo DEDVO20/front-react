@@ -18,6 +18,7 @@ import SolucionarAccionCorrectiva from "./pages/Acciones_correctivas/SolucionarA
 import DashboardAccionesCorrectivas from "./pages/Acciones_correctivas/DashboardAccionesCorrectivas";
 
 import AprobacionesPendientes from "./pages/documentos/Aprobaciones_Pendientes";
+import RevisionesPendientes from "./pages/documentos/Revisiones_Pendientes";
 import DocumentosObsoletos from "./pages/documentos/Documentos_Obsoletos";
 
 import GestionarAreas from "./pages/areas/Gestionar_Areas";
@@ -99,6 +100,7 @@ function App() {
             <Route path="/documentos/:id/aprobaciones" element={<AprobacionesPendientes />} />
 
             <Route path="/Aprobaciones_Pendientes" element={<AprobacionesPendientes />} />
+            <Route path="/Revisiones_Pendientes" element={<RevisionesPendientes />} />
             <Route path="/Documentos_Obsoletos" element={<DocumentosObsoletos />} />
 
             {/* Áreas */}

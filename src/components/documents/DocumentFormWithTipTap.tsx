@@ -150,7 +150,7 @@ export const DocumentFormWithTipTap = ({
   const canEditMetadata = mode === 'create' || isCreator;
   const canEditContent = mode === 'create' || isCreator || isReviewer;
   const canAssign = mode === 'create' || isCreator;
-  const canchangeStatus = mode === 'create'; // El estado se cambia por flujo, no manualmente en edición
+  const canchangeStatus = mode === 'create' || isCreator; // Permitir al creador cambiar estado (ej. enviar a revisión)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -424,16 +424,16 @@ export const DocumentFormWithTipTap = ({
               className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="borrador">Borrador (Creado)</option>
-              <option value="en_revision">En Revisión (Revisado)</option>
+              <option value="en_revision">En Revisión</option>
+              <option value="pendiente_aprobacion">Pendiente de Aprobación</option>
               <option value="aprobado">Aprobado (Final)</option>
               <option value="obsoleto">Obsoleto</option>
             </select>
             <p className="text-xs text-muted-foreground mt-1">
               {formData.estado === "borrador" && "📝 Documento en creación"}
-              {formData.estado === "en_revision" &&
-                "👁️ Documento en proceso de revisión"}
-              {formData.estado === "aprobado" &&
-                "✅ Documento aprobado y vigente"}
+              {formData.estado === "en_revision" && "👁️ Documento siendo revisado"}
+              {formData.estado === "pendiente_aprobacion" && "⏳ Documento esperando aprobación final"}
+              {formData.estado === "aprobado" && "✅ Documento vigente"}
               {formData.estado === "obsoleto" && "❌ Documento descontinuado"}
             </p>
           </div>
