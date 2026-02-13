@@ -60,8 +60,8 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
                 gravedad: initialData.gravedad || "",
                 fecha_deteccion: initialData.fecha_deteccion ? new Date(initialData.fecha_deteccion).toISOString().split('T')[0] : new Date().toISOString().split("T")[0],
                 responsable_id: initialData.responsable?.id || initialData.responsable_id || "",
-                proceso_id: initialData.proceso_id || "",
-                detectado_por: initialData.detectado_por || "",
+                proceso_id: initialData.proceso?.id || initialData.proceso_id || "",
+                detectado_por: initialData.detector?.id || initialData.detectado_por || "",
                 analisis_causa: initialData.analisis_causa || "",
                 plan_accion: initialData.plan_accion || "",
             });
