@@ -14,6 +14,7 @@ interface DocumentoData {
   estado?: string;
   subidoPor?: string;
   aprobadoPor?: string;
+  revisadoPor?: string;
   contenidoHtml?: string;
   rutaArchivo?: string;
 }
@@ -45,6 +46,8 @@ export default function EditarDocumento() {
         subidoPor: data.creado_por || '',
         // Usar el UUID del aprobador (el select necesita el ID)
         aprobadoPor: data.aprobado_por || '',
+        // Usar el UUID del revisor
+        revisadoPor: data.revisado_por || '',
         // Agregar el contenido HTML del documento
         contenidoHtml: data.descripcion || '',
         rutaArchivo: data.ruta_archivo || '',
@@ -108,14 +111,21 @@ export default function EditarDocumento() {
       };
 
       // Add optional fields
-      const creado_por = formData.get("subidoPor") as string;
+      const creado_por = formData.get("creado_por") as string || formData.get("subidoPor") as string;
       if (creado_por) {
         documentData.creado_por = creado_por;
       }
 
-      const aprobado_por = formData.get("aprobadoPor") as string;
+      // Corregido: Usar snake_case para aprobador
+      const aprobado_por = formData.get("aprobado_por") as string;
       if (aprobado_por) {
         documentData.aprobado_por = aprobado_por;
+      }
+
+      // Corregido: Agregar revisado_por
+      const revisado_por = formData.get("revisado_por") as string;
+      if (revisado_por) {
+        documentData.revisado_por = revisado_por;
       }
 
       // Si hubo cambios, guardar la versión anterior en el historial
