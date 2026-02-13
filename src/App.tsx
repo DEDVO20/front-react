@@ -61,8 +61,9 @@ import MatrizRiesgos from "./pages/riesgos/matriz";
 import ControlesRiesgos from "./pages/riesgos/controles";
 import TratamientoRiesgos from "./pages/riesgos/tratamiento";
 import MapaProcesos from "./pages/MapaProcesos";
-import FormularioProceso from "./pages/FormularioProceso";
-import DetalleProceso from "./pages/DetalleProceso";
+import FormularioProceso from "./pages/procesos/FormularioProceso";
+import DetalleProceso from "./pages/procesos/DetalleProceso";
+import ListadoProcesos from "./pages/procesos/ListadoProcesos";
 import MigracionesDB from "./pages/sistema/MigracionesDB";
 import MesaDeAyuda from "./pages/soporte/MesaDeAyuda";
 import Seguridad from "./pages/seguridad";
@@ -161,6 +162,7 @@ function App() {
 
             {/* Procesos */}
             <Route path="/procesos" element={<MapaProcesos />} />
+            <Route path="/procesos/listado" element={<ListadoProcesos />} />
             <Route path="/procesos/nuevo" element={<FormularioProceso />} />
             <Route path="/procesos/:id" element={<DetalleProceso />} />
             <Route path="/procesos/:id/editar" element={<FormularioProceso />} />

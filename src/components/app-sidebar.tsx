@@ -227,8 +227,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       },
       {
         title: "Procesos",
-        url: "/procesos",
+        url: "#",
         icon: FolderOpen,
+        items: [
+          { title: "Mapa de Procesos", url: "/procesos", permiso: "procesos.ver" },
+          { title: "Listado de Procesos", url: "/procesos/listado", permiso: "procesos.ver" },
+        ],
       },
     ]),
     navQuality: filterMenuItems([
