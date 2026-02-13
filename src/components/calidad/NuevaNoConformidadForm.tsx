@@ -25,7 +25,8 @@ interface NuevaNoConformidadFormProps {
 interface Usuario {
     id: string;
     nombre: string;
-    primerApellido: string;
+    primerApellido?: string;
+    primer_apellido?: string;
 }
 
 export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: NuevaNoConformidadFormProps) {
@@ -51,26 +52,38 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
     useEffect(() => {
         fetchUsuarios();
         fetchProcesos();
+    }, []);
+
+    useEffect(() => {
         if (initialData) {
-            setFormData({
+            // Normalize ID retrieval
+            const getValidId = (obj: any, mainKey: string, nestedKey: string) => {
+                const val = obj[nestedKey]?.id || obj[mainKey];
+                return val ? String(val) : "";
+            };
+
+            const detectadoPorId = getValidId(initialData, "detectado_por", "detector") || getValidId(initialData, "detectadoPor", "detector");
+
+            setFormData(prev => ({
+                ...prev,
                 codigo: initialData.codigo,
-                tipo: initialData.tipo || "",
-                descripcion: initialData.descripcion,
-                fuente: (initialData as any).fuente || "",
-                gravedad: initialData.gravedad || "",
-                fecha_deteccion: initialData.fecha_deteccion ? new Date(initialData.fecha_deteccion).toISOString().split('T')[0] : new Date().toISOString().split("T")[0],
-                responsable_id: initialData.responsable?.id || initialData.responsable_id || "",
-                proceso_id: initialData.proceso?.id || initialData.proceso_id || "",
-                detectado_por: initialData.detector?.id || initialData.detectado_por || "",
-                analisis_causa: initialData.analisis_causa || "",
-                plan_accion: initialData.plan_accion || "",
-            });
+                tipo: initialData.tipo || prev.tipo,
+                descripcion: initialData.descripcion || prev.descripcion,
+                fuente: (initialData as any).fuente || prev.fuente,
+                gravedad: initialData.gravedad || prev.gravedad,
+                fecha_deteccion: initialData.fecha_deteccion ? new Date(initialData.fecha_deteccion).toISOString().split('T')[0] : prev.fecha_deteccion,
+                responsable_id: getValidId(initialData, "responsable_id", "responsable") || prev.responsable_id,
+                proceso_id: getValidId(initialData, "proceso_id", "proceso") || prev.proceso_id,
+                detectado_por: detectadoPorId || prev.detectado_por,
+                analisis_causa: initialData.analisis_causa || prev.analisis_causa,
+                plan_accion: initialData.plan_accion || prev.plan_accion,
+            }));
         }
-    }, [initialData]);
+    }, [initialData, usuarios]);
 
     const fetchProcesos = async () => {
         try {
-            const data = await procesoService.listar(); // Ensure listar returns Proceso[] or check response structure
+            const data = await procesoService.listar({ limit: 1000 });
             if (Array.isArray(data)) {
                 setProcesos(data);
             } else if ((data as any).data && Array.isArray((data as any).data)) {
@@ -85,7 +98,7 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
 
     const fetchUsuarios = async () => {
         try {
-            const response = await apiClient.get("/usuarios");
+            const response = await apiClient.get("/usuarios", { params: { limit: 1000 } });
             setUsuarios(response.data);
         } catch (error) {
             console.error("Error fetching usuarios:", error);
@@ -216,7 +229,8 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
                 <div className="grid gap-2">
                     <Label htmlFor="responsable_id">Responsable</Label>
                     <Select
-                        value={formData.responsable_id}
+                        key={`responsable-${usuarios.length}`}
+                        value={formData.responsable_id || "none"}
                         onValueChange={(value) => setFormData({ ...formData, responsable_id: value })}
                     >
                         <SelectTrigger>
@@ -226,7 +240,7 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
                             <SelectItem value="none">Sin asignar</SelectItem>
                             {usuarios.map((u) => (
                                 <SelectItem key={u.id} value={u.id}>
-                                    {u.nombre} {u.primerApellido}
+                                    {u.nombre} {u.primer_apellido || u.primerApellido}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -256,7 +270,8 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
                 <div className="grid gap-2">
                     <Label htmlFor="detectado_por">Detectado Por</Label>
                     <Select
-                        value={formData.detectado_por}
+                        key={`detector-${usuarios.length}`}
+                        value={formData.detectado_por || "none"}
                         onValueChange={(value) => setFormData({ ...formData, detectado_por: value })}
                     >
                         <SelectTrigger>
@@ -266,7 +281,7 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
                             <SelectItem value="none">Sin asignar</SelectItem>
                             {usuarios.map((u) => (
                                 <SelectItem key={u.id} value={u.id}>
-                                    {u.nombre} {u.primerApellido}
+                                    {u.nombre} {u.primer_apellido || u.primerApellido}
                                 </SelectItem>
                             ))}
                         </SelectContent>
