@@ -170,30 +170,30 @@ export const DocumentFormWithTipTap = ({
       data.append("descripcion", `Documento ${formData.nombreArchivo}`); // Descripción por defecto
 
       data.append("nombreArchivo", formData.nombreArchivo);
-      data.append("tipoDocumento", formData.tipoDocumento);
+      data.append("tipo_documento", formData.tipoDocumento);
       data.append("codigoDocumento", formData.codigoDocumento);
-      data.append("version", formData.version);
+      data.append("version_actual", formData.version); // Backend espera version_actual
       data.append("visibilidad", formData.visibilidad);
       data.append("estado", formData.estado);
 
       // En edición, no enviar subidoPor si no se ha cambiado (aunque esté deshabilitado)
-      if (formData.subidoPor) data.append("subidoPor", formData.subidoPor);
+      if (formData.subidoPor) data.append("creado_por", formData.subidoPor);
 
       // Add content based on mode
       if (documentMode === 'editor') {
-        data.append("contenidoHtml", content);
+        data.append("contenidoHtml", content); // Verificar si backend espera esto o 'ruta_archivo'
       } else if (documentMode === 'upload' && uploadedFile) {
         data.append("archivo", uploadedFile);
       }
 
       if (formData.proximaRevision) {
-        data.append("proximaRevision", formData.proximaRevision);
+        data.append("proxima_revision", formData.proximaRevision);
       }
       if (formData.revisadoPor) {
-        data.append("revisadoPor", formData.revisadoPor);
+        data.append("revisado_por", formData.revisadoPor);
       }
       if (formData.aprobadoPor) {
-        data.append("aprobadoPor", formData.aprobadoPor);
+        data.append("aprobado_por", formData.aprobadoPor);
       }
 
       await onSubmit(data);

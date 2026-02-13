@@ -12,6 +12,7 @@ export interface DocumentoData {
   fecha_vigencia?: string;
   creado_por?: string;
   aprobado_por?: string;
+  revisado_por?: string;
 }
 
 export interface UsuarioNested {
@@ -35,8 +36,10 @@ export interface DocumentoResponse {
   fecha_vigencia?: string;
   creado_por?: string;  // UUID
   aprobado_por?: string;  // UUID
+  revisado_por?: string;  // UUID
   creador?: UsuarioNested;  // Objeto usuario completo
   aprobador?: UsuarioNested;  // Objeto usuario completo
+  revisor?: UsuarioNested;  // Objeto usuario completo
   creado_en: string;
   actualizado_en: string;
 }
