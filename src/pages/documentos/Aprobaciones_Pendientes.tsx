@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -21,6 +22,8 @@ import {
   Filter,
   RefreshCw,
   Activity,
+  UserCheck,
+  Users
 } from "lucide-react";
 import {
   AlertDialog,
@@ -40,6 +43,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 import { documentoService } from "@/services/documento.service";
 import { toast } from "sonner";
@@ -57,11 +62,13 @@ interface Documento {
 }
 
 export default function AprobacionesPendientes() {
+  const { user } = useAuth();
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<string>("todos");
+  const [verMisPendientes, setVerMisPendientes] = useState<boolean>(true); // Nuevo estado para el toggle
   const [dialogState, setDialogState] = useState<{
     open: boolean;
     type: 'aprobar' | 'rechazar' | null;
@@ -70,13 +77,19 @@ export default function AprobacionesPendientes() {
 
   useEffect(() => {
     fetchAprobacionesPendientes();
-  }, []);
+  }, [verMisPendientes]); // Recargar cuando cambia el modo de vista
 
   const fetchAprobacionesPendientes = async () => {
     setLoading(true);
     try {
-      const data = await documentoService.getAll({ estado: "pendiente_aprobacion" });
+      const params: any = { estado: "pendiente_aprobacion" };
+      if (verMisPendientes && user?.id) {
+        params.aprobado_por = user.id;
+      }
 
+      const data = await documentoService.getAll(params);
+
+      // Transformar datos
       const transformedData = data.map((doc: any) => ({
         id: doc.id,
         codigo: doc.codigo,
@@ -85,7 +98,7 @@ export default function AprobacionesPendientes() {
         version: doc.version_actual,
         estado: "Pendiente de Aprobación",
         fechaSolicitud: doc.creado_en,
-        solicitadoPor: "Usuario", // Ajustar cuando el backend lo devuelva
+        solicitadoPor: doc.creador ? `${doc.creador.nombre} ${doc.creador.primerApellido || ''}` : "Desconocido",
         prioridad: calcularPrioridad(doc.creado_en),
       }));
 
@@ -200,6 +213,25 @@ export default function AprobacionesPendientes() {
                   </Badge>
                 )}
               </div>
+            </div>
+
+            {/* Control de Vista (Mis Pendientes vs Todos) */}
+            <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-white/50 flex flex-col gap-2">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="view-mode"
+                  checked={verMisPendientes}
+                  onCheckedChange={setVerMisPendientes}
+                />
+                <Label htmlFor="view-mode" className="font-medium text-[#1E3A8A] cursor-pointer">
+                  {verMisPendientes ? "Mis Asignados" : "Ver Todos"}
+                </Label>
+              </div>
+              <p className="text-xs text-[#6B7280]">
+                {verMisPendientes
+                  ? "Mostrando solo documentos asignados a mí"
+                  : "Mostrando todos los documentos pendientes"}
+              </p>
             </div>
           </div>
         </div>
