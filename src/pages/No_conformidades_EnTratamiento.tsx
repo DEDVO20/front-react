@@ -369,6 +369,6 @@ export default function NoConformidadesEnTratamiento() {
         </AlertDialogContent>
       </AlertDialog>
 
-    </div >
+    </div>
   );
 }
