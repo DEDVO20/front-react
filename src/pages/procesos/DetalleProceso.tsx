@@ -58,7 +58,7 @@ export default function DetalleProceso() {
         } catch (error) {
             console.error("Error cargando proceso:", error);
             toast.error("Error al cargar el proceso");
-            navigate("/procesos");
+            navigate("/procesos/listado");
         } finally {
             setLoading(false);
         }
@@ -70,7 +70,7 @@ export default function DetalleProceso() {
         try {
             await procesoService.eliminar(id);
             toast.success(`Proceso "${proceso.nombre}" eliminado exitosamente`);
-            navigate("/procesos");
+            navigate("/procesos/listado");
         } catch (error: any) {
             console.error("Error eliminando proceso:", error);
             toast.error(error.response?.data?.detail || "Error al eliminar el proceso");
@@ -175,7 +175,7 @@ export default function DetalleProceso() {
                         <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => navigate("/procesos")}
+                            onClick={() => navigate("/procesos/listado")}
                             className="rounded-xl"
                         >
                             <ArrowLeft className="h-4 w-4" />
@@ -414,18 +414,20 @@ export default function DetalleProceso() {
                         <AlertDialogTitle className="text-[#1E3A8A]">
                             ¿Eliminar proceso?
                         </AlertDialogTitle>
-                        <AlertDialogDescription className="space-y-4">
-                            <p>
-                                ¿Estás seguro de que deseas eliminar el proceso{" "}
-                                <span className="font-semibold text-gray-900">
-                                    {proceso?.nombre}
-                                </span>{" "}
-                                ({proceso?.codigo})?
-                            </p>
-                            <p className="text-red-600 font-medium">
-                                Esta acción no se puede deshacer. Se eliminarán también todas las etapas,
-                                indicadores y relaciones asociadas a este proceso.
-                            </p>
+                        <AlertDialogDescription asChild>
+                            <div className="space-y-4">
+                                <p>
+                                    ¿Estás seguro de que deseas eliminar el proceso{" "}
+                                    <span className="font-semibold text-gray-900">
+                                        {proceso?.nombre}
+                                    </span>{" "}
+                                    ({proceso?.codigo})?
+                                </p>
+                                <p className="text-red-600 font-medium">
+                                    Esta acción no se puede deshacer. Se eliminarán también todas las etapas,
+                                    indicadores y relaciones asociadas a este proceso.
+                                </p>
+                            </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

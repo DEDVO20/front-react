@@ -409,18 +409,20 @@ export default function MapaProcesos() {
                         <AlertDialogTitle className="text-[#1E3A8A]">
                             ¿Eliminar proceso?
                         </AlertDialogTitle>
-                        <AlertDialogDescription className="space-y-4">
-                            <p>
-                                ¿Estás seguro de que deseas eliminar el proceso{" "}
-                                <span className="font-semibold text-gray-900">
-                                    {deleteDialog.proceso?.nombre}
-                                </span>{" "}
-                                ({deleteDialog.proceso?.codigo})?
-                            </p>
-                            <p className="text-red-600 font-medium">
-                                Esta acción no se puede deshacer. Se eliminarán también todas las etapas,
-                                indicadores y relaciones asociadas a este proceso.
-                            </p>
+                        <AlertDialogDescription asChild>
+                            <div className="space-y-4">
+                                <p>
+                                    ¿Estás seguro de que deseas eliminar el proceso{" "}
+                                    <span className="font-semibold text-gray-900">
+                                        {deleteDialog.proceso?.nombre}
+                                    </span>{" "}
+                                    ({deleteDialog.proceso?.codigo})?
+                                </p>
+                                <p className="text-red-600 font-medium">
+                                    Esta acción no se puede deshacer. Se eliminarán también todas las etapas,
+                                    indicadores y relaciones asociadas a este proceso.
+                                </p>
+                            </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

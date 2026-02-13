@@ -78,7 +78,7 @@ export default function FormularioProceso() {
         } catch (error) {
             console.error("Error cargando proceso:", error);
             toast.error("Error al cargar el proceso");
-            navigate("/procesos");
+            navigate("/procesos/listado");
         } finally {
             setLoading(false);
         }
@@ -103,7 +103,7 @@ export default function FormularioProceso() {
                 toast.success("Proceso creado exitosamente");
             }
 
-            navigate("/procesos");
+            navigate("/procesos/listado");
         } catch (error: any) {
             console.error("Error guardando proceso:", error);
             toast.error(error.response?.data?.detail || "Error al guardar el proceso");
@@ -135,7 +135,7 @@ export default function FormularioProceso() {
                     <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => navigate("/procesos")}
+                        onClick={() => navigate("/procesos/listado")}
                         className="rounded-xl"
                     >
                         <ArrowLeft className="h-4 w-4" />
@@ -356,7 +356,7 @@ export default function FormularioProceso() {
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => navigate("/procesos")}
+                            onClick={() => navigate("/procesos/listado")}
                             className="rounded-xl px-6"
                         >
                             Cancelar
