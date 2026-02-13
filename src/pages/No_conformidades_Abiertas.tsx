@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { NuevaNoConformidadForm } from "@/components/calidad/NuevaNoConformidadForm";
+import { VerNoConformidad } from "@/components/calidad/VerNoConformidad";
 import { toast } from "sonner";
 
 interface NoConformidadUI {
@@ -37,6 +38,8 @@ export default function NoConformidadesAbiertas() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedNoConformidad, setSelectedNoConformidad] = useState<INoConformidad | null>(null);
 
   useEffect(() => {
     fetchNoConformidadesAbiertas();
@@ -85,6 +88,33 @@ export default function NoConformidadesAbiertas() {
     }
   };
 
+  const handleVerDetalles = async (id: string) => {
+    try {
+      const data = await noConformidadService.getById(id);
+      setSelectedNoConformidad(data);
+      setIsViewDialogOpen(true);
+    } catch (error) {
+      console.error("Error al obtener detalles:", error);
+      toast.error("Error al cargar detalles");
+    }
+  };
+
+  const handleEditar = async (id: string) => {
+    try {
+      const data = await noConformidadService.getById(id);
+      setSelectedNoConformidad(data);
+      setIsDialogOpen(true);
+    } catch (error) {
+      console.error("Error al cargar datos para editar:", error);
+      toast.error("Error al cargar datos para editar");
+    }
+  };
+
+  const handleCrear = () => {
+    setSelectedNoConformidad(null);
+    setIsDialogOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -131,24 +161,33 @@ export default function NoConformidadesAbiertas() {
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold">
+                <Button
+                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold"
+                  onClick={handleCrear}
+                >
                   <PlusIcon className="mr-2 h-5 w-5" />
                   Nueva No Conformidad
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Nueva No Conformidad</DialogTitle>
+                  <DialogTitle>{selectedNoConformidad ? "Editar No Conformidad" : "Nueva No Conformidad"}</DialogTitle>
                 </DialogHeader>
-                <NuevaNoConformidadForm 
+                <NuevaNoConformidadForm
+                  initialData={selectedNoConformidad}
                   onSuccess={() => {
                     fetchNoConformidadesAbiertas();
                     setIsDialogOpen(false);
-                  }} 
+                  }}
                   onCancel={() => setIsDialogOpen(false)}
                 />
               </DialogContent>
             </Dialog>
+            <VerNoConformidad
+              noConformidad={selectedNoConformidad}
+              open={isViewDialogOpen}
+              onClose={() => setIsViewDialogOpen(false)}
+            />
           </div>
         </div>
 
@@ -263,39 +302,34 @@ export default function NoConformidadesAbiertas() {
             </Badge>
           </div>
           <div className="p-0">
-            <DataTable 
+            <DataTable
               data={noConformidades}
               actions={[
                 {
                   label: "Ver Detalles",
-                  onClick: (row) => {
-                    console.log("Ver detalles de:", row);
-                    // Aquí puedes abrir un modal o navegar a los detalles
-                  },
+                  onClick: (row) => handleVerDetalles(String(row.id)),
                 },
                 {
                   label: "Iniciar Tratamiento",
                   onClick: async (row) => {
-                    await handleIniciarTratamiento(row.id);
+                    await handleIniciarTratamiento(String(row.id));
                   },
                 },
                 {
                   label: "Editar",
-                  onClick: (row) => {
-                    console.log("Editar:", row);
-                  },
+                  onClick: (row) => handleEditar(String(row.id)),
                 },
                 {
                   label: "Eliminar",
                   onClick: async (row) => {
                     if (confirm(`¿Eliminar no conformidad ${row.codigo}?`)) {
                       try {
-                        await noConformidadService.delete(row.id);
+                        await noConformidadService.delete(String(row.id));
                         toast.success("No conformidad eliminada exitosamente");
                         fetchNoConformidadesAbiertas();
                       } catch (error) {
                         console.error("Error al eliminar:", error);
-                        toast.error("Error al eliminar la no conformidad");
+                        toast.error("Error al eliminar la no conformidad. Verifique si tiene acciones relacionadas.");
                       }
                     }
                   },

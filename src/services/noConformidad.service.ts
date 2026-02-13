@@ -7,10 +7,15 @@ export interface NoConformidad {
   descripcion: string;
   estado: string;
   gravedad?: string;
+  fuente?: string;
   fecha_deteccion: string;
   responsable_id?: string;
   area_id?: string;
   documento_id?: string;
+  proceso_id?: string;
+  detectado_por?: string;
+  analisis_causa?: string;
+  plan_accion?: string;
   creado_en?: string;
   actualizado_en?: string;
   responsable?: {
@@ -21,6 +26,16 @@ export interface NoConformidad {
   area?: {
     id: string;
     nombre: string;
+  };
+  proceso?: {
+    id: string;
+    nombre: string;
+    codigo: string;
+  };
+  detector?: {
+    id: string;
+    nombre: string;
+    primerApellido: string;
   };
 }
 
