@@ -17,6 +17,9 @@ import {
   FileType,
   Trash2,
   FileCheck,
+  User,
+  UserCheck,
+  UserPlus,
 } from "lucide-react";
 
 interface Documento {
@@ -32,6 +35,9 @@ interface Documento {
   actualizado_en: string;
   creado_por?: string;
   aprobado_por?: string;
+  creador?: { nombre: string; segundoNombre?: string; primerApellido?: string; segundoApellido?: string };
+  revisor?: { nombre: string; segundoNombre?: string; primerApellido?: string; segundoApellido?: string };
+  aprobador?: { nombre: string; segundoNombre?: string; primerApellido?: string; segundoApellido?: string };
 }
 
 export default function VerDocumento() {
@@ -295,6 +301,21 @@ export default function VerDocumento() {
     );
   };
 
+  const getNombreCompleto = (
+    usuario?: { nombre: string; segundoNombre?: string; primerApellido?: string; segundoApellido?: string },
+    defaultText: string = "No asignado / Pendiente"
+  ) => {
+    if (!usuario) return defaultText;
+    return [
+      usuario.nombre,
+      usuario.segundoNombre,
+      usuario.primerApellido,
+      usuario.segundoApellido
+    ]
+      .filter(Boolean)
+      .join(" ");
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#F5F7FA]">
@@ -444,6 +465,51 @@ export default function VerDocumento() {
                 minute: "2-digit",
               })}
             </p>
+          </div>
+        </div>
+
+        {/* Responsables */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Creado Por */}
+          <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <User className="w-5 h-5 text-blue-600" />
+              </div>
+              <span className="text-sm font-semibold text-[#1E3A8A]">Creado Por</span>
+            </div>
+            <p className="text-lg font-medium text-gray-800">
+              {getNombreCompleto(documento.creador, "Sistema")}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Autor del documento</p>
+          </div>
+
+          {/* Revisado Por */}
+          <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <UserPlus className="w-5 h-5 text-orange-600" />
+              </div>
+              <span className="text-sm font-semibold text-[#1E3A8A]">Revisado Por</span>
+            </div>
+            <p className="text-lg font-medium text-gray-800">
+              {getNombreCompleto(documento.revisor)}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Encargado de revisión</p>
+          </div>
+
+          {/* Aprobado Por */}
+          <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <UserCheck className="w-5 h-5 text-green-600" />
+              </div>
+              <span className="text-sm font-semibold text-[#1E3A8A]">Aprobado Por</span>
+            </div>
+            <p className="text-lg font-medium text-gray-800">
+              {getNombreCompleto(documento.aprobador)}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Encargado de aprobación final</p>
           </div>
         </div>
 
