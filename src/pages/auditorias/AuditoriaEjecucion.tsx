@@ -123,9 +123,21 @@ export default function AuditoriaEjecucion() {
             setShowHallazgoModal(false);
             setHallazgoForm({ tipo: 'no_conformidad_menor', descripcion: '', clausulaIso: '', evidencia: '' });
             cargarDatos(id);
-        } catch (error) {
-            console.error(error);
-            toast.error('Error al registrar hallazgo');
+        } catch (error: any) {
+            console.error('Error detallado:', error);
+            let mensaje = 'Error al registrar hallazgo';
+
+            if (error.response && error.response.data && error.response.data.detail) {
+                if (Array.isArray(error.response.data.detail)) {
+                    mensaje = error.response.data.detail.map((e: any) => `${e.loc.join('.')} - ${e.msg}`).join(', ');
+                } else {
+                    mensaje = error.response.data.detail;
+                }
+            } else if (error.message) {
+                mensaje = error.message;
+            }
+
+            toast.error(mensaje);
         }
     };
 

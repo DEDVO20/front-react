@@ -204,7 +204,13 @@ export const auditoriaService = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
-    if (!response.ok) throw new Error("Error al crear hallazgo");
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.detail
+        ? (Array.isArray(errorData.detail) ? errorData.detail.map((e: any) => e.msg).join(', ') : errorData.detail)
+        : "Error al crear hallazgo";
+      throw new Error(errorMessage);
+    }
     return response.json();
   },
 
