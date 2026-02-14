@@ -15,6 +15,7 @@ import {
   Activity
 } from "lucide-react";
 import { auditoriaService } from "@/services/auditoria.service";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -58,97 +59,71 @@ export default function AuditoriasEnCurso() {
     fetchAuditorias();
   }, []);
 
+  const calcularProgreso = (auditoria: {
+    estado: string;
+    fechaInicio?: string;
+    fechaFin?: string;
+  }) => {
+    if (auditoria.estado === "completada" || auditoria.estado === "cerrada") return 100;
+    if (auditoria.estado === "planificada") return 0;
+
+    if (!auditoria.fechaInicio || !auditoria.fechaFin) return 50;
+
+    const inicio = new Date(auditoria.fechaInicio).getTime();
+    const fin = new Date(auditoria.fechaFin).getTime();
+    const ahora = Date.now();
+    const duracion = fin - inicio;
+
+    if (duracion <= 0) return 50;
+
+    const avance = ((ahora - inicio) / duracion) * 100;
+    return Math.max(5, Math.min(95, Math.round(avance)));
+  };
+
   const fetchAuditorias = async () => {
     try {
       const data = await auditoriaService.getEnCurso();
+      const hallazgosPorAuditoria = await Promise.allSettled(
+        data.map((aud) => auditoriaService.getHallazgos(aud.id))
+      );
 
-      // Mapear datos del servicio a la interfaz local
-      const auditoriasMapeadas: Auditoria[] = data.map(aud => ({
-        id: aud.id,
-        codigo: aud.codigo,
-        nombre: aud.nombre || 'Sin nombre',
-        tipo: aud.tipo,
-        alcance: aud.alcance || '',
-        objetivo: aud.objetivo || '',
-        fechaPlanificada: aud.fechaPlanificada || new Date().toISOString(),
-        fechaInicio: aud.fechaInicio,
-        fechaFin: aud.fechaFin,
-        estado: aud.estado,
-        auditorLider: aud.auditorLider ? {
-          id: aud.auditorLider.id,
-          nombre: aud.auditorLider.nombre,
-          primerApellido: aud.auditorLider.primerApellido || '',
-        } : undefined,
-        hallazgosCount: 0, // Valor por defecto
-        progreso: 0 // Valor por defecto
-      }));
+      const auditoriasMapeadas: Auditoria[] = data.map((aud, index) => {
+        const hallazgosResult = hallazgosPorAuditoria[index];
+        const hallazgosCount =
+          hallazgosResult.status === "fulfilled" ? hallazgosResult.value.length : 0;
+
+        return {
+          id: aud.id,
+          codigo: aud.codigo,
+          nombre: aud.nombre || "Sin nombre",
+          tipo: aud.tipo,
+          alcance: aud.alcance || "",
+          objetivo: aud.objetivo || "",
+          fechaPlanificada: aud.fechaPlanificada || new Date().toISOString(),
+          fechaInicio: aud.fechaInicio,
+          fechaFin: aud.fechaFin,
+          estado: aud.estado,
+          auditorLider: aud.auditorLider
+            ? {
+                id: aud.auditorLider.id,
+                nombre: aud.auditorLider.nombre,
+                primerApellido: aud.auditorLider.primerApellido || "",
+              }
+            : undefined,
+          hallazgosCount,
+          progreso: calcularProgreso({
+            estado: aud.estado,
+            fechaInicio: aud.fechaInicio,
+            fechaFin: aud.fechaFin,
+          }),
+        };
+      });
 
       setAuditorias(auditoriasMapeadas);
-      setLoading(false);
     } catch (error) {
       console.error("Error al cargar auditorías:", error);
-      console.warn("Usando datos de ejemplo");
-      // Fallback a datos de ejemplo
-      const ejemploData: Auditoria[] = [
-        {
-          id: "1",
-          codigo: "AUD-2024-015",
-          nombre: "Auditoría Interna ISO 9001:2015",
-          tipo: "interna",
-          alcance: "Procesos de producción y control de calidad",
-          objetivo: "Verificar cumplimiento de requisitos ISO 9001:2015",
-          fechaPlanificada: "2024-11-01",
-          fechaInicio: "2024-11-05",
-          fechaFin: "2024-11-15",
-          estado: "en_curso",
-          auditorLider: {
-            id: "u1",
-            nombre: "Carlos",
-            primerApellido: "Mendoza"
-          },
-          hallazgosCount: 5,
-          progreso: 65
-        },
-        {
-          id: "2",
-          codigo: "AUD-2024-016",
-          nombre: "Auditoría de Seguimiento Certificación",
-          tipo: "seguimiento",
-          alcance: "Acciones correctivas del periodo anterior",
-          objetivo: "Validar implementación de acciones correctivas",
-          fechaPlanificada: "2024-11-03",
-          fechaInicio: "2024-11-06",
-          fechaFin: "2024-11-13",
-          estado: "en_curso",
-          auditorLider: {
-            id: "u2",
-            nombre: "Ana María",
-            primerApellido: "Torres"
-          },
-          hallazgosCount: 2,
-          progreso: 40
-        },
-        {
-          id: "3",
-          codigo: "AUD-2024-017",
-          nombre: "Auditoría Procesos de Compras",
-          tipo: "interna",
-          alcance: "Área de compras y gestión de proveedores",
-          objetivo: "Evaluar eficacia del proceso de compras",
-          fechaPlanificada: "2024-11-04",
-          fechaInicio: "2024-11-07",
-          fechaFin: "2024-11-14",
-          estado: "en_curso",
-          auditorLider: {
-            id: "u3",
-            nombre: "Roberto",
-            primerApellido: "Silva"
-          },
-          hallazgosCount: 8,
-          progreso: 75
-        }
-      ];
-      setAuditorias(ejemploData);
+      setAuditorias([]);
+      toast.error("No se pudieron cargar las auditorías en curso");
     } finally {
       setLoading(false);
     }
@@ -213,10 +188,22 @@ export default function AuditoriasEnCurso() {
                 </Badge>
               </div>
             </div>
-            <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Programar Auditoría
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+              <Button
+                onClick={() => navigate("/AuditoriasPlanificacion?accion=crear&origen=AuditoriasEnCurso")}
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold flex items-center gap-2"
+              >
+                <Calendar className="w-5 h-5" />
+                Programar Auditoría
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate("/auditorias/programa-anual")}
+                className="border-[#2563EB] text-[#2563EB] hover:bg-[#E0EDFF] rounded-xl px-6 py-6 h-auto font-bold"
+              >
+                Ver Programa de Auditoría
+              </Button>
+            </div>
           </div>
         </div>
 

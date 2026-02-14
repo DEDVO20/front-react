@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Calendar, Plus, Search, Download, Eye, Edit, Trash2, Users, CheckCircle, AlertCircle, Clock, Loader2, Save, Activity, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -129,6 +130,7 @@ const usuarioService = {
 };
 
 const AuditoriasPlanificacion = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   // Estados
   const [auditorias, setAuditorias] = useState<Auditoria[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -165,6 +167,17 @@ const AuditoriasPlanificacion = () => {
   useEffect(() => {
     cargarAuditorias();
   }, [filtroTipo, filtroEstado]);
+
+  useEffect(() => {
+    const accion = searchParams.get('accion');
+    if (accion === 'crear' && !mostrarModal) {
+      abrirModalCrear();
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('accion');
+      nextParams.delete('origen');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [searchParams, mostrarModal]);
 
   const cargarDatos = async () => {
     try {
