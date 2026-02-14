@@ -354,10 +354,20 @@ export default function AuditoriasEnCurso() {
                       </div>
 
                       <div className="flex gap-2">
-                        <Button variant="ghost" className="p-3 bg-[#F8FAFC] hover:bg-[#E0EDFF] text-[#2563EB] rounded-xl transition-all border border-[#E5E7EB]">
+                        <Button
+                          variant="ghost"
+                          onClick={() => navigate(`/auditorias/ejecucion/${auditoria.id}`)}
+                          className="p-3 bg-[#F8FAFC] hover:bg-[#E0EDFF] text-[#2563EB] rounded-xl transition-all border border-[#E5E7EB]"
+                          title="Ver detalles"
+                        >
                           <Eye className="w-5 h-5" />
                         </Button>
-                        <Button variant="ghost" className="p-3 bg-[#F8FAFC] hover:bg-[#E0EDFF] text-[#2563EB] rounded-xl transition-all border border-[#E5E7EB]">
+                        <Button
+                          variant="ghost"
+                          onClick={() => navigate(`/auditorias/ejecucion/${auditoria.id}`)} // Por ahora redirige a ejecución, idealmente sería /auditorias/editar/:id
+                          className="p-3 bg-[#F8FAFC] hover:bg-[#E0EDFF] text-[#2563EB] rounded-xl transition-all border border-[#E5E7EB]"
+                          title="Editar auditoría"
+                        >
                           <Edit className="w-5 h-5" />
                         </Button>
                       </div>
@@ -416,8 +426,11 @@ export default function AuditoriasEnCurso() {
 
                       <Button
                         variant="ghost"
-                        onClick={() => navigate(`/auditorias/ejecucion/${auditoria.id}`)}
-                        className="mt-4 sm:mt-0 px-6 py-2 bg-[#F8FAFC] hover:bg-[#2563EB] text-[#1E3A8A] hover:text-white font-bold rounded-xl transition-all flex items-center gap-2 border border-[#E5E7EB]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/auditorias/ejecucion/${auditoria.id}`);
+                        }}
+                        className="mt-4 sm:mt-0 px-6 py-2 bg-[#F8FAFC] hover:bg-[#2563EB] text-[#1E3A8A] hover:text-white font-bold rounded-xl transition-all flex items-center gap-2 border border-[#E5E7EB] cursor-pointer"
                       >
                         Gestionar Evidencia
                         <CheckCircle2 size={16} />

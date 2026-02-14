@@ -92,6 +92,25 @@ export default function AuditoriaEjecucion() {
         }
     };
 
+    const handleDescargarInforme = async () => {
+        if (!auditoria || !id) return;
+        try {
+            const blob = await auditoriaService.downloadInforme(id);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Informe_Auditoria_${auditoria.codigo}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            toast.success('Informe descargado correctamente');
+        } catch (error) {
+            console.error(error);
+            toast.error('Error al descargar el informe');
+        }
+    };
+
     const handleCrearHallazgo = async () => {
         if (!auditoria || !id) return;
         try {
@@ -162,6 +181,14 @@ export default function AuditoriaEjecucion() {
                             </CardDescription>
                         </div>
                         <div className="flex gap-2">
+                            <Button
+                                onClick={handleDescargarInforme}
+                                variant="outline"
+                                className="border-blue-200 text-blue-700 hover:bg-blue-50 gap-2"
+                            >
+                                <FileText className="h-4 w-4" /> Descargar Informe
+                            </Button>
+
                             {auditoria.estado === 'planificada' && (
                                 <Button onClick={handleIniciar} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
                                     <Play className="h-4 w-4" /> Iniciar Ejecución
@@ -223,7 +250,7 @@ export default function AuditoriaEjecucion() {
                             {hallazgos.map((hallazgo) => (
                                 <Card key={hallazgo.id} className="overflow-hidden hover:shadow-md transition-shadow">
                                     <div className={`h-1 w-full ${hallazgo.tipo.includes('mayor') ? 'bg-red-500' :
-                                            hallazgo.tipo.includes('menor') ? 'bg-yellow-500' : 'bg-blue-500'
+                                        hallazgo.tipo.includes('menor') ? 'bg-yellow-500' : 'bg-blue-500'
                                         }`} />
                                     <CardContent className="p-6">
                                         <div className="flex flex-col md:flex-row gap-4 justify-between">

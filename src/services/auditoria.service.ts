@@ -245,6 +245,15 @@ export const auditoriaService = {
     return response.json();
   },
 
+  async downloadInforme(id: string): Promise<Blob> {
+    const response = await fetch(`${API_URL}/auditorias/${id}/informe`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Error al descargar informe");
+    return response.blob();
+  },
+
   // Eliminar Hallazgo
   async deleteHallazgo(id: string): Promise<void> {
     const response = await fetch(`${API_URL}/hallazgos-auditoria/${id}`, {
