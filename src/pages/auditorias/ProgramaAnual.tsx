@@ -83,6 +83,8 @@ const ProgramaAnual: React.FC = () => {
     const getEstadoBadgeColor = (estado: string) => {
         switch (estado) {
             case 'aprobado': return 'bg-green-100 text-green-800';
+            case 'en_ejecucion': return 'bg-amber-100 text-amber-800';
+            case 'finalizado': return 'bg-emerald-100 text-emerald-800';
             case 'borrador': return 'bg-gray-100 text-gray-800';
             case 'cerrado': return 'bg-blue-100 text-blue-800';
             default: return 'bg-gray-100 text-gray-800';
@@ -177,6 +179,8 @@ const ProgramaAnual: React.FC = () => {
                                     <SelectContent>
                                         <SelectItem value="borrador">Borrador</SelectItem>
                                         <SelectItem value="aprobado">Aprobado</SelectItem>
+                                        <SelectItem value="en_ejecucion">En ejecución</SelectItem>
+                                        <SelectItem value="finalizado">Finalizado</SelectItem>
                                         <SelectItem value="cerrado">Cerrado</SelectItem>
                                     </SelectContent>
                                 </Select>
