@@ -37,6 +37,7 @@ export interface Auditoria {
 export interface HallazgoAuditoria {
   id: string;
   auditoriaId: string;
+  auditoria_id?: string; // Compatibilidad backend legacy (Render)
   codigo: string;
   tipo: string;
   descripcion: string;

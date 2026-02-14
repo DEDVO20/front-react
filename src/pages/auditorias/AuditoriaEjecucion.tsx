@@ -114,11 +114,15 @@ export default function AuditoriaEjecucion() {
     const handleCrearHallazgo = async () => {
         if (!auditoria || !id) return;
         try {
-            await auditoriaService.createHallazgo({
+            // Construir payload compatible con backend (snake_case y alias)
+            const payload = {
                 ...hallazgoForm,
-                auditoriaId: id,
-                codigo: `HALL-${hallazgos.length + 1}` // Generación simple de código temporal
-            });
+                auditoria_id: id, // Enviar como snake_case para compatibilidad
+                auditoriaId: id,   // Enviar también como camelCase por si acaso
+                codigo: `HALL-${hallazgos.length + 1}`
+            };
+
+            await auditoriaService.createHallazgo(payload);
             toast.success('Hallazgo registrado');
             setShowHallazgoModal(false);
             setHallazgoForm({ tipo: 'no_conformidad_menor', descripcion: '', clausulaIso: '', evidencia: '' });
