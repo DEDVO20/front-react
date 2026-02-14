@@ -317,20 +317,35 @@ const AuditoriasHallazgosView: React.FC = () => {
   const handleSubmitHallazgo = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const url = modalMode === 'create'
-        ? '/hallazgos-auditoria'
-        : `/hallazgos-auditoria/${selectedHallazgo?.id}`;
+      if (modalMode === 'create') {
+        // Validar que haya auditoría seleccionada
+        if (!hallazgoFormData.auditoriaId) {
+          toast.error('Debe asociar el hallazgo a una auditoría');
+          return;
+        }
 
-      const method = modalMode === 'create' ? 'post' : 'put';
+        await auditoriaService.createHallazgo({
+          ...hallazgoFormData,
+          auditoria_id: hallazgoFormData.auditoriaId, // Compatibilidad con Render (snake_case)
+          auditoriaId: hallazgoFormData.auditoriaId,
+          codigo: `HALL-${Date.now().toString().slice(-6)}`, // Generar código único
+        });
+        toast.success('Hallazgo registrado exitosamente');
+      } else {
+        if (!selectedHallazgo?.id) return;
+        await auditoriaService.updateHallazgo(selectedHallazgo.id, {
+          ...hallazgoFormData,
+          auditoria_id: hallazgoFormData.auditoriaId,
+          auditoriaId: hallazgoFormData.auditoriaId
+        });
+        toast.success('Hallazgo actualizado exitosamente');
+      }
 
-      // @ts-ignore
-      await apiClient[method](url, hallazgoFormData);
       setShowHallazgoModal(false);
       fetchHallazgos();
-      toast.success(modalMode === 'create' ? 'Hallazgo registrado exitosamente' : 'Hallazgo actualizado exitosamente');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al guardar hallazgo:', error);
-      toast.error('Error al guardar el hallazgo');
+      toast.error(error.message || 'Error al guardar el hallazgo');
     }
   };
 
