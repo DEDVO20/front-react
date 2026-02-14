@@ -60,6 +60,17 @@ export interface HallazgoAuditoria {
   resultadoVerificacion?: string;
 }
 
+export interface ProgramaAuditoria {
+  id: string;
+  anio: number;
+  objetivo?: string;
+  estado: string;
+  criterioRiesgo?: string;
+  aprobadoPorId?: string;
+  fechaAprobacion?: string;
+  creadoEn?: string;
+}
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
   return {
@@ -69,6 +80,51 @@ const getAuthHeaders = () => {
 };
 
 export const auditoriaService = {
+  // === PROGRAMAS DE AUDITORIA ===
+  async getAllProgramas(anio?: number): Promise<ProgramaAuditoria[]> {
+    const params = new URLSearchParams();
+    if (anio) params.append("anio", anio.toString());
+
+    const response = await fetch(`${API_URL}/programa-auditorias?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Error al obtener programas de auditoría");
+    return response.json();
+  },
+
+  async getProgramaById(id: string): Promise<ProgramaAuditoria> {
+    const response = await fetch(`${API_URL}/programa-auditorias/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Error al obtener programa de auditoría");
+    return response.json();
+  },
+
+  async createPrograma(data: Partial<ProgramaAuditoria>): Promise<ProgramaAuditoria> {
+    const response = await fetch(`${API_URL}/programa-auditorias`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || "Error al crear programa");
+    }
+    return response.json();
+  },
+
+  async updatePrograma(id: string, data: Partial<ProgramaAuditoria>): Promise<ProgramaAuditoria> {
+    const response = await fetch(`${API_URL}/programa-auditorias/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error("Error al actualizar programa");
+    return response.json();
+  },
+
+  // === AUDITORIAS ===
   // Obtener todas las auditorías
   async getAll(filters?: { tipo?: string; estado?: string }): Promise<Auditoria[]> {
     const params = new URLSearchParams();
@@ -270,4 +326,3 @@ export const auditoriaService = {
     if (!response.ok) throw new Error("Error al eliminar hallazgo");
   },
 };
-

@@ -35,6 +35,7 @@ import AuditoriasEnCurso from "./pages/auditorias/EnCurso";
 import AuditoriasHallazgosView from "./pages/auditorias/hallazgos";
 import AuditoriasCompletas from "./pages/auditorias/Completadas";
 import AuditoriaEjecucion from "./pages/auditorias/AuditoriaEjecucion";
+import ProgramaAnual from "./pages/auditorias/ProgramaAnual";
 
 import ObjetivosActivos from "./pages/objetivosCalidad/Activos";
 import Seguimiento from "./pages/objetivosCalidad/Seguimiento";
@@ -117,7 +118,6 @@ function App() {
             {/* Usuarios */}
             <Route path="/ListaDeUsuarios" element={<ListaDeUsuarios />} />
             <Route path="/NuevoUsuario" element={<NuevosUsuarios />} />
-            <Route path="/usuarios/:id/editar" element={<NuevosUsuarios />} />
             <Route path="/usuarios/:id/editar" element={<EditarUsuario />} />
             <Route path="/usuarios/carga-masiva" element={<CargaMasivaUsuarios />} />
             <Route path="/Roles_y_Permisos" element={<RolesYPermisos />} />
@@ -128,6 +128,7 @@ function App() {
             <Route path="/AuditoriasCompletas" element={<AuditoriasCompletas />} />
             <Route path="/AuditoriasHallazgosView" element={<AuditoriasHallazgosView />} />
             <Route path="/auditorias/ejecucion/:id" element={<AuditoriaEjecucion />} />
+            <Route path="/auditorias/programa-anual" element={<ProgramaAnual />} />
 
             {/* Objetivos de Calidad */}
             <Route path="/Activos" element={<ObjetivosActivos />} />
