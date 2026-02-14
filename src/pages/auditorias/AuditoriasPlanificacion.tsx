@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Calendar, Plus, Search, Download, Eye, Edit, Trash2, Users, CheckCircle, AlertCircle, Clock, Loader2, Save, Activity, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,9 @@ interface Auditoria {
   fechaInicio: string;
   fechaFin: string;
   estado: 'planificada' | 'en_curso' | 'completada' | 'cancelada';
+  programaId: string;
+  creadoPor?: string;
+  equipoAuditor?: string;
 }
 
 interface Usuario {
@@ -44,6 +48,14 @@ interface AuditoriaFormData {
   fechaPlanificada: string;
   fechaInicio: string;
   fechaFin: string;
+  estado: string;
+  programaId: string;
+  creadoPor: string;
+}
+
+interface ProgramaAuditoria {
+  id: string;
+  anio: number;
   estado: string;
 }
 
@@ -73,7 +85,19 @@ const auditoriaService = {
     return response.json();
   },
 
-  async create(data: AuditoriaFormData): Promise<Auditoria> {
+  async getProgramas(): Promise<ProgramaAuditoria[]> {
+    const response = await fetch(`${API_BASE_URL}/programa-auditorias`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) throw new Error('Error al cargar programas de auditoría');
+    return response.json();
+  },
+
+  async create(data: Record<string, unknown>): Promise<Auditoria> {
     const response = await fetch(`${API_BASE_URL}/auditorias`, {
       method: 'POST',
       headers: {
@@ -87,7 +111,7 @@ const auditoriaService = {
     return response.json();
   },
 
-  async update(id: string, data: Partial<AuditoriaFormData>): Promise<Auditoria> {
+  async update(id: string, data: Record<string, unknown>): Promise<Auditoria> {
     const response = await fetch(`${API_BASE_URL}/auditorias/${id}`, {
       method: 'PUT',
       headers: {
@@ -129,9 +153,11 @@ const usuarioService = {
 };
 
 const AuditoriasPlanificacion = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   // Estados
   const [auditorias, setAuditorias] = useState<Auditoria[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [programas, setProgramas] = useState<ProgramaAuditoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,6 +168,7 @@ const AuditoriasPlanificacion = () => {
 
   const [mostrarModal, setMostrarModal] = useState(false);
   const [auditoriaEditando, setAuditoriaEditando] = useState<Auditoria | null>(null);
+  const [equipoAuditorIds, setEquipoAuditorIds] = useState<string[]>([]);
   const [formData, setFormData] = useState<AuditoriaFormData>({
     codigo: '',
     nombre: '',
@@ -153,7 +180,9 @@ const AuditoriasPlanificacion = () => {
     fechaPlanificada: '',
     fechaInicio: '',
     fechaFin: '',
-    estado: 'planificada'
+    estado: 'planificada',
+    programaId: '',
+    creadoPor: ''
   });
 
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
@@ -166,18 +195,33 @@ const AuditoriasPlanificacion = () => {
     cargarAuditorias();
   }, [filtroTipo, filtroEstado]);
 
+  useEffect(() => {
+    const accion = searchParams.get('accion');
+    if (accion === 'crear' && !mostrarModal) {
+      abrirModalCrear();
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('accion');
+      nextParams.delete('origen');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [searchParams, mostrarModal]);
+
   const cargarDatos = async () => {
     try {
       setLoading(true);
       setError(null);
 
       // Cargar usuarios y auditorías en paralelo
-      const [usuariosData, auditoriasData] = await Promise.all([
+      const [usuariosData, programasData] = await Promise.all([
         usuarioService.getAll(),
-        auditoriaService.getAll({ tipo: filtroTipo, estado: filtroEstado })
+        auditoriaService.getProgramas()
       ]);
 
       setUsuarios(Array.isArray(usuariosData) ? usuariosData : []);
+      const programasValidos = (Array.isArray(programasData) ? programasData : []).filter(
+        (programa) => programa.estado === 'aprobado' || programa.estado === 'en_ejecucion'
+      );
+      setProgramas(programasValidos);
     } catch (err) {
       console.error(err);
     } finally {
@@ -222,6 +266,7 @@ const AuditoriasPlanificacion = () => {
     const year = new Date().getFullYear();
     const nextNumber = auditorias.length + 1;
     const codigo = `AUD-${year}-${String(nextNumber).padStart(3, '0')}`;
+    const programaDefault = programas.find((p) => p.anio === year)?.id || programas[0]?.id || '';
 
     setFormData({
       codigo,
@@ -234,8 +279,11 @@ const AuditoriasPlanificacion = () => {
       fechaPlanificada: '',
       fechaInicio: '',
       fechaFin: '',
-      estado: 'planificada'
+      estado: 'planificada',
+      programaId: programaDefault,
+      creadoPor: ''
     });
+    setEquipoAuditorIds([]);
     setMostrarModal(true);
   };
 
@@ -253,9 +301,25 @@ const AuditoriasPlanificacion = () => {
       fechaPlanificada: auditoria.fechaPlanificada?.split('T')[0] || '',
       fechaInicio: auditoria.fechaInicio?.split('T')[0] || '',
       fechaFin: auditoria.fechaFin?.split('T')[0] || '',
-      estado: auditoria.estado || 'planificada'
+      estado: auditoria.estado || 'planificada',
+      programaId: auditoria.programaId || (auditoria as unknown as { programa_id?: string }).programa_id || '',
+      creadoPor: auditoria.creadoPor || (auditoria as unknown as { creado_por?: string }).creado_por || ''
     });
+    const equipoRaw = auditoria.equipoAuditor || (auditoria as unknown as { equipo_auditor?: string }).equipo_auditor || '';
+    const equipoIds = equipoRaw
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+    setEquipoAuditorIds(equipoIds);
     setMostrarModal(true);
+  };
+
+  const toggleEquipoAuditor = (usuarioId: string) => {
+    setEquipoAuditorIds((prev) =>
+      prev.includes(usuarioId)
+        ? prev.filter((id) => id !== usuarioId)
+        : [...prev, usuarioId]
+    );
   };
 
   // Guardar auditoría
@@ -264,10 +328,19 @@ const AuditoriasPlanificacion = () => {
 
     try {
       setSaving(true);
+      if (!formData.programaId) {
+        toast.error('Debes seleccionar un programa anual aprobado o en ejecución');
+        return;
+      }
+      const payload: Record<string, unknown> = {
+        ...formData,
+        creadoPor: formData.creadoPor || undefined,
+        equipoAuditor: equipoAuditorIds.length > 0 ? equipoAuditorIds.join(',') : undefined
+      };
       if (auditoriaEditando) {
-        await auditoriaService.update(auditoriaEditando.id, formData);
+        await auditoriaService.update(auditoriaEditando.id, payload);
       } else {
-        await auditoriaService.create(formData);
+        await auditoriaService.create(payload);
       }
       setMostrarModal(false);
       await cargarAuditorias();
@@ -695,6 +768,30 @@ const AuditoriasPlanificacion = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Programa Anual <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.programaId}
+                    onChange={(e) => setFormData({ ...formData, programaId: e.target.value })}
+                    required
+                    disabled={!!auditoriaEditando && formData.estado !== 'planificada'}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
+                  >
+                    <option value="">Seleccionar programa...</option>
+                    {programas.map(programa => (
+                      <option key={programa.id} value={programa.id}>
+                        {programa.anio} - {programa.estado.replace('_', ' ')}
+                      </option>
+                    ))}
+                  </select>
+                  {!!auditoriaEditando && formData.estado !== 'planificada' && (
+                    <p className="text-xs text-[#6B7280] mt-1">
+                      El programa no se puede cambiar una vez iniciada la auditoría.
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Auditor Líder
                   </label>
                   <select
@@ -709,6 +806,53 @@ const AuditoriasPlanificacion = () => {
                       </option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Creado por
+                  </label>
+                  <select
+                    value={formData.creadoPor}
+                    onChange={(e) => setFormData({ ...formData, creadoPor: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Seleccionar usuario...</option>
+                    {usuarios.map(usuario => (
+                      <option key={usuario.id} value={usuario.id}>
+                        {usuario.nombre} {usuario.primerApellido}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Equipo auditor
+                </label>
+                <div className="border border-gray-300 rounded-lg p-3 bg-[#F8FAFC]">
+                  <div className="flex flex-wrap gap-2">
+                    {usuarios.map((usuario) => {
+                      const active = equipoAuditorIds.includes(usuario.id);
+                      return (
+                        <button
+                          key={usuario.id}
+                          type="button"
+                          onClick={() => toggleEquipoAuditor(usuario.id)}
+                          className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                            active
+                              ? 'bg-[#E0EDFF] text-[#1E3A8A] border-[#2563EB]'
+                              : 'bg-white text-[#6B7280] border-[#E5E7EB] hover:bg-[#F1F5F9]'
+                          }`}
+                        >
+                          {usuario.nombre} {usuario.primerApellido}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-[#6B7280] mt-2">
+                    Seleccionados: {equipoAuditorIds.length}
+                  </p>
                 </div>
               </div>
 

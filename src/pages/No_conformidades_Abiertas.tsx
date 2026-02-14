@@ -19,7 +19,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { NuevaNoConformidadForm } from "@/components/calidad/NuevaNoConformidadForm";
+import { VerNoConformidad } from "@/components/calidad/VerNoConformidad";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface NoConformidadUI {
   id: string;
@@ -37,6 +48,9 @@ export default function NoConformidadesAbiertas() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedNoConformidad, setSelectedNoConformidad] = useState<INoConformidad | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchNoConformidadesAbiertas();
@@ -82,6 +96,47 @@ export default function NoConformidadesAbiertas() {
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error al iniciar tratamiento");
+    }
+  };
+
+  const handleVerDetalles = async (id: string) => {
+    try {
+      const data = await noConformidadService.getById(id);
+      setSelectedNoConformidad(data);
+      setIsViewDialogOpen(true);
+    } catch (error) {
+      console.error("Error al obtener detalles:", error);
+      toast.error("Error al cargar detalles");
+    }
+  };
+
+  const handleEditar = async (id: string) => {
+    try {
+      const data = await noConformidadService.getById(id);
+      setSelectedNoConformidad(data);
+      setIsDialogOpen(true);
+    } catch (error) {
+      console.error("Error al cargar datos para editar:", error);
+      toast.error("Error al cargar datos para editar");
+    }
+  };
+
+  const handleCrear = () => {
+    setSelectedNoConformidad(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await noConformidadService.delete(deleteId);
+      toast.success("No conformidad eliminada exitosamente");
+      fetchNoConformidadesAbiertas();
+    } catch (error) {
+      console.error("Error al eliminar:", error);
+      toast.error("Error al eliminar la no conformidad. Verifique si tiene acciones relacionadas.");
+    } finally {
+      setDeleteId(null);
     }
   };
 
@@ -131,24 +186,33 @@ export default function NoConformidadesAbiertas() {
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold">
+                <Button
+                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold"
+                  onClick={handleCrear}
+                >
                   <PlusIcon className="mr-2 h-5 w-5" />
                   Nueva No Conformidad
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Nueva No Conformidad</DialogTitle>
+                  <DialogTitle>{selectedNoConformidad ? "Editar No Conformidad" : "Nueva No Conformidad"}</DialogTitle>
                 </DialogHeader>
-                <NuevaNoConformidadForm 
+                <NuevaNoConformidadForm
+                  initialData={selectedNoConformidad}
                   onSuccess={() => {
                     fetchNoConformidadesAbiertas();
                     setIsDialogOpen(false);
-                  }} 
+                  }}
                   onCancel={() => setIsDialogOpen(false)}
                 />
               </DialogContent>
             </Dialog>
+            <VerNoConformidad
+              noConformidad={selectedNoConformidad}
+              open={isViewDialogOpen}
+              onClose={() => setIsViewDialogOpen(false)}
+            />
           </div>
         </div>
 
@@ -263,42 +327,26 @@ export default function NoConformidadesAbiertas() {
             </Badge>
           </div>
           <div className="p-0">
-            <DataTable 
+            <DataTable
               data={noConformidades}
               actions={[
                 {
                   label: "Ver Detalles",
-                  onClick: (row) => {
-                    console.log("Ver detalles de:", row);
-                    // Aquí puedes abrir un modal o navegar a los detalles
-                  },
+                  onClick: (row) => handleVerDetalles(String(row.id)),
                 },
                 {
                   label: "Iniciar Tratamiento",
                   onClick: async (row) => {
-                    await handleIniciarTratamiento(row.id);
+                    await handleIniciarTratamiento(String(row.id));
                   },
                 },
                 {
                   label: "Editar",
-                  onClick: (row) => {
-                    console.log("Editar:", row);
-                  },
+                  onClick: (row) => handleEditar(String(row.id)),
                 },
                 {
                   label: "Eliminar",
-                  onClick: async (row) => {
-                    if (confirm(`¿Eliminar no conformidad ${row.codigo}?`)) {
-                      try {
-                        await noConformidadService.delete(row.id);
-                        toast.success("No conformidad eliminada exitosamente");
-                        fetchNoConformidadesAbiertas();
-                      } catch (error) {
-                        console.error("Error al eliminar:", error);
-                        toast.error("Error al eliminar la no conformidad");
-                      }
-                    }
-                  },
+                  onClick: (row) => setDeleteId(String(row.id)),
                   variant: "destructive" as const,
                 },
               ]}
@@ -306,6 +354,23 @@ export default function NoConformidadesAbiertas() {
           </div>
         </div>
       </div>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Esto eliminará permanentemente la no conformidad.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

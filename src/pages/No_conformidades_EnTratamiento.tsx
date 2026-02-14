@@ -19,7 +19,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { NuevaNoConformidadForm } from "@/components/calidad/NuevaNoConformidadForm";
+import { VerNoConformidad } from "@/components/calidad/VerNoConformidad";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface NoConformidadUI {
   id: string;
@@ -30,6 +41,7 @@ interface NoConformidadUI {
   gravedad: string;
   fechaDeteccion: string;
   responsable: string;
+  plan_accion: string;
 }
 
 export default function NoConformidadesEnTratamiento() {
@@ -37,6 +49,12 @@ export default function NoConformidadesEnTratamiento() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedNoConformidad, setSelectedNoConformidad] = useState<INoConformidad | null>(null);
+
+  // States for Finalize Dialog
+  const [isFinalizeDialogOpen, setIsFinalizeDialogOpen] = useState(false);
+  const [ncToFinalize, setNcToFinalize] = useState<NoConformidadUI | null>(null);
 
   useEffect(() => {
     fetchNoConformidadesEnTratamiento();
@@ -61,6 +79,7 @@ export default function NoConformidadesEnTratamiento() {
         responsable: nc.responsable?.nombre
           ? `${nc.responsable.nombre} ${nc.responsable.primerApellido}`
           : "Sin asignar",
+        plan_accion: nc.plan_accion || "",
       }));
 
       setNoConformidades(transformedData);
@@ -74,14 +93,44 @@ export default function NoConformidadesEnTratamiento() {
     }
   };
 
-  const handleFinalizarTratamiento = async (id: string) => {
+  const handleFinalizarTratamiento = async () => {
+    if (!ncToFinalize) return;
     try {
-      await noConformidadService.cerrar(id);
+      await noConformidadService.cerrar(String(ncToFinalize.id));
       toast.success("Tratamiento finalizado exitosamente");
       fetchNoConformidadesEnTratamiento();
+      setIsFinalizeDialogOpen(false);
+      setNcToFinalize(null);
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error al finalizar tratamiento");
+    }
+  };
+
+  const handleEditar = async (id: string) => {
+    try {
+      const data = await noConformidadService.getById(id);
+      setSelectedNoConformidad(data);
+      setIsDialogOpen(true);
+    } catch (error) {
+      console.error("Error al cargar datos para editar:", error);
+      toast.error("Error al cargar datos para editar");
+    }
+  };
+
+  const handleCrear = () => {
+    setSelectedNoConformidad(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleVerDetalles = async (id: string) => {
+    try {
+      const data = await noConformidadService.getById(id);
+      setSelectedNoConformidad(data);
+      setIsViewDialogOpen(true);
+    } catch (error) {
+      console.error("Error al obtener detalles:", error);
+      toast.error("Error al cargar detalles");
     }
   };
 
@@ -129,24 +178,33 @@ export default function NoConformidadesEnTratamiento() {
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold">
+                <Button
+                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold"
+                  onClick={handleCrear}
+                >
                   <PlusIcon className="mr-2 h-5 w-5" />
                   Nueva No Conformidad
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Nueva No Conformidad</DialogTitle>
+                  <DialogTitle>{selectedNoConformidad ? "Editar No Conformidad" : "Nueva No Conformidad"}</DialogTitle>
                 </DialogHeader>
-                <NuevaNoConformidadForm 
+                <NuevaNoConformidadForm
+                  initialData={selectedNoConformidad}
                   onSuccess={() => {
                     fetchNoConformidadesEnTratamiento();
                     setIsDialogOpen(false);
-                  }} 
+                  }}
                   onCancel={() => setIsDialogOpen(false)}
                 />
               </DialogContent>
             </Dialog>
+            <VerNoConformidad
+              noConformidad={selectedNoConformidad}
+              open={isViewDialogOpen}
+              onClose={() => setIsViewDialogOpen(false)}
+            />
           </div>
         </div>
 
@@ -261,34 +319,56 @@ export default function NoConformidadesEnTratamiento() {
             </Badge>
           </div>
           <div className="p-0">
-            <DataTable 
+            <DataTable
               data={noConformidades}
               actions={[
                 {
                   label: "Ver Detalles",
-                  onClick: (row) => {
-                    console.log("Ver detalles de:", row);
-                  },
+                  onClick: (row) => handleVerDetalles(String(row.id)),
                 },
                 {
                   label: "Finalizar Tratamiento",
                   onClick: async (row) => {
-                    if (confirm(`¿Finalizar tratamiento de ${row.codigo}?`)) {
-                      await handleFinalizarTratamiento(row.id);
+                    const nc = row as unknown as NoConformidadUI;
+                    if (!nc.plan_accion) {
+                      toast.error("Debe registrar un Plan de Acción antes de finalizar el tratamiento.", {
+                        description: "Utilice la opción 'Editar' para agregar el análisis y plan de acción."
+                      });
+                      return;
                     }
+                    setNcToFinalize(nc);
+                    setIsFinalizeDialogOpen(true);
                   },
                 },
                 {
                   label: "Editar",
-                  onClick: (row) => {
-                    console.log("Editar:", row);
-                  },
+                  onClick: (row) => handleEditar(String(row.id)),
                 },
               ]}
             />
           </div>
         </div>
       </div>
+
+      {/* AlertDialog de Confirmación */}
+      <AlertDialog open={isFinalizeDialogOpen} onOpenChange={setIsFinalizeDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Está seguro de finalizar el tratamiento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción finalizará el tratamiento de la No Conformidad <strong>{ncToFinalize?.codigo}</strong>.
+              Esto cambiará su estado a "Cerrada" y no se podrán realizar más cambios en este etapa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setNcToFinalize(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleFinalizarTratamiento} className="bg-green-600 hover:bg-green-700">
+              Confirmar Finalización
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }

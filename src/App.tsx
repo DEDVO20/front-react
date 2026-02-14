@@ -18,6 +18,7 @@ import SolucionarAccionCorrectiva from "./pages/Acciones_correctivas/SolucionarA
 import DashboardAccionesCorrectivas from "./pages/Acciones_correctivas/DashboardAccionesCorrectivas";
 
 import AprobacionesPendientes from "./pages/documentos/Aprobaciones_Pendientes";
+import RevisionesPendientes from "./pages/documentos/Revisiones_Pendientes";
 import DocumentosObsoletos from "./pages/documentos/Documentos_Obsoletos";
 
 import GestionarAreas from "./pages/areas/Gestionar_Areas";
@@ -33,6 +34,8 @@ import AuditoriasPlanificacion from "./pages/auditorias/AuditoriasPlanificacion"
 import AuditoriasEnCurso from "./pages/auditorias/EnCurso";
 import AuditoriasHallazgosView from "./pages/auditorias/hallazgos";
 import AuditoriasCompletas from "./pages/auditorias/Completadas";
+import AuditoriaEjecucion from "./pages/auditorias/AuditoriaEjecucion";
+import ProgramaAnual from "./pages/auditorias/ProgramaAnual";
 
 import ObjetivosActivos from "./pages/objetivosCalidad/Activos";
 import Seguimiento from "./pages/objetivosCalidad/Seguimiento";
@@ -100,6 +103,7 @@ function App() {
             <Route path="/documentos/:id/aprobaciones" element={<AprobacionesPendientes />} />
 
             <Route path="/Aprobaciones_Pendientes" element={<AprobacionesPendientes />} />
+            <Route path="/Revisiones_Pendientes" element={<RevisionesPendientes />} />
             <Route path="/Documentos_Obsoletos" element={<DocumentosObsoletos />} />
 
             {/* Áreas */}
@@ -114,7 +118,6 @@ function App() {
             {/* Usuarios */}
             <Route path="/ListaDeUsuarios" element={<ListaDeUsuarios />} />
             <Route path="/NuevoUsuario" element={<NuevosUsuarios />} />
-            <Route path="/usuarios/:id/editar" element={<NuevosUsuarios />} />
             <Route path="/usuarios/:id/editar" element={<EditarUsuario />} />
             <Route path="/usuarios/carga-masiva" element={<CargaMasivaUsuarios />} />
             <Route path="/Roles_y_Permisos" element={<RolesYPermisos />} />
@@ -124,6 +127,8 @@ function App() {
             <Route path="/AuditoriasEnCurso" element={<AuditoriasEnCurso />} />
             <Route path="/AuditoriasCompletas" element={<AuditoriasCompletas />} />
             <Route path="/AuditoriasHallazgosView" element={<AuditoriasHallazgosView />} />
+            <Route path="/auditorias/ejecucion/:id" element={<AuditoriaEjecucion />} />
+            <Route path="/auditorias/programa-anual" element={<ProgramaAnual />} />
 
             {/* Objetivos de Calidad */}
             <Route path="/Activos" element={<ObjetivosActivos />} />

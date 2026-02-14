@@ -19,6 +19,8 @@ export interface Auditoria {
   fechaPlanificada?: string;
   creadoEn?: string;
   actualizadoEn?: string;
+  programaId?: string;
+  informeFinal?: string;
   auditorLider?: {
     id: string;
     nombre: string;
@@ -35,12 +37,16 @@ export interface Auditoria {
 export interface HallazgoAuditoria {
   id: string;
   auditoriaId: string;
+  auditoria_id?: string; // Compatibilidad backend legacy (Render)
+  codigo: string;
   tipo: string;
   descripcion: string;
   requisito?: string;
+  clausulaIso?: string;
   gravedad?: string;
   responsableId?: string;
   estado: string;
+  evidencia?: string;
   creadoEn?: string;
   auditoria?: Auditoria;
   responsable?: {
@@ -48,6 +54,21 @@ export interface HallazgoAuditoria {
     nombre: string;
     primerApellido: string;
   };
+  noConformidadId?: string;
+  verificadoPor?: string;
+  fechaVerificacion?: string;
+  resultadoVerificacion?: string;
+}
+
+export interface ProgramaAuditoria {
+  id: string;
+  anio: number;
+  objetivo?: string;
+  estado: string;
+  criterioRiesgo?: string;
+  aprobadoPorId?: string;
+  fechaAprobacion?: string;
+  creadoEn?: string;
 }
 
 const getAuthHeaders = () => {
@@ -59,6 +80,51 @@ const getAuthHeaders = () => {
 };
 
 export const auditoriaService = {
+  // === PROGRAMAS DE AUDITORIA ===
+  async getAllProgramas(anio?: number): Promise<ProgramaAuditoria[]> {
+    const params = new URLSearchParams();
+    if (anio) params.append("anio", anio.toString());
+
+    const response = await fetch(`${API_URL}/programa-auditorias?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Error al obtener programas de auditoría");
+    return response.json();
+  },
+
+  async getProgramaById(id: string): Promise<ProgramaAuditoria> {
+    const response = await fetch(`${API_URL}/programa-auditorias/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Error al obtener programa de auditoría");
+    return response.json();
+  },
+
+  async createPrograma(data: Partial<ProgramaAuditoria>): Promise<ProgramaAuditoria> {
+    const response = await fetch(`${API_URL}/programa-auditorias`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || "Error al crear programa");
+    }
+    return response.json();
+  },
+
+  async updatePrograma(id: string, data: Partial<ProgramaAuditoria>): Promise<ProgramaAuditoria> {
+    const response = await fetch(`${API_URL}/programa-auditorias/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error("Error al actualizar programa");
+    return response.json();
+  },
+
+  // === AUDITORIAS ===
   // Obtener todas las auditorías
   async getAll(filters?: { tipo?: string; estado?: string }): Promise<Auditoria[]> {
     const params = new URLSearchParams();
@@ -131,7 +197,7 @@ export const auditoriaService = {
     return response.json();
   },
 
-  // Cambiar estado de auditoría
+  // Cambiar estado de auditoría (Legacy)
   async cambiarEstado(id: string, estado: string): Promise<Auditoria> {
     const response = await fetch(`${API_URL}/auditorias/${id}/estado`, {
       method: "PATCH",
@@ -139,6 +205,34 @@ export const auditoriaService = {
       body: JSON.stringify({ estado }),
     });
     if (!response.ok) throw new Error("Error al cambiar estado");
+    return response.json();
+  },
+
+  // Nuevos métodos de flujo de auditoría
+  async iniciar(id: string): Promise<Auditoria> {
+    const response = await fetch(`${API_URL}/auditorias/${id}/iniciar`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Error al iniciar auditoría");
+    return response.json();
+  },
+
+  async finalizar(id: string): Promise<Auditoria> {
+    const response = await fetch(`${API_URL}/auditorias/${id}/finalizar`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Error al finalizar auditoría");
+    return response.json();
+  },
+
+  async cerrar(id: string): Promise<Auditoria> {
+    const response = await fetch(`${API_URL}/auditorias/${id}/cerrar`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Error al cerrar auditoría");
     return response.json();
   },
 
@@ -153,7 +247,7 @@ export const auditoriaService = {
 
   // Obtener hallazgos de una auditoría
   async getHallazgos(auditoriaId: string): Promise<HallazgoAuditoria[]> {
-    const response = await fetch(`${API_URL}/hallazgos-auditoria?auditoriaId=${auditoriaId}`, {
+    const response = await fetch(`${API_URL}/auditorias/${auditoriaId}/hallazgos`, {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Error al obtener hallazgos");
@@ -167,7 +261,13 @@ export const auditoriaService = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
-    if (!response.ok) throw new Error("Error al crear hallazgo");
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.detail
+        ? (Array.isArray(errorData.detail) ? errorData.detail.map((e: any) => e.msg).join(', ') : errorData.detail)
+        : "Error al crear hallazgo";
+      throw new Error(errorMessage);
+    }
     return response.json();
   },
 
@@ -183,5 +283,46 @@ export const auditoriaService = {
     });
     if (!response.ok) throw new Error("Error al actualizar hallazgo");
     return response.json();
+  },
+
+  // Generar No Conformidad desde hallazgo
+  async generarNC(hallazgoId: string): Promise<any> {
+    const response = await fetch(`${API_URL}/hallazgos-auditoria/${hallazgoId}/generar-nc`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Error al generar No Conformidad");
+    return response.json();
+  },
+
+  // Verificar Hallazgo
+  async verificarHallazgo(hallazgoId: string, resultado: string): Promise<HallazgoAuditoria> {
+    const response = await fetch(
+      `${API_URL}/hallazgos-auditoria/${hallazgoId}/verificar?resultado=${encodeURIComponent(resultado)}`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(),
+      }
+    );
+    if (!response.ok) throw new Error("Error al verificar hallazgo");
+    return response.json();
+  },
+
+  async downloadInforme(id: string): Promise<Blob> {
+    const response = await fetch(`${API_URL}/auditorias/${id}/informe`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Error al descargar informe");
+    return response.blob();
+  },
+
+  // Eliminar Hallazgo
+  async deleteHallazgo(id: string): Promise<void> {
+    const response = await fetch(`${API_URL}/hallazgos-auditoria/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Error al eliminar hallazgo");
   },
 };

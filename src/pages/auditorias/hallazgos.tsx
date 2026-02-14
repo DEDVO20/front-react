@@ -317,20 +317,52 @@ const AuditoriasHallazgosView: React.FC = () => {
   const handleSubmitHallazgo = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const url = modalMode === 'create'
-        ? '/hallazgos-auditoria'
-        : `/hallazgos-auditoria/${selectedHallazgo?.id}`;
+      if (modalMode === 'create') {
+        // Validar que haya auditoría seleccionada
+        if (!hallazgoFormData.auditoriaId) {
+          toast.error('Debe asociar el hallazgo a una auditoría');
+          return;
+        }
 
-      const method = modalMode === 'create' ? 'post' : 'put';
+        // Sanitizar payload: convertir strings vacíos a undefined para campos opcionales
+        const payload: any = {
+          ...hallazgoFormData,
+          auditoria_id: hallazgoFormData.auditoriaId, // Compatibilidad con Render (snake_case)
+          auditoriaId: hallazgoFormData.auditoriaId,
+          codigo: `HALL-${Date.now().toString().slice(-6)}`, // Generar código único
+        };
 
-      // @ts-ignore
-      await apiClient[method](url, hallazgoFormData);
+        // Limpiar campos opcionales vacíos
+        if (!payload.procesoId) delete payload.procesoId;
+        if (!payload.areaId) delete payload.areaId;
+        if (!payload.responsableId) delete payload.responsableId;
+        if (!payload.clausulaIso) delete payload.clausulaIso; // Opcional también
+
+        await auditoriaService.createHallazgo(payload);
+        toast.success('Hallazgo registrado exitosamente');
+      } else {
+        if (!selectedHallazgo?.id) return;
+
+        const payload: any = {
+          ...hallazgoFormData,
+          auditoria_id: hallazgoFormData.auditoriaId,
+          auditoriaId: hallazgoFormData.auditoriaId
+        };
+
+        if (!payload.procesoId) delete payload.procesoId;
+        if (!payload.areaId) delete payload.areaId;
+        if (!payload.responsableId) delete payload.responsableId;
+        if (!payload.clausulaIso) delete payload.clausulaIso; // Opcional también
+
+        await auditoriaService.updateHallazgo(selectedHallazgo.id, payload);
+        toast.success('Hallazgo actualizado exitosamente');
+      }
+
       setShowHallazgoModal(false);
       fetchHallazgos();
-      toast.success(modalMode === 'create' ? 'Hallazgo registrado exitosamente' : 'Hallazgo actualizado exitosamente');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al guardar hallazgo:', error);
-      toast.error('Error al guardar el hallazgo');
+      toast.error(error.message || 'Error al guardar el hallazgo');
     }
   };
 
@@ -944,18 +976,39 @@ const AuditoriasHallazgosView: React.FC = () => {
                 </button>
               </div>
               <form onSubmit={handleSubmitHallazgo} className="p-8 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-[#6B7280] uppercase">Clasificación del Hallazgo</label>
-                  <select
-                    value={hallazgoFormData.tipo}
-                    onChange={e => setHallazgoFormData({ ...hallazgoFormData, tipo: e.target.value })}
-                    className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none"
-                  >
-                    <option value="no_conformidad_mayor">No Conformidad Mayor</option>
-                    <option value="no_conformidad_menor">No Conformidad Menor</option>
-                    <option value="observacion">Observación</option>
-                    <option value="oportunidad_mejora">Oportunidad de Mejora</option>
-                  </select>
+                <div className="space-y-4">
+                  {/* Selector de Auditoría si no viene preseleccionada */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-[#6B7280] uppercase">Auditoría Asociada</label>
+                    <select
+                      value={hallazgoFormData.auditoriaId}
+                      onChange={e => setHallazgoFormData({ ...hallazgoFormData, auditoriaId: e.target.value })}
+                      className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none"
+                      disabled={modalMode === 'edit'} // No permitir cambiar auditoría en edición
+                      required
+                    >
+                      <option value="">Seleccione una auditoría...</option>
+                      {auditorias.map(aud => (
+                        <option key={aud.id} value={aud.id}>
+                          {aud.codigo} - {aud.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-[#6B7280] uppercase">Clasificación del Hallazgo</label>
+                    <select
+                      value={hallazgoFormData.tipo}
+                      onChange={e => setHallazgoFormData({ ...hallazgoFormData, tipo: e.target.value })}
+                      className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none"
+                    >
+                      <option value="no_conformidad_mayor">No Conformidad Mayor</option>
+                      <option value="no_conformidad_menor">No Conformidad Menor</option>
+                      <option value="observacion">Observación</option>
+                      <option value="oportunidad_mejora">Oportunidad de Mejora</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-[#6B7280] uppercase">Descripción Detallada</label>

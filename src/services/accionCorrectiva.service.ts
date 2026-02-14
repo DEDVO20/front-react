@@ -1,19 +1,5 @@
 import { apiClient } from "@/lib/api";
 
-export interface ComentarioAccion {
-  id: string;
-  accion_correctiva_id: string;
-  usuario_id: string;
-  comentario: string;
-  creadoEn: string;
-  usuario?: {
-    id: string;
-    nombre: string;
-    primerApellido?: string;
-    correoElectronico?: string;
-  };
-}
-
 export interface AccionCorrectiva {
   id: string;
   noConformidadId: string;
@@ -22,19 +8,18 @@ export interface AccionCorrectiva {
   descripcion: string;
   analisisCausaRaiz: string;
   planAccion: string;
-  responsableId: string;
-  fechaCompromiso: string;
+  responsableId?: string;
+  fechaCompromiso?: string;
   fechaImplementacion?: string;
-  fechaVerificacion?: string;
-  eficaciaVerificada?: number;
-  verificadoPor?: string;
   implementadoPor?: string;
   estado: string;
+  eficaciaVerificada?: number;
+  verificadoPor?: string;
+  fechaVerificacion?: string;
   observacion?: string;
-  evidencias?: string; // URLs o descripciones de evidencias
-  creadoEn: string;
-  actualizadoEn?: string;
-  // Relaciones con usuarios
+  evidencias?: string;
+  creado_en: string;
+  actualizado_en: string;
   responsable?: {
     id: string;
     nombre: string;
@@ -50,62 +35,18 @@ export interface AccionCorrectiva {
     nombre: string;
     primerApellido: string;
   };
-  comentarios?: ComentarioAccion[];
 }
 
 export const accionCorrectivaService = {
-  // ... (métodos existentes)
-
-  // Crear comentario
-  async createComentario(id: string, comentario: string): Promise<ComentarioAccion> {
-    const response = await apiClient.post(`/acciones-correctivas/${id}/comentarios`, { comentario });
-    return response.data;
-  },
-
-  // Obtener todas las acciones correctivas
-  async getAll(): Promise<AccionCorrectiva[]> {
-    const response = await apiClient.get("/acciones-correctivas");
-    return response.data;
-  },
-
-  // Obtener acciones por estado
-  async getByEstado(estado: string): Promise<AccionCorrectiva[]> {
-    const response = await apiClient.get(`/acciones-correctivas`, {
-      params: { estado }
-    });
-    return response.data;
-  },
-
-  // Obtener acciones en proceso
-  async getEnProceso(): Promise<AccionCorrectiva[]> {
-    const estados = ["en_proceso", "pendiente", "en_ejecucion"];
-    const response = await apiClient.get("/acciones-correctivas");
-    return response.data.filter((ac: AccionCorrectiva) => estados.includes(ac.estado));
-  },
-
-  // Obtener acciones verificadas
-  async getVerificadas(): Promise<AccionCorrectiva[]> {
+  // Obtener acciones correctivas de una no conformidad
+  async getByNoConformidad(noConformidadId: string): Promise<AccionCorrectiva[]> {
     const response = await apiClient.get("/acciones-correctivas", {
-      params: { estado: "verificada" }
+      params: { no_conformidad_id: noConformidadId }
     });
     return response.data;
   },
 
-  // Obtener acciones cerradas
-  async getCerradas(): Promise<AccionCorrectiva[]> {
-    const estados = ["cerrada", "completada"];
-    const response = await apiClient.get("/acciones-correctivas");
-    return response.data.filter((ac: AccionCorrectiva) => estados.includes(ac.estado));
-  },
-
-  // Obtener acciones nuevas
-  async getNuevas(): Promise<AccionCorrectiva[]> {
-    const estados = ["nueva", "pendiente"];
-    const response = await apiClient.get("/acciones-correctivas");
-    return response.data.filter((ac: AccionCorrectiva) => estados.includes(ac.estado));
-  },
-
-  // Obtener una acción por ID
+  // Obtener una acción correctiva por ID
   async getById(id: string): Promise<AccionCorrectiva> {
     const response = await apiClient.get(`/acciones-correctivas/${id}`);
     return response.data;
@@ -123,15 +64,15 @@ export const accionCorrectivaService = {
     return response.data;
   },
 
-  // Cambiar estado de acción correctiva
-  async cambiarEstado(id: string, estado: string): Promise<AccionCorrectiva> {
-    const response = await apiClient.patch(`/acciones-correctivas/${id}/estado`, { estado });
+  // Implementar acción correctiva
+  async implementar(id: string, data: { fecha_implementacion: string; observacion?: string; evidencias?: string }): Promise<AccionCorrectiva> {
+    const response = await apiClient.patch(`/acciones-correctivas/${id}/implementar`, data);
     return response.data;
   },
 
   // Verificar acción correctiva
-  async verificar(id: string, observaciones?: string): Promise<AccionCorrectiva> {
-    const response = await apiClient.patch(`/acciones-correctivas/${id}/verificar`, { observaciones });
+  async verificar(id: string, data: { eficaciaVerificada: number; observaciones?: string }): Promise<AccionCorrectiva> {
+    const response = await apiClient.patch(`/acciones-correctivas/${id}/verificar`, data);
     return response.data;
   },
 

@@ -1,0 +1,402 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+    Calendar, CheckCircle, AlertTriangle, FileText,
+    ArrowLeft, Plus, Play, Flag, ExternalLink, Activity
+} from 'lucide-react';
+import { auditoriaService, Auditoria, HallazgoAuditoria } from '@/services/auditoria.service';
+import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+// Importar componentes de formulario si es necesario o simplificar
+import { Input } from "@/components/ui/input";
+
+export default function AuditoriaEjecucion() {
+    const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
+    const [auditoria, setAuditoria] = useState<Auditoria | null>(null);
+    const [hallazgos, setHallazgos] = useState<HallazgoAuditoria[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [showHallazgoModal, setShowHallazgoModal] = useState(false);
+    const [isFinalizeDialogOpen, setIsFinalizeDialogOpen] = useState(false);
+
+    // Estado para formulario de hallazgo
+    const [hallazgoForm, setHallazgoForm] = useState<Partial<HallazgoAuditoria>>({
+        tipo: 'no_conformidad_menor',
+        descripcion: '',
+        clausulaIso: '',
+        evidencia: ''
+    });
+
+    useEffect(() => {
+        if (id) {
+            cargarDatos(id);
+        }
+    }, [id]);
+
+    const cargarDatos = async (auditoriaId: string) => {
+        try {
+            setLoading(true);
+            const [audData, hallazgosData] = await Promise.all([
+                auditoriaService.getById(auditoriaId),
+                auditoriaService.getHallazgos(auditoriaId)
+            ]);
+            setAuditoria(audData);
+            setHallazgos(hallazgosData);
+        } catch (error) {
+            console.error('Error al cargar datos:', error);
+            toast.error('Error al cargar la auditoría');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleIniciar = async () => {
+        if (!auditoria) return;
+        try {
+            await auditoriaService.iniciar(auditoria.id);
+            toast.success('Auditoría iniciada correctamente');
+            cargarDatos(auditoria.id);
+        } catch (error) {
+            toast.error('Error al iniciar auditoría');
+        }
+    };
+
+    const handleFinalizar = async () => {
+        if (!auditoria) return;
+        try {
+            await auditoriaService.finalizar(auditoria.id);
+            toast.success('Auditoría finalizada correctamente');
+            setIsFinalizeDialogOpen(false);
+            cargarDatos(auditoria.id);
+        } catch (error) {
+            toast.error('Error al finalizar auditoría');
+        }
+    };
+
+    const handleDescargarInforme = async () => {
+        if (!auditoria || !id) return;
+        try {
+            const blob = await auditoriaService.downloadInforme(id);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Informe_Auditoria_${auditoria.codigo}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            toast.success('Informe descargado correctamente');
+        } catch (error) {
+            console.error(error);
+            toast.error('Error al descargar el informe');
+        }
+    };
+
+    const handleCrearHallazgo = async () => {
+        if (!auditoria || !id) return;
+        try {
+            // Construir payload compatible con backend (snake_case y alias)
+            const payload = {
+                ...hallazgoForm,
+                auditoria_id: id, // Enviar como snake_case para compatibilidad
+                auditoriaId: id,   // Enviar también como camelCase por si acaso
+                codigo: `HALL-${hallazgos.length + 1}`
+            };
+
+            await auditoriaService.createHallazgo(payload);
+            toast.success('Hallazgo registrado');
+            setShowHallazgoModal(false);
+            setHallazgoForm({ tipo: 'no_conformidad_menor', descripcion: '', clausulaIso: '', evidencia: '' });
+            cargarDatos(id);
+        } catch (error: any) {
+            console.error('Error detallado:', error);
+            let mensaje = 'Error al registrar hallazgo';
+
+            if (error.response && error.response.data && error.response.data.detail) {
+                if (Array.isArray(error.response.data.detail)) {
+                    mensaje = error.response.data.detail.map((e: any) => `${e.loc.join('.')} - ${e.msg}`).join(', ');
+                } else {
+                    mensaje = error.response.data.detail;
+                }
+            } else if (error.message) {
+                mensaje = error.message;
+            }
+
+            toast.error(mensaje);
+        }
+    };
+
+    const handleGenerarNC = async (hallazgoId: string) => {
+        try {
+            const nc = await auditoriaService.generarNC(hallazgoId);
+            toast.success(`No Conformidad ${nc.codigo} generada exitosamente`);
+            if (id) cargarDatos(id);
+        } catch (error) {
+            console.error(error);
+            toast.error('Error al generar No Conformidad');
+        }
+    };
+
+    const getEstadoBadge = (estado: string) => {
+        const map: Record<string, string> = {
+            planificada: 'bg-blue-100 text-blue-800',
+            en_curso: 'bg-yellow-100 text-yellow-800',
+            completada: 'bg-green-100 text-green-800',
+            cerrada: 'bg-gray-100 text-gray-800'
+        };
+        return <Badge className={`${map[estado] || 'bg-gray-100'} border-none uppercase`}>{estado.replace('_', ' ')}</Badge>;
+    };
+
+    if (loading) return <div className="p-8 text-center">Cargando ejecución de auditoría...</div>;
+    if (!auditoria) return <div className="p-8 text-center">Auditoría no encontrada</div>;
+
+    return (
+        <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+            <div className="max-w-7xl mx-auto space-y-6">
+
+                {/* Header de Navegación */}
+                <div className="flex items-center gap-4 mb-4">
+                    <Button variant="ghost" onClick={() => navigate(-1)} className="rounded-full h-10 w-10 p-0">
+                        <ArrowLeft className="h-6 w-6 text-gray-500" />
+                    </Button>
+                    <h1 className="text-2xl font-bold text-[#1E3A8A]">Ejecución de Auditoría</h1>
+                </div>
+
+                {/* Panel Principal de Estado */}
+                <Card className="border-l-4 border-l-[#2563EB] shadow-sm">
+                    <CardHeader className="flex flex-row items-start justify-between pb-2">
+                        <div>
+                            <div className="flex items-center gap-3 mb-2">
+                                <Badge variant="outline" className="text-sm font-bold border-blue-200 text-blue-700 bg-blue-50">
+                                    {auditoria.codigo}
+                                </Badge>
+                                {getEstadoBadge(auditoria.estado)}
+                            </div>
+                            <CardTitle className="text-2xl text-gray-900">{auditoria.nombre}</CardTitle>
+                            <CardDescription className="mt-2 text-base">
+                                {auditoria.objetivo || "Sin objetivo definido"}
+                            </CardDescription>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                onClick={handleDescargarInforme}
+                                variant="outline"
+                                className="border-blue-200 text-blue-700 hover:bg-blue-50 gap-2"
+                            >
+                                <FileText className="h-4 w-4" /> Descargar Informe
+                            </Button>
+
+                            {auditoria.estado === 'planificada' && (
+                                <Button onClick={handleIniciar} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+                                    <Play className="h-4 w-4" /> Iniciar Ejecución
+                                </Button>
+                            )}
+                            {auditoria.estado === 'en_curso' && (
+                                <Button onClick={() => setIsFinalizeDialogOpen(true)} className="bg-green-600 hover:bg-green-700 text-white gap-2">
+                                    <CheckCircle className="h-4 w-4" /> Finalizar Auditoría
+                                </Button>
+                            )}
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-100">
+                            <div>
+                                <span className="text-xs font-bold text-gray-500 uppercase">Auditor Líder</span>
+                                <p className="font-medium text-gray-900">{auditoria.auditorLider?.nombre || 'No asignado'}</p>
+                            </div>
+                            <div>
+                                <span className="text-xs font-bold text-gray-500 uppercase">Fechas</span>
+                                <p className="font-medium text-gray-900 flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {auditoria.fechaInicio ? new Date(auditoria.fechaInicio).toLocaleDateString() : 'Pendiente'}
+                                </p>
+                            </div>
+                            <div>
+                                <span className="text-xs font-bold text-gray-500 uppercase">Norma</span>
+                                <p className="font-medium text-gray-900">{auditoria.normaReferencia || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <span className="text-xs font-bold text-gray-500 uppercase">Progreso</span>
+                                <p className="font-medium text-blue-600">{hallazgos.length} Hallazgos</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Sección de Hallazgos */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-bold text-[#1E3A8A] flex items-center gap-2">
+                            <Activity className="h-5 w-5" />
+                            Hallazgos Registrados
+                        </h2>
+                        {auditoria.estado === 'en_curso' && (
+                            <Button onClick={() => setShowHallazgoModal(true)} variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
+                                <Plus className="h-4 w-4 mr-2" /> Nuevo Hallazgo
+                            </Button>
+                        )}
+                    </div>
+
+                    {hallazgos.length === 0 ? (
+                        <div className="bg-white rounded-xl border border-dashed border-gray-300 p-12 text-center text-gray-500">
+                            <FileText className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                            <p>No se han registrado hallazgos en esta auditoría.</p>
+                        </div>
+                    ) : (
+                        <div className="grid gap-4">
+                            {hallazgos.map((hallazgo) => (
+                                <Card key={hallazgo.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                                    <div className={`h-1 w-full ${hallazgo.tipo.includes('mayor') ? 'bg-red-500' :
+                                        hallazgo.tipo.includes('menor') ? 'bg-yellow-500' : 'bg-blue-500'
+                                        }`} />
+                                    <CardContent className="p-6">
+                                        <div className="flex flex-col md:flex-row gap-4 justify-between">
+                                            <div className="flex-1 space-y-2">
+                                                <div className="flex items-center gap-3">
+                                                    <Badge variant="outline" className={`
+                             ${hallazgo.tipo.includes('no_conformidad') ? 'bg-red-50 text-red-700 border-red-200' : 'bg-blue-50 text-blue-700 border-blue-200'} uppercase font-bold text-[10px]
+                           `}>
+                                                        {hallazgo.tipo.replace(/_/g, ' ')}
+                                                    </Badge>
+                                                    <span className="text-xs text-gray-500 font-mono">{hallazgo.clausulaIso && `ISO: ${hallazgo.clausulaIso}`}</span>
+                                                </div>
+                                                <p className="font-bold text-gray-900 text-lg">{hallazgo.descripcion}</p>
+                                                <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                                    <span className="font-bold text-xs uppercase text-gray-500 block mb-1">Evidencia Objetiva:</span>
+                                                    {hallazgo.evidencia || "No registrada"}
+                                                </p>
+                                            </div>
+
+                                            {/* Acciones de Integración */}
+                                            <div className="flex flex-col gap-2 min-w-[200px] border-l pl-4 border-gray-100">
+                                                {hallazgo.noConformidadId ? (
+                                                    <div className="p-3 bg-green-50 rounded-lg border border-green-100">
+                                                        <span className="text-xs font-bold text-green-700 flex items-center gap-1 mb-1">
+                                                            <CheckCircle className="h-3 w-3" /> Integrado con Calidad
+                                                        </span>
+                                                        <Button variant="link" className="h-auto p-0 text-green-700 font-bold text-sm">
+                                                            Ver No Conformidad <ExternalLink className="ml-1 h-3 w-3" />
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    hallazgo.tipo.includes('no_conformidad') && (
+                                                        <div className="p-3 bg-orange-50 rounded-lg border border-orange-100">
+                                                            <span className="text-xs font-bold text-orange-700 flex items-center gap-1 mb-2">
+                                                                <AlertTriangle className="h-3 w-3" /> Acción Requerida
+                                                            </span>
+                                                            <Button
+                                                                onClick={() => handleGenerarNC(hallazgo.id)}
+                                                                size="sm"
+                                                                className="w-full bg-[#EF4444] hover:bg-[#DC2626] text-white font-bold text-xs"
+                                                            >
+                                                                Generar NC Automática
+                                                            </Button>
+                                                        </div>
+                                                    )
+                                                )}
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Modal Crear Hallazgo */}
+            <Dialog open={showHallazgoModal} onOpenChange={setShowHallazgoModal}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Registrar Nuevo Hallazgo</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-sm font-medium mb-1 block">Tipo de Hallazgo</label>
+                                <select
+                                    className="w-full p-2 border rounded-md"
+                                    value={hallazgoForm.tipo}
+                                    onChange={(e) => setHallazgoForm({ ...hallazgoForm, tipo: e.target.value })}
+                                >
+                                    <option value="no_conformidad_mayor">NC Mayor</option>
+                                    <option value="no_conformidad_menor">NC Menor</option>
+                                    <option value="observacion">Observación</option>
+                                    <option value="oportunidad_mejora">Oportunidad de Mejora</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium mb-1 block">Cláusula ISO</label>
+                                <Input
+                                    value={hallazgoForm.clausulaIso}
+                                    onChange={(e) => setHallazgoForm({ ...hallazgoForm, clausulaIso: e.target.value })}
+                                    placeholder="Ej: 9.2.1"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-sm font-medium mb-1 block">Descripción del Hallazgo</label>
+                            <textarea
+                                className="w-full p-2 border rounded-md min-h-[100px]"
+                                value={hallazgoForm.descripcion}
+                                onChange={(e) => setHallazgoForm({ ...hallazgoForm, descripcion: e.target.value })}
+                                placeholder="Describa el hallazgo..."
+                            />
+                        </div>
+                        <div>
+                            <label className="text-sm font-medium mb-1 block">Evidencia Objetiva</label>
+                            <textarea
+                                className="w-full p-2 border rounded-md min-h-[60px]"
+                                value={hallazgoForm.evidencia}
+                                onChange={(e) => setHallazgoForm({ ...hallazgoForm, evidencia: e.target.value })}
+                                placeholder="Documentos, registros o hechos observados..."
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowHallazgoModal(false)}>Cancelar</Button>
+                        <Button onClick={handleCrearHallazgo}>Registrar</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Alert Confirmar Finalización */}
+            <AlertDialog open={isFinalizeDialogOpen} onOpenChange={setIsFinalizeDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Finalizar Auditoría?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción cerrará la ejecución y generará el informe preliminar. Asegúrese de haber registrado todos los hallazgos.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleFinalizar} className="bg-green-600">
+                            Confirmar Finalización
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+        </div>
+    );
+}

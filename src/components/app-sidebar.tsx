@@ -222,6 +222,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             permiso: "documentos.aprobar",
             badge: pendingCount > 0 ? pendingCount.toString() : undefined,
           },
+          {
+            title: "Revisiones Pendientes",
+            url: "/Revisiones_Pendientes",
+            permiso: "documentos.editar",
+          },
           { title: "Documentos Obsoletos", url: "/Documentos_Obsoletos", permiso: "documentos.eliminar" },
         ],
       },
@@ -264,6 +269,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "#",
         items: [
           { title: "Planificación", url: "/AuditoriasPlanificacion", permiso: "auditorias.planificar" },
+          { title: "Programa Anual", url: "/auditorias/programa-anual", permiso: "auditorias.planificar" },
           { title: "En Curso", url: "/AuditoriasEnCurso", permiso: "auditorias.ejecutar" },
           { title: "Completadas", url: "/AuditoriasCompletas", permiso: "auditorias.ejecutar" },
           { title: "Hallazgos", url: "/AuditoriasHallazgosView", permiso: "auditorias.ejecutar" },

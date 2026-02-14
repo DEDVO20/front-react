@@ -13,58 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-// === MOCK DATA (Solo auditorías completadas) ===
-const MOCK_AUDITORIAS_COMPLETADAS: Auditoria[] = [
-  {
-    id: '3',
-    codigo: 'AUD-2024-015',
-    tipo: 'seguimiento',
-    objetivo: 'Verificar corrección de no conformidades',
-    alcance: 'Áreas con hallazgos previos',
-    normaReferencia: 'ISO 9001:2015',
-    fechaPlanificada: '2024-12-10',
-    fechaInicio: '2024-12-11',
-    fechaFin: '2024-12-12',
-    estado: 'completada',
-    creadoEn: '2024-11-15T09:00:00Z',
-    auditorLider: { id: '4', nombre: 'Miguel Torres', email: 'miguel@empresa.com' },
-    creadoPorUsuario: { id: '2', nombre: 'Carlos Mendoza', email: 'carlos@empresa.com' }
-  },
-  {
-    id: '5',
-    codigo: 'AUD-2024-010',
-    tipo: 'interna',
-    objetivo: 'Auditoría anual de calidad',
-    alcance: 'Todos los departamentos',
-    normaReferencia: 'ISO 9001:2015',
-    fechaPlanificada: '2024-11-01',
-    fechaInicio: '2024-11-02',
-    fechaFin: '2024-11-05',
-    estado: 'completada',
-    creadoEn: '2024-10-20T11:00:00Z',
-    auditorLider: { id: '1', nombre: 'Ana García', email: 'ana@empresa.com' }
-  },
-  {
-    id: '6',
-    codigo: 'AUD-2024-005',
-    tipo: 'certificacion',
-    objetivo: 'Renovación de certificación ISO 9001',
-    alcance: 'Sistema de gestión completo',
-    normaReferencia: 'ISO 9001:2015',
-    fechaPlanificada: '2024-08-15',
-    fechaInicio: '2024-08-16',
-    fechaFin: '2024-08-18',
-    estado: 'completada',
-    creadoEn: '2024-07-01T09:30:00Z',
-    auditorLider: { id: '3', nombre: 'Laura Pérez', email: 'laura@empresa.com' }
-  }
-];
-
-// === INTERFACES ===
-import { Auditoria as AuditoriaService } from '@/services/auditoria.service';
-
-type Auditoria = AuditoriaService;
+import { toast } from 'sonner';
+import { Auditoria } from '@/services/auditoria.service';
 
 // === COMPONENTE: AUDITORÍAS COMPLETADAS ===
 const AuditoriasCompletadas: React.FC = () => {
@@ -91,26 +41,13 @@ const AuditoriasCompletadas: React.FC = () => {
       setAuditorias(auditoriasList);
       setFilteredAuditorias(auditoriasList);
       setLoading(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al cargar auditorías completadas:', err);
-      setError('No se pudieron cargar las auditorías. Usando datos de ejemplo.');
-      setAuditorias(MOCK_AUDITORIAS_COMPLETADAS);
-      setFilteredAuditorias(MOCK_AUDITORIAS_COMPLETADAS);
-      setLoading(false);
-    }
-  };
-
-  const cargarAuditorias_OLD = async () => {
-    try {
-      setLoading(true);
-      const data = await auditoriaService.getCompletadas();
-      setAuditorias(data);
-      setFilteredAuditorias(data);
-    } catch (error) {
-      console.error('Error al cargar auditorías:', error);
-      setAuditorias(MOCK_AUDITORIAS_COMPLETADAS);
-      setFilteredAuditorias(MOCK_AUDITORIAS_COMPLETADAS);
-    } finally {
+      // Solo mostramos error, no usamos mocks
+      setError('No se pudieron cargar las auditorías.');
+      toast.error('Error al cargar auditorías: ' + (err.message || 'Error desconocido'));
+      setAuditorias([]);
+      setFilteredAuditorias([]);
       setLoading(false);
     }
   };
@@ -151,12 +88,12 @@ const AuditoriasCompletadas: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      alert('Auditoría completada actualizada (demo)');
+      toast.success('Auditoría completada actualizada (demo)');
       await cargarAuditorias();
       setShowModal(false);
       resetForm();
     } catch (err: any) {
-      alert('Error: ' + err.message);
+      toast.error('Error: ' + err.message);
     }
   };
 

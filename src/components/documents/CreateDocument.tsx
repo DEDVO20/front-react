@@ -21,20 +21,27 @@ export default function CreateDocument() {
         codigo: formData.get("codigoDocumento") as string,
         nombre: formData.get("nombreArchivo") as string,
         descripcion: `Documento ${formData.get("nombreArchivo")}`,
-        tipo_documento: formData.get("tipoDocumento") as string,
-        version_actual: formData.get("version") as string || "1.0",
+        tipo_documento: formData.get("tipo_documento") as string,
+        version_actual: formData.get("version_actual") as string || "1.0",
         estado: formData.get("estado") as string || "borrador",
       };
 
       // Add optional fields
-      const creado_por = formData.get("subidoPor") as string;
+      const creado_por = formData.get("creado_por") as string || formData.get("subidoPor") as string;
       if (creado_por) {
         documentData.creado_por = creado_por;
       }
 
-      const aprobado_por = formData.get("aprobadoPor") as string;
+      // Asignar Aprobador (snake_case from form)
+      const aprobado_por = formData.get("aprobado_por") as string;
       if (aprobado_por) {
         documentData.aprobado_por = aprobado_por;
+      }
+
+      // Asignar Revisor (snake_case from form)
+      const revisado_por = formData.get("revisado_por") as string;
+      if (revisado_por) {
+        documentData.revisado_por = revisado_por;
       }
 
       // Handle file upload if present
