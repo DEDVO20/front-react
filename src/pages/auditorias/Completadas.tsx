@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { toast } from 'sonner';
 
 // === MOCK DATA (Solo auditorías completadas) ===
 const MOCK_AUDITORIAS_COMPLETADAS: Auditoria[] = [
@@ -151,12 +152,12 @@ const AuditoriasCompletadas: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      alert('Auditoría completada actualizada (demo)');
+      toast.success('Auditoría completada actualizada (demo)');
       await cargarAuditorias();
       setShowModal(false);
       resetForm();
     } catch (err: any) {
-      alert('Error: ' + err.message);
+      toast.error('Error: ' + err.message);
     }
   };
 
