@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Calendar,
   Users,
@@ -47,6 +48,7 @@ interface Auditoria {
 }
 
 export default function AuditoriasEnCurso() {
+  const navigate = useNavigate();
   const [auditorias, setAuditorias] = useState<Auditoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -412,7 +414,11 @@ export default function AuditoriasEnCurso() {
                         </div>
                       </div>
 
-                      <Button variant="ghost" className="mt-4 sm:mt-0 px-6 py-2 bg-[#F8FAFC] hover:bg-[#2563EB] text-[#1E3A8A] hover:text-white font-bold rounded-xl transition-all flex items-center gap-2 border border-[#E5E7EB]">
+                      <Button
+                        variant="ghost"
+                        onClick={() => navigate(`/auditorias/ejecucion/${auditoria.id}`)}
+                        className="mt-4 sm:mt-0 px-6 py-2 bg-[#F8FAFC] hover:bg-[#2563EB] text-[#1E3A8A] hover:text-white font-bold rounded-xl transition-all flex items-center gap-2 border border-[#E5E7EB]"
+                      >
                         Gestionar Evidencia
                         <CheckCircle2 size={16} />
                       </Button>
