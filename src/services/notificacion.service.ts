@@ -18,17 +18,27 @@ class NotificacionService {
      * Obtener lista de notificaciones del usuario actual
      */
     async getNotificaciones(soloNoLeidas: boolean = false): Promise<Notificacion[]> {
-        const params = soloNoLeidas ? { solo_no_leidas: true } : {};
-        const response = await api.get<Notificacion[]>("/notificaciones", { params });
-        return response.data;
+        try {
+            const params = soloNoLeidas ? { solo_no_leidas: true } : {};
+            const response = await api.get<Notificacion[]>("/notificaciones", { params });
+            return response.data;
+        } catch (error: any) {
+            if (error?.message === "Network Error") return [];
+            throw error;
+        }
     }
 
     /**
      * Obtener contador de notificaciones no leídas
      */
     async getNoLeidas(): Promise<number> {
-        const response = await api.get<{ count: number }>("/notificaciones/no-leidas/count");
-        return response.data.count;
+        try {
+            const response = await api.get<{ count: number }>("/notificaciones/no-leidas/count");
+            return response.data.count;
+        } catch (error: any) {
+            if (error?.message === "Network Error") return 0;
+            throw error;
+        }
     }
 
     /**

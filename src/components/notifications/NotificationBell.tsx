@@ -36,7 +36,10 @@ export function NotificationBell({ onOpenChange }: NotificationBellProps) {
       setNotificaciones(lista.slice(0, 10)); // Solo las 10 más recientes
       setNoLeidas(count);
     } catch (error) {
-      console.error("Error cargando notificaciones:", error);
+      const message = error instanceof Error ? error.message : "";
+      if (message !== "Network Error") {
+        console.error("Error cargando notificaciones:", error);
+      }
     }
   };
 
