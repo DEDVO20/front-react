@@ -36,6 +36,7 @@ import AuditoriasHallazgosView from "./pages/auditorias/hallazgos";
 import AuditoriasCompletas from "./pages/auditorias/Completadas";
 import AuditoriaEjecucion from "./pages/auditorias/AuditoriaEjecucion";
 import ProgramaAnual from "./pages/auditorias/ProgramaAnual";
+import FormulariosAuditoriaAdmin from "./pages/auditorias/FormulariosAuditoriaAdmin";
 
 import ObjetivosActivos from "./pages/objetivosCalidad/Activos";
 import Seguimiento from "./pages/objetivosCalidad/Seguimiento";
@@ -129,6 +130,7 @@ function App() {
             <Route path="/AuditoriasHallazgosView" element={<AuditoriasHallazgosView />} />
             <Route path="/auditorias/ejecucion/:id" element={<AuditoriaEjecucion />} />
             <Route path="/auditorias/programa-anual" element={<ProgramaAnual />} />
+            <Route path="/auditorias/formularios" element={<FormulariosAuditoriaAdmin />} />
 
             {/* Objetivos de Calidad */}
             <Route path="/Activos" element={<ObjetivosActivos />} />

@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Calendar, CheckCircle, AlertTriangle, FileText,
-    ArrowLeft, Plus, Play, Flag, ExternalLink, Activity
+    ArrowLeft, Plus, Play, ExternalLink, Activity, Save
 } from 'lucide-react';
 import { auditoriaService, Auditoria, HallazgoAuditoria } from '@/services/auditoria.service';
+import { CampoFormulario, FormularioDinamico, formularioDinamicoService } from '@/services/formulario-dinamico.service';
 import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,11 @@ export default function AuditoriaEjecucion() {
     const [loading, setLoading] = useState(true);
     const [showHallazgoModal, setShowHallazgoModal] = useState(false);
     const [isFinalizeDialogOpen, setIsFinalizeDialogOpen] = useState(false);
+    const [checklistLoading, setChecklistLoading] = useState(false);
+    const [checklistSaving, setChecklistSaving] = useState(false);
+    const [formularioChecklist, setFormularioChecklist] = useState<FormularioDinamico | null>(null);
+    const [camposChecklist, setCamposChecklist] = useState<CampoFormulario[]>([]);
+    const [respuestasChecklist, setRespuestasChecklist] = useState<Record<string, { respuestaId?: string; valor: string }>>({});
 
     // Estado para formulario de hallazgo
     const [hallazgoForm, setHallazgoForm] = useState<Partial<HallazgoAuditoria>>({
@@ -61,6 +67,8 @@ export default function AuditoriaEjecucion() {
             ]);
             setAuditoria(audData);
             setHallazgos(hallazgosData);
+            const procesoId = audData.procesoId || (audData as any).proceso_id;
+            await cargarChecklist(auditoriaId, procesoId);
         } catch (error) {
             console.error('Error al cargar datos:', error);
             toast.error('Error al cargar la auditoría');
@@ -156,6 +164,190 @@ export default function AuditoriaEjecucion() {
         }
     };
 
+    const cargarChecklist = async (auditoriaId: string, procesoId?: string) => {
+        try {
+            setChecklistLoading(true);
+            let formularios = await formularioDinamicoService.getFormularios({
+                modulo: 'auditorias',
+                entidadTipo: 'auditoria',
+                procesoId,
+                activo: true,
+                limit: 100
+            });
+            if (!formularios.length) {
+                // Fallback a formulario general sin proceso para no bloquear ejecuciones.
+                formularios = await formularioDinamicoService.getFormularios({
+                    modulo: 'auditorias',
+                    entidadTipo: 'auditoria',
+                    activo: true,
+                    limit: 100
+                });
+            }
+
+            const formulario = formularios[0] || null;
+            setFormularioChecklist(formulario);
+
+            if (!formulario) {
+                setCamposChecklist([]);
+                setRespuestasChecklist({});
+                return;
+            }
+
+            const [campos, respuestas] = await Promise.all([
+                formularioDinamicoService.getCampos({ formularioId: formulario.id, activo: true }),
+                formularioDinamicoService.getRespuestas({ auditoriaId })
+            ]);
+
+            setCamposChecklist(campos);
+            const respuestasMap = respuestas.reduce<Record<string, { respuestaId?: string; valor: string }>>((acc, item) => {
+                acc[item.campoFormularioId] = {
+                    respuestaId: item.id,
+                    valor: item.valor || ''
+                };
+                return acc;
+            }, {});
+            setRespuestasChecklist(respuestasMap);
+        } catch (error: any) {
+            console.error('Error al cargar checklist dinámico:', error);
+            toast.error(error.message || 'No se pudo cargar el checklist dinámico');
+        } finally {
+            setChecklistLoading(false);
+        }
+    };
+
+    const actualizarRespuestaChecklist = (campoId: string, valor: string) => {
+        setRespuestasChecklist((prev) => ({
+            ...prev,
+            [campoId]: {
+                ...prev[campoId],
+                valor,
+            },
+        }));
+    };
+
+    const normalizarOpcionesCampo = (opciones: any): Array<{ label: string; value: string }> => {
+        if (!opciones) return [];
+        if (Array.isArray(opciones)) {
+            return opciones.map((item) =>
+                typeof item === 'string'
+                    ? { label: item, value: item }
+                    : { label: item?.label ?? item?.value ?? String(item), value: item?.value ?? item?.label ?? String(item) }
+            );
+        }
+        return [];
+    };
+
+    const guardarChecklist = async () => {
+        if (!auditoria) return;
+        if (!camposChecklist.length) return;
+
+        const faltantes = camposChecklist.filter((campo) => campo.requerido && !(respuestasChecklist[campo.id]?.valor || '').trim());
+        if (faltantes.length) {
+            toast.error(`Completa los campos obligatorios (${faltantes.length})`);
+            return;
+        }
+
+        try {
+            setChecklistSaving(true);
+            const payload = camposChecklist.map((campo) => ({
+                campoFormularioId: campo.id,
+                valor: respuestasChecklist[campo.id]?.valor || '',
+                respuestaId: respuestasChecklist[campo.id]?.respuestaId,
+            }));
+
+            const guardadas = await formularioDinamicoService.guardarRespuestasAuditoria(auditoria.id, payload);
+            const nuevasRespuestas = guardadas.reduce<Record<string, { respuestaId?: string; valor: string }>>((acc, item) => {
+                acc[item.campoFormularioId] = { respuestaId: item.id, valor: item.valor || '' };
+                return acc;
+            }, {});
+
+            setRespuestasChecklist((prev) => ({ ...prev, ...nuevasRespuestas }));
+            toast.success('Checklist guardado correctamente');
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.message || 'Error al guardar checklist');
+        } finally {
+            setChecklistSaving(false);
+        }
+    };
+
+    const renderCampoChecklist = (campo: CampoFormulario) => {
+        const valorActual = respuestasChecklist[campo.id]?.valor || '';
+        const opciones = normalizarOpcionesCampo(campo.opciones);
+        const tipo = (campo.tipoCampo || '').toLowerCase();
+
+        if (tipo === 'textarea') {
+            return (
+                <textarea
+                    className="w-full p-2 border rounded-md min-h-[88px]"
+                    value={valorActual}
+                    onChange={(e) => actualizarRespuestaChecklist(campo.id, e.target.value)}
+                    placeholder={campo.etiqueta}
+                />
+            );
+        }
+
+        if (tipo === 'date' || tipo === 'fecha') {
+            return (
+                <Input
+                    type="date"
+                    value={valorActual}
+                    onChange={(e) => actualizarRespuestaChecklist(campo.id, e.target.value)}
+                />
+            );
+        }
+
+        if (tipo === 'number' || tipo === 'numero') {
+            return (
+                <Input
+                    type="number"
+                    value={valorActual}
+                    onChange={(e) => actualizarRespuestaChecklist(campo.id, e.target.value)}
+                />
+            );
+        }
+
+        if (tipo === 'boolean' || tipo === 'bool') {
+            return (
+                <select
+                    className="w-full p-2 border rounded-md bg-white"
+                    value={valorActual}
+                    onChange={(e) => actualizarRespuestaChecklist(campo.id, e.target.value)}
+                >
+                    <option value="">Seleccionar...</option>
+                    <option value="true">Sí</option>
+                    <option value="false">No</option>
+                </select>
+            );
+        }
+
+        if (opciones.length > 0) {
+            return (
+                <select
+                    className="w-full p-2 border rounded-md bg-white"
+                    value={valorActual}
+                    onChange={(e) => actualizarRespuestaChecklist(campo.id, e.target.value)}
+                >
+                    <option value="">Seleccionar...</option>
+                    {opciones.map((op) => (
+                        <option key={`${campo.id}-${op.value}`} value={op.value}>
+                            {op.label}
+                        </option>
+                    ))}
+                </select>
+            );
+        }
+
+        return (
+            <Input
+                type="text"
+                value={valorActual}
+                onChange={(e) => actualizarRespuestaChecklist(campo.id, e.target.value)}
+                placeholder={campo.etiqueta}
+            />
+        );
+    };
+
     const getEstadoBadge = (estado: string) => {
         const map: Record<string, string> = {
             planificada: 'bg-blue-100 text-blue-800',
@@ -239,6 +431,47 @@ export default function AuditoriaEjecucion() {
                                 <p className="font-medium text-blue-600">{hallazgos.length} Hallazgos</p>
                             </div>
                         </div>
+                    </CardContent>
+                </Card>
+
+                {/* Checklist Dinámico */}
+                <Card className="border-l-4 border-l-emerald-500 shadow-sm">
+                    <CardHeader className="flex flex-row items-start justify-between">
+                        <div>
+                            <CardTitle className="text-xl text-gray-900">Checklist dinámico</CardTitle>
+                            <CardDescription>
+                                {formularioChecklist
+                                    ? `${formularioChecklist.nombre} (${camposChecklist.length} campos)`
+                                    : 'No hay formulario dinámico configurado para auditorías.'}
+                            </CardDescription>
+                        </div>
+                        {camposChecklist.length > 0 && (
+                            <Button onClick={guardarChecklist} disabled={checklistSaving} className="gap-2">
+                                <Save className="h-4 w-4" />
+                                {checklistSaving ? 'Guardando...' : 'Guardar checklist'}
+                            </Button>
+                        )}
+                    </CardHeader>
+                    <CardContent>
+                        {checklistLoading ? (
+                            <p className="text-sm text-gray-500">Cargando checklist...</p>
+                        ) : camposChecklist.length === 0 ? (
+                            <p className="text-sm text-gray-500">
+                                Configura un formulario en `modulo=auditorias` y `entidad_tipo=auditoria` para usar este bloque.
+                            </p>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {camposChecklist.map((campo) => (
+                                    <div key={campo.id} className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-800 block">
+                                            {campo.etiqueta}
+                                            {campo.requerido && <span className="text-red-600"> *</span>}
+                                        </label>
+                                        {renderCampoChecklist(campo)}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

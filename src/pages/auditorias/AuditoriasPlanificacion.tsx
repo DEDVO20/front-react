@@ -21,6 +21,7 @@ interface Auditoria {
   alcance: string;
   normaReferencia: string;
   auditorLiderId: string;
+  procesoId?: string;
   fechaPlanificada: string;
   fechaInicio: string;
   fechaFin: string;
@@ -33,8 +34,10 @@ interface Auditoria {
 interface Usuario {
   id: string;
   nombre: string;
-  primerApellido: string;
+  primerApellido?: string;
+  primer_apellido?: string;
   segundoApellido?: string;
+  segundo_apellido?: string;
 }
 
 interface AuditoriaFormData {
@@ -45,6 +48,7 @@ interface AuditoriaFormData {
   alcance: string;
   normaReferencia: string;
   auditorLiderId: string;
+  procesoId: string;
   fechaPlanificada: string;
   fechaInicio: string;
   fechaFin: string;
@@ -57,6 +61,13 @@ interface ProgramaAuditoria {
   id: string;
   anio: number;
   estado: string;
+}
+
+interface Proceso {
+  id: string;
+  codigo: string;
+  nombre: string;
+  estado?: string;
 }
 
 interface Filters {
@@ -107,7 +118,19 @@ const auditoriaService = {
       body: JSON.stringify(data)
     });
 
-    if (!response.ok) throw new Error('Error al crear auditoría');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const detail = errorData.detail;
+      let message = 'Error al crear auditoría';
+      if (detail) {
+        if (Array.isArray(detail)) {
+          message = detail.map((e: any) => `${e.loc?.join('.')}: ${e.msg}`).join('; ');
+        } else if (typeof detail === 'string') {
+          message = detail;
+        }
+      }
+      throw new Error(message);
+    }
     return response.json();
   },
 
@@ -152,12 +175,27 @@ const usuarioService = {
   }
 };
 
+const procesoService = {
+  async getAll(): Promise<Proceso[]> {
+    const response = await fetch(`${API_BASE_URL}/procesos?limit=300`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) throw new Error('Error al cargar procesos');
+    return response.json();
+  }
+};
+
 const AuditoriasPlanificacion = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   // Estados
   const [auditorias, setAuditorias] = useState<Auditoria[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [programas, setProgramas] = useState<ProgramaAuditoria[]>([]);
+  const [procesos, setProcesos] = useState<Proceso[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -177,6 +215,7 @@ const AuditoriasPlanificacion = () => {
     alcance: '',
     normaReferencia: 'ISO 9001:2015',
     auditorLiderId: '',
+    procesoId: '',
     fechaPlanificada: '',
     fechaInicio: '',
     fechaFin: '',
@@ -212,9 +251,10 @@ const AuditoriasPlanificacion = () => {
       setError(null);
 
       // Cargar usuarios y auditorías en paralelo
-      const [usuariosData, programasData] = await Promise.all([
+      const [usuariosData, programasData, procesosData] = await Promise.all([
         usuarioService.getAll(),
-        auditoriaService.getProgramas()
+        auditoriaService.getProgramas(),
+        procesoService.getAll()
       ]);
 
       setUsuarios(Array.isArray(usuariosData) ? usuariosData : []);
@@ -222,6 +262,10 @@ const AuditoriasPlanificacion = () => {
         (programa) => programa.estado === 'aprobado' || programa.estado === 'en_ejecucion'
       );
       setProgramas(programasValidos);
+      const procesosActivos = (Array.isArray(procesosData) ? procesosData : []).filter(
+        (proceso) => !proceso.estado || proceso.estado === 'activo'
+      );
+      setProcesos(procesosActivos);
     } catch (err) {
       console.error(err);
     } finally {
@@ -276,6 +320,7 @@ const AuditoriasPlanificacion = () => {
       alcance: '',
       normaReferencia: 'ISO 9001:2015',
       auditorLiderId: '',
+      procesoId: '',
       fechaPlanificada: '',
       fechaInicio: '',
       fechaFin: '',
@@ -298,6 +343,7 @@ const AuditoriasPlanificacion = () => {
       alcance: auditoria.alcance || '',
       normaReferencia: auditoria.normaReferencia || 'ISO 9001:2015',
       auditorLiderId: auditoria.auditorLiderId || '',
+      procesoId: auditoria.procesoId || (auditoria as unknown as { proceso_id?: string }).proceso_id || '',
       fechaPlanificada: auditoria.fechaPlanificada?.split('T')[0] || '',
       fechaInicio: auditoria.fechaInicio?.split('T')[0] || '',
       fechaFin: auditoria.fechaFin?.split('T')[0] || '',
@@ -329,12 +375,18 @@ const AuditoriasPlanificacion = () => {
     try {
       setSaving(true);
       if (!formData.programaId) {
-        toast.error('Debes seleccionar un programa anual aprobado o en ejecución');
-        return;
+        toast.warning('No se ha seleccionado un programa anual. La auditoría se creará sin asociar a un programa.');
       }
       const payload: Record<string, unknown> = {
         ...formData,
+        // Limpiar campos vacíos para que no se envíen strings vacías al backend
+        auditorLiderId: formData.auditorLiderId || undefined,
         creadoPor: formData.creadoPor || undefined,
+        procesoId: formData.procesoId || undefined,
+        programaId: formData.programaId || undefined,
+        fechaPlanificada: formData.fechaPlanificada || undefined,
+        fechaInicio: formData.fechaInicio || undefined,
+        fechaFin: formData.fechaFin || undefined,
         equipoAuditor: equipoAuditorIds.length > 0 ? equipoAuditorIds.join(',') : undefined
       };
       if (auditoriaEditando) {
@@ -413,7 +465,9 @@ const AuditoriasPlanificacion = () => {
   // Obtener nombre completo usuario
   const getNombreUsuario = (id: string) => {
     const usuario = usuarios.find(u => u.id === id);
-    return usuario ? `${usuario.nombre} ${usuario.primerApellido || ''}`.trim() : 'No asignado';
+    if (!usuario) return 'No asignado';
+    const apellido = usuario.primerApellido || usuario.primer_apellido || '';
+    return `${usuario.nombre} ${apellido}`.trim();
   };
 
   const stats = {
@@ -802,7 +856,24 @@ const AuditoriasPlanificacion = () => {
                     <option value="">Seleccionar auditor...</option>
                     {usuarios.map(usuario => (
                       <option key={usuario.id} value={usuario.id}>
-                        {usuario.nombre} {usuario.primerApellido}
+                        {usuario.nombre} {usuario.primerApellido || usuario.primer_apellido || ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Proceso Auditado
+                  </label>
+                  <select
+                    value={formData.procesoId}
+                    onChange={(e) => setFormData({ ...formData, procesoId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Seleccionar proceso...</option>
+                    {procesos.map(proceso => (
+                      <option key={proceso.id} value={proceso.id}>
+                        {proceso.codigo} - {proceso.nombre}
                       </option>
                     ))}
                   </select>
@@ -819,7 +890,7 @@ const AuditoriasPlanificacion = () => {
                     <option value="">Seleccionar usuario...</option>
                     {usuarios.map(usuario => (
                       <option key={usuario.id} value={usuario.id}>
-                        {usuario.nombre} {usuario.primerApellido}
+                        {usuario.nombre} {usuario.primerApellido || usuario.primer_apellido || ''}
                       </option>
                     ))}
                   </select>
@@ -839,13 +910,12 @@ const AuditoriasPlanificacion = () => {
                           key={usuario.id}
                           type="button"
                           onClick={() => toggleEquipoAuditor(usuario.id)}
-                          className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
-                            active
-                              ? 'bg-[#E0EDFF] text-[#1E3A8A] border-[#2563EB]'
-                              : 'bg-white text-[#6B7280] border-[#E5E7EB] hover:bg-[#F1F5F9]'
-                          }`}
+                          className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${active
+                            ? 'bg-[#E0EDFF] text-[#1E3A8A] border-[#2563EB]'
+                            : 'bg-white text-[#6B7280] border-[#E5E7EB] hover:bg-[#F1F5F9]'
+                            }`}
                         >
-                          {usuario.nombre} {usuario.primerApellido}
+                          {usuario.nombre} {usuario.primerApellido || usuario.primer_apellido || ''}
                         </button>
                       );
                     })}

@@ -13,6 +13,7 @@ export interface Auditoria {
   objetivos?: string;
   normaReferencia?: string;
   auditorLiderId?: string;
+  procesoId?: string;
   creadoPor?: string;
   equipoAuditor?: string[];
   areasAuditadas?: string[];
@@ -79,6 +80,40 @@ const getAuthHeaders = () => {
   };
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const normalizeAuditoria = (raw: any): Auditoria => {
+  const auditorLiderRaw = raw.auditorLider || raw.auditor_lider;
+  return {
+    ...raw,
+    codigo: raw.codigo,
+    nombre: raw.nombre,
+    tipo: raw.tipo || raw.tipo_auditoria,
+    estado: raw.estado,
+    alcance: raw.alcance,
+    objetivo: raw.objetivo,
+    normaReferencia: raw.normaReferencia ?? raw.norma_referencia,
+    auditorLiderId: raw.auditorLiderId ?? raw.auditor_lider_id,
+    procesoId: raw.procesoId ?? raw.proceso_id,
+    creadoPor: raw.creadoPor ?? raw.creado_por,
+    equipoAuditor: raw.equipoAuditor ?? raw.equipo_auditor,
+    fechaPlanificada: raw.fechaPlanificada ?? raw.fecha_planificada,
+    fechaInicio: raw.fechaInicio ?? raw.fecha_inicio,
+    fechaFin: raw.fechaFin ?? raw.fecha_fin,
+    creadoEn: raw.creadoEn ?? raw.creado_en,
+    actualizadoEn: raw.actualizadoEn ?? raw.actualizado_en,
+    programaId: raw.programaId ?? raw.programa_id,
+    informeFinal: raw.informeFinal ?? raw.informe_final,
+    auditorLider: auditorLiderRaw
+      ? {
+        id: auditorLiderRaw.id,
+        nombre: auditorLiderRaw.nombre,
+        primerApellido: auditorLiderRaw.primerApellido ?? auditorLiderRaw.primer_apellido,
+        email: auditorLiderRaw.email ?? auditorLiderRaw.correo_electronico,
+      }
+      : undefined,
+  };
+};
+
 export const auditoriaService = {
   // === PROGRAMAS DE AUDITORIA ===
   async getAllProgramas(anio?: number): Promise<ProgramaAuditoria[]> {
@@ -136,7 +171,8 @@ export const auditoriaService = {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Error al obtener auditorías");
-    return response.json();
+    const data = await response.json();
+    return Array.isArray(data) ? data.map(normalizeAuditoria) : [];
   },
 
   // Obtener auditorías planificadas
@@ -145,7 +181,8 @@ export const auditoriaService = {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Error al obtener auditorías planificadas");
-    return response.json();
+    const data = await response.json();
+    return Array.isArray(data) ? data.map(normalizeAuditoria) : [];
   },
 
   // Obtener auditorías en curso
@@ -154,7 +191,8 @@ export const auditoriaService = {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Error al obtener auditorías en curso");
-    return response.json();
+    const data = await response.json();
+    return Array.isArray(data) ? data.map(normalizeAuditoria) : [];
   },
 
   // Obtener auditorías completadas
@@ -163,7 +201,8 @@ export const auditoriaService = {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Error al obtener auditorías completadas");
-    return response.json();
+    const data = await response.json();
+    return Array.isArray(data) ? data.map(normalizeAuditoria) : [];
   },
 
   // Obtener una auditoría por ID
@@ -172,7 +211,8 @@ export const auditoriaService = {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Error al obtener auditoría");
-    return response.json();
+    const data = await response.json();
+    return normalizeAuditoria(data);
   },
 
   // Crear nueva auditoría
@@ -183,7 +223,8 @@ export const auditoriaService = {
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Error al crear auditoría");
-    return response.json();
+    const result = await response.json();
+    return normalizeAuditoria(result);
   },
 
   // Actualizar auditoría
@@ -194,7 +235,8 @@ export const auditoriaService = {
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Error al actualizar auditoría");
-    return response.json();
+    const result = await response.json();
+    return normalizeAuditoria(result);
   },
 
   // Cambiar estado de auditoría (Legacy)
@@ -205,7 +247,8 @@ export const auditoriaService = {
       body: JSON.stringify({ estado }),
     });
     if (!response.ok) throw new Error("Error al cambiar estado");
-    return response.json();
+    const data = await response.json();
+    return normalizeAuditoria(data);
   },
 
   // Nuevos métodos de flujo de auditoría
@@ -215,7 +258,8 @@ export const auditoriaService = {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Error al iniciar auditoría");
-    return response.json();
+    const data = await response.json();
+    return normalizeAuditoria(data);
   },
 
   async finalizar(id: string): Promise<Auditoria> {
@@ -224,7 +268,8 @@ export const auditoriaService = {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Error al finalizar auditoría");
-    return response.json();
+    const data = await response.json();
+    return normalizeAuditoria(data);
   },
 
   async cerrar(id: string): Promise<Auditoria> {
@@ -233,7 +278,8 @@ export const auditoriaService = {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Error al cerrar auditoría");
-    return response.json();
+    const data = await response.json();
+    return normalizeAuditoria(data);
   },
 
   // Eliminar auditoría

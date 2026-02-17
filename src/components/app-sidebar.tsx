@@ -270,6 +270,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           { title: "Planificación", url: "/AuditoriasPlanificacion", permiso: "auditorias.planificar" },
           { title: "Programa Anual", url: "/auditorias/programa-anual", permiso: "auditorias.planificar" },
+          { title: "Formularios", url: "/auditorias/formularios", permiso: "auditorias.planificar" },
           { title: "En Curso", url: "/AuditoriasEnCurso", permiso: "auditorias.ejecutar" },
           { title: "Completadas", url: "/AuditoriasCompletas", permiso: "auditorias.ejecutar" },
           { title: "Hallazgos", url: "/AuditoriasHallazgosView", permiso: "auditorias.ejecutar" },
