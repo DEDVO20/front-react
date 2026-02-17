@@ -118,6 +118,17 @@ const ObjetivosActivos: React.FC = () => {
   // Handlers
   const abrirModal = (tipo: 'crear' | 'editar' | 'ver', objetivo?: ObjetivoCalidad) => {
     setModalTipo(tipo);
+    // Helper: convert datetime string to YYYY-MM-DD for date inputs
+    const toDateInput = (val?: string) => {
+      if (!val) return '';
+      // Already YYYY-MM-DD
+      if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+      // Full ISO datetime — extract date part
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return '';
+      return d.toISOString().split('T')[0];
+    };
+
     if (objetivo) {
       setObjetivoSeleccionado(objetivo);
       setFormData({
@@ -129,8 +140,8 @@ const ObjetivosActivos: React.FC = () => {
         meta: objetivo.meta || '',
         indicadorId: objetivo.indicadorId || '',
         valorMeta: objetivo.valorMeta?.toString() || '',
-        periodoInicio: objetivo.periodoInicio || '',
-        periodoFin: objetivo.periodoFin || '',
+        periodoInicio: toDateInput(objetivo.periodoInicio),
+        periodoFin: toDateInput(objetivo.periodoFin),
         estado: objetivo.estado || 'planificado'
       });
     } else {
@@ -160,6 +171,14 @@ const ObjetivosActivos: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!formData.codigo.trim()) {
+      toast.error('El código es obligatorio');
+      return;
+    }
+    if (!formData.descripcion || formData.descripcion.trim().length < 10) {
+      toast.error('La descripción debe tener al menos 10 caracteres');
+      return;
+    }
     if (!formData.periodoInicio || !formData.periodoFin) {
       toast.error('Debe definir periodo de inicio y fin');
       return;
