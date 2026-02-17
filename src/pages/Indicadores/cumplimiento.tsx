@@ -23,7 +23,7 @@ export default function CumplimientoIndicadores() {
     try {
       setLoading(true);
       setError(null);
-      const data = await indicadorService.getAll({ tipo: "cumplimiento" });
+      const data = await indicadorService.getAll();
       setIndicadores(data);
     } catch (error: any) {
       console.error("Error:", error);
@@ -46,9 +46,9 @@ export default function CumplimientoIndicadores() {
 
   const totalIndicadores = indicadores.length;
 
-  const activos = indicadores.filter(i => i.estado === 'activo').length;
-  const sinDatos = indicadores.filter(i => i.valor === null || i.valor === undefined).length;
-  const conIncidencias = indicadores.filter(i => i.valor !== null && i.meta != null && i.meta !== undefined && i.valor < i.meta).length;
+  const activos = indicadores.filter(i => i.activo === true).length;
+  const sinDatos = indicadores.filter(i => i.meta === null || i.meta === undefined).length;
+  const conIncidencias = 0; // Sin campo valor no podemos calcular
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">

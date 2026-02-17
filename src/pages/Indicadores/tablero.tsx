@@ -9,10 +9,13 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { indicadorService, Indicador } from "@/services/indicador.service";
+import { procesoService, Proceso } from "@/services/proceso.service";
 
 export default function TableroIndicadores() {
   const [indicadores, setIndicadores] = useState<Indicador[]>([]);
+  const [procesos, setProcesos] = useState<Proceso[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingProcesos, setLoadingProcesos] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
@@ -21,6 +24,7 @@ export default function TableroIndicadores() {
 
   useEffect(() => {
     fetchIndicadores();
+    fetchProcesos();
   }, []);
 
   const fetchIndicadores = async () => {
@@ -34,6 +38,22 @@ export default function TableroIndicadores() {
       setError(error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProcesos = async () => {
+    try {
+      setLoadingProcesos(true);
+      const data = await procesoService.listar();
+      setProcesos(data);
+    } catch (error: any) {
+      console.error("Error cargando procesos:", error);
+      console.error("Detalles del error:", error.response?.data);
+      if (error.response?.status === 401) {
+        console.error("Error de autenticación al cargar procesos");
+      }
+    } finally {
+      setLoadingProcesos(false);
     }
   };
 
@@ -61,15 +81,38 @@ export default function TableroIndicadores() {
 
   const handleSave = async () => {
     try {
+      // Validar campos requeridos
+      if (!form.codigo || !form.nombre || !form.proceso_id) {
+        setError('Los campos Código, Nombre y Proceso ID son obligatorios');
+        return;
+      }
+
+      // Preparar payload asegurando tipos correctos
+      const payload: any = {
+        proceso_id: form.proceso_id,
+        codigo: form.codigo,
+        nombre: form.nombre,
+        descripcion: form.descripcion || null,
+        formula: form.formula || null,
+        unidad_medida: form.unidad_medida || null,
+        meta: form.meta !== undefined && form.meta !== null && form.meta !== '' ? Number(form.meta) : null,
+        frecuencia_medicion: form.frecuencia_medicion || 'mensual',
+        responsable_medicion_id: form.responsable_medicion_id || null,
+        activo: form.activo !== undefined ? form.activo : true
+      };
+
+      console.log('Payload a enviar:', payload);
+
       if (dialogMode === 'create') {
-        await indicadorService.create(form as any);
+        await indicadorService.create(payload);
       } else if (selected) {
-        await indicadorService.update(selected.id, form as any);
+        await indicadorService.update(selected.id, payload);
       }
       await fetchIndicadores();
       setShowDialog(false);
+      setError(null);
     } catch (err) {
-      console.error(err);
+      console.error('Error completo:', err);
       setError((err as Error).message);
     }
   };
@@ -326,18 +369,140 @@ export default function TableroIndicadores() {
                 <h3 className="text-lg font-bold">{dialogMode === 'create' ? 'Nuevo Indicador' : 'Editar Indicador'}</h3>
                 <button onClick={() => setShowDialog(false)} className="text-sm text-gray-500">Cerrar</button>
               </div>
+              
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+                  <AlertCircle className="h-4 w-4 inline mr-2" />
+                  {error}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <input placeholder="Código" value={form?.codigo || ''} onChange={(e) => setForm({ ...form, codigo: e.target.value })} className="p-3 border rounded-lg" />
-                <input placeholder="Nombre" value={form?.nombre || ''} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="p-3 border rounded-lg" />
-                <input placeholder="Proceso ID (UUID)" value={form?.proceso_id || ''} onChange={(e) => setForm({ ...form, proceso_id: e.target.value })} className="p-3 border rounded-lg md:col-span-2" />
-                <input placeholder="Descripción" value={form?.descripcion || ''} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} className="p-3 border rounded-lg md:col-span-2" />
-                <input placeholder="Meta (%)" type="number" value={form?.meta ?? ''} onChange={(e) => setForm({ ...form, meta: Number(e.target.value) })} className="p-3 border rounded-lg" />
-                <input placeholder="Unidad de medida" value={form?.unidad_medida || ''} onChange={(e) => setForm({ ...form, unidad_medida: e.target.value })} className="p-3 border rounded-lg" />
-                <input placeholder="Frecuencia (mensual, trimestral, etc.)" value={form?.frecuencia_medicion || 'mensual'} onChange={(e) => setForm({ ...form, frecuencia_medicion: e.target.value })} className="p-3 border rounded-lg md:col-span-2" />
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Código <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    placeholder="Ej: IND-001" 
+                    value={form?.codigo || ''} 
+                    onChange={(e) => setForm({ ...form, codigo: e.target.value })} 
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    placeholder="Ej: Satisfacción del cliente" 
+                    value={form?.nombre || ''} 
+                    onChange={(e) => setForm({ ...form, nombre: e.target.value })} 
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Proceso <span className="text-red-500">*</span>
+                  </label>
+                  <select 
+                    value={form?.proceso_id || ''} 
+                    onChange={(e) => setForm({ ...form, proceso_id: e.target.value })} 
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={loadingProcesos}
+                  >
+                    <option value="">
+                      {loadingProcesos 
+                        ? 'Cargando procesos...' 
+                        : procesos.length === 0 
+                          ? 'No hay procesos disponibles' 
+                          : 'Seleccione un proceso...'}
+                    </option>
+                    {procesos.map((proceso) => (
+                      <option key={proceso.id} value={proceso.id}>
+                        {proceso.codigo} - {proceso.nombre}
+                      </option>
+                    ))}
+                  </select>
+                  {!loadingProcesos && procesos.length === 0 && (
+                    <p className="mt-1 text-sm text-amber-600">
+                      ⚠️ No hay procesos registrados. <a href="/procesos" className="underline">Crear proceso</a>
+                    </p>
+                  )}
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Descripción
+                  </label>
+                  <textarea 
+                    placeholder="Descripción del indicador" 
+                    value={form?.descripcion || ''} 
+                    onChange={(e) => setForm({ ...form, descripcion: e.target.value })} 
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                    rows={3}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Meta (%)
+                  </label>
+                  <input 
+                    placeholder="Ej: 85" 
+                    type="number" 
+                    value={form?.meta ?? ''} 
+                    onChange={(e) => setForm({ ...form, meta: e.target.value ? Number(e.target.value) : undefined })} 
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Unidad de medida
+                  </label>
+                  <input 
+                    placeholder="Ej: porcentaje" 
+                    value={form?.unidad_medida || ''} 
+                    onChange={(e) => setForm({ ...form, unidad_medida: e.target.value })} 
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Frecuencia de medición
+                  </label>
+                  <select 
+                    value={form?.frecuencia_medicion || 'mensual'} 
+                    onChange={(e) => setForm({ ...form, frecuencia_medicion: e.target.value })} 
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="diaria">Diaria</option>
+                    <option value="semanal">Semanal</option>
+                    <option value="mensual">Mensual</option>
+                    <option value="trimestral">Trimestral</option>
+                    <option value="semestral">Semestral</option>
+                    <option value="anual">Anual</option>
+                  </select>
+                </div>
               </div>
-              <div className="flex justify-end gap-3 mt-4">
-                <button onClick={() => setShowDialog(false)} className="px-4 py-2 border rounded-lg">Cancelar</button>
-                <button onClick={handleSave} className="px-4 py-2 bg-[#2563EB] text-white rounded-lg">Guardar</button>
+              
+              <div className="flex justify-end gap-3 mt-6">
+                <button 
+                  onClick={() => { setShowDialog(false); setError(null); }} 
+                  className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleSave} 
+                  className="px-4 py-2 bg-[#2563EB] text-white rounded-lg hover:bg-[#1D4ED8] disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!form?.codigo || !form?.nombre || !form?.proceso_id}
+                >
+                  Guardar
+                </button>
               </div>
             </div>
           </div>

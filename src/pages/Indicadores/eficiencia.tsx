@@ -23,7 +23,7 @@ export default function EficienciaIndicadores() {
     try {
       setLoading(true);
       setError(null);
-      const data = await indicadorService.getAll({ tipo: "eficiencia" });
+      const data = await indicadorService.getAll();
       setIndicadores(data);
     } catch (error: any) {
       console.error("Error:", error);
@@ -35,9 +35,9 @@ export default function EficienciaIndicadores() {
 
   const totalIndicadores = indicadores.length;
 
-  const activos = indicadores.filter(i => i.estado === 'activo').length;
-  const sinDatos = indicadores.filter(i => i.valor === null || i.valor === undefined).length;
-  const conIncidencias = indicadores.filter(i => i.valor !== null && i.meta != null && i.meta !== undefined && i.valor < i.meta).length;
+  const activos = indicadores.filter(i => i.activo === true).length;
+  const sinDatos = indicadores.filter(i => i.meta === null || i.meta === undefined).length;
+  const conIncidencias = 0; // Sin campo valor no podemos calcular
 
   // Mini-gráfica simple (barra) para mostrar distribución básica
   const MiniBar = ({ counts }: { counts: number[] }) => {
