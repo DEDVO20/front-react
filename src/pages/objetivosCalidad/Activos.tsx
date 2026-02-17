@@ -69,22 +69,21 @@ const ObjetivosActivos: React.FC = () => {
     try {
       const data = await objetivoCalidadService.getActivos();
       setObjetivos(data);
+      await cargarSeguimientosForObjetivos(data);
     } catch (error: any) {
       console.error('Error al cargar objetivos:', error);
       setError(error.message);
+      setSeguimientosMap({});
     } finally {
       setLoading(false);
     }
-
-    // Cargar seguimientos relacionados para mostrar cumplimiento vs meta
-    cargarSeguimientosForObjetivos();
   };
 
-  const cargarSeguimientosForObjetivos = async () => {
+  const cargarSeguimientosForObjetivos = async (objetivosFuente: ObjetivoCalidad[]) => {
     try {
       setChartLoading(true);
       const map: Record<string, SeguimientoObjetivo[]> = {};
-      await Promise.all(objetivos.map(async (o) => {
+      await Promise.all(objetivosFuente.map(async (o) => {
         try {
           const segs = await objetivoCalidadService.getSeguimientos(o.id);
           map[o.id] = Array.isArray(segs) ? segs : [];
@@ -160,16 +159,34 @@ const ObjetivosActivos: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.periodoInicio || !formData.periodoFin) {
+      toast.error('Debe definir periodo de inicio y fin');
+      return;
+    }
+    if (new Date(formData.periodoFin) <= new Date(formData.periodoInicio)) {
+      toast.error('La fecha fin debe ser posterior a la fecha inicio');
+      return;
+    }
+    if (!formData.areaId) {
+      toast.error('Debe seleccionar un área');
+      return;
+    }
+    if (!formData.responsableId) {
+      toast.error('Debe seleccionar un responsable');
+      return;
+    }
+
     try {
       setLoading(true);
 
       const payload = {
         codigo: formData.codigo,
         descripcion: formData.descripcion,
-        area_id: formData.areaId || null,
-        responsable_id: formData.responsableId || null,
-        fecha_inicio: formData.periodoInicio,
-        fecha_fin: formData.periodoFin,
+        areaId: formData.areaId,
+        responsableId: formData.responsableId,
+        periodoInicio: formData.periodoInicio,
+        periodoFin: formData.periodoFin,
         estado: formData.estado,
         // Campos extras no soportados por el backend actual:
         // meta: formData.meta, 
@@ -637,6 +654,7 @@ const ObjetivosActivos: React.FC = () => {
                     value={formData.periodoInicio}
                     onChange={(e) => setFormData({ ...formData, periodoInicio: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
                     disabled={modalTipo === 'ver'}
                   />
                 </div>
@@ -649,6 +667,7 @@ const ObjetivosActivos: React.FC = () => {
                     value={formData.periodoFin}
                     onChange={(e) => setFormData({ ...formData, periodoFin: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
                     disabled={modalTipo === 'ver'}
                   />
                 </div>
@@ -663,6 +682,7 @@ const ObjetivosActivos: React.FC = () => {
                     value={formData.areaId}
                     onChange={(e) => setFormData({ ...formData, areaId: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
                     disabled={modalTipo === 'ver'}
                   >
                     <option value="">Seleccionar área</option>
@@ -679,6 +699,7 @@ const ObjetivosActivos: React.FC = () => {
                     value={formData.responsableId}
                     onChange={(e) => setFormData({ ...formData, responsableId: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
                     disabled={modalTipo === 'ver'}
                   >
                     <option value="">Seleccionar responsable</option>
