@@ -47,22 +47,33 @@ const mapObjetivoFromApi = (raw: any): ObjetivoCalidad => ({
   area: raw.area ? { id: raw.area.id, nombre: raw.area.nombre } : undefined,
   responsable: raw.responsable
     ? {
-        id: raw.responsable.id,
-        nombre: raw.responsable.nombre,
-        primerApellido: raw.responsable.primer_apellido ?? raw.responsable.primerApellido,
-      }
+      id: raw.responsable.id,
+      nombre: raw.responsable.nombre,
+      primerApellido: raw.responsable.primer_apellido ?? raw.responsable.primerApellido,
+    }
     : undefined,
 });
 
-const mapObjetivoToApi = (data: Partial<ObjetivoCalidad>) => ({
-  codigo: data.codigo,
-  descripcion: data.descripcion,
-  area_id: data.areaId ?? null,
-  responsable_id: data.responsableId ?? null,
-  fecha_inicio: data.periodoInicio,
-  fecha_fin: data.periodoFin,
-  estado: data.estado,
-});
+const mapObjetivoToApi = (data: Partial<ObjetivoCalidad>) => {
+  // Convert date-only string "YYYY-MM-DD" to ISO datetime "YYYY-MM-DDT00:00:00"
+  const toDatetime = (val?: string) => {
+    if (!val) return undefined;
+    // If already has time component, return as-is
+    if (val.includes('T')) return val;
+    // Append time component for date-only values
+    return `${val}T00:00:00`;
+  };
+
+  return {
+    codigo: data.codigo,
+    descripcion: data.descripcion,
+    area_id: data.areaId || null,
+    responsable_id: data.responsableId || null,
+    fecha_inicio: toDatetime(data.periodoInicio),
+    fecha_fin: toDatetime(data.periodoFin),
+    estado: data.estado || 'planificado',
+  };
+};
 
 const mapSeguimientoFromApi = (raw: any): SeguimientoObjetivo => ({
   id: raw.id,
