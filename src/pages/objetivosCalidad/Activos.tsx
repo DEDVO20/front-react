@@ -207,10 +207,9 @@ const ObjetivosActivos: React.FC = () => {
         periodoInicio: formData.periodoInicio,
         periodoFin: formData.periodoFin,
         estado: formData.estado,
-        // Campos extras no soportados por el backend actual:
-        // meta: formData.meta, 
-        // indicador_id: formData.indicadorId,
-        // valor_meta: formData.valorMeta
+        meta: formData.meta,
+        indicadorId: formData.indicadorId,
+        valorMeta: formData.valorMeta ? Number(formData.valorMeta) : undefined,
       };
 
       if (modalTipo === 'crear') {
