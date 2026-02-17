@@ -657,19 +657,16 @@ const ObjetivosActivos: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Indicador
+                        Indicador (KPI)
                       </label>
-                      <select
+                      <input
+                        type="text"
                         value={formData.indicadorId}
                         onChange={(e) => setFormData({ ...formData, indicadorId: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Ej: % Satisfacción del cliente"
                         disabled={modalTipo === 'ver'}
-                      >
-                        <option value="">Seleccionar indicador</option>
-                        <option value="1">Satisfacción del Cliente</option>
-                        <option value="2">Índice de No Conformidades</option>
-                        <option value="3">Eficacia de Capacitación</option>
-                      </select>
+                      />
                     </div>
                   </div>
 
