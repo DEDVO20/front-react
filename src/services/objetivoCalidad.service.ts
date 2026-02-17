@@ -42,6 +42,9 @@ const mapObjetivoFromApi = (raw: any): ObjetivoCalidad => ({
   periodoInicio: raw.fecha_inicio,
   periodoFin: raw.fecha_fin,
   estado: raw.estado,
+  meta: raw.meta,
+  indicadorId: raw.indicador,
+  valorMeta: raw.valor_meta != null ? Number(raw.valor_meta) : undefined,
   creadoEn: raw.creado_en,
   actualizadoEn: raw.actualizado_en,
   area: raw.area ? { id: raw.area.id, nombre: raw.area.nombre } : undefined,
@@ -72,6 +75,9 @@ const mapObjetivoToApi = (data: Partial<ObjetivoCalidad>) => {
     fecha_inicio: toDatetime(data.periodoInicio),
     fecha_fin: toDatetime(data.periodoFin),
     estado: data.estado || 'planificado',
+    meta: data.meta || null,
+    indicador: data.indicadorId || null,
+    valor_meta: data.valorMeta != null ? Number(data.valorMeta) : null,
   };
 };
 
