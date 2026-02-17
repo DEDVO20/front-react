@@ -21,6 +21,8 @@ import procesoService, {
     EtapaPHVA,
     EstadoProceso
 } from "@/services/proceso.service";
+import { areaService, Area } from "@/services/area.service";
+import { usuarioService, Usuario } from "@/services/usuario.service";
 
 export default function FormularioProceso() {
     const navigate = useNavigate();
@@ -29,6 +31,8 @@ export default function FormularioProceso() {
 
     const [loading, setLoading] = useState(false);
     const [guardando, setGuardando] = useState(false);
+    const [areas, setAreas] = useState<Area[]>([]);
+    const [usuarios, setUsuarios] = useState<Usuario[]>([]);
 
     const [formData, setFormData] = useState<ProcesoCreate>({
         codigo: "",
@@ -45,13 +49,33 @@ export default function FormularioProceso() {
         recursos_necesarios: "",
         criterios_desempeno: "",
         riesgos_oportunidades: "",
+        area_id: undefined,
+        responsable_id: undefined,
     });
+
+    useEffect(() => {
+        cargarDatosIniciales();
+    }, []);
 
     useEffect(() => {
         if (isEditing) {
             cargarProceso();
         }
     }, [id]);
+
+    const cargarDatosIniciales = async () => {
+        try {
+            const [areasData, usuariosData] = await Promise.all([
+                areaService.getAll(),
+                usuarioService.getAllActive()
+            ]);
+            setAreas(areasData);
+            setUsuarios(usuariosData);
+        } catch (error) {
+            console.error("Error cargando datos iniciales:", error);
+            toast.error("Error al cargar áreas y usuarios");
+        }
+    };
 
     const cargarProceso = async () => {
         if (!id) return;
@@ -74,6 +98,8 @@ export default function FormularioProceso() {
                 recursos_necesarios: proceso.recursos_necesarios,
                 criterios_desempeno: proceso.criterios_desempeno,
                 riesgos_oportunidades: proceso.riesgos_oportunidades,
+                area_id: proceso.area_id,
+                responsable_id: proceso.responsable_id,
             });
         } catch (error) {
             console.error("Error cargando proceso:", error);
@@ -113,7 +139,9 @@ export default function FormularioProceso() {
     };
 
     const handleChange = (field: keyof ProcesoCreate, value: any) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        // Manejar el valor especial "_ninguno_" para campos opcionales
+        const finalValue = value === "_ninguno_" ? undefined : value;
+        setFormData(prev => ({ ...prev, [field]: finalValue }));
     };
 
     if (loading) {
@@ -192,6 +220,48 @@ export default function FormularioProceso() {
                                     className="rounded-xl"
                                     required
                                 />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="area_id">Área Responsable</Label>
+                                    <Select
+                                        value={formData.area_id || ""}
+                                        onValueChange={(value) => handleChange("area_id", value || undefined)}
+                                    >
+                                        <SelectTrigger className="rounded-xl">
+                                            <SelectValue placeholder="Seleccionar área..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="_ninguno_">Sin asignar</SelectItem>
+                                            {areas.map((area) => (
+                                                <SelectItem key={area.id} value={area.id}>
+                                                    {area.nombre} ({area.codigo})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="responsable_id">Líder del Proceso</Label>
+                                    <Select
+                                        value={formData.responsable_id || ""}
+                                        onValueChange={(value) => handleChange("responsable_id", value || undefined)}
+                                    >
+                                        <SelectTrigger className="rounded-xl">
+                                            <SelectValue placeholder="Seleccionar líder..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="_ninguno_">Sin asignar</SelectItem>
+                                            {usuarios.map((usuario) => (
+                                                <SelectItem key={usuario.id} value={usuario.id}>
+                                                    {usuario.nombre} {usuario.primer_apellido}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

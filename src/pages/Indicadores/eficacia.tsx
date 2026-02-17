@@ -23,7 +23,7 @@ export default function EficaciaIndicadores() {
     try {
       setLoading(true);
       setError(null);
-      const data = await indicadorService.getAll({ tipo: "eficacia" });
+      const data = await indicadorService.getAll();
       setIndicadores(data);
     } catch (error: any) {
       console.error("Error:", error);
