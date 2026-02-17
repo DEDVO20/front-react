@@ -10,7 +10,8 @@ import {
   GraduationCap,
   RefreshCw,
   Search,
-  Eye,
+  AlertTriangle,
+  ShieldCheck,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,11 +23,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { capacitacionService, Capacitacion } from "@/services/capacitacion.service";
+import {
+  capacitacionService,
+  Capacitacion,
+  ReporteCapacitacionAuditoria,
+} from "@/services/capacitacion.service";
 import { toast } from "sonner";
 
 const CapacitacionesHistorial = () => {
   const [historial, setHistorial] = useState<Capacitacion[]>([]);
+  const [reporteAuditoria, setReporteAuditoria] = useState<ReporteCapacitacionAuditoria | null>(null);
+  const [usuariosPendientes, setUsuariosPendientes] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -37,8 +44,14 @@ const CapacitacionesHistorial = () => {
   const cargarHistorial = async () => {
     try {
       setLoading(true);
-      const data = await capacitacionService.getHistorial();
+      const [data, reporte, pendientes] = await Promise.all([
+        capacitacionService.getHistorial(),
+        capacitacionService.getReporteAuditoria(),
+        capacitacionService.getUsuariosPendientesObligatoria(),
+      ]);
       setHistorial(data);
+      setReporteAuditoria(reporte);
+      setUsuariosPendientes(Array.isArray(pendientes) ? pendientes.length : 0);
     } catch (err: any) {
       console.error("Error al cargar historial:", err);
       toast.error(err.message || "Error al cargar historial");
@@ -55,13 +68,13 @@ const CapacitacionesHistorial = () => {
   );
 
   // Indicadores
-  const total = historial.length;
-  const virtuales = historial.filter((c) => c.modalidad === "Virtual").length;
-  const presenciales = historial.filter((c) => c.modalidad === "Presencial").length;
+  const total = reporteAuditoria?.capacitaciones_ejecutadas ?? historial.length;
   const horasTotales = historial.reduce((acc, cap) => {
     const horas = cap.duracionHoras || 0;
     return acc + horas;
   }, 0);
+  const asistenciaPromedio = reporteAuditoria?.porcentaje_asistencia_promedio ?? 0;
+  const sinEvidencia = reporteAuditoria?.capacitaciones_sin_evidencia ?? 0;
 
   if (loading) {
     return (
@@ -93,6 +106,9 @@ const CapacitacionesHistorial = () => {
                   </Badge>
                   <Badge className="bg-[#ECFDF5] text-[#065F46] border border-[#10B981]/30">
                     {horasTotales} horas totales
+                  </Badge>
+                  <Badge className="bg-[#FEF2F2] text-[#B91C1C] border border-[#FCA5A5]/50">
+                    {usuariosPendientes} usuarios con obligatorias pendientes
                   </Badge>
                 </div>
               </div>
@@ -131,32 +147,32 @@ const CapacitacionesHistorial = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-[#F3E8FF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+            <Card className="bg-[#FEF3C7] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardDescription className="font-bold text-[#6B21A8]">Virtuales</CardDescription>
-                  <Laptop className="h-8 w-8 text-[#9333EA]" />
+                  <CardDescription className="font-bold text-[#92400E]">Asistencia Promedio</CardDescription>
+                  <ShieldCheck className="h-8 w-8 text-[#D97706]" />
                 </div>
-                <CardTitle className="text-4xl font-bold text-[#6B21A8]">{virtuales}</CardTitle>
+                <CardTitle className="text-4xl font-bold text-[#92400E]">{asistenciaPromedio.toFixed(1)}%</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-xs text-[#6B7280] font-medium">
-                  Modalidad en línea
+                  Cobertura media de asistencia
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+            <Card className="bg-[#FEE2E2] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardDescription className="font-bold text-[#065F46]">Presenciales</CardDescription>
-                  <MapPin className="h-8 w-8 text-[#10B981]" />
+                  <CardDescription className="font-bold text-[#991B1B]">Sin Evidencia</CardDescription>
+                  <AlertTriangle className="h-8 w-8 text-[#EF4444]" />
                 </div>
-                <CardTitle className="text-4xl font-bold text-[#065F46]">{presenciales}</CardTitle>
+                <CardTitle className="text-4xl font-bold text-[#991B1B]">{sinEvidencia}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-xs text-[#6B7280] font-medium">
-                  Modalidad presencial
+                  Capacitaciones ejecutadas sin archivo
                 </div>
               </CardContent>
             </Card>

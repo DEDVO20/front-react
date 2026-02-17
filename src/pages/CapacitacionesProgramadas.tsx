@@ -16,7 +16,8 @@ import {
   RefreshCw,
   Search,
   CheckCircle,
-  AlertCircle,
+  PlayCircle,
+  StopCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -60,15 +61,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { capacitacionService, Capacitacion } from "@/services/capacitacion.service";
+import { areaService, Area } from "@/services/area.service";
+import { usuarioService, Usuario } from "@/services/usuario.service";
+import { getCurrentUser } from "@/services/auth";
+
+type FormDataState = {
+  nombre: string;
+  codigo: string;
+  tipoCapacitacion: string;
+  modalidad: "Virtual" | "Presencial";
+  fechaProgramada: string;
+  duracionHoras: string | number;
+  lugar: string;
+  instructor: string;
+  areaId: string;
+  aplicaTodasAreas: boolean;
+};
 
 export default function CapacitacionesProgramadas() {
   const [capacitaciones, setCapacitaciones] = useState<Capacitacion[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
+  const [usuariosActivos, setUsuariosActivos] = useState<Usuario[]>([]);
+  const [usuariosConvocadosIds, setUsuariosConvocadosIds] = useState<string[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [filtroUsuarios, setFiltroUsuarios] = useState("");
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [selectedCap, setSelectedCap] = useState<Capacitacion | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormDataState>({
     nombre: '',
     codigo: '',
     tipoCapacitacion: '',
@@ -77,6 +101,8 @@ export default function CapacitacionesProgramadas() {
     duracionHoras: '' as string | number, // CAMBIO: Permitir string vacío para el input
     lugar: '',
     instructor: '',
+    areaId: '',
+    aplicaTodasAreas: false,
   });
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -87,7 +113,36 @@ export default function CapacitacionesProgramadas() {
 
   useEffect(() => {
     cargarCapacitaciones();
+    cargarCatalogos();
+    const me = getCurrentUser();
+    setUserId(me?.id || null);
   }, []);
+
+  useEffect(() => {
+    if (formData.aplicaTodasAreas) return;
+    if (!formData.areaId) {
+      setUsuariosConvocadosIds([]);
+      return;
+    }
+    setUsuariosConvocadosIds((prev) =>
+      prev.filter((usuarioId) =>
+        usuariosActivos.some((u) => u.id === usuarioId && u.area_id === formData.areaId)
+      )
+    );
+  }, [formData.aplicaTodasAreas, formData.areaId, usuariosActivos]);
+
+  const cargarCatalogos = async () => {
+    try {
+      const [areasData, usuarios] = await Promise.all([
+        areaService.getAll(),
+        usuarioService.getAllActive(),
+      ]);
+      setAreas(Array.isArray(areasData) ? areasData : []);
+      setUsuariosActivos(Array.isArray(usuarios) ? usuarios : []);
+    } catch (error) {
+      toast.error("No se pudo cargar áreas y usuarios");
+    }
+  };
 
   const cargarCapacitaciones = async () => {
     try {
@@ -101,17 +156,50 @@ export default function CapacitacionesProgramadas() {
     }
   };
 
-  const marcarCompletada = async (id: string) => {
+  const iniciarCapacitacion = async (id: string) => {
     try {
-      await capacitacionService.marcarCompletada(id);
+      const actualizada = await capacitacionService.iniciarCapacitacion(id);
       setCapacitaciones((prev) =>
         prev.map((cap) =>
-          cap.id === id ? { ...cap, estado: "completada" } : cap
+          cap.id === id ? actualizada : cap
         )
       );
-      toast.success("Capacitación marcada como completada");
+      toast.success("Capacitación iniciada");
     } catch (err: any) {
-      toast.error("Error al marcar como completada");
+      toast.error(err.message || "Error al iniciar");
+    }
+  };
+
+  const finalizarCapacitacion = async (id: string) => {
+    try {
+      const actualizada = await capacitacionService.finalizarCapacitacion(id);
+      setCapacitaciones((prev) =>
+        prev.map((cap) =>
+          cap.id === id ? actualizada : cap
+        )
+      );
+      toast.success("Capacitación finalizada. Ventana de asistencia abierta por 5 minutos.");
+    } catch (err: any) {
+      toast.error(err.message || "Error al finalizar");
+    }
+  };
+
+  const marcarMiAsistencia = async (id: string) => {
+    try {
+      await capacitacionService.marcarMiAsistencia(id);
+      toast.success("Asistencia marcada exitosamente");
+      await cargarCapacitaciones();
+    } catch (err: any) {
+      toast.error(err.message || "No se pudo marcar asistencia");
+    }
+  };
+
+  const cargarConvocados = async (capacitacionId: string) => {
+    try {
+      const asistencias = await capacitacionService.getAsistencias(capacitacionId);
+      setUsuariosConvocadosIds(asistencias.map((a) => a.usuarioId));
+    } catch {
+      setUsuariosConvocadosIds([]);
     }
   };
 
@@ -126,7 +214,11 @@ export default function CapacitacionesProgramadas() {
       duracionHoras: '', // CAMBIO: Vacío en lugar de 0
       lugar: '',
       instructor: '',
+      areaId: '',
+      aplicaTodasAreas: false,
     });
+    setUsuariosConvocadosIds([]);
+    setFiltroUsuarios("");
     setSelectedCap(null);
     setShowDialog(true);
   };
@@ -155,7 +247,10 @@ export default function CapacitacionesProgramadas() {
       duracionHoras: cap.duracionHoras || '',
       lugar: cap.lugar || '',
       instructor: cap.instructor || '',
+      areaId: cap.areaId || '',
+      aplicaTodasAreas: Boolean(cap.aplicaTodasAreas),
     });
+    cargarConvocados(cap.id);
     setSelectedCap(cap);
     setShowDialog(true);
   };
@@ -164,6 +259,24 @@ export default function CapacitacionesProgramadas() {
     setDialogMode('view');
     setSelectedCap(cap);
     setShowDialog(true);
+  };
+
+  const usuariosElegibles = usuariosActivos.filter((usuario) => {
+    if (formData.aplicaTodasAreas) return true;
+    if (!formData.areaId) return false;
+    return usuario.area_id === formData.areaId;
+  });
+
+  const usuariosElegiblesFiltrados = usuariosElegibles.filter((usuario) => {
+    const texto = `${usuario.nombre} ${usuario.primer_apellido} ${usuario.segundo_apellido || ""} ${usuario.correo_electronico}`.toLowerCase();
+    return texto.includes(filtroUsuarios.toLowerCase());
+  });
+
+  const toggleConvocado = (usuarioId: string, checked: boolean) => {
+    setUsuariosConvocadosIds((prev) => {
+      if (checked) return Array.from(new Set([...prev, usuarioId]));
+      return prev.filter((id) => id !== usuarioId);
+    });
   };
 
   const handleSave = async () => {
@@ -190,6 +303,16 @@ export default function CapacitacionesProgramadas() {
       return;
     }
 
+    if (!formData.aplicaTodasAreas && !formData.areaId) {
+      toast.error("Selecciona un área o marca que aplica a todas las áreas");
+      return;
+    }
+
+    if (!usuariosConvocadosIds.length) {
+      toast.error("Selecciona al menos una persona convocada");
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -197,14 +320,16 @@ export default function CapacitacionesProgramadas() {
         const newCap = await capacitacionService.create({
           ...formData,
           duracionHoras: duracionNum,
-          estado: 'programada'
+          estado: 'programada',
+          usuariosConvocadosIds,
         });
         setCapacitaciones([newCap, ...capacitaciones]);
         toast.success('Capacitación agregada con éxito!');
       } else if (dialogMode === 'edit' && selectedCap) {
         const updatedCap = await capacitacionService.update(selectedCap.id, {
           ...formData,
-          duracionHoras: duracionNum
+          duracionHoras: duracionNum,
+          usuariosConvocadosIds,
         });
         setCapacitaciones(prev =>
           prev.map(c =>
@@ -258,7 +383,10 @@ export default function CapacitacionesProgramadas() {
   const presenciales = capacitaciones.filter(c => c.modalidad === "Presencial").length;
   const pendientes = capacitaciones.filter(c => c.estado === "programada").length;
   const completadas = total - pendientes;
-  const completionPercentage = total === 0 ? 0 : Math.round((completadas / total) * 100);
+  const enVentanaAsistencia = (cap: Capacitacion) => {
+    if (cap.estado !== "completada" || !cap.fechaCierreAsistencia) return false;
+    return new Date(cap.fechaCierreAsistencia).getTime() >= Date.now();
+  };
 
   if (loading) {
     return (
@@ -504,24 +632,49 @@ export default function CapacitacionesProgramadas() {
                             <Badge
                               className={`px-4 py-2 text-sm font-bold ${cap.estado === "programada"
                                 ? "bg-[#FFF7ED] text-[#F97316]"
-                                : "bg-[#ECFDF5] text-[#065F46]"
+                                : cap.estado === "en_curso"
+                                  ? "bg-[#EFF6FF] text-[#1D4ED8]"
+                                  : "bg-[#ECFDF5] text-[#065F46]"
                                 }`}
                             >
-                              {cap.estado === "programada" ? "Pendiente" : "Completada"}
+                              {cap.estado === "programada" ? "Pendiente" : cap.estado === "en_curso" ? "En curso" : "Completada"}
                             </Badge>
 
-                            {cap.estado === "programada" ? (
+                            {cap.estado === "programada" && (
                               <Button
-                                onClick={() => marcarCompletada(cap.id)}
+                                onClick={() => iniciarCapacitacion(cap.id)}
                                 className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl"
                               >
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Marcar como asistida
+                                <PlayCircle className="mr-2 h-4 w-4" />
+                                Iniciar
                               </Button>
-                            ) : (
-                              <div className="flex items-center text-[#065F46] font-semibold">
-                                <CheckCircle className="w-5 h-5 mr-2" />
-                                Completada
+                            )}
+
+                            {cap.estado === "en_curso" && (
+                              <Button
+                                onClick={() => finalizarCapacitacion(cap.id)}
+                                className="bg-[#F97316] hover:bg-[#EA580C] text-white rounded-xl"
+                              >
+                                <StopCircle className="mr-2 h-4 w-4" />
+                                Finalizar
+                              </Button>
+                            )}
+
+                            {cap.estado === "completada" && (
+                              <div className="flex flex-col items-center gap-2">
+                                <div className="flex items-center text-[#065F46] font-semibold">
+                                  <CheckCircle className="w-5 h-5 mr-2" />
+                                  Completada
+                                </div>
+                                {enVentanaAsistencia(cap) && userId && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => marcarMiAsistencia(cap.id)}
+                                    className="bg-[#10B981] hover:bg-[#059669] text-white rounded-xl"
+                                  >
+                                    Marcar mi asistencia
+                                  </Button>
+                                )}
                               </div>
                             )}
 
@@ -627,10 +780,22 @@ export default function CapacitacionesProgramadas() {
                             <p className="mt-2 text-lg">{selectedCap.instructor}</p>
                           </div>
                         )}
+                        <div>
+                          <Label className="text-[#6B7280] uppercase text-xs font-bold">Cobertura</Label>
+                          <p className="mt-2 text-lg">
+                            {selectedCap.aplicaTodasAreas ? "Todas las áreas" : "Área específica"}
+                          </p>
+                        </div>
                         <div className="md:col-span-2">
                           <Label className="text-[#6B7280] uppercase text-xs font-bold">Estado</Label>
-                          <Badge className={`mt-2 px-4 py-2 text-lg font-bold ${selectedCap.estado === "programada" ? "bg-[#FFF7ED] text-[#F97316]" : "bg-[#ECFDF5] text-[#065F46]"}`}>
-                            {selectedCap.estado === "programada" ? "Pendiente" : "Completada"}
+                          <Badge className={`mt-2 px-4 py-2 text-lg font-bold ${
+                            selectedCap.estado === "programada"
+                              ? "bg-[#FFF7ED] text-[#F97316]"
+                              : selectedCap.estado === "en_curso"
+                                ? "bg-[#EFF6FF] text-[#1D4ED8]"
+                                : "bg-[#ECFDF5] text-[#065F46]"
+                          }`}>
+                            {selectedCap.estado === "programada" ? "Pendiente" : selectedCap.estado === "en_curso" ? "En curso" : "Completada"}
                           </Badge>
                         </div>
                       </div>
@@ -687,6 +852,43 @@ export default function CapacitacionesProgramadas() {
                       </div>
 
                       <div className="space-y-2">
+                        <Label className="font-bold">Aplica a todas las áreas</Label>
+                        <div className="h-10 px-3 rounded-xl border border-[#E5E7EB] flex items-center justify-between">
+                          <span className="text-sm text-[#374151]">Convocatoria global</span>
+                          <Switch
+                            checked={formData.aplicaTodasAreas}
+                            onCheckedChange={(checked) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                aplicaTodasAreas: checked,
+                                areaId: checked ? "" : prev.areaId,
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="font-bold">Área objetivo {!formData.aplicaTodasAreas && <span className="text-red-500">*</span>}</Label>
+                        <Select
+                          value={formData.areaId}
+                          onValueChange={(value) => setFormData((prev) => ({ ...prev, areaId: value }))}
+                          disabled={formData.aplicaTodasAreas}
+                        >
+                          <SelectTrigger className="rounded-xl">
+                            <SelectValue placeholder={formData.aplicaTodasAreas ? "Todas las áreas" : "Selecciona área"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {areas.map((area) => (
+                              <SelectItem key={area.id} value={area.id}>
+                                {area.nombre}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
                         <Label className="font-bold">Fecha programada <span className="text-red-500">*</span></Label>
                         <Input
                           type="date"
@@ -736,6 +938,34 @@ export default function CapacitacionesProgramadas() {
                           placeholder="Nombre del instructor o facilitador"
                           className="rounded-xl"
                         />
+                      </div>
+
+                      <div className="md:col-span-2 space-y-2">
+                        <Label className="font-bold">Personas convocadas <span className="text-red-500">*</span></Label>
+                        <Input
+                          value={filtroUsuarios}
+                          onChange={(e) => setFiltroUsuarios(e.target.value)}
+                          placeholder="Buscar por nombre o correo"
+                          className="rounded-xl"
+                        />
+                        <div className="border border-[#E5E7EB] rounded-xl max-h-56 overflow-y-auto p-2 space-y-2">
+                          {usuariosElegiblesFiltrados.length === 0 ? (
+                            <p className="text-sm text-[#6B7280] p-2">No hay usuarios para el filtro o área seleccionada.</p>
+                          ) : (
+                            usuariosElegiblesFiltrados.map((usuario) => (
+                              <label key={usuario.id} className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F8FAFC] cursor-pointer">
+                                <Checkbox
+                                  checked={usuariosConvocadosIds.includes(usuario.id)}
+                                  onCheckedChange={(checked) => toggleConvocado(usuario.id, checked === true)}
+                                />
+                                <span className="text-sm text-[#111827]">
+                                  {usuario.nombre} {usuario.primer_apellido} ({usuario.correo_electronico})
+                                </span>
+                              </label>
+                            ))
+                          )}
+                        </div>
+                        <p className="text-xs text-[#6B7280]">Convocados seleccionados: {usuariosConvocadosIds.length}</p>
                       </div>
                     </div>
                   </div>

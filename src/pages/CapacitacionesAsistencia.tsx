@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { CheckCircle, Users, Laptop, MapPin, Download, GraduationCap, Eye, RefreshCw, Search } from "lucide-react";
+import { CheckCircle, Users, Laptop, MapPin, Download, GraduationCap, Eye, RefreshCw, Search, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
@@ -20,13 +23,37 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { capacitacionService, Capacitacion } from "@/services/capacitacion.service";
+import {
+  capacitacionService,
+  Capacitacion,
+  ResumenAsistenciaCapacitacion,
+  ReporteCapacitacionAuditoria,
+  AsistenciaCapacitacion,
+} from "@/services/capacitacion.service";
+import { usuarioService, Usuario } from "@/services/usuario.service";
 import { toast } from "sonner";
+
+type RegistroAsistenciaUI = {
+  selected: boolean;
+  asistio: boolean;
+  evaluacionAprobada: boolean;
+  asistenciaId?: string;
+};
 
 const CapacitacionesAsistencia: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [selectedCapacitacion, setSelectedCapacitacion] = useState<Capacitacion | null>(null);
   const [asistencias, setAsistencias] = useState<Capacitacion[]>([]);
+  const [resumenesPorCapacitacion, setResumenesPorCapacitacion] = useState<Record<string, ResumenAsistenciaCapacitacion>>({});
+  const [capacitacionesDisponibles, setCapacitacionesDisponibles] = useState<Capacitacion[]>([]);
+  const [usuariosActivos, setUsuariosActivos] = useState<Usuario[]>([]);
+  const [capacitacionSeleccionadaId, setCapacitacionSeleccionadaId] = useState("");
+  const [filtroUsuarios, setFiltroUsuarios] = useState("");
+  const [registrosAsistencia, setRegistrosAsistencia] = useState<Record<string, RegistroAsistenciaUI>>({});
+  const [loadingRegistro, setLoadingRegistro] = useState(false);
+  const [savingRegistro, setSavingRegistro] = useState(false);
+  const [reporteAuditoria, setReporteAuditoria] = useState<ReporteCapacitacionAuditoria | null>(null);
+  const [usuariosPendientes, setUsuariosPendientes] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -37,8 +64,37 @@ const CapacitacionesAsistencia: React.FC = () => {
   const cargarAsistencias = async () => {
     try {
       setLoading(true);
-      const data = await capacitacionService.getHistorial();
+      const [data, reporte, pendientes] = await Promise.all([
+        capacitacionService.getHistorial(),
+        capacitacionService.getReporteAuditoria(),
+        capacitacionService.getUsuariosPendientesObligatoria(),
+      ]);
+      const [todasCapacitaciones, usuarios] = await Promise.all([
+        capacitacionService.getAll(),
+        usuarioService.getAllActive(),
+      ]);
       setAsistencias(data);
+      setCapacitacionesDisponibles(Array.isArray(todasCapacitaciones) ? todasCapacitaciones : []);
+      setUsuariosActivos(Array.isArray(usuarios) ? usuarios : []);
+      setReporteAuditoria(reporte);
+      setUsuariosPendientes(Array.isArray(pendientes) ? pendientes.length : 0);
+
+      const resumenes = await Promise.all(
+        data.map(async (cap) => {
+          try {
+            const resumen = await capacitacionService.getResumenAsistencia(cap.id);
+            return [cap.id, resumen] as const;
+          } catch {
+            return [cap.id, null] as const;
+          }
+        })
+      );
+
+      const resumenMap: Record<string, ResumenAsistenciaCapacitacion> = {};
+      resumenes.forEach(([capId, resumen]) => {
+        if (resumen) resumenMap[capId] = resumen;
+      });
+      setResumenesPorCapacitacion(resumenMap);
     } catch (err: any) {
       console.error("Error al cargar asistencias:", err);
       toast.error(err.message || "Error al cargar asistencias");
@@ -52,6 +108,140 @@ const CapacitacionesAsistencia: React.FC = () => {
     setOpen(true);
   };
 
+  const construirMapaRegistro = (
+    usuarios: Usuario[],
+    asistenciasExistentes: AsistenciaCapacitacion[] = []
+  ): Record<string, RegistroAsistenciaUI> => {
+    const existentesPorUsuario = new Map<string, AsistenciaCapacitacion>(
+      asistenciasExistentes.map((item) => [item.usuarioId, item])
+    );
+
+    return usuarios.reduce<Record<string, RegistroAsistenciaUI>>((acc, usuario) => {
+      const existente = existentesPorUsuario.get(usuario.id);
+      acc[usuario.id] = {
+        selected: Boolean(existente),
+        asistio: existente?.asistio ?? true,
+        evaluacionAprobada: existente?.evaluacionAprobada ?? false,
+        asistenciaId: existente?.id,
+      };
+      return acc;
+    }, {});
+  };
+
+  const cargarRegistroCapacitacion = async (capacitacionId: string) => {
+    try {
+      setLoadingRegistro(true);
+      const asistenciasExistentes = await capacitacionService.getAsistencias(capacitacionId);
+      setRegistrosAsistencia(construirMapaRegistro(usuariosActivos, asistenciasExistentes));
+    } catch (error: any) {
+      toast.error(error.message || "No se pudo cargar el registro de asistencias");
+      setRegistrosAsistencia(construirMapaRegistro(usuariosActivos));
+    } finally {
+      setLoadingRegistro(false);
+    }
+  };
+
+  const handleSeleccionarCapacitacion = (capacitacionId: string) => {
+    setCapacitacionSeleccionadaId(capacitacionId);
+    cargarRegistroCapacitacion(capacitacionId);
+  };
+
+  const toggleSeleccionUsuario = (usuarioId: string, selected: boolean) => {
+    setRegistrosAsistencia((prev) => ({
+      ...prev,
+      [usuarioId]: {
+        ...(prev[usuarioId] ?? { selected: false, asistio: true, evaluacionAprobada: false }),
+        selected,
+      },
+    }));
+  };
+
+  const updateRegistroUsuario = (usuarioId: string, changes: Partial<RegistroAsistenciaUI>) => {
+    setRegistrosAsistencia((prev) => ({
+      ...prev,
+      [usuarioId]: {
+        ...(prev[usuarioId] ?? { selected: false, asistio: true, evaluacionAprobada: false }),
+        ...changes,
+      },
+    }));
+  };
+
+  const usuariosFiltrados = useMemo(
+    () =>
+      usuariosActivos.filter((usuario) => {
+        const texto = `${usuario.nombre} ${usuario.primer_apellido} ${usuario.segundo_apellido || ""} ${usuario.correo_electronico}`.toLowerCase();
+        return texto.includes(filtroUsuarios.toLowerCase());
+      }),
+    [usuariosActivos, filtroUsuarios]
+  );
+
+  const seleccionados = Object.values(registrosAsistencia).filter((registro) => registro.selected).length;
+
+  const seleccionarTodosVisibles = (selected: boolean) => {
+    setRegistrosAsistencia((prev) => {
+      const next = { ...prev };
+      usuariosFiltrados.forEach((usuario) => {
+        next[usuario.id] = {
+          ...(next[usuario.id] ?? { selected: false, asistio: true, evaluacionAprobada: false }),
+          selected,
+        };
+      });
+      return next;
+    });
+  };
+
+  const guardarAsistenciaMasiva = async () => {
+    if (!capacitacionSeleccionadaId) {
+      toast.error("Selecciona una capacitación");
+      return;
+    }
+
+    const usuariosSeleccionados = usuariosActivos.filter(
+      (usuario) => registrosAsistencia[usuario.id]?.selected
+    );
+
+    if (!usuariosSeleccionados.length) {
+      toast.error("Selecciona al menos una persona");
+      return;
+    }
+
+    try {
+      setSavingRegistro(true);
+      const operaciones = usuariosSeleccionados.map(async (usuario) => {
+        const registro = registrosAsistencia[usuario.id];
+        const payload: Partial<AsistenciaCapacitacion> = {
+          capacitacionId: capacitacionSeleccionadaId,
+          usuarioId: usuario.id,
+          asistio: registro.asistio,
+          evaluacionAprobada: registro.asistio ? registro.evaluacionAprobada : false,
+        };
+
+        if (registro.asistenciaId) {
+          return capacitacionService.actualizarAsistencia(registro.asistenciaId, payload);
+        }
+
+        return capacitacionService.registrarAsistencia(payload);
+      });
+
+      const resultado = await Promise.allSettled(operaciones);
+      const exitos = resultado.filter((item) => item.status === "fulfilled").length;
+      const fallidos = resultado.length - exitos;
+
+      if (exitos) {
+        toast.success(`Asistencias guardadas: ${exitos}`);
+      }
+      if (fallidos) {
+        toast.error(`No se pudieron guardar ${fallidos} registros`);
+      }
+
+      await Promise.all([cargarAsistencias(), cargarRegistroCapacitacion(capacitacionSeleccionadaId)]);
+    } catch (error: any) {
+      toast.error(error.message || "Error al guardar asistencias");
+    } finally {
+      setSavingRegistro(false);
+    }
+  };
+
   const filteredAsistencias = asistencias.filter(
     (a) =>
       a.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -59,9 +249,14 @@ const CapacitacionesAsistencia: React.FC = () => {
       a.instructor?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const total = asistencias.length;
+  const total = reporteAuditoria?.total_registros_asistencia ?? asistencias.length;
   const virtuales = asistencias.filter((a) => a.modalidad === "Virtual").length;
   const presenciales = asistencias.filter((a) => a.modalidad === "Presencial").length;
+  const coberturaPromedio = reporteAuditoria?.porcentaje_asistencia_promedio ?? 0;
+  const selectedResumen = selectedCapacitacion ? resumenesPorCapacitacion[selectedCapacitacion.id] : undefined;
+  const allVisiblesSelected =
+    usuariosFiltrados.length > 0 &&
+    usuariosFiltrados.every((usuario) => registrosAsistencia[usuario.id]?.selected);
 
   if (loading) {
     return (
@@ -91,13 +286,16 @@ const CapacitacionesAsistencia: React.FC = () => {
                   <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
                     {total} asistencias registradas
                   </Badge>
+                  <Badge className="bg-[#FEF2F2] text-[#B91C1C] border border-[#FCA5A5]/50">
+                    {usuariosPendientes} usuarios con obligatorias pendientes
+                  </Badge>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Tarjetas de métricas */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -142,6 +340,21 @@ const CapacitacionesAsistencia: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <Card className="bg-[#FFF7ED] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription className="font-bold text-[#9A3412]">Cobertura Promedio</CardDescription>
+                  <CheckCircle className="h-8 w-8 text-[#F97316]" />
+                </div>
+                <CardTitle className="text-4xl font-bold text-[#9A3412]">{coberturaPromedio.toFixed(1)}%</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xs text-[#6B7280] font-medium">
+                  Asistencia promedio por capacitación
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Guía de Gestión */}
@@ -176,6 +389,160 @@ const CapacitacionesAsistencia: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
+            <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+              <CardTitle className="text-lg text-[#1E3A8A]">Registro Masivo de Asistencia</CardTitle>
+              <CardDescription>
+                Selecciona capacitación, marca asistentes y define evaluación aprobada por persona.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Capacitación</Label>
+                  <Select
+                    value={capacitacionSeleccionadaId}
+                    onValueChange={handleSeleccionarCapacitacion}
+                  >
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Seleccionar capacitación" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {capacitacionesDisponibles.map((cap) => (
+                        <SelectItem key={cap.id} value={cap.id}>
+                          {cap.codigo} - {cap.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Buscar persona</Label>
+                  <Input
+                    placeholder="Nombre o correo"
+                    value={filtroUsuarios}
+                    onChange={(e) => setFiltroUsuarios(e.target.value)}
+                    className="rounded-xl"
+                  />
+                </div>
+
+                <div className="flex flex-col justify-end gap-2">
+                  <Badge className="w-fit bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE]">
+                    {seleccionados} personas seleccionadas
+                  </Badge>
+                  <Button
+                    className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl"
+                    onClick={guardarAsistenciaMasiva}
+                    disabled={!capacitacionSeleccionadaId || savingRegistro || loadingRegistro}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {savingRegistro ? "Guardando..." : "Guardar asistencias"}
+                  </Button>
+                </div>
+              </div>
+
+              {capacitacionSeleccionadaId ? (
+                <div className="border border-[#E5E7EB] rounded-2xl overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 bg-[#F8FAFC] border-b border-[#E5E7EB]">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={allVisiblesSelected}
+                        onCheckedChange={(checked) => seleccionarTodosVisibles(Boolean(checked))}
+                      />
+                      <span className="text-sm font-medium text-[#374151]">Seleccionar visibles</span>
+                    </div>
+                    <span className="text-xs text-[#6B7280]">
+                      {usuariosFiltrados.length} usuarios en la lista
+                    </span>
+                  </div>
+
+                  <div className="max-h-[360px] overflow-y-auto">
+                    <Table>
+                      <TableHeader className="bg-white">
+                        <TableRow>
+                          <TableHead className="w-[60px]">Sel.</TableHead>
+                          <TableHead>Usuario</TableHead>
+                          <TableHead>Asistió</TableHead>
+                          <TableHead>Evaluación aprobada</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loadingRegistro ? (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center py-8 text-[#6B7280]">
+                              Cargando registros...
+                            </TableCell>
+                          </TableRow>
+                        ) : usuariosFiltrados.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center py-8 text-[#6B7280]">
+                              No se encontraron usuarios
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          usuariosFiltrados.map((usuario) => {
+                            const registro = registrosAsistencia[usuario.id] || {
+                              selected: false,
+                              asistio: true,
+                              evaluacionAprobada: false,
+                            };
+
+                            return (
+                              <TableRow key={usuario.id} className="hover:bg-[#F5F7FA]">
+                                <TableCell>
+                                  <Checkbox
+                                    checked={registro.selected}
+                                    onCheckedChange={(checked) => toggleSeleccionUsuario(usuario.id, Boolean(checked))}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium text-[#111827]">
+                                      {usuario.nombre} {usuario.primer_apellido}
+                                    </span>
+                                    <span className="text-xs text-[#6B7280]">{usuario.correo_electronico}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Switch
+                                    checked={registro.asistio}
+                                    disabled={!registro.selected}
+                                    onCheckedChange={(checked) =>
+                                      updateRegistroUsuario(usuario.id, {
+                                        asistio: checked,
+                                        evaluacionAprobada: checked ? registro.evaluacionAprobada : false,
+                                      })
+                                    }
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Switch
+                                    checked={registro.evaluacionAprobada}
+                                    disabled={!registro.selected || !registro.asistio}
+                                    onCheckedChange={(checked) =>
+                                      updateRegistroUsuario(usuario.id, {
+                                        evaluacionAprobada: checked,
+                                      })
+                                    }
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-[#CBD5E1] bg-[#F8FAFC] p-6 text-sm text-[#6B7280]">
+                  Selecciona una capacitación para registrar la asistencia de personas.
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -217,13 +584,14 @@ const CapacitacionesAsistencia: React.FC = () => {
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Duración</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Instructor</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Estado</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Asistencia</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A] text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredAsistencias.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-20 text-[#6B7280]">
+                      <TableCell colSpan={8} className="text-center py-20 text-[#6B7280]">
                         <div className="flex flex-col items-center">
                           <GraduationCap className="h-16 w-16 text-gray-300 mb-4" />
                           <p className="text-lg font-medium">
@@ -252,6 +620,15 @@ const CapacitacionesAsistencia: React.FC = () => {
                           <Badge className="bg-[#ECFDF5] text-[#065F46] font-bold px-4 py-2">
                             {item.estado}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="px-6 py-4">
+                          {resumenesPorCapacitacion[item.id] ? (
+                            <Badge className="bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE]">
+                              {resumenesPorCapacitacion[item.id].porcentaje_asistencia.toFixed(1)}%
+                            </Badge>
+                          ) : (
+                            <span className="text-[#9CA3AF] text-sm">N/A</span>
+                          )}
                         </TableCell>
                         <TableCell className="px-6 py-4 text-right">
                           <Tooltip>
@@ -309,6 +686,35 @@ const CapacitacionesAsistencia: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {selectedResumen && (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card className="border-[#E5E7EB]">
+                      <CardContent className="p-4">
+                        <p className="text-xs text-[#6B7280]">Participantes</p>
+                        <p className="text-2xl font-bold text-[#1E3A8A]">{selectedResumen.total_participantes}</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-[#E5E7EB]">
+                      <CardContent className="p-4">
+                        <p className="text-xs text-[#6B7280]">Asistencia</p>
+                        <p className="text-2xl font-bold text-[#065F46]">{selectedResumen.porcentaje_asistencia.toFixed(1)}%</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-[#E5E7EB]">
+                      <CardContent className="p-4">
+                        <p className="text-xs text-[#6B7280]">Aprobados</p>
+                        <p className="text-2xl font-bold text-[#9A3412]">{selectedResumen.evaluacion_aprobada}</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-[#E5E7EB]">
+                      <CardContent className="p-4">
+                        <p className="text-xs text-[#6B7280]">% Aprobación</p>
+                        <p className="text-2xl font-bold text-[#7C3AED]">{selectedResumen.porcentaje_aprobacion.toFixed(1)}%</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
               </div>
 
               <DialogFooter className="gap-4">
