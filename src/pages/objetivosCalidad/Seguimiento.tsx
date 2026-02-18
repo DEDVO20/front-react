@@ -205,12 +205,12 @@ const ObjetivosCalidad: React.FC = () => {
       const user = userStr ? JSON.parse(userStr) : null;
 
       await objetivoCalidadService.createSeguimiento({
-        objetivo_calidad_id: selectedObjetivo.id,
-        fecha_seguimiento: seguimientoForm.periodo ? new Date(seguimientoForm.periodo).toISOString() : new Date().toISOString(),
-        valor_actual: valorParsed,
+        objetivoId: selectedObjetivo.id,
+        valorActual: valorParsed,
         observaciones: seguimientoForm.observaciones,
-        responsable_id: user?.id || undefined,
-      } as any);
+        periodo: seguimientoForm.periodo || new Date().toISOString().split('T')[0],
+        creadoEn: seguimientoForm.periodo ? `${seguimientoForm.periodo}T00:00:00` : new Date().toISOString(),
+      });
 
       toast.success('Seguimiento registrado correctamente');
       await cargarDatos();
