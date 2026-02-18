@@ -85,11 +85,11 @@ const mapSeguimientoFromApi = (raw: any): SeguimientoObjetivo => ({
   id: raw.id,
   objetivoId: raw.objetivo_calidad_id ?? raw.objetivoId,
   valorActual: Number(raw.valor_actual ?? raw.valorActual ?? 0),
-  valorObjetivo: Number(raw.valor_objetivo ?? raw.valorObjetivo ?? 0),
-  porcentajeCumplimiento: Number(raw.porcentaje_cumplimiento ?? raw.porcentajeCumplimiento ?? 0),
-  periodo: raw.periodo ?? "",
+  valorObjetivo: 0, // se calcula en el frontend con valor_meta del objetivo
+  porcentajeCumplimiento: 0, // se calcula en el frontend
+  periodo: raw.fecha_seguimiento ?? raw.periodo ?? "",
   observaciones: raw.observaciones,
-  creadoEn: raw.creado_en ?? raw.creadoEn,
+  creadoEn: raw.creado_en ?? raw.creadoEn ?? raw.fecha_seguimiento,
 });
 
 const mapSeguimientoToApi = (data: Partial<SeguimientoObjetivo>) => ({

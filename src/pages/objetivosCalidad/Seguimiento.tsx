@@ -27,9 +27,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
 
-interface Seguimiento extends SeguimientoObjetivo {}
+interface Seguimiento extends SeguimientoObjetivo { }
 
-const API_URL = 'http://localhost:3000/api';
+
 
 const ObjetivosCalidad: React.FC = () => {
   const [objetivos, setObjetivos] = useState<ObjetivoCalidad[]>([]);
@@ -105,14 +105,21 @@ const ObjetivosCalidad: React.FC = () => {
   };
 
   const handleEdit = (obj: ObjetivoCalidad) => {
+    const toDateInput = (val?: string) => {
+      if (!val) return '';
+      if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return '';
+      return d.toISOString().split('T')[0];
+    };
     setObjetivoDialogMode('edit');
     setObjetivoForm({
       codigo: obj.codigo,
       descripcion: obj.descripcion || '',
       meta: obj.meta || '',
       valorMeta: obj.valorMeta?.toString() || '',
-      periodoInicio: obj.periodoInicio || '',
-      periodoFin: obj.periodoFin || '',
+      periodoInicio: toDateInput(obj.periodoInicio),
+      periodoFin: toDateInput(obj.periodoFin),
       estado: obj.estado || 'planificado'
     });
     setSelectedObjetivo(obj);
@@ -140,32 +147,39 @@ const ObjetivosCalidad: React.FC = () => {
       toast.error("El código es obligatorio");
       return;
     }
+    if (!objetivoForm.descripcion || objetivoForm.descripcion.trim().length < 10) {
+      toast.error('La descripción debe tener al menos 10 caracteres');
+      return;
+    }
 
     try {
       setSavingObjetivo(true);
-      const token = localStorage.getItem('token');
-      const url = objetivoDialogMode === 'create'
-        ? `${API_URL}/objetivos-calidad`
-        : `${API_URL}/objetivos-calidad/${selectedObjetivo?.id}`;
+      const payload = {
+        codigo: objetivoForm.codigo,
+        descripcion: objetivoForm.descripcion,
+        meta: objetivoForm.meta,
+        valorMeta: objetivoForm.valorMeta ? Number(objetivoForm.valorMeta) : undefined,
+        periodoInicio: objetivoForm.periodoInicio,
+        periodoFin: objetivoForm.periodoFin,
+        estado: objetivoForm.estado,
+      };
 
-      const response = await fetch(url, {
-        method: objetivoDialogMode === 'create' ? 'POST' : 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          ...objetivoForm,
-          valorMeta: parseFloat(objetivoForm.valorMeta) || null
-        })
-      });
+      if (objetivoDialogMode === 'create') {
+        await objetivoCalidadService.create(payload);
+      } else if (selectedObjetivo) {
+        await objetivoCalidadService.update(selectedObjetivo.id, payload);
+      }
 
-      if (!response.ok) throw new Error('Error al guardar objetivo');
       await cargarDatos();
       setShowObjetivoDialog(false);
       toast.success(objetivoDialogMode === 'create' ? 'Objetivo creado con éxito' : 'Objetivo actualizado con éxito');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al guardar');
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail;
+      let errorMsg = 'Error al guardar';
+      if (typeof detail === 'string') errorMsg = detail;
+      else if (Array.isArray(detail)) errorMsg = detail.map((e: any) => e.msg || JSON.stringify(e)).join('; ');
+      else if (err?.message) errorMsg = err.message;
+      toast.error(errorMsg);
     } finally {
       setSavingObjetivo(false);
     }
@@ -206,7 +220,7 @@ const ObjetivosCalidad: React.FC = () => {
     } finally {
       setSavingSeguimiento(false);
     }
-  }; 
+  };
 
   const openDeleteDialog = (obj: ObjetivoCalidad) => {
     setDeleteDialog({ open: true, objetivo: obj });
@@ -221,12 +235,7 @@ const ObjetivosCalidad: React.FC = () => {
     if (!obj) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/objetivos-calidad/${obj.id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error('Error al eliminar');
+      await objetivoCalidadService.delete(obj.id);
       await cargarDatos();
       toast.success('Objetivo eliminado correctamente');
       closeDeleteDialog();
@@ -236,7 +245,7 @@ const ObjetivosCalidad: React.FC = () => {
   };
 
   const getSeguimientosObjetivo = (id: string) => seguimientos.filter(s => s.objetivoId === id || (s as any).objetivo_calidad_id === id);
-  
+
   const getUltimoSeguimiento = (id: string) => {
     const segs = getSeguimientosObjetivo(id);
     return segs.sort((a, b) => {
@@ -298,7 +307,7 @@ const ObjetivosCalidad: React.FC = () => {
               <div>
                 <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
                   <Target className="h-9 w-9 text-[#2563EB]" />
-                  Seguimiento Objetivos de Calidad 
+                  Seguimiento Objetivos de Calidad
                 </h1>
                 <p className="text-[#6B7280] mt-2 text-lg">
                   Administra los objetivos de calidad del sistema
@@ -701,7 +710,7 @@ const ObjetivosCalidad: React.FC = () => {
                                 </TableRow>
                               );
                             })}
-                        </TableBody> 
+                        </TableBody>
                       </Table>
                     )}
                   </div>
