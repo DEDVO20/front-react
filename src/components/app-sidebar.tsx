@@ -302,6 +302,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: TrendingUp,
         url: "#",
         items: [
+          { title: "Dashboard", url: "/indicadores/dashboard", permiso: "indicadores.ver" },
           { title: "Tablero", url: "/indicadores/tablero", permiso: "indicadores.ver" },
           { title: "Eficiencia", url: "/indicadores/eficiencia", permiso: "indicadores.ver" },
           { title: "Cumplimiento", url: "/indicadores/cumplimiento", permiso: "indicadores.medir" },
@@ -327,6 +328,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           { title: "Configuración Global", url: "#", permiso: "sistema.configurar" },
           { title: "Migraciones de BD", url: "/sistema/migraciones", permiso: "sistema.migraciones" },
+          { title: "Audit Log", url: "/sistema/audit-log", permiso: "sistema.admin" },
         ],
       },
       {
