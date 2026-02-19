@@ -20,6 +20,7 @@ import DashboardAccionesCorrectivas from "./pages/Acciones_correctivas/Dashboard
 import AprobacionesPendientes from "./pages/documentos/Aprobaciones_Pendientes";
 import RevisionesPendientes from "./pages/documentos/Revisiones_Pendientes";
 import DocumentosObsoletos from "./pages/documentos/Documentos_Obsoletos";
+import DocumentosPublicos from "./pages/documentos/Documentos_Publicos";
 
 import GestionarAreas from "./pages/areas/Gestionar_Areas";
 import AreasResponsables from "./pages/areas/Asignar_Responsables";
@@ -106,6 +107,7 @@ function App() {
             <Route path="/Aprobaciones_Pendientes" element={<AprobacionesPendientes />} />
             <Route path="/Revisiones_Pendientes" element={<RevisionesPendientes />} />
             <Route path="/Documentos_Obsoletos" element={<DocumentosObsoletos />} />
+            <Route path="/Documentos_Publicos" element={<DocumentosPublicos />} />
 
             {/* Áreas */}
             <Route path="/gestionar_areas" element={<GestionarAreas />} />
