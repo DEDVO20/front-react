@@ -174,6 +174,10 @@ export default function MesaDeAyuda() {
             toast.error("Título y descripción son obligatorios");
             return;
         }
+        if (!formData.area_destino_id) {
+            toast.error("Debes seleccionar un área destino");
+            return;
+        }
 
         setSaving(true);
         try {
@@ -496,6 +500,7 @@ export default function MesaDeAyuda() {
                                 <TableHeader className="bg-[#F8FAFC]">
                                     <TableRow>
                                         <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Título</TableHead>
+                                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Área</TableHead>
                                         <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Categoría</TableHead>
                                         <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Prioridad</TableHead>
                                         <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Estado</TableHead>
@@ -506,7 +511,7 @@ export default function MesaDeAyuda() {
                                 <TableBody>
                                     {filteredTickets.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={6} className="text-center py-20 text-[#6B7280]">
+                                            <TableCell colSpan={7} className="text-center py-20 text-[#6B7280]">
                                                 <div className="flex flex-col items-center">
                                                     <LifeBuoy className="h-16 w-16 text-gray-300 mb-4" />
                                                     <p className="text-lg font-medium">
@@ -531,6 +536,9 @@ export default function MesaDeAyuda() {
                                                             {ticket.descripcion || "Sin descripción"}
                                                         </span>
                                                     </div>
+                                                </TableCell>
+                                                <TableCell className="px-6 py-4">
+                                                    {ticket.area_destino_id ? areaNombrePorId.get(ticket.area_destino_id) || "Sin área" : "Sin área"}
                                                 </TableCell>
                                                 <TableCell className="px-6 py-4 capitalize">{ticket.categoria.replace("_", " ")}</TableCell>
                                                 <TableCell className="px-6 py-4">{getPriorityBadge(ticket.prioridad)}</TableCell>
