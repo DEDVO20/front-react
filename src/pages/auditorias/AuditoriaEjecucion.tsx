@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { auditoriaService, Auditoria, HallazgoAuditoria } from '@/services/auditoria.service';
 import { CampoFormulario, FormularioDinamico, formularioDinamicoService } from '@/services/formulario-dinamico.service';
+import { EtapaProceso, etapaProcesoService } from '@/services/etapaProceso.service';
 import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,13 +44,15 @@ export default function AuditoriaEjecucion() {
     const [formularioChecklist, setFormularioChecklist] = useState<FormularioDinamico | null>(null);
     const [camposChecklist, setCamposChecklist] = useState<CampoFormulario[]>([]);
     const [respuestasChecklist, setRespuestasChecklist] = useState<Record<string, { respuestaId?: string; valor: string }>>({});
+    const [etapasProceso, setEtapasProceso] = useState<EtapaProceso[]>([]);
 
     // Estado para formulario de hallazgo
     const [hallazgoForm, setHallazgoForm] = useState<Partial<HallazgoAuditoria>>({
         tipo: 'no_conformidad_menor',
         descripcion: '',
         clausulaIso: '',
-        evidencia: ''
+        evidencia: '',
+        etapaProcesoId: undefined
     });
 
     useEffect(() => {
@@ -68,6 +71,12 @@ export default function AuditoriaEjecucion() {
             setAuditoria(audData);
             setHallazgos(hallazgosData);
             const procesoId = audData.procesoId || (audData as any).proceso_id;
+            if (procesoId) {
+                const etapas = await etapaProcesoService.getByProceso(procesoId);
+                setEtapasProceso(etapas);
+            } else {
+                setEtapasProceso([]);
+            }
             await cargarChecklist(auditoriaId, procesoId);
         } catch (error) {
             console.error('Error al cargar datos:', error);
@@ -127,13 +136,14 @@ export default function AuditoriaEjecucion() {
                 ...hallazgoForm,
                 auditoria_id: id, // Enviar como snake_case para compatibilidad
                 auditoriaId: id,   // Enviar también como camelCase por si acaso
+                proceso_id: auditoria.procesoId,
                 codigo: `HALL-${hallazgos.length + 1}`
             };
 
             await auditoriaService.createHallazgo(payload);
             toast.success('Hallazgo registrado');
             setShowHallazgoModal(false);
-            setHallazgoForm({ tipo: 'no_conformidad_menor', descripcion: '', clausulaIso: '', evidencia: '' });
+            setHallazgoForm({ tipo: 'no_conformidad_menor', descripcion: '', clausulaIso: '', evidencia: '', etapaProcesoId: undefined });
             cargarDatos(id);
         } catch (error: any) {
             console.error('Error detallado:', error);
@@ -511,6 +521,11 @@ export default function AuditoriaEjecucion() {
                                                         {hallazgo.tipo.replace(/_/g, ' ')}
                                                     </Badge>
                                                     <span className="text-xs text-gray-500 font-mono">{hallazgo.clausulaIso && `ISO: ${hallazgo.clausulaIso}`}</span>
+                                                    {hallazgo.etapaProcesoId && (
+                                                        <span className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded px-2 py-0.5">
+                                                            Etapa: {etapasProceso.find((e) => e.id === hallazgo.etapaProcesoId)?.nombre || hallazgo.etapaProcesoId}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <p className="font-bold text-gray-900 text-lg">{hallazgo.descripcion}</p>
                                                 <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100">
@@ -587,6 +602,21 @@ export default function AuditoriaEjecucion() {
                             </div>
                         </div>
                         <div>
+                            <label className="text-sm font-medium mb-1 block">Etapa del proceso afectada (opcional)</label>
+                            <select
+                                className="w-full p-2 border rounded-md"
+                                value={hallazgoForm.etapaProcesoId || ""}
+                                onChange={(e) => setHallazgoForm({ ...hallazgoForm, etapaProcesoId: e.target.value || undefined })}
+                            >
+                                <option value="">Sin etapa específica</option>
+                                {etapasProceso.map((etapa) => (
+                                    <option key={etapa.id} value={etapa.id}>
+                                        {etapa.orden}. {etapa.nombre}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
                             <label className="text-sm font-medium mb-1 block">Descripción del Hallazgo</label>
                             <textarea
                                 className="w-full p-2 border rounded-md min-h-[100px]"
@@ -606,7 +636,15 @@ export default function AuditoriaEjecucion() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowHallazgoModal(false)}>Cancelar</Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setShowHallazgoModal(false);
+                                setHallazgoForm({ tipo: 'no_conformidad_menor', descripcion: '', clausulaIso: '', evidencia: '', etapaProcesoId: undefined });
+                            }}
+                        >
+                            Cancelar
+                        </Button>
                         <Button onClick={handleCrearHallazgo}>Registrar</Button>
                     </DialogFooter>
                 </DialogContent>

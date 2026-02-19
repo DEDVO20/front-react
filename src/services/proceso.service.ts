@@ -92,11 +92,19 @@ export interface EtapaProceso {
   responsable_id?: string;
   tiempo_estimado?: number;
   activa: boolean;
+  es_critica: boolean;
+  tipo_etapa?: 'entrada' | 'transformacion' | 'verificacion' | 'decision' | 'salida';
+  etapa_phva?: 'planear' | 'hacer' | 'verificar' | 'actuar';
+  entradas?: string;
+  salidas?: string;
+  controles?: string;
   criterios_aceptacion?: string;
   documentos_requeridos?: string;
+  registros_requeridos?: string;
   creado_en: string;
   actualizado_en: string;
   responsable_nombre?: string;
+  hallazgos_count?: number;
 }
 
 export interface ProcesoEstadisticas {
@@ -164,6 +172,24 @@ class ProcesoService {
   async obtenerEtapas(procesoId: string): Promise<EtapaProceso[]> {
     const response = await apiClient.get<EtapaProceso[]>(`${this.baseUrl}/${procesoId}/etapas`);
     return response.data;
+  }
+
+  async crearEtapa(data: Omit<EtapaProceso, "id" | "creado_en" | "actualizado_en" | "responsable_nombre" | "hallazgos_count">): Promise<EtapaProceso> {
+    const response = await apiClient.post<EtapaProceso>("/etapas", data);
+    return response.data;
+  }
+
+  async actualizarEtapa(etapaId: string, data: Partial<Omit<EtapaProceso, "id" | "creado_en" | "actualizado_en" | "responsable_nombre" | "hallazgos_count">>): Promise<EtapaProceso> {
+    const response = await apiClient.put<EtapaProceso>(`/etapas/${etapaId}`, data);
+    return response.data;
+  }
+
+  async eliminarEtapa(etapaId: string): Promise<void> {
+    await apiClient.delete(`/etapas/${etapaId}`);
+  }
+
+  async reordenarEtapas(procesoId: string, orden: { id: string; orden: number }[]): Promise<void> {
+    await apiClient.patch(`${this.baseUrl}/${procesoId}/etapas/reordenar`, orden);
   }
 
   /**

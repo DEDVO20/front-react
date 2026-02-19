@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -34,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import procesoService, { Proceso, TipoProceso, EtapaPHVA, EstadoProceso } from "@/services/proceso.service";
+import EtapasProceso from "@/components/procesos/EtapasProceso";
 
 export default function DetalleProceso() {
     const navigate = useNavigate();
@@ -364,6 +366,41 @@ export default function DetalleProceso() {
                                 </p>
                             </div>
                         )}
+                    </CardContent>
+                </Card>
+
+                <Card className="rounded-2xl shadow-sm">
+                    <CardHeader>
+                        <CardTitle className="text-xl">Gestión del Proceso</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Tabs defaultValue="etapas" className="w-full">
+                            <TabsList className="w-full justify-start overflow-x-auto">
+                                <TabsTrigger value="informacion">Información General</TabsTrigger>
+                                <TabsTrigger value="etapas">Etapas</TabsTrigger>
+                                <TabsTrigger value="indicadores">Indicadores</TabsTrigger>
+                                <TabsTrigger value="riesgos">Riesgos</TabsTrigger>
+                                <TabsTrigger value="documentos">Documentos</TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="informacion">
+                                <p className="text-sm text-gray-600">
+                                    La información general del proceso se visualiza en las secciones superiores.
+                                </p>
+                            </TabsContent>
+                            <TabsContent value="etapas">
+                                <EtapasProceso procesoId={proceso.id} />
+                            </TabsContent>
+                            <TabsContent value="indicadores">
+                                <p className="text-sm text-gray-600">Integración de indicadores por etapa disponible en próximas iteraciones.</p>
+                            </TabsContent>
+                            <TabsContent value="riesgos">
+                                <p className="text-sm text-gray-600">Integración de riesgos por etapa disponible en próximas iteraciones.</p>
+                            </TabsContent>
+                            <TabsContent value="documentos">
+                                <p className="text-sm text-gray-600">Integración documental por etapa disponible en próximas iteraciones.</p>
+                            </TabsContent>
+                        </Tabs>
                     </CardContent>
                 </Card>
 

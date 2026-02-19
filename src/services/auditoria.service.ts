@@ -48,6 +48,7 @@ export interface HallazgoAuditoria {
   responsableId?: string;
   estado: string;
   evidencia?: string;
+  etapaProcesoId?: string;
   creadoEn?: string;
   auditoria?: Auditoria;
   responsable?: {
