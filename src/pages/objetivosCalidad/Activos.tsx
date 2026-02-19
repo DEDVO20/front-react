@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Target, TrendingUp, Calendar, User, Filter, Search, Edit, Trash2, Eye, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { objetivoCalidadService, ObjetivoCalidad } from '@/services/objetivoCalidad.service';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { areaService, Area } from '@/services/area.service';
 import { usuarioService, Usuario } from '@/services/usuario.service';
 import { Button } from "@/components/ui/button";
@@ -316,14 +317,7 @@ const ObjetivosActivos: React.FC = () => {
 
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando objetivos de calidad...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando objetivos de calidad..." />;
   }
 
   return (
