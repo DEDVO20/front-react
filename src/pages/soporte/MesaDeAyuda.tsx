@@ -10,6 +10,7 @@ import { uploadService } from "@/services/upload.service";
 import { areaService, Area } from "@/services/area.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import {
     Table,
     TableBody,
@@ -319,12 +320,7 @@ export default function MesaDeAyuda() {
     );
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#2563EB]"></div>
-                <p className="ml-4 text-[#1E3A8A] font-medium">Cargando tickets...</p>
-            </div>
-        );
+        return <LoadingSpinner message="Cargando tickets"/>;
     }
 
     return (
