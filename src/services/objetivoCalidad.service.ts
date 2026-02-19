@@ -85,8 +85,8 @@ const mapSeguimientoFromApi = (raw: any): SeguimientoObjetivo => ({
   id: raw.id,
   objetivoId: raw.objetivo_calidad_id ?? raw.objetivoId,
   valorActual: Number(raw.valor_actual ?? raw.valorActual ?? 0),
-  valorObjetivo: 0, // se calcula en el frontend con valor_meta del objetivo
-  porcentajeCumplimiento: 0, // se calcula en el frontend
+  valorObjetivo: 0,
+  porcentajeCumplimiento: 0, // NOTE: always compute from valorActual/valorMeta at the UI layer
   periodo: raw.fecha_seguimiento ?? raw.periodo ?? "",
   observaciones: raw.observaciones,
   creadoEn: raw.creado_en ?? raw.creadoEn ?? raw.fecha_seguimiento,

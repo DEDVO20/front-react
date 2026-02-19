@@ -274,19 +274,38 @@ const ObjetivosActivos: React.FC = () => {
 
   const calcularProgreso = (objetivo: ObjetivoCalidad) => {
     if (objetivo.estado === 'cumplido') return 100;
-    if (objetivo.estado === 'no_cumplido') return 0;
+
+    // Use the latest seguimiento's valorActual vs the objective's valorMeta
+    const segs = seguimientosMap[objetivo.id] || [];
+    if (segs.length > 0 && objetivo.valorMeta && Number(objetivo.valorMeta) > 0) {
+      const sorted = [...segs].sort((a, b) =>
+        new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime()
+      );
+      const last = sorted[0];
+      const valorActual = Number(last.valorActual ?? 0);
+      const valorMeta = Number(objetivo.valorMeta);
+      return Math.min(Math.round((valorActual / valorMeta) * 100), 100);
+    }
+
+    // Fallback: time-based progress when no seguimientos with meta
     if (objetivo.estado === 'planificado') return 0;
+    if (objetivo.estado === 'no_cumplido') return 0;
 
     const inicio = new Date(objetivo.periodoInicio || '');
     const fin = new Date(objetivo.periodoFin || '');
     const hoy = new Date();
-
     if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) return 0;
-
     const total = fin.getTime() - inicio.getTime();
     const transcurrido = hoy.getTime() - inicio.getTime();
+    return Math.min(Math.max(Math.round((transcurrido / total) * 100), 0), 100);
+  };
 
-    return Math.min(Math.max((transcurrido / total) * 100, 0), 100);
+  const getUltimoSeguimiento = (objetivoId: string) => {
+    const segs = seguimientosMap[objetivoId] || [];
+    if (segs.length === 0) return null;
+    return [...segs].sort((a, b) =>
+      new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime()
+    )[0];
   };
 
   // Preparar data para gráfico de metas vs cumplimiento (usa último seguimiento si existe)
@@ -463,7 +482,6 @@ const ObjetivosActivos: React.FC = () => {
               </div>
             ) : (
               objetivosFiltrados.map((objetivo) => {
-                const progreso = calcularProgreso(objetivo);
                 return (
                   <div key={objetivo.id} className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] p-6 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between mb-4">
@@ -509,20 +527,44 @@ const ObjetivosActivos: React.FC = () => {
                     </div>
 
                     {/* Barra de progreso */}
-                    {objetivo.estado === 'en_curso' && (
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                          <span>Progreso temporal</span>
-                          <span className="font-medium">{progreso.toFixed(0)}%</span>
+                    {(() => {
+                      const ultimoSeg = getUltimoSeguimiento(objetivo.id);
+                      const tieneProgreso = ultimoSeg !== null && objetivo.valorMeta && Number(objetivo.valorMeta) > 0;
+                      const progreso = calcularProgreso(objetivo);
+                      const esTemporal = !tieneProgreso && objetivo.estado === 'en_curso';
+                      if (!tieneProgreso && objetivo.estado !== 'en_curso') return null;
+                      return (
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                            <span className="flex items-center gap-1">
+                              <TrendingUp className="w-3 h-3" />
+                              {tieneProgreso
+                                ? <>
+                                  Avance real
+                                  <span className="ml-2 text-gray-400 text-xs">
+                                    ({Number(ultimoSeg!.valorActual).toLocaleString()} / {Number(objetivo.valorMeta).toLocaleString()})
+                                  </span>
+                                </>
+                                : 'Progreso temporal'
+                              }
+                            </span>
+                            <span className={`font-bold ${progreso >= 80 ? 'text-green-600' : progreso >= 50 ? 'text-amber-600' : 'text-red-500'}`}>
+                              {progreso}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div
+                              className={`h-2.5 rounded-full transition-all ${progreso >= 80 ? 'bg-green-500' : progreso >= 50 ? 'bg-amber-500' : 'bg-blue-500'
+                                }`}
+                              style={{ width: `${progreso}%` }}
+                            />
+                          </div>
+                          {esTemporal && (
+                            <p className="text-xs text-gray-400 mt-1">Basado en tiempo transcurrido. Registra un avance para ver el progreso real.</p>
+                          )}
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full transition-all"
-                            style={{ width: `${progreso}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Info adicional */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
