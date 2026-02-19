@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { accionCorrectivaService, AccionCorrectiva } from "@/services/accionCorrectiva.service";
 import ComentariosAccion from "@/components/calidad/ComentariosAccion";
 import GestorEvidencias from "@/components/calidad/GestorEvidencias";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function SolucionarAccionCorrectiva() {
     const { id } = useParams<{ id: string }>();
@@ -147,14 +148,7 @@ export default function SolucionarAccionCorrectiva() {
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-[#F5F7FA]">
-                <div className="text-center">
-                    <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-[#2563EB] border-t-transparent" />
-                    <p className="mt-4 text-lg font-medium text-[#6B7280]">Cargando...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner message="Cargando" />;
     }
 
     if (!accion) {

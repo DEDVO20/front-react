@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { auditoriaService, ProgramaAuditoria } from '@/services/auditoria.service';
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 const ProgramaAnual: React.FC = () => {
     const [programas, setProgramas] = useState<ProgramaAuditoria[]>([]);
@@ -109,7 +110,7 @@ const ProgramaAnual: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                     {loading ? (
-                        <div className="flex justify-center p-8">Cargando...</div>
+                        <LoadingSpinner message="Cargando" />
                     ) : programas.length === 0 ? (
                         <div className="text-center p-8 text-gray-500">No hay programas registrados.</div>
                     ) : (

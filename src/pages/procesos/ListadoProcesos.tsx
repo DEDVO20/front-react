@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import procesoService, { Proceso, TipoProceso, EstadoProceso, EtapaPHVA } from "@/services/proceso.service";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function ListadoProcesos() {
   const navigate = useNavigate();
@@ -201,14 +202,7 @@ export default function ListadoProcesos() {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-500 mt-4">Cargando procesos...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando Procesos" />;
   }
 
   const totalProcesos = procesos.length;

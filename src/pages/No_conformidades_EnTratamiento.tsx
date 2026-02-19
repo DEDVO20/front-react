@@ -31,6 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface NoConformidadUI {
   id: string;
@@ -136,9 +137,7 @@ export default function NoConformidadesEnTratamiento() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando...</p>
-      </div>
+      <LoadingSpinner message="Cargando" />
     );
   }
 

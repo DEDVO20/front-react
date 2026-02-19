@@ -21,6 +21,7 @@ import {
   UserCheck,
   UserPlus,
 } from "lucide-react";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface Documento {
   id: string;
@@ -318,12 +319,7 @@ export default function VerDocumento() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F5F7FA]">
-        <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-[#2563EB] border-t-transparent" />
-          <p className="mt-4 text-lg font-medium text-[#6B7280]">Cargando documento...</p>
-        </div>
-      </div>
+      <LoadingSpinner message="Cargando Documento" />
     );
   }
 

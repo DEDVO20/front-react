@@ -16,6 +16,7 @@ import {
   TipoEtapaProceso,
   EtapaPhva,
 } from "@/services/etapaProceso.service";
+import LoadingSpinner from "../ui/LoadingSpinner";
 
 type Props = {
   procesoId: string;
@@ -173,7 +174,7 @@ export default function EtapasProceso({ procesoId }: Props) {
   };
 
   if (loading) {
-    return <p className="text-sm text-gray-500">Cargando etapas...</p>;
+    return <LoadingSpinner message="Cargando Etapas" />;
   }
 
   return (

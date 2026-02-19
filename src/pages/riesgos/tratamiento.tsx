@@ -21,6 +21,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
 import { riesgoService, Riesgo } from "@/services/riesgo.service";
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 const TratamientoRiesgos: React.FC = () => {
   const [riesgos, setRiesgos] = useState<Riesgo[]>([]);
@@ -145,11 +146,7 @@ const TratamientoRiesgos: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando tratamientos...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando Tratamientos" />;
   }
 
   return (
@@ -379,8 +376,8 @@ const TratamientoRiesgos: React.FC = () => {
                             {r.estado === 'identificado' && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button 
-                                    size="sm" 
+                                  <Button
+                                    size="sm"
                                     className="rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white"
                                     onClick={() => handleQuickStatusChange(r, 'en_tratamiento')}
                                   >
@@ -394,8 +391,8 @@ const TratamientoRiesgos: React.FC = () => {
                             {r.estado === 'en_tratamiento' && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button 
-                                    size="sm" 
+                                  <Button
+                                    size="sm"
                                     className="rounded-xl bg-[#10B981] hover:bg-[#059669] text-white"
                                     onClick={() => handleQuickStatusChange(r, 'mitigado')}
                                   >
@@ -409,8 +406,8 @@ const TratamientoRiesgos: React.FC = () => {
                             {(r.estado === 'identificado' || r.estado === 'en_tratamiento') && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button 
-                                    size="sm" 
+                                  <Button
+                                    size="sm"
                                     variant="outline"
                                     className="rounded-xl"
                                     onClick={() => handleQuickStatusChange(r, 'aceptado')}
@@ -596,16 +593,16 @@ const TratamientoRiesgos: React.FC = () => {
               )}
 
               <DialogFooter>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowEditDialog(false)} 
+                <Button
+                  variant="outline"
+                  onClick={() => setShowEditDialog(false)}
                   className="rounded-xl"
                   disabled={saving}
                 >
                   Cancelar
                 </Button>
-                <Button 
-                  onClick={handleUpdateTratamiento} 
+                <Button
+                  onClick={handleUpdateTratamiento}
                   className="rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8]"
                   disabled={saving}
                 >

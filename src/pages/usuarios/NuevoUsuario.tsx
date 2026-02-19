@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "@/lib/api";
 import { usuarioService } from "@/services/usuario.service";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface Area {
   id: string;
@@ -283,7 +284,7 @@ export default function FormularioUsuario() {
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-[#2563EB] mx-auto" />
           <p className="mt-4 text-lg font-medium text-[#6B7280]">
-            Cargando {isEditing ? "usuario" : "formulario"}...
+            <LoadingSpinner message={`Cargando ${isEditing ? "usuario" : "formulario"}...`} />
           </p>
         </div>
       </div>

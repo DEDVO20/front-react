@@ -8,6 +8,7 @@ import { areaService, type Area } from "@/services/area.service";
 import ticketService, { type Ticket } from "@/services/ticket.service";
 import { uploadService } from "@/services/upload.service";
 import { getCurrentUser } from "@/services/auth";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 type SolicitudForm = {
   areaId: string;
@@ -278,7 +279,7 @@ export default function DocumentosPublicos() {
 
         <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 md:p-6 shadow-sm">
           {loading ? (
-            <p className="text-sm text-[#6B7280]">Cargando documentos publicos...</p>
+            <LoadingSpinner message="Cargando documentos publicos" />
           ) : documentosFiltrados.length === 0 ? (
             <p className="text-sm text-[#6B7280]">No hay documentos publicos con esos filtros.</p>
           ) : (

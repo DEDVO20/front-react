@@ -29,6 +29,7 @@ import {
   formularioDinamicoService,
 } from "@/services/formulario-dinamico.service";
 import { procesoService, Proceso } from "@/services/proceso.service";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 type FormularioFormState = {
   codigo: string;
@@ -328,16 +329,15 @@ export default function FormulariosAuditoriaAdmin() {
           </CardHeader>
           <CardContent className="space-y-3">
             {loading ? (
-              <p className="text-sm text-gray-500">Cargando...</p>
+              <LoadingSpinner message="Cargando" />
             ) : formularios.length === 0 ? (
               <p className="text-sm text-gray-500">No hay formularios registrados.</p>
             ) : (
               formularios.map((formulario) => (
                 <div
                   key={formulario.id}
-                  className={`border rounded-lg p-3 ${
-                    selectedFormularioId === formulario.id ? "border-blue-500 bg-blue-50" : "border-gray-200"
-                  }`}
+                  className={`border rounded-lg p-3 ${selectedFormularioId === formulario.id ? "border-blue-500 bg-blue-50" : "border-gray-200"
+                    }`}
                 >
                   <div className="flex justify-between items-start gap-2">
                     <button

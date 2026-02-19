@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface Auditoria {
   id: string;
@@ -105,10 +106,10 @@ export default function AuditoriasEnCurso() {
           estado: aud.estado,
           auditorLider: aud.auditorLider
             ? {
-                id: aud.auditorLider.id,
-                nombre: aud.auditorLider.nombre,
-                primerApellido: aud.auditorLider.primerApellido || "",
-              }
+              id: aud.auditorLider.id,
+              nombre: aud.auditorLider.nombre,
+              primerApellido: aud.auditorLider.primerApellido || "",
+            }
             : undefined,
           hallazgosCount,
           progreso: calcularProgreso({
@@ -154,14 +155,7 @@ export default function AuditoriasEnCurso() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F5F7FA]">
-        <div className="text-center">
-          <Activity className="w-12 h-12 text-[#2563EB] animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Cargando auditorías...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando Auditorias" />;
   }
 
   return (

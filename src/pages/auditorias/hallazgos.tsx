@@ -21,6 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import apiClient from "@/lib/api";
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 
 
@@ -655,7 +656,7 @@ const AuditoriasHallazgosView: React.FC = () => {
             {loading ? (
               <div className="py-20 text-center">
                 <Activity className="animate-spin h-12 w-12 text-[#2563EB] mx-auto mb-4" />
-                <p className="text-[#6B7280] font-bold">Procesando información...</p>
+                <LoadingSpinner message="Procesando Informacion" />;
               </div>
             ) : activeTab === 'auditorias' ? (
               <div className="space-y-4">

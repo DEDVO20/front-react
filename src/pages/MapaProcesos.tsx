@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import procesoService, { Proceso, TipoProceso, EstadoProceso } from "@/services/proceso.service";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function MapaProcesos() {
     const navigate = useNavigate();
@@ -48,7 +49,7 @@ export default function MapaProcesos() {
     const [busqueda, setBusqueda] = useState("");
     const [filtroTipo, setFiltroTipo] = useState<string>("todos");
     const [filtroEstado, setFiltroEstado] = useState<string>("todos");
-    
+
     // Estado para el diálogo de eliminación
     const [deleteDialog, setDeleteDialog] = useState<{
         open: boolean;
@@ -365,10 +366,7 @@ export default function MapaProcesos() {
 
                 {/* Procesos Agrupados */}
                 {loading ? (
-                    <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                        <p className="text-gray-500 mt-4">Cargando procesos...</p>
-                    </div>
+                    <LoadingSpinner message="Cargando Procesos" />
                 ) : (
                     <div className="space-y-8">
                         <SeccionProcesos

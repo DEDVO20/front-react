@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ClipboardList, Search, Eye, AlertCircle, Calendar, Activity, RefreshCw, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import {
   Card,
   CardHeader,
@@ -96,11 +97,7 @@ export default function EnProcesoAccionesCorrectivas() {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando" />;
   }
 
   const totalEnProceso = acciones.length;

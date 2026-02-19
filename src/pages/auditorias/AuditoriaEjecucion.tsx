@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 // Importar componentes de formulario si es necesario o simplificar
 import { Input } from "@/components/ui/input";
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 export default function AuditoriaEjecucion() {
     const { id } = useParams<{ id: string }>();
@@ -368,7 +369,7 @@ export default function AuditoriaEjecucion() {
         return <Badge className={`${map[estado] || 'bg-gray-100'} border-none uppercase`}>{estado.replace('_', ' ')}</Badge>;
     };
 
-    if (loading) return <div className="p-8 text-center">Cargando ejecución de auditoría...</div>;
+    if (loading) return <LoadingSpinner message="Cargando" />;
     if (!auditoria) return <div className="p-8 text-center">Auditoría no encontrada</div>;
 
     return (

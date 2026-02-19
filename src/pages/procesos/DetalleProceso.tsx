@@ -36,6 +36,7 @@ import {
 import { toast } from "sonner";
 import procesoService, { Proceso, TipoProceso, EtapaPHVA, EstadoProceso } from "@/services/proceso.service";
 import EtapasProceso from "@/components/procesos/EtapasProceso";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function DetalleProceso() {
     const navigate = useNavigate();
@@ -152,14 +153,7 @@ export default function DetalleProceso() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-[#F5F7FA] p-8 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="text-gray-500 mt-4">Cargando proceso...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner message="Cargando Procesos" />;
     }
 
     if (!proceso) {

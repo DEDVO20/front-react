@@ -23,6 +23,7 @@ import procesoService, {
 } from "@/services/proceso.service";
 import { areaService, Area } from "@/services/area.service";
 import { usuarioService, Usuario } from "@/services/usuario.service";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function FormularioProceso() {
     const navigate = useNavigate();
@@ -145,14 +146,7 @@ export default function FormularioProceso() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-[#F5F7FA] p-8 flex items-center justify-center">
-                <div className="text-center">
-                    <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
-                    <p className="text-gray-500 mt-4">Cargando proceso...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner message="Cargando Procesos" />;
     }
 
     return (

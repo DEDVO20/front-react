@@ -6,6 +6,7 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import tableData from "@/app/dashboard/data.json";
 import { Badge } from "@/components/ui/badge";
 import { Activity, ShieldCheck, User, Mail, Smartphone, Globe } from "lucide-react";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface User {
   id: string;
@@ -31,12 +32,7 @@ export default function Dashboard() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-slate-200" />
-          <p className="text-slate-400 font-medium">Cargando...</p>
-        </div>
-      </div>
+      <LoadingSpinner message="Cargando" />
     );
   }
 

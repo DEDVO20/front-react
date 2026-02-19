@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { NuevaNoConformidadForm } from "@/components/calidad/NuevaNoConformidadForm";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface NoConformidadUI {
   id: string;
@@ -97,9 +98,7 @@ export default function NoConformidadesCerradas() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando...</p>
-      </div>
+      <LoadingSpinner message="Cargando" />
     );
   }
 
@@ -148,11 +147,11 @@ export default function NoConformidadesCerradas() {
                 <DialogHeader>
                   <DialogTitle>Nueva No Conformidad</DialogTitle>
                 </DialogHeader>
-                <NuevaNoConformidadForm 
+                <NuevaNoConformidadForm
                   onSuccess={() => {
                     fetchNoConformidadesCerradas();
                     setIsDialogOpen(false);
-                  }} 
+                  }}
                   onCancel={() => setIsDialogOpen(false)}
                 />
               </DialogContent>
@@ -271,7 +270,7 @@ export default function NoConformidadesCerradas() {
             </Badge>
           </div>
           <div className="p-0">
-            <DataTable 
+            <DataTable
               data={noConformidades}
               actions={[
                 {

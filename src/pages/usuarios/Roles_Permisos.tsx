@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -251,14 +252,7 @@ export default function GestionRolesPermisos() {
   };
 
   if (loading && !dialogState.open) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F5F7FA]">
-        <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-[#2563EB] border-t-transparent" />
-          <p className="mt-4 text-lg font-medium text-[#6B7280]">Cargando...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando Roles y Permisos" />;
   }
 
   const totalPermisosPosibles = permisos.length;
