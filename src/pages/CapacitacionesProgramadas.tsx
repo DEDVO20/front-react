@@ -19,6 +19,7 @@ import {
   PlayCircle,
   StopCircle,
 } from "lucide-react";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -242,7 +243,7 @@ export default function CapacitacionesProgramadas() {
       nombre: cap.nombre,
       codigo: cap.codigo,
       tipoCapacitacion: cap.tipoCapacitacion || '',
-      modalidad: cap.modalidad,
+      modalidad: (cap.modalidad as "Virtual" | "Presencial") || 'Virtual',
       fechaProgramada: fechaFormateada,
       duracionHoras: cap.duracionHoras || '',
       lugar: cap.lugar || '',
@@ -389,11 +390,7 @@ export default function CapacitacionesProgramadas() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando capacitaciones...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando capacitaciones..." />;
   }
 
   return (
@@ -788,13 +785,12 @@ export default function CapacitacionesProgramadas() {
                         </div>
                         <div className="md:col-span-2">
                           <Label className="text-[#6B7280] uppercase text-xs font-bold">Estado</Label>
-                          <Badge className={`mt-2 px-4 py-2 text-lg font-bold ${
-                            selectedCap.estado === "programada"
-                              ? "bg-[#FFF7ED] text-[#F97316]"
-                              : selectedCap.estado === "en_curso"
-                                ? "bg-[#EFF6FF] text-[#1D4ED8]"
-                                : "bg-[#ECFDF5] text-[#065F46]"
-                          }`}>
+                          <Badge className={`mt-2 px-4 py-2 text-lg font-bold ${selectedCap.estado === "programada"
+                            ? "bg-[#FFF7ED] text-[#F97316]"
+                            : selectedCap.estado === "en_curso"
+                              ? "bg-[#EFF6FF] text-[#1D4ED8]"
+                              : "bg-[#ECFDF5] text-[#065F46]"
+                            }`}>
                             {selectedCap.estado === "programada" ? "Pendiente" : selectedCap.estado === "en_curso" ? "En curso" : "Completada"}
                           </Badge>
                         </div>

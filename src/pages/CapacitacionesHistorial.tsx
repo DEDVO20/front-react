@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   ShieldCheck,
 } from "lucide-react";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -77,11 +78,7 @@ const CapacitacionesHistorial = () => {
   const sinEvidencia = reporteAuditoria?.capacitaciones_sin_evidencia ?? 0;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando historial...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando historial..." />;
   }
 
   return (

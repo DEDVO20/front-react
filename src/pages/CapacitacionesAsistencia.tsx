@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { CheckCircle, Users, Laptop, MapPin, Download, GraduationCap, Eye, RefreshCw, Search, Save } from "lucide-react";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -259,11 +260,7 @@ const CapacitacionesAsistencia: React.FC = () => {
     usuariosFiltrados.every((usuario) => registrosAsistencia[usuario.id]?.selected);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando asistencias...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando asistencias..." />;
   }
 
   return (

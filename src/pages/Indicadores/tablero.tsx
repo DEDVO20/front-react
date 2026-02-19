@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { BarChart3, TrendingUp, Target, CheckCircle, AlertCircle, Calendar, Plus, Edit, Trash2 } from "lucide-react";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import {
   Card,
   CardHeader,
@@ -95,7 +96,7 @@ export default function TableroIndicadores() {
         descripcion: form.descripcion || null,
         formula: form.formula || null,
         unidad_medida: form.unidad_medida || null,
-        meta: form.meta !== undefined && form.meta !== null && form.meta !== '' ? Number(form.meta) : null,
+        meta: form.meta !== undefined && form.meta !== null && (form.meta as any) !== '' ? Number(form.meta) : null,
         frecuencia_medicion: form.frecuencia_medicion || 'mensual',
         responsable_medicion_id: form.responsable_medicion_id || null,
         activo: form.activo !== undefined ? form.activo : true
@@ -149,14 +150,7 @@ export default function TableroIndicadores() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent" />
-          <p className="mt-4 text-sm text-gray-500">Cargando indicadores...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando indicadores..." />;
   }
 
   return (
@@ -369,7 +363,7 @@ export default function TableroIndicadores() {
                 <h3 className="text-lg font-bold">{dialogMode === 'create' ? 'Nuevo Indicador' : 'Editar Indicador'}</h3>
                 <button onClick={() => setShowDialog(false)} className="text-sm text-gray-500">Cerrar</button>
               </div>
-              
+
               {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
                   <AlertCircle className="h-4 w-4 inline mr-2" />
@@ -382,41 +376,41 @@ export default function TableroIndicadores() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Código <span className="text-red-500">*</span>
                   </label>
-                  <input 
-                    placeholder="Ej: IND-001" 
-                    value={form?.codigo || ''} 
-                    onChange={(e) => setForm({ ...form, codigo: e.target.value })} 
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                  <input
+                    placeholder="Ej: IND-001"
+                    value={form?.codigo || ''}
+                    onChange={(e) => setForm({ ...form, codigo: e.target.value })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-                
+
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Nombre <span className="text-red-500">*</span>
                   </label>
-                  <input 
-                    placeholder="Ej: Satisfacción del cliente" 
-                    value={form?.nombre || ''} 
-                    onChange={(e) => setForm({ ...form, nombre: e.target.value })} 
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                  <input
+                    placeholder="Ej: Satisfacción del cliente"
+                    value={form?.nombre || ''}
+                    onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-                
+
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Proceso <span className="text-red-500">*</span>
                   </label>
-                  <select 
-                    value={form?.proceso_id || ''} 
-                    onChange={(e) => setForm({ ...form, proceso_id: e.target.value })} 
+                  <select
+                    value={form?.proceso_id || ''}
+                    onChange={(e) => setForm({ ...form, proceso_id: e.target.value })}
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     disabled={loadingProcesos}
                   >
                     <option value="">
-                      {loadingProcesos 
-                        ? 'Cargando procesos...' 
-                        : procesos.length === 0 
-                          ? 'No hay procesos disponibles' 
+                      {loadingProcesos
+                        ? 'Cargando procesos...'
+                        : procesos.length === 0
+                          ? 'No hay procesos disponibles'
                           : 'Seleccione un proceso...'}
                     </option>
                     {procesos.map((proceso) => (
@@ -431,52 +425,52 @@ export default function TableroIndicadores() {
                     </p>
                   )}
                 </div>
-                
+
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Descripción
                   </label>
-                  <textarea 
-                    placeholder="Descripción del indicador" 
-                    value={form?.descripcion || ''} 
-                    onChange={(e) => setForm({ ...form, descripcion: e.target.value })} 
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                  <textarea
+                    placeholder="Descripción del indicador"
+                    value={form?.descripcion || ''}
+                    onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows={3}
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Meta (%)
                   </label>
-                  <input 
-                    placeholder="Ej: 85" 
-                    type="number" 
-                    value={form?.meta ?? ''} 
-                    onChange={(e) => setForm({ ...form, meta: e.target.value ? Number(e.target.value) : undefined })} 
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                  <input
+                    placeholder="Ej: 85"
+                    type="number"
+                    value={form?.meta ?? ''}
+                    onChange={(e) => setForm({ ...form, meta: e.target.value ? Number(e.target.value) : undefined })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Unidad de medida
                   </label>
-                  <input 
-                    placeholder="Ej: porcentaje" 
-                    value={form?.unidad_medida || ''} 
-                    onChange={(e) => setForm({ ...form, unidad_medida: e.target.value })} 
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                  <input
+                    placeholder="Ej: porcentaje"
+                    value={form?.unidad_medida || ''}
+                    onChange={(e) => setForm({ ...form, unidad_medida: e.target.value })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-                
+
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Frecuencia de medición
                   </label>
-                  <select 
-                    value={form?.frecuencia_medicion || 'mensual'} 
-                    onChange={(e) => setForm({ ...form, frecuencia_medicion: e.target.value })} 
+                  <select
+                    value={form?.frecuencia_medicion || 'mensual'}
+                    onChange={(e) => setForm({ ...form, frecuencia_medicion: e.target.value })}
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="diaria">Diaria</option>
@@ -488,16 +482,16 @@ export default function TableroIndicadores() {
                   </select>
                 </div>
               </div>
-              
+
               <div className="flex justify-end gap-3 mt-6">
-                <button 
-                  onClick={() => { setShowDialog(false); setError(null); }} 
+                <button
+                  onClick={() => { setShowDialog(false); setError(null); }}
                   className="px-4 py-2 border rounded-lg hover:bg-gray-50"
                 >
                   Cancelar
                 </button>
-                <button 
-                  onClick={handleSave} 
+                <button
+                  onClick={handleSave}
                   className="px-4 py-2 bg-[#2563EB] text-white rounded-lg hover:bg-[#1D4ED8] disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={!form?.codigo || !form?.nombre || !form?.proceso_id}
                 >
