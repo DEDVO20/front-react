@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-    Plus, Search, RefreshCw, LifeBuoy, Headset, Clock, CheckCircle,
-    AlertTriangle, MoreHorizontal, Ticket as TicketIcon, Edit, Eye, Trash2, Save
+    Plus, Search, RefreshCw, LifeBuoy, Clock, CheckCircle,
+    AlertTriangle, Ticket as TicketIcon, Edit, Eye, Trash2, Save, Paperclip
 } from "lucide-react";
 import { toast } from "sonner";
 import ticketService, { Ticket, TicketCreate, TicketUpdate } from "@/services/ticket.service";
+import { uploadService } from "@/services/upload.service";
+import { areaService, Area } from "@/services/area.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -59,6 +61,7 @@ import {
 
 export default function MesaDeAyuda() {
     const [tickets, setTickets] = useState<Ticket[]>([]);
+    const [areas, setAreas] = useState<Area[]>([]);
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
     const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
@@ -70,8 +73,8 @@ export default function MesaDeAyuda() {
         titulo: "",
         descripcion: "",
         categoria: "soporte",
-        prioridad: "media",
     });
+    const [adjunto, setAdjunto] = useState<File | null>(null);
 
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; ticket: Ticket | null }>({
         open: false,
@@ -86,7 +89,18 @@ export default function MesaDeAyuda() {
 
     useEffect(() => {
         fetchTickets();
+        fetchAreas();
     }, []);
+
+    const fetchAreas = async () => {
+        try {
+            const data = await areaService.getAll();
+            setAreas(data || []);
+        } catch (error) {
+            toast.error("Error al cargar áreas");
+            setAreas([]);
+        }
+    };
 
     // Efecto para abrir ticket desde URL
     useEffect(() => {
@@ -121,8 +135,9 @@ export default function MesaDeAyuda() {
             titulo: "",
             descripcion: "",
             categoria: "soporte",
-            prioridad: "media",
+            area_destino_id: undefined,
         });
+        setAdjunto(null);
         setSelectedTicket(null);
         setOpenDialog(true);
     };
@@ -133,8 +148,10 @@ export default function MesaDeAyuda() {
             titulo: ticket.titulo,
             descripcion: ticket.descripcion,
             categoria: ticket.categoria,
-            prioridad: ticket.prioridad,
+            area_destino_id: ticket.area_destino_id,
+            archivo_adjunto_url: ticket.archivo_adjunto_url,
         });
+        setAdjunto(null);
         setSelectedTicket(ticket);
         setOpenDialog(true);
     };
@@ -157,17 +174,35 @@ export default function MesaDeAyuda() {
 
         setSaving(true);
         try {
+            let archivoAdjuntoUrl = formData.archivo_adjunto_url;
+            if (adjunto) {
+                const subida = await uploadService.uploadEvidencia(adjunto);
+                archivoAdjuntoUrl = subida.url;
+            }
+
+            const payload: TicketCreate = {
+                ...formData,
+                archivo_adjunto_url: archivoAdjuntoUrl,
+                prioridad: inferirPrioridad(formData.categoria, formData.titulo, formData.descripcion),
+            };
+
             if (dialogMode === 'create') {
-                await ticketService.create(formData);
+                await ticketService.create(payload);
                 toast.success("Ticket creado exitosamente");
             } else if (selectedTicket) {
-                await ticketService.update(selectedTicket.id, formData as TicketUpdate);
+                await ticketService.update(selectedTicket.id, payload as TicketUpdate);
                 toast.success("Ticket actualizado exitosamente");
             }
             setOpenDialog(false);
+            setAdjunto(null);
             fetchTickets();
-        } catch (error) {
-            toast.error(dialogMode === 'create' ? "Error al crear el ticket" : "Error al actualizar el ticket");
+        } catch (error: any) {
+            const detalle = error?.response?.data?.detail;
+            const mensaje = Array.isArray(detalle) ? detalle.map((d: any) => d?.msg).filter(Boolean).join(", ") : detalle;
+            toast.error(
+                mensaje ||
+                (dialogMode === 'create' ? "Error al crear el ticket" : "Error al actualizar el ticket")
+            );
         } finally {
             setSaving(false);
         }
@@ -246,6 +281,36 @@ export default function MesaDeAyuda() {
             default:
                 return <Badge variant="outline">{prioridad}</Badge>;
         }
+    };
+
+    const inferirPrioridad = (categoria: string, titulo: string, descripcion: string) => {
+        const texto = `${titulo} ${descripcion}`.toLowerCase();
+        const base: Record<string, "baja" | "media" | "alta" | "critica"> = {
+            soporte: "alta",
+            consulta: "baja",
+            mejora: "media",
+            solicitud_documento: "media",
+        };
+        let prioridad = base[categoria] || "media";
+
+        const criticas = ["caido", "caída", "bloquea", "bloqueado", "produccion", "producción", "urgente", "no funciona", "inoperante"];
+        if (criticas.some((p) => texto.includes(p))) return "critica";
+
+        const altas = ["error", "falla", "incidente", "no puedo", "fallo"];
+        if (altas.some((p) => texto.includes(p)) && (prioridad === "baja" || prioridad === "media")) {
+            prioridad = "alta";
+        }
+        return prioridad;
+    };
+
+    const getLiderAsignadoPorArea = (areaId?: string) => {
+        if (!areaId) return null;
+        const area = areas.find((a) => a.id === areaId);
+        if (!area) return null;
+        const principal = area.asignaciones?.find((a) => a.es_principal) || area.asignaciones?.[0];
+        if (!principal?.usuario) return "Sin líder asignado";
+        const apellido = principal.usuario.primer_apellido ? ` ${principal.usuario.primer_apellido}` : "";
+        return `${principal.usuario.nombre}${apellido}`;
     };
 
     const filteredTickets = tickets.filter(ticket =>
@@ -387,8 +452,8 @@ export default function MesaDeAyuda() {
                                 <div className="flex items-start gap-3 p-4 bg-[#FFF7ED] rounded-xl border border-[#FBBF24]/20">
                                     <div className="h-8 w-8 rounded-lg bg-[#F97316] text-white flex items-center justify-center font-bold flex-shrink-0">3</div>
                                     <div>
-                                        <span className="font-bold text-[#9A3412] block mb-1">Prioridad Correcta</span>
-                                        <span className="text-[#6B7280]">Solo crítica si bloquea operaciones.</span>
+                                        <span className="font-bold text-[#9A3412] block mb-1">Adjunta Evidencia</span>
+                                        <span className="text-[#6B7280]">Carga archivos para acelerar la atención.</span>
                                     </div>
                                 </div>
                             </div>
@@ -550,6 +615,20 @@ export default function MesaDeAyuda() {
                                         <Label className="text-[#6B7280] uppercase text-xs font-bold mb-2 block">Descripción</Label>
                                         <p className="text-[#111827] leading-relaxed whitespace-pre-wrap">{selectedTicket.descripcion}</p>
                                     </div>
+                                    {selectedTicket.archivo_adjunto_url && (
+                                        <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
+                                            <Label className="text-[#6B7280] uppercase text-xs font-bold mb-2 block">Archivo adjunto</Label>
+                                            <a
+                                                href={selectedTicket.archivo_adjunto_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-2 text-[#2563EB] font-medium hover:underline"
+                                            >
+                                                <Paperclip className="h-4 w-4" />
+                                                Ver archivo cargado
+                                            </a>
+                                        </div>
+                                    )}
                                     {selectedTicket.estado !== 'resuelto' && selectedTicket.estado !== 'cerrado' && (
                                         <div className="space-y-4 pt-4 border-t border-[#E5E7EB]">
                                             {!showResolveForm ? (
@@ -636,21 +715,41 @@ export default function MesaDeAyuda() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <Label className="font-bold">Prioridad</Label>
-                                            <Select value={formData.prioridad} onValueChange={(v) => setFormData({ ...formData, prioridad: v })}>
-                                                <SelectTrigger className="rounded-xl">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="baja">Baja</SelectItem>
-                                                    <SelectItem value="media">Media</SelectItem>
-                                                    <SelectItem value="alta">Alta</SelectItem>
-                                                    <SelectItem value="critica">Crítica</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                                    <div className="space-y-2">
+                                        <Label className="font-bold">Área destino</Label>
+                                        <Select
+                                            value={formData.area_destino_id || "__none"}
+                                            onValueChange={(v) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    area_destino_id: v === "__none" ? undefined : v,
+                                                })
+                                            }
+                                        >
+                                            <SelectTrigger className="rounded-xl">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="__none">Sin área</SelectItem>
+                                                {areas.map((area) => (
+                                                    <SelectItem key={area.id} value={area.id}>
+                                                        {area.nombre}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {formData.area_destino_id && (
+                                            <p className="text-xs text-[#6B7280]">
+                                                Se asignará a:{" "}
+                                                <span className="font-semibold text-[#1E3A8A]">
+                                                    {getLiderAsignadoPorArea(formData.area_destino_id)}
+                                                </span>
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="rounded-xl border border-[#DBEAFE] bg-[#EFF6FF] p-4 text-sm text-[#1E3A8A]">
+                                        La prioridad se asigna automáticamente según el tipo de solicitud y su descripción.
                                     </div>
 
                                     <div className="space-y-2">
@@ -664,6 +763,28 @@ export default function MesaDeAyuda() {
                                             rows={6}
                                             className="rounded-xl"
                                         />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="font-bold">Adjuntar documento (opcional)</Label>
+                                        <Input
+                                            type="file"
+                                            onChange={(e) => setAdjunto(e.target.files?.[0] || null)}
+                                            className="rounded-xl"
+                                        />
+                                        <p className="text-xs text-[#6B7280]">
+                                            Puedes subir PDF, Word, Excel o imagen como evidencia de la solicitud.
+                                        </p>
+                                        {formData.archivo_adjunto_url && !adjunto && (
+                                            <a
+                                                href={formData.archivo_adjunto_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-2 text-[#2563EB] text-sm font-medium hover:underline"
+                                            >
+                                                <Paperclip className="h-4 w-4" />
+                                                Ver adjunto actual
+                                            </a>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -723,4 +844,3 @@ export default function MesaDeAyuda() {
         </div>
     );
 }
-

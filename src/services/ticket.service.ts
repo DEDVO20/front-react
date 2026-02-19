@@ -36,7 +36,7 @@ export interface TicketCreate {
     titulo: string;
     descripcion: string;
     categoria: string;
-    prioridad: string;
+    prioridad?: string;
     area_destino_id?: string;
     documento_publico_id?: string;
     archivo_adjunto_url?: string;
