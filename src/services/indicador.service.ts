@@ -26,6 +26,28 @@ export interface Indicador {
   };
 }
 
+export interface MedicionIndicador {
+  id: string;
+  indicador_id: string;
+  periodo: string;
+  valor: number;
+  meta?: number | null;
+  cumple_meta?: boolean | null;
+  observaciones?: string | null;
+  registrado_por?: string | null;
+  creado_en: string;
+  actualizado_en: string;
+}
+
+export interface TendenciaIndicador {
+  indicador_id: string;
+  total_mediciones: number;
+  promedio: number;
+  ultimo_valor?: number | null;
+  ultimo_periodo?: string | null;
+  tendencia: "subiendo" | "bajando" | "estable" | "sin_datos" | string;
+}
+
 export const indicadorService = {
   // Obtener todos los indicadores
   async getAll(filters?: { proceso_id?: string; activo?: boolean }): Promise<Indicador[]> {
@@ -69,5 +91,25 @@ export const indicadorService = {
   // Eliminar indicador
   async delete(id: string): Promise<void> {
     await apiClient.delete(`/indicadores/${id}`);
+  },
+
+  async registrarMedicion(id: string, data: {
+    periodo: string;
+    valor: number;
+    meta?: number;
+    observaciones?: string;
+  }): Promise<MedicionIndicador> {
+    const response = await apiClient.post(`/indicadores/${id}/mediciones`, data);
+    return response.data;
+  },
+
+  async getMediciones(id: string): Promise<MedicionIndicador[]> {
+    const response = await apiClient.get(`/indicadores/${id}/mediciones`);
+    return response.data;
+  },
+
+  async getTendencia(id: string): Promise<TendenciaIndicador> {
+    const response = await apiClient.get(`/indicadores/${id}/tendencia`);
+    return response.data;
   },
 };

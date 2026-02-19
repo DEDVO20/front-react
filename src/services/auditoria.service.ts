@@ -301,6 +301,16 @@ export const auditoriaService = {
     return response.json();
   },
 
+  async getAllHallazgos(filters?: { estado?: string; tipo_hallazgo?: string }): Promise<HallazgoAuditoria[]> {
+    const params = new URLSearchParams();
+    if (filters?.estado) params.append("estado", filters.estado);
+    if (filters?.tipo_hallazgo) params.append("tipo_hallazgo", filters.tipo_hallazgo);
+    const url = `${API_URL}/hallazgos-auditoria${params.toString() ? `?${params.toString()}` : ""}`;
+    const response = await fetch(url, { headers: getAuthHeaders() });
+    if (!response.ok) throw new Error("Error al obtener hallazgos");
+    return response.json();
+  },
+
   // Crear hallazgo
   async createHallazgo(data: Partial<HallazgoAuditoria>): Promise<HallazgoAuditoria> {
     const response = await fetch(`${API_URL}/hallazgos-auditoria`, {
