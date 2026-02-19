@@ -84,6 +84,7 @@ export default function MesaDeAyuda() {
 
     const [showResolveForm, setShowResolveForm] = useState(false);
     const [resolutionText, setResolutionText] = useState("");
+    const [resolutionFile, setResolutionFile] = useState<File | null>(null);
 
 
     const [searchParams] = useSearchParams();
@@ -162,6 +163,7 @@ export default function MesaDeAyuda() {
         setSelectedTicket(ticket);
         setShowResolveForm(false);
         setResolutionText("");
+        setResolutionFile(null);
         setOpenDialog(true);
     };
 
@@ -214,11 +216,16 @@ export default function MesaDeAyuda() {
 
         setSaving(true);
         try {
+            if (resolutionFile) {
+                const subida = await uploadService.uploadEvidencia(resolutionFile);
+                await ticketService.update(selectedTicket.id, { archivo_adjunto_url: subida.url });
+            }
             await ticketService.resolver(selectedTicket.id, { solucion: resolutionText });
             toast.success("Ticket resuelto exitosamente");
             setOpenDialog(false);
             setShowResolveForm(false);
             setResolutionText("");
+            setResolutionFile(null);
             fetchTickets();
         } catch (error) {
             toast.error("Error al resolver el ticket");
@@ -647,10 +654,21 @@ export default function MesaDeAyuda() {
                                                             rows={4}
                                                         />
                                                     </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="font-bold text-[#166534]">Documento de solución (opcional)</Label>
+                                                        <Input
+                                                            type="file"
+                                                            onChange={(e) => setResolutionFile(e.target.files?.[0] || null)}
+                                                            className="bg-white"
+                                                        />
+                                                    </div>
                                                     <div className="flex justify-end gap-2">
                                                         <Button
                                                             variant="ghost"
-                                                            onClick={() => setShowResolveForm(false)}
+                                                            onClick={() => {
+                                                                setShowResolveForm(false);
+                                                                setResolutionFile(null);
+                                                            }}
                                                             className="text-[#6B7280]"
                                                         >
                                                             Cancelar
