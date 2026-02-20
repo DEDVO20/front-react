@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { indicadorService, Indicador, TendenciaIndicador } from "@/services/indicador.service";
 import { procesoService, Proceso } from "@/services/proceso.service";
+import { usuarioService, Usuario } from "@/services/usuario.service";
 import DashboardPHVA from "@/components/dashboard/DashboardPHVA";
 import { dashboardPhvaService, DashboardPHVAMetrics } from "@/services/dashboardPhva.service";
 
@@ -72,8 +73,10 @@ function BarraProgreso({ valor, meta }: { valor: number | null; meta: number | n
 export default function TableroIndicadores() {
   const [indicadores, setIndicadores] = useState<Indicador[]>([]);
   const [procesos, setProcesos] = useState<Proceso[]>([]);
+  const [usuariosActivos, setUsuariosActivos] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingProcesos, setLoadingProcesos] = useState(true);
+  const [loadingUsuarios, setLoadingUsuarios] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
@@ -87,6 +90,7 @@ export default function TableroIndicadores() {
   useEffect(() => {
     fetchIndicadores();
     fetchProcesos();
+    fetchUsuariosActivos();
   }, []);
 
   const fetchIndicadores = async () => {
@@ -143,6 +147,19 @@ export default function TableroIndicadores() {
     }
   };
 
+  const fetchUsuariosActivos = async () => {
+    try {
+      setLoadingUsuarios(true);
+      const data = await usuarioService.getAllActive();
+      setUsuariosActivos(data);
+    } catch (error) {
+      console.error("Error cargando usuarios:", error);
+      setUsuariosActivos([]);
+    } finally {
+      setLoadingUsuarios(false);
+    }
+  };
+
   const handleOpenCreate = () => {
     setDialogMode('create');
     setForm({});
@@ -158,9 +175,12 @@ export default function TableroIndicadores() {
       codigo: ind.codigo,
       nombre: ind.nombre,
       descripcion: ind.descripcion,
+      formula: ind.formula,
       meta: ind.meta,
       unidad_medida: ind.unidad_medida,
       frecuencia_medicion: ind.frecuencia_medicion,
+      responsable_medicion_id: ind.responsable_medicion_id,
+      activo: ind.activo,
     });
     setShowDialog(true);
   };
@@ -568,6 +588,17 @@ export default function TableroIndicadores() {
                 />
               </div>
 
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fórmula</label>
+                <textarea
+                  placeholder="Ej: (Pedidos a tiempo / Pedidos totales) * 100"
+                  value={form?.formula || ''}
+                  onChange={(e) => setForm({ ...form, formula: e.target.value })}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={2}
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Meta (%)</label>
                 <input
@@ -602,6 +633,25 @@ export default function TableroIndicadores() {
                   <option value="trimestral">Trimestral</option>
                   <option value="semestral">Semestral</option>
                   <option value="anual">Anual</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Responsable de medición</label>
+                <select
+                  value={form?.responsable_medicion_id || ''}
+                  onChange={(e) => setForm({ ...form, responsable_medicion_id: e.target.value || undefined })}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={loadingUsuarios}
+                >
+                  <option value="">
+                    {loadingUsuarios ? 'Cargando usuarios...' : 'Sin responsable asignado'}
+                  </option>
+                  {usuariosActivos.map((usuario) => (
+                    <option key={usuario.id} value={usuario.id}>
+                      {usuario.nombre} {usuario.primer_apellido}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
