@@ -36,6 +36,7 @@ import {
 import { toast } from "sonner";
 import procesoService, { Proceso, TipoProceso, EtapaPHVA, EstadoProceso } from "@/services/proceso.service";
 import EtapasProceso from "@/components/procesos/EtapasProceso";
+import ResponsablesProceso from "@/components/procesos/ResponsablesProceso";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function DetalleProceso() {
@@ -371,6 +372,7 @@ export default function DetalleProceso() {
                         <Tabs defaultValue="etapas" className="w-full">
                             <TabsList className="w-full justify-start overflow-x-auto">
                                 <TabsTrigger value="informacion">Información General</TabsTrigger>
+                                <TabsTrigger value="equipo">Equipo</TabsTrigger>
                                 <TabsTrigger value="etapas">Etapas</TabsTrigger>
                                 <TabsTrigger value="indicadores">Indicadores</TabsTrigger>
                                 <TabsTrigger value="riesgos">Riesgos</TabsTrigger>
@@ -381,6 +383,9 @@ export default function DetalleProceso() {
                                 <p className="text-sm text-gray-600">
                                     La información general del proceso se visualiza en las secciones superiores.
                                 </p>
+                            </TabsContent>
+                            <TabsContent value="equipo">
+                                <ResponsablesProceso procesoId={proceso.id} />
                             </TabsContent>
                             <TabsContent value="etapas">
                                 <EtapasProceso procesoId={proceso.id} />
