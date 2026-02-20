@@ -55,7 +55,7 @@ import TableroIndicadores from "./pages/Indicadores/tablero";
 import EficaciaIndicadores from "./pages/Indicadores/eficacia";
 import EficienciaIndicadores from "./pages/Indicadores/eficiencia";
 import CumplimientoIndicadores from "./pages/Indicadores/cumplimiento";
-import IndicadoresDashboardPage from "./pages/Indicadores/dashboard";
+
 
 import CapacitacionesProgramadas from "./pages/CapacitacionesProgramadas";
 import CapacitacionesHistorial from "./pages/CapacitacionesHistorial";
@@ -162,7 +162,7 @@ function App() {
 
             {/* Indicadores */}
             <Route path="/indicadores/tablero" element={<TableroIndicadores />} />
-            <Route path="/indicadores/dashboard" element={<IndicadoresDashboardPage />} />
+            <Route path="/indicadores/dashboard" element={<Navigate to="/indicadores/tablero" replace />} />
             <Route path="/indicadores/eficacia" element={<EficaciaIndicadores />} />
             <Route path="/indicadores/eficiencia" element={<EficienciaIndicadores />} />
             <Route path="/indicadores/cumplimiento" element={<CumplimientoIndicadores />} />

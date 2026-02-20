@@ -331,7 +331,7 @@ export default function MesaDeAyuda() {
     );
 
     if (loading) {
-        return <LoadingSpinner message="Cargando tickets"/>;
+        return <LoadingSpinner message="Cargando tickets" />;
     }
 
     return (
@@ -538,7 +538,7 @@ export default function MesaDeAyuda() {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="px-6 py-4">
-                                                    {ticket.area_destino_id ? areaNombrePorId.get(ticket.area_destino_id) || "Sin área" : "Sin área"}
+                                                    {ticket.area_destino_id ? (areas.find(a => a.id === ticket.area_destino_id)?.nombre || "Sin área") : "Sin área"}
                                                 </TableCell>
                                                 <TableCell className="px-6 py-4 capitalize">{ticket.categoria.replace("_", " ")}</TableCell>
                                                 <TableCell className="px-6 py-4">{getPriorityBadge(ticket.prioridad)}</TableCell>

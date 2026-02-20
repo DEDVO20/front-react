@@ -302,7 +302,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: TrendingUp,
         url: "#",
         items: [
-          { title: "Dashboard", url: "/indicadores/dashboard", permiso: "indicadores.ver" },
           { title: "Tablero", url: "/indicadores/tablero", permiso: "indicadores.ver" },
           { title: "Eficiencia", url: "/indicadores/eficiencia", permiso: "indicadores.ver" },
           { title: "Cumplimiento", url: "/indicadores/cumplimiento", permiso: "indicadores.medir" },
