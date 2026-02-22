@@ -1,23 +1,18 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   FileText,
   Download,
   Calendar,
   Filter,
-  TrendingUp,
   AlertCircle,
   CheckCircle,
   Clock,
   BarChart3,
-  PieChart,
-  Users,
   FileCheck,
-  Target,
-  Activity
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { analyticsService, DashboardMetrics } from "@/services/analytics";
-import { reportsService } from "@/services/reports";
+import { ReportItem, reportsService } from "@/services/reports";
 import { toast } from "sonner";
 import {
   Card,
@@ -27,25 +22,128 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+type CategoryFilter = 'todos' | 'auditorias' | 'noconformidades';
+type PeriodFilter = 'semana' | 'mes' | 'trimestre' | 'año';
+
+interface ReportCategoryOption {
+  id: CategoryFilter;
+  name: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  count: number;
+}
+
+const PERIOD_DAYS: Record<PeriodFilter, number> = {
+  semana: 7,
+  mes: 30,
+  trimestre: 90,
+  año: 365,
+};
+
+const STATUS_STYLES: Record<'completado' | 'procesando' | 'error', string> = {
+  completado: 'bg-[#ECFDF5] text-[#10B981] border-[#10B981]/20',
+  procesando: 'bg-[#EFF6FF] text-[#2563EB] border-[#2563EB]/20',
+  error: 'bg-[#FEF2F2] text-[#EF4444] border-[#EF4444]/20',
+};
+
+const normalizeCategory = (category: string | undefined | null): CategoryFilter | null => {
+  if (!category) {
+    return null;
+  }
+
+  const raw = category.toLowerCase().trim();
+  const normalized = raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[_\s-]+/g, '');
+
+  if (normalized.includes('auditoria')) {
+    return 'auditorias';
+  }
+  if (normalized.includes('noconformidad')) {
+    return 'noconformidades';
+  }
+  return null;
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  completado: 'Completado',
+  completada: 'Completada',
+  cerrada: 'Cerrada',
+  cerrado: 'Cerrado',
+  procesando: 'Procesando',
+  en_curso: 'En curso',
+  planificada: 'Planificada',
+  planificado: 'Planificado',
+  error: 'Error',
+  fallido: 'Error',
+  cancelada: 'Cancelada',
+  cancelado: 'Cancelado',
+};
+
+const normalizeStatus = (status: string): 'completado' | 'procesando' | 'error' => {
+  const statusKey = (status || '').toLowerCase();
+  if (['error', 'fallido', 'cancelada', 'cancelado'].includes(statusKey)) {
+    return 'error';
+  }
+  if (['completado', 'completada', 'cerrada', 'cerrado'].includes(statusKey)) {
+    return 'completado';
+  }
+  if (['procesando', 'en_curso', 'planificada', 'planificado'].includes(statusKey)) {
+    return 'procesando';
+  }
+  return 'procesando';
+};
+
+const formatStatusLabel = (status: string) => {
+  const statusKey = (status || '').toLowerCase();
+  if (!statusKey) {
+    return 'Sin estado';
+  }
+  return STATUS_LABELS[statusKey] || statusKey.replaceAll('_', ' ');
+};
+
+const formatDate = (dateValue: string) => {
+  const parsedDate = new Date(dateValue);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return 'Fecha no disponible';
+  }
+  return parsedDate.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
 const ReportesView = () => {
-  const [selectedCategory, setSelectedCategory] = useState('todos');
-  const [selectedPeriod, setSelectedPeriod] = useState('mes');
-
-
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('todos');
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodFilter>('mes');
 
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [reportsList, setReportsList] = useState<any[]>([]);
+  const [reportsList, setReportsList] = useState<ReportItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const [dashData, reportData] = await Promise.all([
+        const [dashDataResult, reportDataResult] = await Promise.allSettled([
           analyticsService.getAllDashboardData(),
           reportsService.getAvailableReports()
         ]);
-        setMetrics(dashData);
-        setReportsList(reportData);
+
+        if (dashDataResult.status === 'fulfilled') {
+          setMetrics(dashDataResult.value);
+        } else {
+          console.error("Error fetching analytics:", dashDataResult.reason);
+          toast.error("No se pudieron cargar las métricas del dashboard");
+        }
+
+        if (reportDataResult.status === 'fulfilled') {
+          setReportsList(Array.isArray(reportDataResult.value) ? reportDataResult.value : []);
+        } else {
+          console.error("Error fetching reports list:", reportDataResult.reason);
+          setReportsList([]);
+          toast.error("No se pudieron cargar los reportes disponibles");
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error("Error al cargar los datos");
@@ -72,45 +170,59 @@ const ReportesView = () => {
     { label: 'NC En Tratamiento', value: loading ? '...' : ncEnTratamiento.toString(), change: 'Pendientes', icon: Clock, color: 'bg-orange-500' }
   ];
 
-  const totalIndicadores = metrics?.calidad?.indicadores_total || 0;
-  const totalObjetivos = metrics?.calidad?.objetivos_total || 0;
-  const totalNC = Object.values(metrics?.calidad?.noconformidades || {}).reduce((a, b) => a + b, 0);
+  const reportCategories = useMemo<ReportCategoryOption[]>(() => {
+    const auditoriasCount = reportsList.filter((report) => normalizeCategory(report.category) === 'auditorias').length;
+    const noconformidadesCount = reportsList.filter((report) => normalizeCategory(report.category) === 'noconformidades').length;
+    return [
+      { id: 'todos', name: 'Todos los Reportes', icon: FileText, count: reportsList.length },
+      { id: 'auditorias', name: 'Auditorías', icon: FileCheck, count: auditoriasCount },
+      { id: 'noconformidades', name: 'No Conformidades', icon: AlertCircle, count: noconformidadesCount },
+    ];
+  }, [reportsList]);
 
-  const reportCategories = [
-    { id: 'todos', name: 'Todos los Reportes', icon: FileText, count: reportsList.length },
-    { id: 'auditorias', name: 'Auditorías', icon: FileCheck, count: totalAuditorias },
-    { id: 'noconformidades', name: 'No Conformidades', icon: AlertCircle, count: totalNC },
-    { id: 'objetivos', name: 'Objetivos de Calidad', icon: Target, count: totalObjetivos },
-    { id: 'indicadores', name: 'Indicadores', icon: TrendingUp, count: totalIndicadores }
-  ];
+  const filteredReports = useMemo(() => {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - PERIOD_DAYS[selectedPeriod]);
 
-  const quickActions = [
-    { icon: BarChart3, label: 'Reporte Ejecutivo', color: 'bg-blue-500' },
-    { icon: PieChart, label: 'Panel Analítico', color: 'bg-purple-500' },
-    { icon: Users, label: 'Reporte de Personal', color: 'bg-green-500' },
-    { icon: Activity, label: 'Métricas en Tiempo Real', color: 'bg-orange-500' }
-  ];
+    return reportsList
+      .filter((report) => {
+        if (selectedCategory === 'todos') {
+          return true;
+        }
+        return normalizeCategory(report.category) === selectedCategory;
+      })
+      .filter((report) => {
+        const reportDate = new Date(report.date);
+        if (Number.isNaN(reportDate.getTime())) {
+          return true;
+        }
+        return reportDate >= cutoffDate;
+      });
+  }, [reportsList, selectedCategory, selectedPeriod]);
 
-  const filteredReports = selectedCategory === 'todos'
-    ? reportsList
-    : reportsList.filter(r => r.category === selectedCategory);
+  const handleReportDownload = (report: ReportItem) => {
+    const category = normalizeCategory(report.category);
 
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      completado: 'bg-green-100 text-green-800 border-green-200',
-      procesando: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      error: 'bg-red-100 text-red-800 border-red-200'
-    };
-    const labels: Record<string, string> = {
-      completado: 'Completado',
-      procesando: 'Procesando',
-      error: 'Error'
-    };
-    return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
-        {labels[status] || status}
-      </span>
-    );
+    if (category === 'auditorias') {
+      const codigo = report.codigo || report.id || 'report';
+      toast.promise(reportsService.downloadAuditoriaReport(String(report.id), String(codigo)), {
+        loading: 'Generando reporte de auditoría...',
+        success: 'Descargado correctamente',
+        error: 'Error al generar reporte'
+      });
+      return;
+    }
+
+    if (category === 'noconformidades') {
+      toast.promise(reportsService.downloadNCReport(), {
+        loading: 'Generando reporte...',
+        success: 'Descargado correctamente',
+        error: 'Error al generar reporte'
+      });
+      return;
+    }
+
+    toast.info("Descarga no disponible para este tipo de reporte aún");
   };
 
   return (
@@ -226,7 +338,7 @@ const ReportesView = () => {
               <CardContent className="p-6">
                 <select
                   value={selectedPeriod}
-                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  onChange={(e) => setSelectedPeriod(e.target.value as PeriodFilter)}
                   className="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] focus:ring-2 focus:ring-[#2563EB]/20 outline-none transition-all font-medium text-[#1E3A8A]"
                 >
                   <option value="semana">Última Semana</option>
@@ -249,71 +361,63 @@ const ReportesView = () => {
               </div>
 
               <div className="divide-y divide-[#E5E7EB]">
-                {filteredReports.map((report) => (
-                  <div key={report.id} className="p-6 hover:bg-[#EFF6FF] transition-colors duration-200 group">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-4 mb-2">
-                          <div className="bg-[#E0EDFF] p-3 rounded-xl">
-                            <FileText className="text-[#2563EB]" size={24} />
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-[#111827] text-lg group-hover:text-[#2563EB] transition-colors">
-                              {report.title}
-                            </h3>
-                            <p className="text-[#6B7280] text-sm mt-1">
-                              {report.description}
-                            </p>
-                          </div>
-                        </div>
+                {filteredReports.length === 0 ? (
+                  <div className="p-10 text-center">
+                    <p className="font-semibold text-[#1E3A8A]">No hay reportes para los filtros seleccionados</p>
+                    <p className="text-sm text-[#6B7280] mt-2">Ajusta la categoría o el rango de tiempo para ver resultados.</p>
+                  </div>
+                ) : (
+                  filteredReports.map((report) => {
+                    const normalizedStatus = normalizeStatus(report.status);
+                    const reportCategory = normalizeCategory(report.category);
+                    const canDownload = reportCategory === 'auditorias' || reportCategory === 'noconformidades';
+                    return (
+                      <div key={report.id} className="p-6 hover:bg-[#EFF6FF] transition-colors duration-200 group">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-4 mb-2">
+                              <div className="bg-[#E0EDFF] p-3 rounded-xl">
+                                <FileText className="text-[#2563EB]" size={24} />
+                              </div>
+                              <div>
+                                <h3 className="font-bold text-[#111827] text-lg group-hover:text-[#2563EB] transition-colors">
+                                  {report.title}
+                                </h3>
+                                <p className="text-[#6B7280] text-sm mt-1">
+                                  {report.description}
+                                </p>
+                              </div>
+                            </div>
 
-                        <div className="flex flex-wrap items-center gap-4 mt-6 text-sm">
-                          <span className="flex items-center gap-2 text-[#6B7280] font-medium">
-                            <Clock size={16} />
-                            {new Date(report.date).toLocaleDateString('es-ES', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </span>
-                          <Badge className="bg-[#F8FAFC] border-[#E5E7EB] text-[#1E3A8A] font-bold">
-                            {report.format || 'PDF'}
-                          </Badge>
-                          {report.size && <span className="text-[#6B7280] font-mono">{report.size}</span>}
-                          <span className={`px-3 py-1 rounded-lg text-xs font-bold border ${report.status === 'completado' ? 'bg-[#ECFDF5] text-[#10B981] border-[#10B981]/20' :
-                            report.status === 'procesando' ? 'bg-[#EFF6FF] text-[#2563EB] border-[#2563EB]/20' :
-                              'bg-[#FEF2F2] text-[#EF4444] border-[#EF4444]/20'
-                            }`}>
-                            {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                          </span>
+                            <div className="flex flex-wrap items-center gap-4 mt-6 text-sm">
+                              <span className="flex items-center gap-2 text-[#6B7280] font-medium">
+                                <Clock size={16} />
+                                {formatDate(report.date)}
+                              </span>
+                              <Badge className="bg-[#F8FAFC] border-[#E5E7EB] text-[#1E3A8A] font-bold">
+                                {report.format || 'PDF'}
+                              </Badge>
+                              {report.size && <span className="text-[#6B7280] font-mono">{report.size}</span>}
+                              <span className={`px-3 py-1 rounded-lg text-xs font-bold border ${STATUS_STYLES[normalizedStatus]}`}>
+                                {formatStatusLabel(report.status)}
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleReportDownload(report)}
+                            aria-disabled={!canDownload}
+                            className={`p-4 rounded-xl border transition-all ${canDownload
+                              ? 'bg-[#F8FAFC] hover:bg-[#2563EB] text-[#6B7280] hover:text-white border-[#E5E7EB]'
+                              : 'bg-[#F3F4F6] text-[#9CA3AF] border-[#E5E7EB] cursor-not-allowed'
+                              }`}>
+                            <Download size={22} />
+                          </button>
                         </div>
                       </div>
-
-                      <button
-                        onClick={() => {
-                          if (report.category === 'auditorias') {
-                            const codigo = report.codigo || report.id || 'report';
-                            toast.promise(reportsService.downloadAuditoriaReport(String(report.id), String(codigo)), {
-                              loading: 'Generando reporte de auditoría...',
-                              success: 'Descargado correctamente',
-                              error: 'Error al generar reporte'
-                            })
-                          } else if (report.category === 'noconformidades') {
-                            toast.promise(reportsService.downloadNCReport(), {
-                              loading: 'Generando reporte...',
-                              success: 'Descargado correctamente',
-                              error: 'Error al generar reporte'
-                            })
-                          } else {
-                            toast.info("Descarga no disponible para este tipo de reporte aún");
-                          }
-                        }}
-                        className="p-4 rounded-xl bg-[#F8FAFC] hover:bg-[#2563EB] text-[#6B7280] hover:text-white border border-[#E5E7EB] transition-all">
-                        <Download size={22} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })
+                )}
               </div>
             </div>
 
