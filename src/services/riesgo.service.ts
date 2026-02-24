@@ -41,8 +41,9 @@ const getAuthHeaders = () => {
 
 export const riesgoService = {
   // Obtener todos los riesgos
-  async getAll(filters?: { categoria?: string; nivelRiesgo?: string; estado?: string }): Promise<Riesgo[]> {
+  async getAll(filters?: { proceso_id?: string; categoria?: string; nivelRiesgo?: string; estado?: string }): Promise<Riesgo[]> {
     const params = new URLSearchParams();
+    if (filters?.proceso_id) params.append("proceso_id", filters.proceso_id);
     if (filters?.categoria) params.append("categoria", filters.categoria);
     if (filters?.nivelRiesgo) params.append("nivelRiesgo", filters.nivelRiesgo);
     if (filters?.estado) params.append("estado", filters.estado);

@@ -55,6 +55,39 @@ class DocumentoService {
     return response.data;
   }
 
+  async getProcesosDeDocumento(documentoId: string): Promise<{ proceso_id: string }[]> {
+    const response = await apiClient.get(`/documentos/${documentoId}/procesos`);
+    return response.data;
+  }
+
+  async getByProceso(procesoId: string): Promise<DocumentoResponse[]> {
+    const docs = await this.getAll();
+    const relaciones = await Promise.all(
+      docs.map(async (doc) => {
+        try {
+          const procesos = await this.getProcesosDeDocumento(doc.id);
+          const pertenece = procesos.some((p) => p.proceso_id === procesoId);
+          return pertenece ? doc : null;
+        } catch {
+          return null;
+        }
+      })
+    );
+    return relaciones.filter((d): d is DocumentoResponse => d !== null);
+  }
+
+  async asociarDocumentoProceso(data: {
+    documento_id: string;
+    proceso_id: string;
+    tipo_relacion?: string;
+  }): Promise<void> {
+    await apiClient.post("/documentos-procesos", {
+      documento_id: data.documento_id,
+      proceso_id: data.proceso_id,
+      tipo_relacion: data.tipo_relacion || "asociado",
+    });
+  }
+
   async getById(id: string): Promise<DocumentoResponse> {
     const response = await apiClient.get(`/documentos/${id}`);
     return response.data;
