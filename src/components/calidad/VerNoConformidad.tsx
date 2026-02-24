@@ -20,6 +20,21 @@ export function VerNoConformidad({
 }: VerNoConformidadProps) {
     if (!noConformidad) return null;
 
+    const getNombreUsuario = (usuario?: {
+        nombre?: string;
+        primerApellido?: string;
+        segundoApellido?: string;
+        primer_apellido?: string;
+        segundo_apellido?: string;
+    } | null) => {
+        if (!usuario) return null;
+        const nombre = usuario.nombre || "";
+        const primerApellido = usuario.primerApellido || usuario.primer_apellido || "";
+        const segundoApellido = usuario.segundoApellido || usuario.segundo_apellido || "";
+        const fullName = `${nombre} ${primerApellido} ${segundoApellido}`.trim();
+        return fullName || null;
+    };
+
     return (
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -70,9 +85,8 @@ export function VerNoConformidad({
                         <div>
                             <h4 className="text-sm font-semibold text-gray-500">Detectado Por</h4>
                             <p className="text-gray-900">
-                                {noConformidad.detector
-                                    ? `${noConformidad.detector.nombre} ${noConformidad.detector.primerApellido}`
-                                    : (noConformidad.detectado_por || "N/A")}
+                                {getNombreUsuario(noConformidad.detector as any)
+                                    || (noConformidad.detectado_por || "N/A")}
                             </p>
                         </div>
                     </div>
@@ -85,9 +99,8 @@ export function VerNoConformidad({
                         <div>
                             <h4 className="text-sm font-semibold text-gray-500">Responsable</h4>
                             <p className="text-gray-900">
-                                {noConformidad.responsable
-                                    ? `${noConformidad.responsable.nombre} ${noConformidad.responsable.primerApellido}`
-                                    : "Sin asignar"}
+                                {getNombreUsuario(noConformidad.responsable as any)
+                                    || "Sin asignar"}
                             </p>
                         </div>
                     </div>

@@ -23,6 +23,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { VerNoConformidad } from "@/components/calidad/VerNoConformidad";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
+import { usuarioService } from "@/services/usuario.service";
 
 interface NoConformidadUI {
   id: string;
@@ -104,6 +105,21 @@ export default function NoConformidadesCerradas() {
   const handleVerDetalles = async (id: string) => {
     try {
       const data = await noConformidadService.getById(id);
+
+      // Fallback: algunos registros pueden traer `detectado_por` sin expandir `detector`
+      if (!data.detector && data.detectado_por) {
+        try {
+          const detector = await usuarioService.getById(data.detectado_por);
+          data.detector = {
+            id: detector.id,
+            nombre: detector.nombre,
+            primerApellido: detector.primer_apellido,
+          };
+        } catch {
+          // Si falla el lookup, se mantiene el fallback actual en el modal
+        }
+      }
+
       setSelectedNoConformidad(data);
       setIsViewDialogOpen(true);
     } catch (error) {
