@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, Save } from "lucide-react";
+import { Plus, Pencil, Trash2, Save, ShieldCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,7 +58,7 @@ const initialFormularioState: FormularioFormState = {
   modulo: "auditorias",
   entidadTipo: "auditoria",
   procesoId: "",
-  activo: true,
+  activo: false,
 };
 
 const initialCampoState: CampoFormState = {
@@ -70,6 +70,28 @@ const initialCampoState: CampoFormState = {
   activo: true,
   opcionesRaw: "",
 };
+
+const ISO_TEMPLATE_FIELDS: Array<{
+  nombre: string;
+  etiqueta: string;
+  tipoCampo: string;
+  requerido: boolean;
+  orden: number;
+  opciones?: string[];
+}> = [
+  { nombre: "clausula_iso", etiqueta: "Cláusula ISO 9001 aplicable", tipoCampo: "text", requerido: true, orden: 1 },
+  { nombre: "criterio_auditoria", etiqueta: "Criterio de auditoría", tipoCampo: "textarea", requerido: true, orden: 2 },
+  { nombre: "evidencia_objetiva", etiqueta: "Evidencia objetiva", tipoCampo: "textarea", requerido: true, orden: 3 },
+  {
+    nombre: "resultado_auditoria",
+    etiqueta: "Resultado de auditoría",
+    tipoCampo: "select",
+    requerido: true,
+    orden: 4,
+    opciones: ["conforme", "no_conforme", "observacion"],
+  },
+  { nombre: "conclusion_auditoria", etiqueta: "Conclusión de auditoría", tipoCampo: "textarea", requerido: true, orden: 5 },
+];
 
 export default function FormulariosAuditoriaAdmin() {
   const [loading, setLoading] = useState(true);
@@ -92,6 +114,14 @@ export default function FormulariosAuditoriaAdmin() {
   const selectedFormulario = useMemo(
     () => formularios.find((item) => item.id === selectedFormularioId) || null,
     [formularios, selectedFormularioId]
+  );
+  const selectedFieldNames = useMemo(
+    () => new Set(campos.map((c) => c.nombre.trim().toLowerCase())),
+    [campos]
+  );
+  const missingIsoFields = useMemo(
+    () => ISO_TEMPLATE_FIELDS.filter((field) => !selectedFieldNames.has(field.nombre)),
+    [selectedFieldNames]
   );
 
   useEffect(() => {
@@ -174,8 +204,8 @@ export default function FormulariosAuditoriaAdmin() {
         await formularioDinamicoService.actualizarFormulario(editingFormulario.id, {
           nombre: formularioForm.nombre.trim(),
           descripcion: formularioForm.descripcion.trim() || undefined,
-          modulo: formularioForm.modulo.trim(),
-          entidadTipo: formularioForm.entidadTipo.trim(),
+          modulo: "auditorias",
+          entidadTipo: "auditoria",
           procesoId: formularioForm.procesoId || undefined,
           activo: formularioForm.activo,
         });
@@ -185,13 +215,13 @@ export default function FormulariosAuditoriaAdmin() {
           codigo: formularioForm.codigo.trim(),
           nombre: formularioForm.nombre.trim(),
           descripcion: formularioForm.descripcion.trim() || undefined,
-          modulo: formularioForm.modulo.trim(),
-          entidadTipo: formularioForm.entidadTipo.trim(),
+          modulo: "auditorias",
+          entidadTipo: "auditoria",
           procesoId: formularioForm.procesoId || undefined,
-          activo: formularioForm.activo,
+          activo: false,
         });
         setSelectedFormularioId(created.id);
-        toast.success("Formulario creado");
+        toast.success("Formulario creado en borrador. Aplica la plantilla ISO para activarlo.");
       }
       setShowFormularioDialog(false);
       await cargarFormularios();
@@ -306,8 +336,62 @@ export default function FormulariosAuditoriaAdmin() {
     }
   };
 
+  const aplicarPlantillaIso = async () => {
+    if (!selectedFormularioId) {
+      toast.error("Selecciona un formulario");
+      return;
+    }
+    if (missingIsoFields.length === 0) {
+      toast.success("Este formulario ya cumple la estructura ISO mínima.");
+      return;
+    }
+    try {
+      setSavingCampo(true);
+      for (const field of missingIsoFields) {
+        await formularioDinamicoService.crearCampo({
+          formularioId: selectedFormularioId,
+          nombre: field.nombre,
+          etiqueta: field.etiqueta,
+          tipoCampo: field.tipoCampo,
+          requerido: field.requerido,
+          orden: field.orden,
+          opciones: field.opciones,
+          activo: true,
+        });
+      }
+      if (selectedFormulario && !selectedFormulario.activo) {
+        await formularioDinamicoService.actualizarFormulario(selectedFormulario.id, {
+          activo: true,
+          modulo: "auditorias",
+          entidadTipo: "auditoria",
+        });
+      }
+      toast.success("Plantilla ISO aplicada correctamente.");
+      await cargarCampos(selectedFormularioId);
+      await cargarFormularios();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || "No se pudo aplicar la plantilla ISO");
+    } finally {
+      setSavingCampo(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-cyan-50">
+        <CardContent className="pt-4">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="h-5 w-5 text-blue-700 mt-0.5" />
+            <div>
+              <p className="font-semibold text-blue-900">Control ISO 9001 para formularios de auditoría</p>
+              <p className="text-sm text-blue-800">
+                El formulario debe incluir: cláusula ISO, criterio, evidencia objetiva, resultado y conclusión.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#1E3A8A]">Formularios Dinámicos de Auditoría</h1>
@@ -377,12 +461,36 @@ export default function FormulariosAuditoriaAdmin() {
                   : "Selecciona un formulario para administrar campos"}
               </CardDescription>
             </div>
-            <Button onClick={openCrearCampo} disabled={!selectedFormularioId} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nuevo campo
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={aplicarPlantillaIso} disabled={!selectedFormularioId || savingCampo} className="gap-2">
+                <ShieldCheck className="h-4 w-4" />
+                Plantilla ISO
+              </Button>
+              <Button onClick={openCrearCampo} disabled={!selectedFormularioId} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nuevo campo
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
+            {selectedFormularioId && (
+              <div className="mb-4 p-3 rounded-lg border bg-gray-50">
+                {missingIsoFields.length === 0 ? (
+                  <div className="flex items-center gap-2 text-green-700 text-sm font-medium">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Estructura conforme con ISO 9001
+                  </div>
+                ) : (
+                  <div className="text-sm text-amber-800">
+                    <div className="flex items-center gap-2 font-medium mb-1">
+                      <AlertTriangle className="h-4 w-4" />
+                      Campos ISO faltantes
+                    </div>
+                    <p>{missingIsoFields.map((f) => f.etiqueta).join(" | ")}</p>
+                  </div>
+                )}
+              </div>
+            )}
             {!selectedFormularioId ? (
               <p className="text-sm text-gray-500">No hay formulario seleccionado.</p>
             ) : campos.length === 0 ? (
@@ -463,14 +571,14 @@ export default function FormulariosAuditoriaAdmin() {
                 <Label>Módulo</Label>
                 <Input
                   value={formularioForm.modulo}
-                  onChange={(e) => setFormularioForm((prev) => ({ ...prev, modulo: e.target.value }))}
+                  disabled
                 />
               </div>
               <div className="space-y-1">
                 <Label>Entidad</Label>
                 <Input
                   value={formularioForm.entidadTipo}
-                  onChange={(e) => setFormularioForm((prev) => ({ ...prev, entidadTipo: e.target.value }))}
+                  disabled
                 />
               </div>
             </div>

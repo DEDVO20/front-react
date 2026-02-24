@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, Edit, Plus, Search } from 'lucide-react';
+import { Edit, Plus, ShieldCheck, ListChecks, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { auditoriaService, ProgramaAuditoria } from '@/services/auditoria.service';
 import { Label } from "@/components/ui/label";
@@ -65,6 +65,17 @@ const ProgramaAnual: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!formData.objetivo || !String(formData.objetivo).trim()) {
+            toast.error('El objetivo del programa es obligatorio (ISO 9001:2015 9.2)');
+            return;
+        }
+        if (
+            formData.estado === 'aprobado' &&
+            (!formData.criterioRiesgo || !String(formData.criterioRiesgo).trim())
+        ) {
+            toast.error('Para aprobar el programa debes definir criterios de riesgo');
+            return;
+        }
         try {
             if (editingId) {
                 await auditoriaService.updatePrograma(editingId, formData);
@@ -92,8 +103,34 @@ const ProgramaAnual: React.FC = () => {
         }
     };
 
+    const totalProgramas = programas.length;
+    const aprobados = programas.filter((p) => p.estado === 'aprobado').length;
+    const enEjecucion = programas.filter((p) => p.estado === 'en_ejecucion').length;
+    const conCriterioRiesgo = programas.filter((p) => !!p.criterioRiesgo && p.criterioRiesgo.trim().length > 0).length;
+
     return (
         <div className="space-y-6">
+            <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-cyan-50">
+                <CardContent className="pt-4">
+                    <div className="flex items-start gap-3">
+                        <ShieldCheck className="h-5 w-5 text-blue-700 mt-0.5" />
+                        <div>
+                            <p className="font-semibold text-blue-900">Programa anual alineado a ISO 9001:2015 (9.2)</p>
+                            <p className="text-sm text-blue-800">
+                                Incluye objetivo, enfoque basado en riesgos, aprobación formal y control de estados.
+                            </p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="border-gray-200"><CardContent className="pt-4"><p className="text-xs text-gray-500">Programas</p><p className="text-2xl font-bold text-gray-900">{totalProgramas}</p></CardContent></Card>
+                <Card className="border-green-200 bg-green-50"><CardContent className="pt-4"><div className="flex items-center gap-2 text-green-700"><CheckCircle2 className="h-4 w-4" /><p className="text-xs">Aprobados</p></div><p className="text-2xl font-bold text-green-800">{aprobados}</p></CardContent></Card>
+                <Card className="border-amber-200 bg-amber-50"><CardContent className="pt-4"><div className="flex items-center gap-2 text-amber-700"><ListChecks className="h-4 w-4" /><p className="text-xs">En ejecución</p></div><p className="text-2xl font-bold text-amber-800">{enEjecucion}</p></CardContent></Card>
+                <Card className="border-blue-200 bg-blue-50"><CardContent className="pt-4"><p className="text-xs text-blue-700">Con criterio riesgo</p><p className="text-2xl font-bold text-blue-900">{conCriterioRiesgo}</p></CardContent></Card>
+            </div>
+
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-gray-900">Programa Anual de Auditorías</h1>
@@ -192,6 +229,7 @@ const ProgramaAnual: React.FC = () => {
                             <Label htmlFor="objetivo">Objetivo General</Label>
                             <Textarea
                                 id="objetivo"
+                                required
                                 value={formData.objetivo}
                                 onChange={(e) => setFormData({ ...formData, objetivo: e.target.value })}
                                 placeholder="Describa el objetivo general del programa anual..."
@@ -205,9 +243,12 @@ const ProgramaAnual: React.FC = () => {
                                 id="criterioRiesgo"
                                 value={formData.criterioRiesgo}
                                 onChange={(e) => setFormData({ ...formData, criterioRiesgo: e.target.value })}
-                                placeholder="Defina los criterios de riesgo utilizados para la planificación..."
+                                placeholder="Defina criterios para priorizar auditorías: criticidad, resultados previos, cambios, quejas..."
                                 rows={3}
                             />
+                            <p className="text-xs text-gray-500">
+                                Obligatorio para aprobar el programa.
+                            </p>
                         </div>
 
                         <DialogFooter>
