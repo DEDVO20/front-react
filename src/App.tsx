@@ -77,12 +77,17 @@ import Seguridad from "./pages/seguridad";
 import Configuracion from "./pages/configuracion";
 
 import { ProtectedLayout } from "./components/ProtectedLayout";
+import PermissionRoute from "./components/PermissionRoute";
 import { AuthProvider } from "./context/AuthContext";
 
 import { Toaster } from "sonner";
 import "./App.css";
 
 function App() {
+  const withPermission = (element: JSX.Element, permissions: string[]) => (
+    <PermissionRoute permissions={permissions}>{element}</PermissionRoute>
+  );
+
   return (
     <AuthProvider>
       <Router>
@@ -99,96 +104,96 @@ function App() {
             <Route path="/perfil" element={<Perfil />} />
 
             {/* Documentos */}
-            <Route path="/documentos" element={<Documentos />} />
-            <Route path="/control-versiones" element={<ControlVersiones />} />
-            <Route path="/documentos/crear" element={<CreateDocument />} />
-            <Route path="/documentos/:id" element={<VerDocumento />} />
-            <Route path="/documentos/:id/editar" element={<EditarDocumento />} />
-            <Route path="/documentos/:id/aprobaciones" element={<AprobacionesPendientes />} />
+            <Route path="/documentos" element={withPermission(<Documentos />, ["documentos.ver"])} />
+            <Route path="/control-versiones" element={withPermission(<ControlVersiones />, ["documentos.revisar"])} />
+            <Route path="/documentos/crear" element={withPermission(<CreateDocument />, ["documentos.crear"])} />
+            <Route path="/documentos/:id" element={withPermission(<VerDocumento />, ["documentos.ver"])} />
+            <Route path="/documentos/:id/editar" element={withPermission(<EditarDocumento />, ["documentos.revisar"])} />
+            <Route path="/documentos/:id/aprobaciones" element={withPermission(<AprobacionesPendientes />, ["documentos.aprobar"])} />
 
-            <Route path="/Aprobaciones_Pendientes" element={<AprobacionesPendientes />} />
-            <Route path="/Revisiones_Pendientes" element={<RevisionesPendientes />} />
-            <Route path="/Documentos_Obsoletos" element={<DocumentosObsoletos />} />
+            <Route path="/Aprobaciones_Pendientes" element={withPermission(<AprobacionesPendientes />, ["documentos.aprobar"])} />
+            <Route path="/Revisiones_Pendientes" element={withPermission(<RevisionesPendientes />, ["documentos.revisar"])} />
+            <Route path="/Documentos_Obsoletos" element={withPermission(<DocumentosObsoletos />, ["documentos.anular"])} />
             <Route path="/Documentos_Publicos" element={<DocumentosPublicos />} />
 
             {/* Áreas */}
-            <Route path="/gestionar_areas" element={<GestionarAreas />} />
+            <Route path="/gestionar_areas" element={withPermission(<GestionarAreas />, ["areas.gestionar"])} />
             <Route
               path="/Asignar_Responsables"
-              element={<AreasResponsables />}
+              element={withPermission(<AreasResponsables />, ["areas.gestionar"])}
             />
             <Route path="/reportes" element={<ReportesView />} />
-            <Route path="/Asignar_Responsables" element={<AreasResponsables />} />
+            <Route path="/Asignar_Responsables" element={withPermission(<AreasResponsables />, ["areas.gestionar"])} />
 
             {/* Usuarios */}
-            <Route path="/ListaDeUsuarios" element={<ListaDeUsuarios />} />
-            <Route path="/NuevoUsuario" element={<NuevosUsuarios />} />
-            <Route path="/usuarios/:id/editar" element={<EditarUsuario />} />
-            <Route path="/usuarios/carga-masiva" element={<CargaMasivaUsuarios />} />
-            <Route path="/Roles_y_Permisos" element={<RolesYPermisos />} />
+            <Route path="/ListaDeUsuarios" element={withPermission(<ListaDeUsuarios />, ["usuarios.ver"])} />
+            <Route path="/NuevoUsuario" element={withPermission(<NuevosUsuarios />, ["usuarios.crear", "usuarios.gestion"])} />
+            <Route path="/usuarios/:id/editar" element={withPermission(<EditarUsuario />, ["usuarios.editar", "usuarios.gestion"])} />
+            <Route path="/usuarios/carga-masiva" element={withPermission(<CargaMasivaUsuarios />, ["usuarios.crear", "usuarios.gestion"])} />
+            <Route path="/Roles_y_Permisos" element={withPermission(<RolesYPermisos />, ["usuarios.gestion"])} />
 
             {/* Auditorías */}
-            <Route path="/AuditoriasPlanificacion" element={<AuditoriasPlanificacion />} />
-            <Route path="/AuditoriasEnCurso" element={<AuditoriasEnCurso />} />
-            <Route path="/AuditoriasCompletas" element={<AuditoriasCompletas />} />
-            <Route path="/AuditoriasHallazgosView" element={<AuditoriasHallazgosView />} />
-            <Route path="/auditorias/ejecucion/:id" element={<AuditoriaEjecucion />} />
-            <Route path="/auditorias/programa-anual" element={<ProgramaAnual />} />
-            <Route path="/auditorias/formularios" element={<FormulariosAuditoriaAdmin />} />
+            <Route path="/AuditoriasPlanificacion" element={withPermission(<AuditoriasPlanificacion />, ["auditorias.planificar"])} />
+            <Route path="/AuditoriasEnCurso" element={withPermission(<AuditoriasEnCurso />, ["auditorias.ejecutar"])} />
+            <Route path="/AuditoriasCompletas" element={withPermission(<AuditoriasCompletas />, ["auditorias.ejecutar"])} />
+            <Route path="/AuditoriasHallazgosView" element={withPermission(<AuditoriasHallazgosView />, ["auditorias.ejecutar"])} />
+            <Route path="/auditorias/ejecucion/:id" element={withPermission(<AuditoriaEjecucion />, ["auditorias.ejecutar"])} />
+            <Route path="/auditorias/programa-anual" element={withPermission(<ProgramaAnual />, ["auditorias.planificar"])} />
+            <Route path="/auditorias/formularios" element={withPermission(<FormulariosAuditoriaAdmin />, ["auditorias.planificar"])} />
 
             {/* Objetivos de Calidad */}
-            <Route path="/Activos" element={<ObjetivosActivos />} />
-            <Route path="/Seguimiento" element={<Seguimiento />} />
-            <Route path="/Historial" element={<Historial />} />
+            <Route path="/Activos" element={withPermission(<ObjetivosActivos />, ["calidad.ver"])} />
+            <Route path="/Seguimiento" element={withPermission(<Seguimiento />, ["calidad.ver"])} />
+            <Route path="/Historial" element={withPermission(<Historial />, ["calidad.ver"])} />
 
             {/* No conformidades */}
-            <Route path="/No_conformidades_Abiertas" element={<NoConformidadesAbiertas />} />
-            <Route path="/No_conformidades_EnTratamiento" element={<NoConformidadesEnTratamiento />} />
-            <Route path="/No_conformidades_Cerradas" element={<NoConformidadesCerradas />} />
+            <Route path="/No_conformidades_Abiertas" element={withPermission(<NoConformidadesAbiertas />, ["noconformidades.gestion", "noconformidades.reportar"])} />
+            <Route path="/No_conformidades_EnTratamiento" element={withPermission(<NoConformidadesEnTratamiento />, ["noconformidades.gestion"])} />
+            <Route path="/No_conformidades_Cerradas" element={withPermission(<NoConformidadesCerradas />, ["noconformidades.cerrar", "noconformidades.gestion"])} />
 
             {/* Acciones Correctivas */}
-            <Route path="/acciones-correctivas/dashboard" element={<DashboardAccionesCorrectivas />} />
-            <Route path="/Acciones_correctivas_Cerradas" element={<AccionesCorrectivasCerradas />} />
-            <Route path="/Acciones_correctivas_Verificadas" element={<AccionesCorrectivasVerificadas />} />
-            <Route path="/Acciones_correctivas_Nuevas" element={<NuevasAccionesCorrectivas />} />
-            <Route path="/Acciones_correctivas_EnProceso" element={<EnProcesoAccionesCorrectivas />} />
-            <Route path="/acciones-correctivas/:id/solucionar" element={<SolucionarAccionCorrectiva />} />
+            <Route path="/acciones-correctivas/dashboard" element={withPermission(<DashboardAccionesCorrectivas />, ["noconformidades.gestion"])} />
+            <Route path="/Acciones_correctivas_Cerradas" element={withPermission(<AccionesCorrectivasCerradas />, ["noconformidades.cerrar", "noconformidades.gestion"])} />
+            <Route path="/Acciones_correctivas_Verificadas" element={withPermission(<AccionesCorrectivasVerificadas />, ["noconformidades.cerrar"])} />
+            <Route path="/Acciones_correctivas_Nuevas" element={withPermission(<NuevasAccionesCorrectivas />, ["noconformidades.gestion"])} />
+            <Route path="/Acciones_correctivas_EnProceso" element={withPermission(<EnProcesoAccionesCorrectivas />, ["noconformidades.gestion"])} />
+            <Route path="/acciones-correctivas/:id/solucionar" element={withPermission(<SolucionarAccionCorrectiva />, ["noconformidades.gestion"])} />
 
             {/* Capacitaciones */}
-            <Route path="/capacitaciones/programadas" element={<CapacitacionesProgramadas />} />
-            <Route path="/capacitaciones/historial" element={<CapacitacionesHistorial />} />
-            <Route path="/capacitaciones/asistencias" element={<CapacitacionesAsistencia />} />
-            <Route path="/capacitaciones/competencias" element={<CapacitacionesCompetencia />} />
+            <Route path="/capacitaciones/programadas" element={withPermission(<CapacitacionesProgramadas />, ["capacitaciones.gestion"])} />
+            <Route path="/capacitaciones/historial" element={withPermission(<CapacitacionesHistorial />, ["capacitaciones.gestion"])} />
+            <Route path="/capacitaciones/asistencias" element={withPermission(<CapacitacionesAsistencia />, ["capacitaciones.gestion"])} />
+            <Route path="/capacitaciones/competencias" element={withPermission(<CapacitacionesCompetencia />, ["capacitaciones.gestion"])} />
 
             {/* Indicadores */}
-            <Route path="/indicadores/tablero" element={<TableroIndicadores />} />
-            <Route path="/indicadores/dashboard" element={<Navigate to="/indicadores/tablero" replace />} />
-            <Route path="/indicadores/eficacia" element={<EficaciaIndicadores />} />
-            <Route path="/indicadores/eficiencia" element={<EficienciaIndicadores />} />
-            <Route path="/indicadores/cumplimiento" element={<CumplimientoIndicadores />} />
+            <Route path="/indicadores/tablero" element={withPermission(<TableroIndicadores />, ["calidad.ver"])} />
+            <Route path="/indicadores/dashboard" element={withPermission(<Navigate to="/indicadores/tablero" replace />, ["calidad.ver"])} />
+            <Route path="/indicadores/eficacia" element={withPermission(<EficaciaIndicadores />, ["calidad.ver"])} />
+            <Route path="/indicadores/eficiencia" element={withPermission(<EficienciaIndicadores />, ["calidad.ver"])} />
+            <Route path="/indicadores/cumplimiento" element={withPermission(<CumplimientoIndicadores />, ["calidad.ver"])} />
 
             {/* Riesgos */}
-            <Route path="/riesgos/matriz" element={<MatrizRiesgos />} />
-            <Route path="/riesgos/controles" element={<ControlesRiesgos />} />
-            <Route path="/riesgos/tratamiento" element={<TratamientoRiesgos />} />
+            <Route path="/riesgos/matriz" element={withPermission(<MatrizRiesgos />, ["riesgos.ver", "riesgos.gestion"])} />
+            <Route path="/riesgos/controles" element={withPermission(<ControlesRiesgos />, ["riesgos.gestion"])} />
+            <Route path="/riesgos/tratamiento" element={withPermission(<TratamientoRiesgos />, ["riesgos.gestion"])} />
 
             {/* Procesos */}
-            <Route path="/procesos" element={<MapaProcesos />} />
-            <Route path="/procesos/listado" element={<ListadoProcesos />} />
-            <Route path="/procesos/nuevo" element={<FormularioProceso />} />
-            <Route path="/procesos/:id" element={<DetalleProceso />} />
-            <Route path="/procesos/:id/editar" element={<FormularioProceso />} />
+            <Route path="/procesos" element={withPermission(<MapaProcesos />, ["procesos.admin"])} />
+            <Route path="/procesos/listado" element={withPermission(<ListadoProcesos />, ["procesos.admin"])} />
+            <Route path="/procesos/nuevo" element={withPermission(<FormularioProceso />, ["procesos.admin"])} />
+            <Route path="/procesos/:id" element={withPermission(<DetalleProceso />, ["procesos.admin"])} />
+            <Route path="/procesos/:id/editar" element={withPermission(<FormularioProceso />, ["procesos.admin"])} />
 
             {/* Sistema */}
-            <Route path="/sistema/migraciones" element={<MigracionesDB />} />
-            <Route path="/sistema/audit-log" element={<AuditLogPage />} />
+            <Route path="/sistema/migraciones" element={withPermission(<MigracionesDB />, ["sistema.admin"])} />
+            <Route path="/sistema/audit-log" element={withPermission(<AuditLogPage />, ["sistema.admin"])} />
 
             {/* Soporte */}
             <Route path="/mesa-ayuda" element={<MesaDeAyuda />} />
 
             {/* Configuración y Seguridad */}
-            <Route path="/configuracion" element={<Configuracion />} />
-            <Route path="/seguridad" element={<Seguridad />} />
+            <Route path="/configuracion" element={withPermission(<Configuracion />, ["sistema.config", "sistema.admin"])} />
+            <Route path="/seguridad" element={withPermission(<Seguridad />, ["sistema.admin"])} />
           </Route>
 
           {/* Catch-all */}
