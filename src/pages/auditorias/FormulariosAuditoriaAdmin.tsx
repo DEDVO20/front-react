@@ -46,6 +46,10 @@ type CampoFormState = {
   etiqueta: string;
   tipoCampo: string;
   requerido: boolean;
+  seccionIso: string;
+  clausulaIso: string;
+  subclausulaIso: string;
+  evidenciaRequerida: boolean;
   orden: number;
   activo: boolean;
   opcionesRaw: string;
@@ -66,6 +70,10 @@ const initialCampoState: CampoFormState = {
   etiqueta: "",
   tipoCampo: "text",
   requerido: false,
+  seccionIso: "contexto",
+  clausulaIso: "",
+  subclausulaIso: "",
+  evidenciaRequerida: false,
   orden: 1,
   activo: true,
   opcionesRaw: "",
@@ -265,6 +273,10 @@ export default function FormulariosAuditoriaAdmin() {
       etiqueta: campo.etiqueta,
       tipoCampo: campo.tipoCampo,
       requerido: campo.requerido,
+      seccionIso: campo.seccionIso || "contexto",
+      clausulaIso: campo.clausulaIso || "",
+      subclausulaIso: campo.subclausulaIso || "",
+      evidenciaRequerida: Boolean(campo.evidenciaRequerida),
       orden: campo.orden,
       activo: campo.activo,
       opcionesRaw: campo.opciones ? JSON.stringify(campo.opciones, null, 2) : "",
@@ -301,6 +313,10 @@ export default function FormulariosAuditoriaAdmin() {
         etiqueta: campoForm.etiqueta.trim(),
         tipoCampo: campoForm.tipoCampo,
         requerido: campoForm.requerido,
+        seccionIso: campoForm.seccionIso,
+        clausulaIso: campoForm.clausulaIso || undefined,
+        subclausulaIso: campoForm.subclausulaIso || undefined,
+        evidenciaRequerida: campoForm.evidenciaRequerida,
         orden: Number(campoForm.orden) || 1,
         activo: campoForm.activo,
         opciones,
@@ -354,6 +370,9 @@ export default function FormulariosAuditoriaAdmin() {
           etiqueta: field.etiqueta,
           tipoCampo: field.tipoCampo,
           requerido: field.requerido,
+          seccionIso: "evaluacion",
+          clausulaIso: "9.2",
+          evidenciaRequerida: field.nombre === "evidencia_objetiva",
           orden: field.orden,
           opciones: field.opciones,
           activo: true,
@@ -374,6 +393,30 @@ export default function FormulariosAuditoriaAdmin() {
       toast.error(error.message || "No se pudo aplicar la plantilla ISO");
     } finally {
       setSavingCampo(false);
+    }
+  };
+
+  const crearNuevaVersion = async () => {
+    if (!selectedFormulario) return;
+    try {
+      const nuevo = await formularioDinamicoService.crearNuevaVersionFormulario(selectedFormulario.id);
+      toast.success(`Nueva versión creada: v${nuevo.version}`);
+      await cargarFormularios();
+      setSelectedFormularioId(nuevo.id);
+    } catch (error: any) {
+      toast.error(error.message || "No se pudo crear nueva versión");
+    }
+  };
+
+  const aprobarFormularioSeleccionado = async () => {
+    if (!selectedFormulario) return;
+    try {
+      const aprobado = await formularioDinamicoService.aprobarFormulario(selectedFormulario.id);
+      toast.success(`Formulario aprobado (v${aprobado.version})`);
+      await cargarFormularios();
+      await cargarCampos(aprobado.id);
+    } catch (error: any) {
+      toast.error(error.message || "No se pudo aprobar el formulario");
     }
   };
 
@@ -430,9 +473,17 @@ export default function FormulariosAuditoriaAdmin() {
                     >
                       <p className="font-medium text-gray-900">{formulario.nombre}</p>
                       <p className="text-xs text-gray-500">{formulario.codigo}</p>
-                      <div className="mt-2">
+                  <div className="mt-2">
                         <Badge variant={formulario.activo ? "default" : "secondary"}>
                           {formulario.activo ? "Activo" : "Inactivo"}
+                        </Badge>
+                        {formulario.estadoWorkflow && (
+                          <Badge variant="outline" className="ml-2">
+                            {formulario.estadoWorkflow}
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="ml-2">
+                          v{formulario.version}
                         </Badge>
                       </div>
                     </button>
@@ -462,6 +513,14 @@ export default function FormulariosAuditoriaAdmin() {
               </CardDescription>
             </div>
             <div className="flex gap-2">
+              <Button variant="outline" onClick={crearNuevaVersion} disabled={!selectedFormularioId} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nueva versión
+              </Button>
+              <Button variant="outline" onClick={aprobarFormularioSeleccionado} disabled={!selectedFormularioId} className="gap-2">
+                <ShieldCheck className="h-4 w-4" />
+                Aprobar
+              </Button>
               <Button variant="outline" onClick={aplicarPlantillaIso} disabled={!selectedFormularioId || savingCampo} className="gap-2">
                 <ShieldCheck className="h-4 w-4" />
                 Plantilla ISO
@@ -670,6 +729,40 @@ export default function FormulariosAuditoriaAdmin() {
                 />
               </div>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label>Sección ISO</Label>
+                <select
+                  className="w-full p-2 border rounded-md"
+                  value={campoForm.seccionIso}
+                  onChange={(e) => setCampoForm((prev) => ({ ...prev, seccionIso: e.target.value }))}
+                >
+                  <option value="contexto">Contexto</option>
+                  <option value="liderazgo">Liderazgo</option>
+                  <option value="planificacion">Planificación</option>
+                  <option value="apoyo">Apoyo</option>
+                  <option value="operacion">Operación</option>
+                  <option value="evaluacion">Evaluación</option>
+                  <option value="mejora">Mejora</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label>Cláusula ISO</Label>
+                <Input
+                  value={campoForm.clausulaIso}
+                  onChange={(e) => setCampoForm((prev) => ({ ...prev, clausulaIso: e.target.value }))}
+                  placeholder="Ej: 9.2"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Subcláusula</Label>
+                <Input
+                  value={campoForm.subclausulaIso}
+                  onChange={(e) => setCampoForm((prev) => ({ ...prev, subclausulaIso: e.target.value }))}
+                  placeholder="Ej: 9.2.1"
+                />
+              </div>
+            </div>
             <div className="space-y-1">
               <Label>Opciones (JSON)</Label>
               <Textarea
@@ -686,6 +779,14 @@ export default function FormulariosAuditoriaAdmin() {
                   onChange={(e) => setCampoForm((prev) => ({ ...prev, requerido: e.target.checked }))}
                 />
                 Requerido
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={campoForm.evidenciaRequerida}
+                  onChange={(e) => setCampoForm((prev) => ({ ...prev, evidenciaRequerida: e.target.checked }))}
+                />
+                Requiere evidencia
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input

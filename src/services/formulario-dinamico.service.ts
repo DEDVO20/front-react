@@ -10,6 +10,12 @@ export interface FormularioDinamico {
   procesoId?: string;
   activo: boolean;
   version: number;
+  estadoWorkflow?: string;
+  vigenteDesde?: string;
+  vigenteHasta?: string;
+  aprobadoPor?: string;
+  fechaAprobacion?: string;
+  parentFormularioId?: string;
   creadoEn?: string;
   actualizadoEn?: string;
 }
@@ -26,6 +32,10 @@ export interface CampoFormulario {
   orden: number;
   activo: boolean;
   validaciones?: any;
+  seccionIso?: string;
+  clausulaIso?: string;
+  subclausulaIso?: string;
+  evidenciaRequerida?: boolean;
   creadoEn?: string;
   actualizadoEn?: string;
 }
@@ -38,6 +48,9 @@ export interface RespuestaFormulario {
   valor?: string;
   archivoAdjunto?: string;
   usuarioRespuestaId?: string;
+  evidenciaHash?: string;
+  evidenciaFecha?: string;
+  evidenciaUsuarioId?: string;
   creadoEn?: string;
   actualizadoEn?: string;
 }
@@ -54,6 +67,12 @@ const mapFormularioToFrontend = (data: any): FormularioDinamico => ({
   ...data,
   entidadTipo: data.entidad_tipo ?? data.entidadTipo,
   procesoId: data.proceso_id ?? data.procesoId,
+  estadoWorkflow: data.estado_workflow ?? data.estadoWorkflow,
+  vigenteDesde: data.vigente_desde ?? data.vigenteDesde,
+  vigenteHasta: data.vigente_hasta ?? data.vigenteHasta,
+  aprobadoPor: data.aprobado_por ?? data.aprobadoPor,
+  fechaAprobacion: data.fecha_aprobacion ?? data.fechaAprobacion,
+  parentFormularioId: data.parent_formulario_id ?? data.parentFormularioId,
   creadoEn: data.creado_en ?? data.creadoEn,
   actualizadoEn: data.actualizado_en ?? data.actualizadoEn,
 });
@@ -63,6 +82,10 @@ const mapCampoToFrontend = (data: any): CampoFormulario => ({
   formularioId: data.formulario_id ?? data.formularioId,
   procesoId: data.proceso_id ?? data.procesoId,
   tipoCampo: data.tipo_campo ?? data.tipoCampo,
+  seccionIso: data.seccion_iso ?? data.seccionIso,
+  clausulaIso: data.clausula_iso ?? data.clausulaIso,
+  subclausulaIso: data.subclausula_iso ?? data.subclausulaIso,
+  evidenciaRequerida: data.evidencia_requerida ?? data.evidenciaRequerida,
   creadoEn: data.creado_en ?? data.creadoEn,
   actualizadoEn: data.actualizado_en ?? data.actualizadoEn,
 });
@@ -74,6 +97,9 @@ const mapRespuestaToFrontend = (data: any): RespuestaFormulario => ({
   auditoriaId: data.auditoria_id ?? data.auditoriaId,
   archivoAdjunto: data.archivo_adjunto ?? data.archivoAdjunto,
   usuarioRespuestaId: data.usuario_respuesta_id ?? data.usuarioRespuestaId,
+  evidenciaHash: data.evidencia_hash ?? data.evidenciaHash,
+  evidenciaFecha: data.evidencia_fecha ?? data.evidenciaFecha,
+  evidenciaUsuarioId: data.evidencia_usuario_id ?? data.evidenciaUsuarioId,
   creadoEn: data.creado_en ?? data.creadoEn,
   actualizadoEn: data.actualizado_en ?? data.actualizadoEn,
 });
@@ -84,6 +110,7 @@ export const formularioDinamicoService = {
     entidadTipo?: string;
     procesoId?: string;
     activo?: boolean;
+    estadoWorkflow?: string;
     skip?: number;
     limit?: number;
   }): Promise<FormularioDinamico[]> {
@@ -92,6 +119,7 @@ export const formularioDinamicoService = {
     if (filters?.entidadTipo) params.append("entidad_tipo", filters.entidadTipo);
     if (filters?.procesoId) params.append("proceso_id", filters.procesoId);
     if (filters?.activo !== undefined) params.append("activo", String(filters.activo));
+    if (filters?.estadoWorkflow) params.append("estado_workflow", filters.estadoWorkflow);
     if (filters?.skip !== undefined) params.append("skip", String(filters.skip));
     if (filters?.limit !== undefined) params.append("limit", String(filters.limit));
 
@@ -130,6 +158,7 @@ export const formularioDinamicoService = {
     procesoId?: string;
     activo?: boolean;
     version?: number;
+    estadoWorkflow?: string;
   }): Promise<FormularioDinamico> {
     const payload = {
       codigo: data.codigo,
@@ -140,6 +169,7 @@ export const formularioDinamicoService = {
       proceso_id: data.procesoId,
       activo: data.activo ?? true,
       version: data.version ?? 1,
+      estado_workflow: data.estadoWorkflow,
     };
     const response = await fetch(`${API_URL}/formularios-dinamicos`, {
       method: "POST",
@@ -163,6 +193,7 @@ export const formularioDinamicoService = {
       procesoId: string;
       activo: boolean;
       version: number;
+      estadoWorkflow: string;
     }>
   ): Promise<FormularioDinamico> {
     const payload = {
@@ -173,6 +204,7 @@ export const formularioDinamicoService = {
       proceso_id: data.procesoId,
       activo: data.activo,
       version: data.version,
+      estado_workflow: data.estadoWorkflow,
     };
     const response = await fetch(`${API_URL}/formularios-dinamicos/${id}`, {
       method: "PUT",
@@ -208,6 +240,10 @@ export const formularioDinamicoService = {
     activo?: boolean;
     validaciones?: any;
     procesoId?: string;
+    seccionIso?: string;
+    clausulaIso?: string;
+    subclausulaIso?: string;
+    evidenciaRequerida?: boolean;
   }): Promise<CampoFormulario> {
     const payload = {
       formulario_id: data.formularioId,
@@ -220,6 +256,10 @@ export const formularioDinamicoService = {
       activo: data.activo ?? true,
       validaciones: data.validaciones,
       proceso_id: data.procesoId,
+      seccion_iso: data.seccionIso,
+      clausula_iso: data.clausulaIso,
+      subclausula_iso: data.subclausulaIso,
+      evidencia_requerida: data.evidenciaRequerida ?? false,
     };
     const response = await fetch(`${API_URL}/campos-formulario`, {
       method: "POST",
@@ -246,6 +286,10 @@ export const formularioDinamicoService = {
       orden: number;
       activo: boolean;
       validaciones: any;
+      seccionIso: string;
+      clausulaIso: string;
+      subclausulaIso: string;
+      evidenciaRequerida: boolean;
     }>
   ): Promise<CampoFormulario> {
     const payload = {
@@ -259,6 +303,10 @@ export const formularioDinamicoService = {
       orden: data.orden,
       activo: data.activo,
       validaciones: data.validaciones,
+      seccion_iso: data.seccionIso,
+      clausula_iso: data.clausulaIso,
+      subclausula_iso: data.subclausulaIso,
+      evidencia_requerida: data.evidenciaRequerida,
     };
     const response = await fetch(`${API_URL}/campos-formulario/${id}`, {
       method: "PUT",
@@ -306,12 +354,14 @@ export const formularioDinamicoService = {
     auditoriaId: string;
     valor?: string;
     archivoAdjunto?: string;
+    evidenciaHash?: string;
   }): Promise<RespuestaFormulario> {
     const payload = {
       campo_formulario_id: data.campoFormularioId,
       auditoria_id: data.auditoriaId,
       valor: data.valor ?? "",
       archivo_adjunto: data.archivoAdjunto,
+      evidencia_hash: data.evidenciaHash,
     };
     const response = await fetch(`${API_URL}/respuestas-formulario`, {
       method: "POST",
@@ -327,11 +377,12 @@ export const formularioDinamicoService = {
 
   async actualizarRespuesta(
     respuestaId: string,
-    data: { valor?: string; archivoAdjunto?: string }
+    data: { valor?: string; archivoAdjunto?: string; evidenciaHash?: string }
   ): Promise<RespuestaFormulario> {
     const payload = {
       valor: data.valor ?? "",
       archivo_adjunto: data.archivoAdjunto,
+      evidencia_hash: data.evidenciaHash,
     };
     const response = await fetch(`${API_URL}/respuestas-formulario/${respuestaId}`, {
       method: "PUT",
@@ -347,17 +398,42 @@ export const formularioDinamicoService = {
 
   async guardarRespuestasAuditoria(
     auditoriaId: string,
-    respuestas: Array<{ campoFormularioId: string; valor?: string; respuestaId?: string }>
+    respuestas: Array<{ campoFormularioId: string; valor?: string; respuestaId?: string; archivoAdjunto?: string }>
   ): Promise<RespuestaFormulario[]> {
     const operaciones = respuestas.map((item) =>
       item.respuestaId
-        ? this.actualizarRespuesta(item.respuestaId, { valor: item.valor })
+        ? this.actualizarRespuesta(item.respuestaId, { valor: item.valor, archivoAdjunto: item.archivoAdjunto })
         : this.crearRespuesta({
             campoFormularioId: item.campoFormularioId,
             auditoriaId,
             valor: item.valor,
+            archivoAdjunto: item.archivoAdjunto,
           })
     );
     return Promise.all(operaciones);
+  },
+
+  async crearNuevaVersionFormulario(formularioId: string): Promise<FormularioDinamico> {
+    const response = await fetch(`${API_URL}/formularios-dinamicos/${formularioId}/nueva-version`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || "No se pudo crear nueva versión");
+    }
+    return mapFormularioToFrontend(await response.json());
+  },
+
+  async aprobarFormulario(formularioId: string): Promise<FormularioDinamico> {
+    const response = await fetch(`${API_URL}/formularios-dinamicos/${formularioId}/aprobar`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || "No se pudo aprobar el formulario");
+    }
+    return mapFormularioToFrontend(await response.json());
   },
 };

@@ -22,6 +22,8 @@ export interface Auditoria {
   actualizadoEn?: string;
   programaId?: string;
   informeFinal?: string;
+  formularioChecklistId?: string;
+  formularioChecklistVersion?: number;
   auditorLider?: {
     id: string;
     nombre: string;
@@ -104,6 +106,8 @@ const normalizeAuditoria = (raw: any): Auditoria => {
     actualizadoEn: raw.actualizadoEn ?? raw.actualizado_en,
     programaId: raw.programaId ?? raw.programa_id,
     informeFinal: raw.informeFinal ?? raw.informe_final,
+    formularioChecklistId: raw.formularioChecklistId ?? raw.formulario_checklist_id,
+    formularioChecklistVersion: raw.formularioChecklistVersion ?? raw.formulario_checklist_version,
     auditorLider: auditorLiderRaw
       ? {
         id: auditorLiderRaw.id,
