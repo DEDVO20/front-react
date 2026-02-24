@@ -4,6 +4,7 @@ import { DataTable, DataTableAction } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, CheckCircle2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import {
   Card,
   CardContent,
@@ -123,11 +124,7 @@ export default function AccionesCorrectivasVerificadas() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando" />;
   }
 
   const correctivas = accionesCorrectivas.filter(

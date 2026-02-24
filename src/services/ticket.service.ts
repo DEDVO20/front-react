@@ -12,12 +12,14 @@ export interface Ticket {
     id: string;
     titulo: string;
     descripcion: string;
-    categoria: "soporte" | "consulta" | "mejora";
+    categoria: "soporte" | "consulta" | "mejora" | "solicitud_documento";
     prioridad: "baja" | "media" | "alta" | "critica";
-    estado: "abierto" | "en_progreso" | "resuelto" | "cerrado";
+    estado: "abierto" | "en_progreso" | "resuelto" | "cerrado" | "aprobado" | "declinado";
     solicitante_id: string;
     asignado_a?: string;
     area_destino_id?: string;
+    documento_publico_id?: string;
+    archivo_adjunto_url?: string;
 
     // Información de usuarios (nested)
     solicitante?: UsuarioBasic;
@@ -34,7 +36,10 @@ export interface TicketCreate {
     titulo: string;
     descripcion: string;
     categoria: string;
-    prioridad: string;
+    prioridad?: string;
+    area_destino_id?: string;
+    documento_publico_id?: string;
+    archivo_adjunto_url?: string;
 }
 
 export interface TicketUpdate {
@@ -44,11 +49,18 @@ export interface TicketUpdate {
     prioridad?: string;
     estado?: string;
     asignado_a?: string;
+    area_destino_id?: string;
+    documento_publico_id?: string;
+    archivo_adjunto_url?: string;
 }
 
 export interface TicketResolver {
     solucion: string;
     satisfaccion_cliente?: number;
+}
+
+export interface TicketDecision {
+    comentario?: string;
 }
 
 const ticketService = {
@@ -76,6 +88,16 @@ const ticketService = {
 
     resolver: async (id: string, data: TicketResolver): Promise<Ticket> => {
         const response = await apiClient.post<Ticket>(`/tickets/${id}/resolver`, data);
+        return response.data;
+    },
+
+    aprobar: async (id: string, data: TicketDecision): Promise<Ticket> => {
+        const response = await apiClient.post<Ticket>(`/tickets/${id}/aprobar`, data);
+        return response.data;
+    },
+
+    declinar: async (id: string, data: TicketDecision): Promise<Ticket> => {
+        const response = await apiClient.post<Ticket>(`/tickets/${id}/declinar`, data);
         return response.data;
     },
 

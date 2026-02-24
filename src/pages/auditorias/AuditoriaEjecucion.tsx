@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Calendar, CheckCircle, AlertTriangle, FileText,
-    ArrowLeft, Plus, Play, ExternalLink, Activity, Save
+    ArrowLeft, Plus, Play, ExternalLink, Activity, Save, ShieldCheck
 } from 'lucide-react';
 import { auditoriaService, Auditoria, HallazgoAuditoria } from '@/services/auditoria.service';
 import { CampoFormulario, FormularioDinamico, formularioDinamicoService } from '@/services/formulario-dinamico.service';
+import { EtapaProceso, etapaProcesoService } from '@/services/etapaProceso.service';
 import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 // Importar componentes de formulario si es necesario o simplificar
 import { Input } from "@/components/ui/input";
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 export default function AuditoriaEjecucion() {
     const { id } = useParams<{ id: string }>();
@@ -42,14 +44,16 @@ export default function AuditoriaEjecucion() {
     const [checklistSaving, setChecklistSaving] = useState(false);
     const [formularioChecklist, setFormularioChecklist] = useState<FormularioDinamico | null>(null);
     const [camposChecklist, setCamposChecklist] = useState<CampoFormulario[]>([]);
-    const [respuestasChecklist, setRespuestasChecklist] = useState<Record<string, { respuestaId?: string; valor: string }>>({});
+    const [respuestasChecklist, setRespuestasChecklist] = useState<Record<string, { respuestaId?: string; valor: string; archivoAdjunto?: string }>>({});
+    const [etapasProceso, setEtapasProceso] = useState<EtapaProceso[]>([]);
 
     // Estado para formulario de hallazgo
     const [hallazgoForm, setHallazgoForm] = useState<Partial<HallazgoAuditoria>>({
         tipo: 'no_conformidad_menor',
         descripcion: '',
         clausulaIso: '',
-        evidencia: ''
+        evidencia: '',
+        etapaProcesoId: undefined
     });
 
     useEffect(() => {
@@ -68,6 +72,12 @@ export default function AuditoriaEjecucion() {
             setAuditoria(audData);
             setHallazgos(hallazgosData);
             const procesoId = audData.procesoId || (audData as any).proceso_id;
+            if (procesoId) {
+                const etapas = await etapaProcesoService.getByProceso(procesoId);
+                setEtapasProceso(etapas);
+            } else {
+                setEtapasProceso([]);
+            }
             await cargarChecklist(auditoriaId, procesoId);
         } catch (error) {
             console.error('Error al cargar datos:', error);
@@ -127,13 +137,14 @@ export default function AuditoriaEjecucion() {
                 ...hallazgoForm,
                 auditoria_id: id, // Enviar como snake_case para compatibilidad
                 auditoriaId: id,   // Enviar también como camelCase por si acaso
+                proceso_id: auditoria.procesoId,
                 codigo: `HALL-${hallazgos.length + 1}`
             };
 
             await auditoriaService.createHallazgo(payload);
             toast.success('Hallazgo registrado');
             setShowHallazgoModal(false);
-            setHallazgoForm({ tipo: 'no_conformidad_menor', descripcion: '', clausulaIso: '', evidencia: '' });
+            setHallazgoForm({ tipo: 'no_conformidad_menor', descripcion: '', clausulaIso: '', evidencia: '', etapaProcesoId: undefined });
             cargarDatos(id);
         } catch (error: any) {
             console.error('Error detallado:', error);
@@ -172,6 +183,7 @@ export default function AuditoriaEjecucion() {
                 entidadTipo: 'auditoria',
                 procesoId,
                 activo: true,
+                estadoWorkflow: 'aprobado',
                 limit: 100
             });
             if (!formularios.length) {
@@ -180,6 +192,7 @@ export default function AuditoriaEjecucion() {
                     modulo: 'auditorias',
                     entidadTipo: 'auditoria',
                     activo: true,
+                    estadoWorkflow: 'aprobado',
                     limit: 100
                 });
             }
@@ -193,6 +206,22 @@ export default function AuditoriaEjecucion() {
                 return;
             }
 
+            if (
+                auditoria &&
+                (auditoria.formularioChecklistId !== formulario.id ||
+                    auditoria.formularioChecklistVersion !== formulario.version)
+            ) {
+                try {
+                    const updated = await auditoriaService.update(auditoria.id, {
+                        formularioChecklistId: formulario.id,
+                        formularioChecklistVersion: formulario.version,
+                    });
+                    setAuditoria(updated);
+                } catch (e) {
+                    console.warn('No se pudo fijar checklist versionado en auditoría', e);
+                }
+            }
+
             const [campos, respuestas] = await Promise.all([
                 formularioDinamicoService.getCampos({ formularioId: formulario.id, activo: true }),
                 formularioDinamicoService.getRespuestas({ auditoriaId })
@@ -202,7 +231,8 @@ export default function AuditoriaEjecucion() {
             const respuestasMap = respuestas.reduce<Record<string, { respuestaId?: string; valor: string }>>((acc, item) => {
                 acc[item.campoFormularioId] = {
                     respuestaId: item.id,
-                    valor: item.valor || ''
+                    valor: item.valor || '',
+                    archivoAdjunto: item.archivoAdjunto || '',
                 };
                 return acc;
             }, {});
@@ -225,6 +255,16 @@ export default function AuditoriaEjecucion() {
         }));
     };
 
+    const actualizarEvidenciaChecklist = (campoId: string, archivoAdjunto: string) => {
+        setRespuestasChecklist((prev) => ({
+            ...prev,
+            [campoId]: {
+                ...prev[campoId],
+                archivoAdjunto,
+            },
+        }));
+    };
+
     const normalizarOpcionesCampo = (opciones: any): Array<{ label: string; value: string }> => {
         if (!opciones) return [];
         if (Array.isArray(opciones)) {
@@ -242,8 +282,15 @@ export default function AuditoriaEjecucion() {
         if (!camposChecklist.length) return;
 
         const faltantes = camposChecklist.filter((campo) => campo.requerido && !(respuestasChecklist[campo.id]?.valor || '').trim());
+        const faltantesEvidencia = camposChecklist.filter(
+            (campo) => campo.evidenciaRequerida && !(respuestasChecklist[campo.id]?.archivoAdjunto || '').trim()
+        );
         if (faltantes.length) {
             toast.error(`Completa los campos obligatorios (${faltantes.length})`);
+            return;
+        }
+        if (faltantesEvidencia.length) {
+            toast.error(`Adjunta evidencia en campos requeridos (${faltantesEvidencia.length})`);
             return;
         }
 
@@ -253,11 +300,12 @@ export default function AuditoriaEjecucion() {
                 campoFormularioId: campo.id,
                 valor: respuestasChecklist[campo.id]?.valor || '',
                 respuestaId: respuestasChecklist[campo.id]?.respuestaId,
+                archivoAdjunto: respuestasChecklist[campo.id]?.archivoAdjunto || '',
             }));
 
             const guardadas = await formularioDinamicoService.guardarRespuestasAuditoria(auditoria.id, payload);
-            const nuevasRespuestas = guardadas.reduce<Record<string, { respuestaId?: string; valor: string }>>((acc, item) => {
-                acc[item.campoFormularioId] = { respuestaId: item.id, valor: item.valor || '' };
+            const nuevasRespuestas = guardadas.reduce<Record<string, { respuestaId?: string; valor: string; archivoAdjunto?: string }>>((acc, item) => {
+                acc[item.campoFormularioId] = { respuestaId: item.id, valor: item.valor || '', archivoAdjunto: item.archivoAdjunto || '' };
                 return acc;
             }, {});
 
@@ -358,8 +406,19 @@ export default function AuditoriaEjecucion() {
         return <Badge className={`${map[estado] || 'bg-gray-100'} border-none uppercase`}>{estado.replace('_', ' ')}</Badge>;
     };
 
-    if (loading) return <div className="p-8 text-center">Cargando ejecución de auditoría...</div>;
+    if (loading) return <LoadingSpinner message="Cargando" />;
     if (!auditoria) return <div className="p-8 text-center">Auditoría no encontrada</div>;
+
+    const camposRequeridos = camposChecklist.filter((c) => c.requerido);
+    const completos = camposRequeridos.filter((c) => (respuestasChecklist[c.id]?.valor || '').trim()).length;
+    const pctChecklist = camposRequeridos.length > 0 ? Math.round((completos / camposRequeridos.length) * 100) : 0;
+    const faltantesChecklist = camposRequeridos.filter((c) => !(respuestasChecklist[c.id]?.valor || '').trim());
+    const camposPorSeccion = camposChecklist.reduce<Record<string, CampoFormulario[]>>((acc, c) => {
+        const key = (c.seccionIso || 'sin_seccion').toLowerCase();
+        acc[key] = acc[key] || [];
+        acc[key].push(c);
+        return acc;
+    }, {});
 
     return (
         <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
@@ -438,10 +497,13 @@ export default function AuditoriaEjecucion() {
                 <Card className="border-l-4 border-l-emerald-500 shadow-sm">
                     <CardHeader className="flex flex-row items-start justify-between">
                         <div>
-                            <CardTitle className="text-xl text-gray-900">Checklist dinámico</CardTitle>
+                            <CardTitle className="text-xl text-gray-900 flex items-center gap-2">
+                                <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                                Checklist ISO por secciones
+                            </CardTitle>
                             <CardDescription>
                                 {formularioChecklist
-                                    ? `${formularioChecklist.nombre} (${camposChecklist.length} campos)`
+                                    ? `${formularioChecklist.nombre} v${formularioChecklist.version} (${camposChecklist.length} campos)`
                                     : 'No hay formulario dinámico configurado para auditorías.'}
                             </CardDescription>
                         </div>
@@ -453,6 +515,22 @@ export default function AuditoriaEjecucion() {
                         )}
                     </CardHeader>
                     <CardContent>
+                        {camposChecklist.length > 0 && (
+                            <div className="mb-4 p-3 bg-gray-50 border rounded-lg">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-medium text-gray-700">Cumplimiento checklist</p>
+                                    <p className="text-sm font-bold text-emerald-700">{pctChecklist}%</p>
+                                </div>
+                                <div className="w-full h-2 bg-gray-200 rounded-full mt-2 overflow-hidden">
+                                    <div className="h-full bg-emerald-500 transition-all" style={{ width: `${pctChecklist}%` }} />
+                                </div>
+                                {faltantesChecklist.length > 0 && (
+                                    <p className="text-xs text-amber-700 mt-2">
+                                        Faltantes para cierre: {faltantesChecklist.map((f) => f.etiqueta).join(' | ')}
+                                    </p>
+                                )}
+                            </div>
+                        )}
                         {checklistLoading ? (
                             <p className="text-sm text-gray-500">Cargando checklist...</p>
                         ) : camposChecklist.length === 0 ? (
@@ -460,14 +538,36 @@ export default function AuditoriaEjecucion() {
                                 Configura un formulario en `modulo=auditorias` y `entidad_tipo=auditoria` para usar este bloque.
                             </p>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {camposChecklist.map((campo) => (
-                                    <div key={campo.id} className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-800 block">
-                                            {campo.etiqueta}
-                                            {campo.requerido && <span className="text-red-600"> *</span>}
-                                        </label>
-                                        {renderCampoChecklist(campo)}
+                            <div className="space-y-5">
+                                {Object.entries(camposPorSeccion).map(([seccion, camposSeccion]) => (
+                                    <div key={seccion} className="border rounded-xl p-4">
+                                        <p className="text-xs uppercase tracking-wide text-gray-500 mb-3">
+                                            {seccion.replace('_', ' ')}
+                                        </p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {camposSeccion.map((campo) => (
+                                                <div key={campo.id} className="space-y-2">
+                                                    <label className="text-sm font-medium text-gray-800 block">
+                                                        {campo.etiqueta}
+                                                        {campo.requerido && <span className="text-red-600"> *</span>}
+                                                        {campo.clausulaIso && (
+                                                            <span className="ml-2 text-[11px] text-blue-700 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5">
+                                                                ISO {campo.clausulaIso}
+                                                            </span>
+                                                        )}
+                                                    </label>
+                                                    {renderCampoChecklist(campo)}
+                                                    {campo.evidenciaRequerida && (
+                                                        <Input
+                                                            type="text"
+                                                            value={respuestasChecklist[campo.id]?.archivoAdjunto || ''}
+                                                            onChange={(e) => actualizarEvidenciaChecklist(campo.id, e.target.value)}
+                                                            placeholder="URL o referencia de evidencia"
+                                                        />
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -511,6 +611,11 @@ export default function AuditoriaEjecucion() {
                                                         {hallazgo.tipo.replace(/_/g, ' ')}
                                                     </Badge>
                                                     <span className="text-xs text-gray-500 font-mono">{hallazgo.clausulaIso && `ISO: ${hallazgo.clausulaIso}`}</span>
+                                                    {hallazgo.etapaProcesoId && (
+                                                        <span className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded px-2 py-0.5">
+                                                            Etapa: {etapasProceso.find((e) => e.id === hallazgo.etapaProcesoId)?.nombre || hallazgo.etapaProcesoId}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <p className="font-bold text-gray-900 text-lg">{hallazgo.descripcion}</p>
                                                 <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100">
@@ -587,6 +692,21 @@ export default function AuditoriaEjecucion() {
                             </div>
                         </div>
                         <div>
+                            <label className="text-sm font-medium mb-1 block">Etapa del proceso afectada (opcional)</label>
+                            <select
+                                className="w-full p-2 border rounded-md"
+                                value={hallazgoForm.etapaProcesoId || ""}
+                                onChange={(e) => setHallazgoForm({ ...hallazgoForm, etapaProcesoId: e.target.value || undefined })}
+                            >
+                                <option value="">Sin etapa específica</option>
+                                {etapasProceso.map((etapa) => (
+                                    <option key={etapa.id} value={etapa.id}>
+                                        {etapa.orden}. {etapa.nombre}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
                             <label className="text-sm font-medium mb-1 block">Descripción del Hallazgo</label>
                             <textarea
                                 className="w-full p-2 border rounded-md min-h-[100px]"
@@ -606,7 +726,15 @@ export default function AuditoriaEjecucion() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowHallazgoModal(false)}>Cancelar</Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setShowHallazgoModal(false);
+                                setHallazgoForm({ tipo: 'no_conformidad_menor', descripcion: '', clausulaIso: '', evidencia: '', etapaProcesoId: undefined });
+                            }}
+                        >
+                            Cancelar
+                        </Button>
                         <Button onClick={handleCrearHallazgo}>Registrar</Button>
                     </DialogFooter>
                 </DialogContent>

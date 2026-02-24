@@ -3,9 +3,10 @@ import { getCurrentUser } from "@/services/auth";
 import { SectionCards } from "@/components/section-cards";
 import { DataTable } from "@/components/data-table";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
-import tableData from "@/app/dashboard/data.json";
+import { noConformidadService } from "@/services/noConformidad.service";
 import { Badge } from "@/components/ui/badge";
 import { Activity, ShieldCheck, User, Mail, Smartphone, Globe } from "lucide-react";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface User {
   id: string;
@@ -22,21 +23,47 @@ interface User {
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
 
   useEffect(() => {
     // Obtener datos del usuario
     const currentUser = getCurrentUser();
     setUser(currentUser);
+
+    // Obtener actividades recientes (ej. No Conformidades)
+    const fetchActivities = async () => {
+      try {
+        const ncs = await noConformidadService.getAll();
+        const mappedNcs = (Array.isArray(ncs) ? ncs : []).map(nc => {
+          let estadoFormat = nc.estado;
+          if (nc.estado === "abierta") estadoFormat = "Abierta";
+          if (nc.estado === "en_tratamiento") estadoFormat = "En Tratamiento";
+          if (nc.estado === "cerrada") estadoFormat = "Cerrada";
+
+          return {
+            id: nc.id,
+            codigo: nc.codigo,
+            tipo: nc.tipo || "No Conformidad",
+            descripcion: nc.descripcion,
+            estado: estadoFormat,
+            gravedad: nc.gravedad ? nc.gravedad.charAt(0).toUpperCase() + nc.gravedad.slice(1) : "N/A",
+            fechaDeteccion: nc.fecha_deteccion ? new Date(nc.fecha_deteccion).toISOString().split('T')[0] : "N/A",
+            responsable: nc.responsable?.nombre ? `${nc.responsable.nombre} ${nc.responsable.primerApellido || ''}` : "Sin responsable"
+          };
+        }).sort((a, b) => new Date(b.fechaDeteccion).getTime() - new Date(a.fechaDeteccion).getTime()).slice(0, 10);
+
+        setRecentActivities(mappedNcs);
+      } catch (error) {
+        console.error("Error al cargar actividades recientes:", error);
+      }
+    };
+
+    fetchActivities();
   }, []);
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-slate-200" />
-          <p className="text-slate-400 font-medium">Cargando...</p>
-        </div>
-      </div>
+      <LoadingSpinner message="Cargando" />
     );
   }
 
@@ -99,7 +126,7 @@ export default function Dashboard() {
               <div className="flex-1">
                 <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Nombre Completo</p>
                 <p className="font-bold text-slate-700 dark:text-slate-200">
-                  {user.nombre} {user.primerApellido}
+                  {user.nombre} {user.primerApellido || (user as any).primer_apellido || ''}
                 </p>
               </div>
             </div>
@@ -111,7 +138,7 @@ export default function Dashboard() {
               <div className="flex-1">
                 <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Correo Institucional</p>
                 <p className="font-bold text-slate-700 dark:text-slate-200 truncate max-w-[180px]">
-                  {user.correoElectronico}
+                  {user.correoElectronico || (user as any).correo_electronico || ''}
                 </p>
               </div>
             </div>
@@ -132,7 +159,7 @@ export default function Dashboard() {
               </div>
               <div className="flex-1">
                 <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Usuario</p>
-                <p className="font-bold text-slate-700 dark:text-slate-200">@{user.nombreUsuario}</p>
+                <p className="font-bold text-slate-700 dark:text-slate-200">@{user.nombreUsuario || (user as any).nombre_usuario || ''}</p>
               </div>
             </div>
           </div>
@@ -151,7 +178,7 @@ export default function Dashboard() {
           <button className="text-sm font-bold text-blue-600 hover:text-blue-700">Ver todo</button>
         </div>
         <div className="p-0 overflow-x-auto">
-          <DataTable data={tableData} />
+          <DataTable data={recentActivities} />
         </div>
       </div>
     </div>

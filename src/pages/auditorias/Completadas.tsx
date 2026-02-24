@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { toast } from 'sonner';
 import { Auditoria } from '@/services/auditoria.service';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 // === COMPONENTE: AUDITORÍAS COMPLETADAS ===
 const AuditoriasCompletadas: React.FC = () => {
@@ -161,14 +162,7 @@ const AuditoriasCompletadas: React.FC = () => {
 
   // === RENDER ===
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
-        <div className="text-center">
-          <CheckCircle className="w-12 h-12 text-green-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Cargando auditorías completadas...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando Auditorias Completas" />;
   }
 
   return (

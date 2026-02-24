@@ -20,6 +20,7 @@ import DashboardAccionesCorrectivas from "./pages/Acciones_correctivas/Dashboard
 import AprobacionesPendientes from "./pages/documentos/Aprobaciones_Pendientes";
 import RevisionesPendientes from "./pages/documentos/Revisiones_Pendientes";
 import DocumentosObsoletos from "./pages/documentos/Documentos_Obsoletos";
+import DocumentosPublicos from "./pages/documentos/Documentos_Publicos";
 
 import GestionarAreas from "./pages/areas/Gestionar_Areas";
 import AreasResponsables from "./pages/areas/Asignar_Responsables";
@@ -55,6 +56,7 @@ import EficaciaIndicadores from "./pages/Indicadores/eficacia";
 import EficienciaIndicadores from "./pages/Indicadores/eficiencia";
 import CumplimientoIndicadores from "./pages/Indicadores/cumplimiento";
 
+
 import CapacitacionesProgramadas from "./pages/CapacitacionesProgramadas";
 import CapacitacionesHistorial from "./pages/CapacitacionesHistorial";
 import CapacitacionesAsistencia from "./pages/CapacitacionesAsistencia";
@@ -69,6 +71,7 @@ import FormularioProceso from "./pages/procesos/FormularioProceso";
 import DetalleProceso from "./pages/procesos/DetalleProceso";
 import ListadoProcesos from "./pages/procesos/ListadoProcesos";
 import MigracionesDB from "./pages/sistema/MigracionesDB";
+import AuditLogPage from "./pages/sistema/AuditLog";
 import MesaDeAyuda from "./pages/soporte/MesaDeAyuda";
 import Seguridad from "./pages/seguridad";
 import Configuracion from "./pages/configuracion";
@@ -106,6 +109,7 @@ function App() {
             <Route path="/Aprobaciones_Pendientes" element={<AprobacionesPendientes />} />
             <Route path="/Revisiones_Pendientes" element={<RevisionesPendientes />} />
             <Route path="/Documentos_Obsoletos" element={<DocumentosObsoletos />} />
+            <Route path="/Documentos_Publicos" element={<DocumentosPublicos />} />
 
             {/* Áreas */}
             <Route path="/gestionar_areas" element={<GestionarAreas />} />
@@ -158,6 +162,7 @@ function App() {
 
             {/* Indicadores */}
             <Route path="/indicadores/tablero" element={<TableroIndicadores />} />
+            <Route path="/indicadores/dashboard" element={<Navigate to="/indicadores/tablero" replace />} />
             <Route path="/indicadores/eficacia" element={<EficaciaIndicadores />} />
             <Route path="/indicadores/eficiencia" element={<EficienciaIndicadores />} />
             <Route path="/indicadores/cumplimiento" element={<CumplimientoIndicadores />} />
@@ -176,6 +181,7 @@ function App() {
 
             {/* Sistema */}
             <Route path="/sistema/migraciones" element={<MigracionesDB />} />
+            <Route path="/sistema/audit-log" element={<AuditLogPage />} />
 
             {/* Soporte */}
             <Route path="/mesa-ayuda" element={<MesaDeAyuda />} />

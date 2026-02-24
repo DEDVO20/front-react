@@ -28,6 +28,7 @@ import {
 import { Search, Eye, Filter, FileText, Layers, Clock, RefreshCw, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { documentoService, type DocumentoResponse } from "@/services/documento.service";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 type Version = {
   id: string;
@@ -166,11 +167,7 @@ export default function ControlVersiones() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando Versiones" />
   }
 
   return (

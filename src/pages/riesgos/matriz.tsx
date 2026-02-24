@@ -24,6 +24,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
 import { apiClient } from "@/lib/api";
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface Riesgo {
   id: string;
@@ -235,11 +236,7 @@ const MatrizRiesgos: React.FC = () => {
     filteredRiesgos.filter(r => r.probabilidad === prob && r.impacto === imp);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando matriz de riesgos...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando Matriz de Riesgo" />;
   }
 
   return (

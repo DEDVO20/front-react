@@ -5,6 +5,17 @@ export interface Area {
   codigo: string;
   nombre: string;
   descripcion?: string;
+  asignaciones?: {
+    id: string;
+    usuario_id: string;
+    es_principal: boolean;
+    usuario?: {
+      id: string;
+      nombre: string;
+      primer_apellido?: string;
+      correo_electronico?: string;
+    };
+  }[];
   creado_en?: string;      // Cambiado de creadoEn a creado_en (snake_case)
   actualizado_en?: string; // Cambiado de actualizadoEn a actualizado_en
 }

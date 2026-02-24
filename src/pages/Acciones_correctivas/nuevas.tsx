@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Save, X, AlertCircle, FileText, Activity, Calendar, User } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import {
   Card,
   CardHeader,
@@ -171,11 +172,7 @@ export default function NuevasAccionesCorrectivas({ onSuccess }: NuevasAccionesC
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando" />;
   }
 
   return (

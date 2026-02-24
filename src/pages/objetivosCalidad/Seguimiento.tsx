@@ -5,6 +5,7 @@ import {
   CheckCircle, Clock, Save, BarChart3
 } from 'lucide-react';
 import { objetivoCalidadService, ObjetivoCalidad, SeguimientoObjetivo } from '@/services/objetivoCalidad.service';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import {
   Card, CardHeader, CardTitle, CardDescription, CardContent
 } from "@/components/ui/card";
@@ -289,11 +290,7 @@ const ObjetivosCalidad: React.FC = () => {
   const coveragePercentage = stats.total === 0 ? 0 : Math.round((stats.cumplidos / stats.total) * 100);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando objetivos de calidad..." />;
   }
 
   return (
@@ -489,11 +486,10 @@ const ObjetivosCalidad: React.FC = () => {
                       const numSeg = getSeguimientosObjetivo(obj.id).length;
                       const porcentaje = (() => {
                         if (!ultimo) return 0;
-                        const raw = (ultimo as any).porcentajeCumplimiento;
-                        if (typeof raw === 'number') return raw;
-                        const valorActual = (ultimo as any).valorActual ?? (ultimo as any).valor_actual ?? 0;
-                        const valorMeta = obj.valorMeta ?? (obj as any).valor_meta ?? 0;
-                        if (valorMeta && valorActual != null) return (Number(valorActual) / Number(valorMeta)) * 100;
+                        // porcentajeCumplimiento is always 0 in the mapper — compute directly
+                        const valorActual = Number((ultimo as any).valorActual ?? (ultimo as any).valor_actual ?? 0);
+                        const valorMeta = Number(obj.valorMeta ?? (obj as any).valor_meta ?? 0);
+                        if (valorMeta > 0) return Math.min((valorActual / valorMeta) * 100, 100);
                         return 0;
                       })();
 

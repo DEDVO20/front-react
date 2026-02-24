@@ -48,6 +48,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { apiClient } from "@/lib/api";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface Usuario {
   id: string;
@@ -185,11 +186,7 @@ export default function AreasResponsables() {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando" />;
   }
 
   const total = areas.length;
@@ -412,8 +409,8 @@ export default function AreasResponsables() {
                           {area.asignaciones && area.asignaciones.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
                               {area.asignaciones.map((asig) => (
-                                <Badge 
-                                  key={asig.id} 
+                                <Badge
+                                  key={asig.id}
                                   className={asig.es_principal ? "bg-[#10B981] text-white" : "bg-[#E0EDFF] text-[#2563EB]"}
                                 >
                                   <UserCheck className="h-3 w-3 mr-1" />

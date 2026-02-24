@@ -19,6 +19,16 @@ export interface DashboardMetrics {
     };
 }
 
+export interface HumanRiskMetrics {
+    brechas_abiertas: number;
+    brechas_criticas: number;
+    riesgos_con_incremento_por_factor_humano: number;
+    indice_riesgo_humano: number;
+    procesos_vulnerables: number;
+    total_procesos: number;
+    cobertura_competencias: number;
+}
+
 export interface HeatmapPoint {
     probabilidad: string | number;
     impacto: string | number;
@@ -43,6 +53,11 @@ export const analyticsService = {
 
     getAuditoriasStats: async () => {
         const response = await apiClient.get("/analytics/auditorias/stats");
+        return response.data;
+    },
+
+    getHumanRiskMetrics: async (): Promise<HumanRiskMetrics> => {
+        const response = await apiClient.get("/analytics/competencias/riesgo-humano");
         return response.data;
     },
 

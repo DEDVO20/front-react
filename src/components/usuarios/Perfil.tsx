@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import LoadingSpinner from "../ui/LoadingSpinner";
 
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
@@ -216,9 +217,7 @@ export default function ProfilePage() {
 
   if (loading)
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-muted-foreground">Cargando perfil...</p>
-      </div>
+      <LoadingSpinner message="Cargando perfil" />
     );
 
   return (

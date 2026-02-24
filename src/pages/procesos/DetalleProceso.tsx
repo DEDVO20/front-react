@@ -16,12 +16,16 @@ import {
     Clock,
     XCircle,
     AlertCircle,
-    Network
+    Network,
+    ShieldAlert,
+    Gauge,
+    FolderOpen
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -34,13 +38,26 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import procesoService, { Proceso, TipoProceso, EtapaPHVA, EstadoProceso } from "@/services/proceso.service";
+import EtapasProceso from "@/components/procesos/EtapasProceso";
+import ResponsablesProceso from "@/components/procesos/ResponsablesProceso";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { indicadorService, Indicador } from "@/services/indicador.service";
+import { riesgoService, Riesgo } from "@/services/riesgo.service";
+import { documentoService, DocumentoResponse } from "@/services/documento.service";
 
 export default function DetalleProceso() {
     const navigate = useNavigate();
     const { id } = useParams();
     const [proceso, setProceso] = useState<Proceso | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadingGestion, setLoadingGestion] = useState(true);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [indicadoresProceso, setIndicadoresProceso] = useState<Indicador[]>([]);
+    const [riesgosProceso, setRiesgosProceso] = useState<Riesgo[]>([]);
+    const [documentosProceso, setDocumentosProceso] = useState<DocumentoResponse[]>([]);
+    const [todosDocumentos, setTodosDocumentos] = useState<DocumentoResponse[]>([]);
+    const [documentoSeleccionado, setDocumentoSeleccionado] = useState<string>("");
+    const [asociandoDocumento, setAsociandoDocumento] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -55,12 +72,54 @@ export default function DetalleProceso() {
             setLoading(true);
             const data = await procesoService.obtener(id);
             setProceso(data);
+            await cargarGestionProceso(data.id);
         } catch (error) {
             console.error("Error cargando proceso:", error);
             toast.error("Error al cargar el proceso");
             navigate("/procesos/listado");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const cargarGestionProceso = async (procesoId: string) => {
+        try {
+            setLoadingGestion(true);
+            const [indicadores, riesgos, documentos] = await Promise.all([
+                indicadorService.getAll({ proceso_id: procesoId }),
+                riesgoService.getAll({ proceso_id: procesoId }),
+                documentoService.getByProceso(procesoId),
+            ]);
+            const todos = await documentoService.getAll();
+            setIndicadoresProceso(indicadores);
+            setRiesgosProceso(riesgos);
+            setDocumentosProceso(documentos);
+            setTodosDocumentos(todos);
+        } catch (error) {
+            console.error("Error cargando gestión del proceso:", error);
+            setIndicadoresProceso([]);
+            setRiesgosProceso([]);
+            setDocumentosProceso([]);
+        } finally {
+            setLoadingGestion(false);
+        }
+    };
+
+    const asociarDocumento = async () => {
+        if (!proceso || !documentoSeleccionado) return;
+        try {
+            setAsociandoDocumento(true);
+            await documentoService.asociarDocumentoProceso({
+                documento_id: documentoSeleccionado,
+                proceso_id: proceso.id,
+            });
+            toast.success("Documento asociado al proceso");
+            setDocumentoSeleccionado("");
+            await cargarGestionProceso(proceso.id);
+        } catch (error: any) {
+            toast.error(error?.response?.data?.detail || "No se pudo asociar el documento");
+        } finally {
+            setAsociandoDocumento(false);
         }
     };
 
@@ -150,14 +209,7 @@ export default function DetalleProceso() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-[#F5F7FA] p-8 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="text-gray-500 mt-4">Cargando proceso...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner message="Cargando Procesos" />;
     }
 
     if (!proceso) {
@@ -364,6 +416,133 @@ export default function DetalleProceso() {
                                 </p>
                             </div>
                         )}
+                    </CardContent>
+                </Card>
+
+                <Card className="rounded-2xl shadow-sm">
+                    <CardHeader>
+                        <CardTitle className="text-xl">Gestión del Proceso</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Tabs defaultValue="etapas" className="w-full">
+                            <TabsList className="w-full justify-start overflow-x-auto">
+                                <TabsTrigger value="informacion">Información General</TabsTrigger>
+                                <TabsTrigger value="equipo">Equipo</TabsTrigger>
+                                <TabsTrigger value="etapas">Etapas</TabsTrigger>
+                                <TabsTrigger value="indicadores">Indicadores</TabsTrigger>
+                                <TabsTrigger value="riesgos">Riesgos</TabsTrigger>
+                                <TabsTrigger value="documentos">Documentos</TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="informacion">
+                                <p className="text-sm text-gray-600">
+                                    La información general del proceso se visualiza en las secciones superiores.
+                                </p>
+                            </TabsContent>
+                            <TabsContent value="equipo">
+                                <ResponsablesProceso procesoId={proceso.id} />
+                            </TabsContent>
+                            <TabsContent value="etapas">
+                                <EtapasProceso procesoId={proceso.id} />
+                            </TabsContent>
+                            <TabsContent value="indicadores">
+                                {loadingGestion ? (
+                                    <p className="text-sm text-gray-600">Cargando indicadores...</p>
+                                ) : indicadoresProceso.length === 0 ? (
+                                    <p className="text-sm text-gray-600">No hay indicadores asociados a este proceso.</p>
+                                ) : (
+                                    <div className="space-y-3 mt-3">
+                                        {indicadoresProceso.map((ind) => (
+                                            <div key={ind.id} className="p-3 border rounded-xl bg-gray-50">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <Gauge className="h-4 w-4 text-blue-600" />
+                                                        <p className="font-semibold text-gray-900">{ind.nombre}</p>
+                                                    </div>
+                                                    <Badge variant="outline">{ind.codigo}</Badge>
+                                                </div>
+                                                <p className="text-xs text-gray-600 mt-1">
+                                                    Frecuencia: {ind.frecuencia_medicion} {ind.meta != null ? `| Meta: ${ind.meta}` : ""}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </TabsContent>
+                            <TabsContent value="riesgos">
+                                {loadingGestion ? (
+                                    <p className="text-sm text-gray-600">Cargando riesgos...</p>
+                                ) : riesgosProceso.length === 0 ? (
+                                    <p className="text-sm text-gray-600">No hay riesgos asociados a este proceso.</p>
+                                ) : (
+                                    <div className="space-y-3 mt-3">
+                                        {riesgosProceso.map((riesgo) => (
+                                            <div key={riesgo.id} className="p-3 border rounded-xl bg-gray-50">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <ShieldAlert className="h-4 w-4 text-rose-600" />
+                                                        <p className="font-semibold text-gray-900">{riesgo.descripcion || "Sin descripción"}</p>
+                                                    </div>
+                                                    <Badge variant="outline">{riesgo.codigo}</Badge>
+                                                </div>
+                                                <p className="text-xs text-gray-600 mt-1">
+                                                    Nivel: {riesgo.nivel_riesgo || "—"} {riesgo.nivel_residual != null ? `| Residual: ${riesgo.nivel_residual}` : ""} | Estado: {riesgo.estado || "activo"}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </TabsContent>
+                            <TabsContent value="documentos">
+                                <div className="flex flex-col md:flex-row gap-2 md:items-center md:justify-between mb-3">
+                                    <div className="flex gap-2 w-full md:w-auto">
+                                        <select
+                                            value={documentoSeleccionado}
+                                            onChange={(e) => setDocumentoSeleccionado(e.target.value)}
+                                            className="w-full md:w-96 p-2 border rounded-lg bg-white text-sm"
+                                        >
+                                            <option value="">Seleccionar documento para asociar...</option>
+                                            {todosDocumentos
+                                                .filter((doc) => !documentosProceso.some((d) => d.id === doc.id))
+                                                .map((doc) => (
+                                                    <option key={doc.id} value={doc.id}>
+                                                        {doc.codigo} - {doc.nombre}
+                                                    </option>
+                                                ))}
+                                        </select>
+                                        <Button
+                                            onClick={asociarDocumento}
+                                            disabled={!documentoSeleccionado || asociandoDocumento}
+                                            className="rounded-lg"
+                                        >
+                                            {asociandoDocumento ? "Asociando..." : "Asociar"}
+                                        </Button>
+                                    </div>
+                                </div>
+                                {loadingGestion ? (
+                                    <p className="text-sm text-gray-600">Cargando documentos...</p>
+                                ) : documentosProceso.length === 0 ? (
+                                    <p className="text-sm text-gray-600">No hay documentos asociados a este proceso.</p>
+                                ) : (
+                                    <div className="space-y-3 mt-3">
+                                        {documentosProceso.map((doc) => (
+                                            <div key={doc.id} className="p-3 border rounded-xl bg-gray-50">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <FolderOpen className="h-4 w-4 text-emerald-600" />
+                                                        <p className="font-semibold text-gray-900">{doc.nombre}</p>
+                                                    </div>
+                                                    <Badge variant="outline">{doc.codigo}</Badge>
+                                                </div>
+                                                <p className="text-xs text-gray-600 mt-1">
+                                                    Tipo: {doc.tipo_documento} | Estado: {doc.estado} | Versión: {doc.version_actual}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </TabsContent>
+                        </Tabs>
                     </CardContent>
                 </Card>
 

@@ -90,6 +90,7 @@ interface Asignacion {
 }
 
 import { apiClient } from "@/lib/api";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 // ... previous interfaces
 
@@ -201,11 +202,7 @@ export default function AsignarResponsables() {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando" />;
   }
 
   const totalAsignaciones = asignaciones.length;

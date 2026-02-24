@@ -215,6 +215,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         badgeVariant: "destructive" as const,
         items: [
           { title: "Gestionar Documentos", url: "/documentos", permiso: "documentos.ver" },
+          { title: "Documentos Publicos", url: "/Documentos_Publicos" },
           { title: "Control de Versiones", url: "/control-versiones", permiso: "documentos.editar" },
           {
             title: "Aprobaciones Pendientes",
@@ -326,6 +327,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           { title: "Configuración Global", url: "#", permiso: "sistema.configurar" },
           { title: "Migraciones de BD", url: "/sistema/migraciones", permiso: "sistema.migraciones" },
+          { title: "Audit Log", url: "/sistema/audit-log", permiso: "sistema.admin" },
         ],
       },
       {

@@ -31,6 +31,7 @@ import {
     RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface Area {
     id: string;
@@ -284,14 +285,7 @@ export default function EditarUsuario() {
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center space-y-4">
-                    <RefreshCw className="w-12 h-12 animate-spin mx-auto text-blue-500" />
-                    <p className="text-gray-600">Cargando datos del usuario...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner message="Cargando datos del usuario" />;
     }
 
     return (

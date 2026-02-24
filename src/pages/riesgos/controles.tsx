@@ -23,6 +23,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 import { API_BASE_URL as API_URL } from "@/lib/api";
 
@@ -201,11 +202,7 @@ const ControlesRiesgos: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando" />;
   }
 
   return (

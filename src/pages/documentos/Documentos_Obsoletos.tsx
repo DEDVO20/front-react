@@ -53,6 +53,7 @@ import {
 
 import { documentoService } from "@/services/documento.service";
 import { toast } from "sonner";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface Documento {
   id: string;
@@ -211,11 +212,7 @@ export default function DocumentosObsoletos() {
   }).length;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando" />;
   }
 
   return (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Target, TrendingUp, AlertCircle, CheckCircle2 } from "lucide-react";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import {
   Card,
   CardHeader,
@@ -40,14 +41,7 @@ export default function EficaciaIndicadores() {
   const objetivosIncumplidos = 0;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent" />
-          <p className="mt-4 text-sm text-gray-500">Cargando indicadores de eficacia...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando indicadores de eficacia..." />;
   }
 
   return (

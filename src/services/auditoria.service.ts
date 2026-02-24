@@ -22,6 +22,8 @@ export interface Auditoria {
   actualizadoEn?: string;
   programaId?: string;
   informeFinal?: string;
+  formularioChecklistId?: string;
+  formularioChecklistVersion?: number;
   auditorLider?: {
     id: string;
     nombre: string;
@@ -48,6 +50,7 @@ export interface HallazgoAuditoria {
   responsableId?: string;
   estado: string;
   evidencia?: string;
+  etapaProcesoId?: string;
   creadoEn?: string;
   auditoria?: Auditoria;
   responsable?: {
@@ -103,6 +106,8 @@ const normalizeAuditoria = (raw: any): Auditoria => {
     actualizadoEn: raw.actualizadoEn ?? raw.actualizado_en,
     programaId: raw.programaId ?? raw.programa_id,
     informeFinal: raw.informeFinal ?? raw.informe_final,
+    formularioChecklistId: raw.formularioChecklistId ?? raw.formulario_checklist_id,
+    formularioChecklistVersion: raw.formularioChecklistVersion ?? raw.formulario_checklist_version,
     auditorLider: auditorLiderRaw
       ? {
         id: auditorLiderRaw.id,
@@ -296,6 +301,16 @@ export const auditoriaService = {
     const response = await fetch(`${API_URL}/auditorias/${auditoriaId}/hallazgos`, {
       headers: getAuthHeaders(),
     });
+    if (!response.ok) throw new Error("Error al obtener hallazgos");
+    return response.json();
+  },
+
+  async getAllHallazgos(filters?: { estado?: string; tipo_hallazgo?: string }): Promise<HallazgoAuditoria[]> {
+    const params = new URLSearchParams();
+    if (filters?.estado) params.append("estado", filters.estado);
+    if (filters?.tipo_hallazgo) params.append("tipo_hallazgo", filters.tipo_hallazgo);
+    const url = `${API_URL}/hallazgos-auditoria${params.toString() ? `?${params.toString()}` : ""}`;
+    const response = await fetch(url, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error("Error al obtener hallazgos");
     return response.json();
   },

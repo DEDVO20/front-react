@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { CheckCircle, Users, Laptop, MapPin, Download, GraduationCap, Eye, RefreshCw, Search, Save } from "lucide-react";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,6 +33,8 @@ import {
 } from "@/services/capacitacion.service";
 import { usuarioService, Usuario } from "@/services/usuario.service";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import jsPDF from "jspdf";
 
 type RegistroAsistenciaUI = {
   selected: boolean;
@@ -41,6 +44,7 @@ type RegistroAsistenciaUI = {
 };
 
 const CapacitacionesAsistencia: React.FC = () => {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [selectedCapacitacion, setSelectedCapacitacion] = useState<Capacitacion | null>(null);
   const [asistencias, setAsistencias] = useState<Capacitacion[]>([]);
@@ -242,6 +246,152 @@ const CapacitacionesAsistencia: React.FC = () => {
     }
   };
 
+  const handleDescargarCertificado = async () => {
+    if (!selectedCapacitacion) return;
+
+    try {
+      toast.info("Obteniendo lista de asistentes...");
+
+      const asistenciasCap = await capacitacionService.getAsistencias(selectedCapacitacion.id);
+      const aprobados = asistenciasCap.filter((a) => a.asistio || a.evaluacionAprobada);
+
+      if (aprobados.length === 0) {
+        toast.error("No hay asistentes registrados para generar certificados.");
+        return;
+      }
+
+      toast.info(`Generando ${aprobados.length} certificado(s)...`);
+
+      const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const width = doc.internal.pageSize.getWidth();
+      const height = doc.internal.pageSize.getHeight();
+
+      // Load Logo once
+      let base64data: string | null = null;
+      try {
+        const response = await fetch('/iudc-icon.png');
+        const blob = await response.blob();
+        if (blob.size > 0) {
+          base64data = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              resolve(reader.result as string);
+            };
+            reader.readAsDataURL(blob);
+          });
+        }
+      } catch (e) {
+        console.warn('No se pudo cargar el logo de la universidad', e);
+      }
+
+      aprobados.forEach((asistencia, index) => {
+        if (index > 0) {
+          doc.addPage();
+        }
+
+        // Buscar al participante
+        const participante = usuariosActivos.find(u => u.id === asistencia.usuarioId);
+        let nombreUsuario = "Estudiante / Participante";
+
+        if (participante) {
+          nombreUsuario = `${participante.nombre} ${participante.primer_apellido || ''} ${participante.segundo_apellido || ''}`.trim();
+        }
+
+        // Border or Background
+        doc.setLineWidth(5);
+        doc.setDrawColor(37, 99, 235); // Blue #2563EB
+        doc.rect(10, 10, width - 20, height - 20);
+
+        doc.setLineWidth(1);
+        doc.setDrawColor(199, 210, 254);
+        doc.rect(14, 14, width - 28, height - 28);
+
+        // Add Logo
+        if (base64data) {
+          doc.addImage(base64data, 'PNG', width / 2 - 15, 20, 30, 30);
+        }
+
+        // Title
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(36);
+        doc.setTextColor(30, 58, 138); // Dark blue #1E3A8A
+        doc.text("CERTIFICADO DE ASISTENCIA", width / 2, 65, { align: "center" });
+
+        // Subtitle
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(18);
+        doc.setTextColor(107, 114, 128); // Gray #6B7280
+        doc.text("Se otorga el presente certificado a:", width / 2, 85, { align: "center" });
+
+        // Name
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(28);
+        doc.setTextColor(17, 24, 39); // Dark #111827
+        doc.text(nombreUsuario, width / 2, 100, { align: "center" });
+
+        // Body
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(16);
+        doc.setTextColor(107, 114, 128);
+        doc.text("Por haber completado exitosamente la capacitación:", width / 2, 118, { align: "center" });
+
+        // Course Name
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.setTextColor(30, 58, 138); // #1E3A8A
+        const cursoNombre = selectedCapacitacion.nombre.toUpperCase();
+        const splitTitle = doc.splitTextToSize(cursoNombre, width - 40);
+        doc.text(splitTitle, width / 2, 132, { align: "center" });
+
+        const offsetTextoLargo = splitTitle.length > 1 ? (splitTitle.length - 1) * 8 : 0;
+
+        // Details
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(14);
+        doc.setTextColor(75, 85, 99); // #4B5563
+
+        const fecha = selectedCapacitacion.fechaProgramada
+          ? new Date(selectedCapacitacion.fechaProgramada).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })
+          : "Fecha no registrada";
+
+        const duration = selectedCapacitacion.duracionHoras ? `${selectedCapacitacion.duracionHoras} horas` : "N/A";
+        const mode = selectedCapacitacion.modalidad || "N/A";
+
+        const detailsText = `Con una duración de ${duration} en modalidad ${mode},`;
+        doc.text(detailsText, width / 2, 148 + offsetTextoLargo, { align: "center" });
+        doc.text(`el día ${fecha}.`, width / 2, 156 + offsetTextoLargo, { align: "center" });
+
+        // Instructor Signature
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(156, 163, 175);
+        doc.line(width / 2 - 40, height - 32, width / 2 + 40, height - 32);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(17, 24, 39);
+        const instructorName = selectedCapacitacion.instructor || "Instructor Asignado";
+        doc.text(instructorName, width / 2, height - 25, { align: "center" });
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(107, 114, 128);
+        doc.text("Instructor", width / 2, height - 20, { align: "center" });
+      });
+
+      // Save
+      doc.save(`Certificados_${selectedCapacitacion.codigo || 'Capacitacion'}.pdf`);
+      toast.success("Certificados descargados correctamente");
+    } catch (error) {
+      console.error("Error al generar los certificados:", error);
+      toast.error("Hubo un error al generar los certificados");
+    }
+  };
+
   const filteredAsistencias = asistencias.filter(
     (a) =>
       a.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -259,11 +409,7 @@ const CapacitacionesAsistencia: React.FC = () => {
     usuariosFiltrados.every((usuario) => registrosAsistencia[usuario.id]?.selected);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando asistencias...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando asistencias..." />;
   }
 
   return (
@@ -723,10 +869,10 @@ const CapacitacionesAsistencia: React.FC = () => {
                 </Button>
                 <Button
                   className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-bold"
-                  onClick={() => toast.success("Descargando certificado...")}
+                  onClick={handleDescargarCertificado}
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Descargar Certificado
+                  Descargar Certificados
                 </Button>
               </DialogFooter>
             </DialogContent>

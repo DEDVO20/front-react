@@ -5,6 +5,7 @@ import { documentoService } from "@/services/documento.service";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle, ArrowLeft, FileText } from "lucide-react";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface DocumentoData {
   nombreArchivo?: string;
@@ -161,12 +162,7 @@ export default function EditarDocumento() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F5F7FA]">
-        <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-[#2563EB] border-t-transparent" />
-          <p className="mt-4 text-lg font-medium text-[#6B7280]">Cargando documento...</p>
-        </div>
-      </div>
+      <LoadingSpinner message="Cargando Documentos" />
     );
   }
 

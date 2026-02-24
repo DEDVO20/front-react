@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Award, Brain, TrendingUp, Eye, RefreshCw, Search, GraduationCap, X, Check } from "lucide-react";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -73,11 +74,7 @@ const CapacitacionesCompetencias: React.FC = () => {
   const pendientes = evaluaciones.filter((e) => e.estado === "Pendiente" || e.estado === "En Desarrollo").length;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-[#1E3A8A] font-bold animate-pulse">Cargando competencias...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando competencias..." />;
   }
 
   return (
@@ -295,8 +292,8 @@ const CapacitacionesCompetencias: React.FC = () => {
                         <Label className="text-[#6B7280] uppercase text-xs font-bold">Estado Actual</Label>
                         <Badge
                           className={`mt-2 px-4 py-2 text-lg font-bold ${selectedEvaluacion.estado === "Reforzada" || selectedEvaluacion.estado === "Desarrollada"
-                              ? "bg-[#ECFDF5] text-[#065F46]"
-                              : "bg-[#FFF7ED] text-[#9A3412]"
+                            ? "bg-[#ECFDF5] text-[#065F46]"
+                            : "bg-[#FFF7ED] text-[#9A3412]"
                             }`}
                         >
                           {selectedEvaluacion.estado}
