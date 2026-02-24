@@ -20,6 +20,9 @@ import {
 } from "@/components/ui/dialog";
 import { NuevaNoConformidadForm } from "@/components/calidad/NuevaNoConformidadForm";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { VerNoConformidad } from "@/components/calidad/VerNoConformidad";
+import { toast } from "sonner";
+import jsPDF from "jspdf";
 
 interface NoConformidadUI {
   id: string;
@@ -37,6 +40,8 @@ export default function NoConformidadesCerradas() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedNoConformidad, setSelectedNoConformidad] = useState<INoConformidad | null>(null);
 
   useEffect(() => {
     fetchNoConformidadesCerradas();
@@ -93,6 +98,71 @@ export default function NoConformidadesCerradas() {
       setTotal(ejemploData.length);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerDetalles = async (id: string) => {
+    try {
+      const data = await noConformidadService.getById(id);
+      setSelectedNoConformidad(data);
+      setIsViewDialogOpen(true);
+    } catch (error) {
+      console.error("Error al obtener detalles:", error);
+      toast.error("Error al cargar detalles");
+    }
+  };
+
+  const handleGenerarReporte = async (id: string) => {
+    try {
+      toast.info("Generando reporte...");
+      const nc = await noConformidadService.getById(id);
+
+      const doc = new jsPDF();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text("Reporte de No Conformidad (Cerrada)", 20, 20);
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Código: ${nc.codigo}`, 20, 40);
+      doc.text(`Estado: ${nc.estado}`, 20, 50);
+      doc.text(`Gravedad: ${nc.gravedad || 'N/A'}`, 20, 60);
+      doc.text(`Fecha Detección: ${nc.fecha_deteccion ? new Date(nc.fecha_deteccion).toLocaleDateString() : 'N/A'}`, 20, 70);
+      doc.text(`Tipo: ${nc.tipo || 'N/A'}`, 20, 80);
+      if (nc.responsable?.nombre) {
+        doc.text(`Responsable: ${nc.responsable.nombre} ${nc.responsable.primerApellido || ''}`, 20, 90);
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Descripción:", 20, 110);
+      doc.setFont("helvetica", "normal");
+      const splitDesc = doc.splitTextToSize(nc.descripcion || 'Sin descripción', 170);
+      doc.text(splitDesc, 20, 120);
+
+      let currentY = 120 + (splitDesc.length * 7);
+
+      if (nc.analisis_causa) {
+        doc.setFont("helvetica", "bold");
+        doc.text("Análisis de Causa:", 20, currentY);
+        doc.setFont("helvetica", "normal");
+        const splitCausa = doc.splitTextToSize(nc.analisis_causa, 170);
+        doc.text(splitCausa, 20, currentY + 10);
+        currentY += 10 + (splitCausa.length * 7);
+      }
+
+      if (nc.plan_accion) {
+        doc.setFont("helvetica", "bold");
+        doc.text("Plan de Acción:", 20, currentY);
+        doc.setFont("helvetica", "normal");
+        const splitPlan = doc.splitTextToSize(nc.plan_accion, 170);
+        doc.text(splitPlan, 20, currentY + 10);
+      }
+
+      doc.save(`Reporte_NC_${nc.codigo}.pdf`);
+      toast.success("Reporte descargado correctamente");
+    } catch (error) {
+      console.error("Error al generar reporte:", error);
+      toast.error("Error al generar el reporte PDF");
     }
   };
 
@@ -275,20 +345,22 @@ export default function NoConformidadesCerradas() {
               actions={[
                 {
                   label: "Ver Detalles",
-                  onClick: (row) => {
-                    console.log("Ver detalles de:", row);
-                  },
+                  onClick: (row) => handleVerDetalles(String(row.id)),
                 },
                 {
                   label: "Generar Reporte",
-                  onClick: (row) => {
-                    console.log("Generar reporte de:", row);
-                  },
+                  onClick: (row) => handleGenerarReporte(String(row.id)),
                 },
               ]}
             />
           </div>
         </div>
+
+        <VerNoConformidad
+          noConformidad={selectedNoConformidad}
+          open={isViewDialogOpen}
+          onClose={() => setIsViewDialogOpen(false)}
+        />
       </div>
     </div>
   );
