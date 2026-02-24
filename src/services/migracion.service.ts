@@ -3,8 +3,9 @@
  */
 
 import axios from 'axios';
+import { API_BASE_URL } from '@/lib/api';
 
-const API_URL = 'http://localhost:8000/api/migraciones';
+const API_URL = `${API_BASE_URL.replace(/\/v1$/, '')}/migraciones`;
 
 export interface MigracionInfo {
     revision: string;
