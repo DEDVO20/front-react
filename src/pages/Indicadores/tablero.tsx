@@ -31,6 +31,7 @@ import { procesoService, Proceso } from "@/services/proceso.service";
 import { usuarioService, Usuario } from "@/services/usuario.service";
 import DashboardPHVA from "@/components/dashboard/DashboardPHVA";
 import { dashboardPhvaService, DashboardPHVAMetrics } from "@/services/dashboardPhva.service";
+import { analyticsService, HumanRiskMetrics } from "@/services/analytics";
 
 // ========================
 // Componentes auxiliares
@@ -86,6 +87,7 @@ export default function TableroIndicadores() {
   // Tendencias + PHVA
   const [tendencias, setTendencias] = useState<Record<string, TendenciaIndicador>>({});
   const [phvaMetrics, setPhvaMetrics] = useState<DashboardPHVAMetrics | null>(null);
+  const [humanRiskMetrics, setHumanRiskMetrics] = useState<HumanRiskMetrics | null>(null);
 
   useEffect(() => {
     fetchIndicadores();
@@ -126,6 +128,12 @@ export default function TableroIndicadores() {
         setPhvaMetrics(metrics);
       } catch {
         setPhvaMetrics(null);
+      }
+      try {
+        const metrics = await analyticsService.getHumanRiskMetrics();
+        setHumanRiskMetrics(metrics);
+      } catch {
+        setHumanRiskMetrics(null);
       }
     } catch (error: any) {
       console.error("Error:", error);
@@ -273,6 +281,38 @@ export default function TableroIndicadores() {
               Nuevo Indicador
             </button>
           </div>
+        </div>
+
+        {/* Riesgo humano certificable */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="bg-[#FFF7ED] border border-[#FED7AA] shadow-sm rounded-2xl">
+            <CardHeader className="pb-2">
+              <CardDescription className="font-bold text-[#9A3412]">Brechas abiertas</CardDescription>
+              <CardTitle className="text-3xl font-bold text-[#9A3412]">{humanRiskMetrics?.brechas_abiertas ?? "—"}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card className="bg-[#FEF2F2] border border-[#FECACA] shadow-sm rounded-2xl">
+            <CardHeader className="pb-2">
+              <CardDescription className="font-bold text-[#B91C1C]">Brechas críticas</CardDescription>
+              <CardTitle className="text-3xl font-bold text-[#B91C1C]">{humanRiskMetrics?.brechas_criticas ?? "—"}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card className="bg-[#EFF6FF] border border-[#BFDBFE] shadow-sm rounded-2xl">
+            <CardHeader className="pb-2">
+              <CardDescription className="font-bold text-[#1D4ED8]">Índice riesgo humano</CardDescription>
+              <CardTitle className="text-3xl font-bold text-[#1D4ED8]">
+                {humanRiskMetrics ? `${humanRiskMetrics.indice_riesgo_humano}%` : "—"}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          <Card className="bg-[#ECFDF5] border border-[#BBF7D0] shadow-sm rounded-2xl">
+            <CardHeader className="pb-2">
+              <CardDescription className="font-bold text-[#166534]">Cobertura competencias</CardDescription>
+              <CardTitle className="text-3xl font-bold text-[#166534]">
+                {humanRiskMetrics ? `${humanRiskMetrics.cobertura_competencias}%` : "—"}
+              </CardTitle>
+            </CardHeader>
+          </Card>
         </div>
 
         {error && (

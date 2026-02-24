@@ -12,6 +12,7 @@ export interface Riesgo {
   fecha_revision?: string;
   impacto?: number;
   nivel_riesgo?: string;  // Cambiado a string para coincidir con backend
+  nivel_residual?: number;
   causas?: string;
   consecuencias?: string;
   tratamiento?: string;
