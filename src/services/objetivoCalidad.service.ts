@@ -26,7 +26,7 @@ export interface SeguimientoObjetivo {
   objetivoId: string;
   valorActual: number;
   valorObjetivo: number;
-  porcentajeCumplimiento: number;
+  porcentajeCumplimiento?: number;
   periodo: string;
   observaciones?: string;
   creadoEn: string;
@@ -86,7 +86,7 @@ const mapSeguimientoFromApi = (raw: any): SeguimientoObjetivo => ({
   objetivoId: raw.objetivo_calidad_id ?? raw.objetivoId,
   valorActual: Number(raw.valor_actual ?? raw.valorActual ?? 0),
   valorObjetivo: 0,
-  porcentajeCumplimiento: 0, // NOTE: always compute from valorActual/valorMeta at the UI layer
+  porcentajeCumplimiento: raw.porcentaje_cumplimiento ?? raw.porcentajeCumplimiento,
   periodo: raw.fecha_seguimiento ?? raw.periodo ?? "",
   observaciones: raw.observaciones,
   creadoEn: raw.creado_en ?? raw.creadoEn ?? raw.fecha_seguimiento,

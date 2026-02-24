@@ -50,6 +50,7 @@ export default function NoConformidadesEnTratamiento() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"create" | "edit" | "evidencias">("create");
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedNoConformidad, setSelectedNoConformidad] = useState<INoConformidad | null>(null);
 
@@ -112,6 +113,7 @@ export default function NoConformidadesEnTratamiento() {
     try {
       const data = await noConformidadService.getById(id);
       setSelectedNoConformidad(data);
+      setDialogMode("edit");
       setIsDialogOpen(true);
     } catch (error) {
       console.error("Error al cargar datos para editar:", error);
@@ -119,8 +121,21 @@ export default function NoConformidadesEnTratamiento() {
     }
   };
 
+  const handleAgregarEvidencias = async (id: string) => {
+    try {
+      const data = await noConformidadService.getById(id);
+      setSelectedNoConformidad(data);
+      setDialogMode("evidencias");
+      setIsDialogOpen(true);
+    } catch (error) {
+      console.error("Error al cargar no conformidad para evidencias:", error);
+      toast.error("Error al cargar la no conformidad");
+    }
+  };
+
   const handleCrear = () => {
     setSelectedNoConformidad(null);
+    setDialogMode("create");
     setIsDialogOpen(true);
   };
 
@@ -187,7 +202,11 @@ export default function NoConformidadesEnTratamiento() {
               </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>{selectedNoConformidad ? "Editar No Conformidad" : "Nueva No Conformidad"}</DialogTitle>
+                  <DialogTitle>
+                    {dialogMode === "create" && "Nueva No Conformidad"}
+                    {dialogMode === "edit" && "Editar No Conformidad"}
+                    {dialogMode === "evidencias" && "Agregar Evidencias (En Tratamiento)"}
+                  </DialogTitle>
                 </DialogHeader>
                 <NuevaNoConformidadForm
                   initialData={selectedNoConformidad}
@@ -310,41 +329,65 @@ export default function NoConformidadesEnTratamiento() {
         </Card>
 
         {/* Tabla principal */}
-        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
-          <div className="p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#1E3A8A]">Listado de No Conformidades en Tratamiento</h2>
-            <Badge variant="outline" className="bg-white border-[#E5E7EB] text-[#6B7280]">
-              Total: {total}
-            </Badge>
+        <div className="rounded-2xl border border-[#DBEAFE] bg-gradient-to-br from-white via-[#F8FAFF] to-[#EEF4FF] shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-[#E5E7EB] bg-white/80 backdrop-blur-sm">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-[#1E3A8A]">Listado de No Conformidades en Tratamiento</h2>
+                <p className="text-sm text-[#6B7280] mt-1">
+                  Prioriza casos críticos y registra avances, evidencias y decisiones de cierre.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className="bg-white text-[#1E3A8A] border border-[#DBEAFE]">
+                  Total: {total}
+                </Badge>
+                <Badge className="bg-[#FEF2F2] text-[#B91C1C] border border-[#FECACA]">
+                  Críticas: {criticas}
+                </Badge>
+                <Badge className="bg-[#FFF7ED] text-[#9A3412] border border-[#FED7AA]">
+                  Mayores: {mayores}
+                </Badge>
+                <Badge className="bg-[#ECFDF5] text-[#065F46] border border-[#BBF7D0]">
+                  Menores: {menores}
+                </Badge>
+              </div>
+            </div>
           </div>
-          <div className="p-0">
-            <DataTable
-              data={noConformidades}
-              actions={[
-                {
-                  label: "Ver Detalles",
-                  onClick: (row) => handleVerDetalles(String(row.id)),
-                },
-                {
-                  label: "Finalizar Tratamiento",
-                  onClick: async (row) => {
-                    const nc = row as unknown as NoConformidadUI;
-                    if (!nc.plan_accion) {
-                      toast.error("Debe registrar un Plan de Acción antes de finalizar el tratamiento.", {
-                        description: "Utilice la opción 'Editar' para agregar el análisis y plan de acción."
-                      });
-                      return;
-                    }
-                    setNcToFinalize(nc);
-                    setIsFinalizeDialogOpen(true);
+          <div className="p-4 md:p-6">
+            <div className="rounded-xl border border-[#E5E7EB] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.05)]">
+              <DataTable
+                data={noConformidades}
+                actions={[
+                  {
+                    label: "Ver Detalles",
+                    onClick: (row) => handleVerDetalles(String(row.id)),
                   },
-                },
-                {
-                  label: "Editar",
-                  onClick: (row) => handleEditar(String(row.id)),
-                },
-              ]}
-            />
+                  {
+                    label: "Cerrar Tratamiento",
+                    onClick: async (row) => {
+                      const nc = row as unknown as NoConformidadUI;
+                      if (!nc.plan_accion) {
+                        toast.error("Debe registrar un Plan de Acción antes de finalizar el tratamiento.", {
+                          description: "Utilice la opción 'Editar' para agregar el análisis y plan de acción."
+                        });
+                        return;
+                      }
+                      setNcToFinalize(nc);
+                      setIsFinalizeDialogOpen(true);
+                    },
+                  },
+                  {
+                    label: "Agregar Evidencias",
+                    onClick: (row) => handleAgregarEvidencias(String(row.id)),
+                  },
+                  {
+                    label: "Editar",
+                    onClick: (row) => handleEditar(String(row.id)),
+                  },
+                ]}
+              />
+            </div>
           </div>
         </div>
       </div>

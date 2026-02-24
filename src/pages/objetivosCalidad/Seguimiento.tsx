@@ -234,14 +234,25 @@ const ObjetivosCalidad: React.FC = () => {
   const handleDelete = async () => {
     const obj = deleteDialog.objetivo;
     if (!obj) return;
+    const numSeguimientos = getSeguimientosObjetivo(obj.id).length;
+    const puedeEliminar = obj.estado === 'cancelado' && numSeguimientos === 0;
+    if (!puedeEliminar) {
+      toast.error("Solo se pueden eliminar objetivos cancelados y sin seguimientos");
+      closeDeleteDialog();
+      return;
+    }
 
     try {
       await objetivoCalidadService.delete(obj.id);
       await cargarDatos();
       toast.success('Objetivo eliminado correctamente');
       closeDeleteDialog();
-    } catch (err) {
-      toast.error('Error al eliminar el objetivo');
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail;
+      const message = typeof detail === 'string'
+        ? detail
+        : (err?.message || 'Error al eliminar el objetivo');
+      toast.error(message);
     }
   };
 
@@ -484,6 +495,7 @@ const ObjetivosCalidad: React.FC = () => {
                     filteredObjetivos.map((obj) => {
                       const ultimo = getUltimoSeguimiento(obj.id);
                       const numSeg = getSeguimientosObjetivo(obj.id).length;
+                      const puedeEliminar = obj.estado === 'cancelado' && numSeg === 0;
                       const porcentaje = (() => {
                         if (!ultimo) return 0;
                         // porcentajeCumplimiento is always 0 in the mapper — compute directly
@@ -558,14 +570,16 @@ const ObjetivosCalidad: React.FC = () => {
                                 </TooltipTrigger>
                                 <TooltipContent><p>Registrar seguimiento</p></TooltipContent>
                               </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="sm" variant="destructive" onClick={() => openDeleteDialog(obj)} className="rounded-xl">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Eliminar</p></TooltipContent>
-                              </Tooltip>
+                              {puedeEliminar && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button size="sm" variant="destructive" onClick={() => openDeleteDialog(obj)} className="rounded-xl">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p>Eliminar</p></TooltipContent>
+                                </Tooltip>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -680,9 +694,10 @@ const ObjetivosCalidad: React.FC = () => {
                             .map((seg) => {
                               const valorActual = (seg as any).valorActual ?? (seg as any).valor_actual ?? 0;
                               const valorMeta = selectedObjetivo.valorMeta ?? (selectedObjetivo as any).valor_meta ?? 0;
-                              const porcentajeSeg = typeof (seg as any).porcentajeCumplimiento === 'number'
-                                ? (seg as any).porcentajeCumplimiento
-                                : (valorMeta && isFinite(Number(valorActual)))
+                              const porcentajeBackend = (seg as any).porcentajeCumplimiento;
+                              const porcentajeSeg = (typeof porcentajeBackend === 'number' && porcentajeBackend > 0)
+                                ? porcentajeBackend
+                                : (Number(valorMeta) > 0 && isFinite(Number(valorActual)))
                                   ? (Number(valorActual) / Number(valorMeta)) * 100
                                   : 0;
 
