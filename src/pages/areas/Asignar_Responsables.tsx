@@ -125,7 +125,7 @@ export default function AsignarResponsables() {
       const [asignacionesRes, areasRes, usuariosRes] = await Promise.all([
         apiClient.get<Asignacion[]>("/asignaciones"),
         apiClient.get<Area[]>("/areas"),
-        apiClient.get<Usuario[]>("/usuarios"),
+        apiClient.get<Usuario[]>("/usuarios", { params: { limit: 1000, activo: true } }),
       ]);
 
       setAsignaciones(asignacionesRes.data);

@@ -103,7 +103,7 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
 
     const fetchUsuarios = async () => {
         try {
-            const response = await apiClient.get("/usuarios", { params: { limit: 1000 } });
+            const response = await apiClient.get("/usuarios", { params: { limit: 1000, activo: true } });
             setUsuarios(response.data);
         } catch (error) {
             console.error("Error fetching usuarios:", error);

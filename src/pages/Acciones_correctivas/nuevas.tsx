@@ -79,7 +79,7 @@ export default function NuevasAccionesCorrectivas({ onSuccess }: NuevasAccionesC
         }));
 
       const { apiClient } = await import("@/lib/api");
-      const usuariosRes = await apiClient.get("/usuarios");
+      const usuariosRes = await apiClient.get("/usuarios", { params: { limit: 1000, activo: true } });
       const usuariosData = usuariosRes.data;
 
       setNoConformidades(noConformidadesFormatted);
