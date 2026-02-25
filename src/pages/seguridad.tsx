@@ -108,6 +108,10 @@ export default function Seguridad() {
   const userPermisos = currentUser?.permisos || [];
 
   const isAdmin = userPermisos.includes("sistema.admin");
+  const canConfigureSystem =
+    isAdmin ||
+    userPermisos.includes("sistema.configurar") ||
+    userPermisos.includes("sistema.config");
   const canManageMigraciones = isAdmin || userPermisos.includes("sistema.migraciones");
   const canViewAuditLog = isAdmin;
 
@@ -178,30 +182,28 @@ export default function Seguridad() {
         setLastPasswordUpdate(storedPasswordUpdate);
       }
 
-      if (isAdmin) {
-        try {
-          const [logoConfig, titleConfig, subtitleConfig] = await Promise.all([
-            configuracionService.get("logo_universidad"),
-            configuracionService.get("sistema_titulo"),
-            configuracionService.get("sistema_subtitulo"),
-          ]);
+      let configsSistema: Awaited<ReturnType<typeof configuracionService.list>> = [];
+      try {
+        configsSistema = await configuracionService.list({ categoria: "sistema", limit: 500 });
+      } catch (error) {
+        console.error("Error cargando configuraciones del sistema:", error);
+      }
 
-          if (logoConfig?.valor) setLogoUrl(logoConfig.valor);
-          if (titleConfig?.valor) setSystemTitle(titleConfig.valor);
-          if (subtitleConfig?.valor) setSystemSubtitle(subtitleConfig.valor);
-        } catch (error) {
-          console.error("Error cargando personalización del sistema:", error);
-        }
+      const configByKey = new Map(configsSistema.map((cfg) => [cfg.clave, cfg.valor]));
+
+      if (canConfigureSystem) {
+        const logo = configByKey.get("logo_universidad");
+        const title = configByKey.get("sistema_titulo");
+        const subtitle = configByKey.get("sistema_subtitulo");
+
+        if (logo) setLogoUrl(logo);
+        if (title) setSystemTitle(title);
+        if (subtitle) setSystemSubtitle(subtitle);
       }
 
       if (twoFactorConfigKey) {
-        try {
-          const twoFactorConfig = await configuracionService.get(twoFactorConfigKey);
-          setTwoFactorEnabled(twoFactorConfig?.valor === "true");
-        } catch (error) {
-          console.error("Error cargando configuración de 2FA:", error);
-          setTwoFactorEnabled(false);
-        }
+        const twoFactorValue = configByKey.get(twoFactorConfigKey);
+        setTwoFactorEnabled(twoFactorValue === "true");
       }
 
       loadSessions();
@@ -209,9 +211,14 @@ export default function Seguridad() {
 
     bootstrap();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin, twoFactorConfigKey, passwordUpdateStorageKey, sessionStorageKey]);
+  }, [canConfigureSystem, twoFactorConfigKey, passwordUpdateStorageKey, sessionStorageKey]);
 
   const handleLogoUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (!canConfigureSystem) {
+      toast.error("No tienes permisos para cambiar el logo del sistema.");
+      return;
+    }
+
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -224,7 +231,8 @@ export default function Seguridad() {
       window.dispatchEvent(new Event("system-logo-change"));
     } catch (error) {
       console.error("Error subiendo logo:", error);
-      toast.error("Error al actualizar el logo");
+      const message = (error as Error).message || "Error al actualizar el logo";
+      toast.error(message);
     } finally {
       setUploadingLogo(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -232,6 +240,11 @@ export default function Seguridad() {
   };
 
   const handleSaveSystemTexts = async () => {
+    if (!canConfigureSystem) {
+      toast.error("No tienes permisos para editar la configuración del sistema.");
+      return;
+    }
+
     const title = systemTitle.trim();
     const subtitle = systemSubtitle.trim();
 
@@ -250,7 +263,8 @@ export default function Seguridad() {
       window.dispatchEvent(new Event("system-config-change"));
     } catch (error) {
       console.error("Error guardando textos:", error);
-      toast.error("Error al guardar los textos");
+      const message = (error as Error).message || "Error al guardar los textos";
+      toast.error(message);
     } finally {
       setSavingTexts(false);
     }
@@ -403,20 +417,22 @@ export default function Seguridad() {
           </div>
         </div>
 
-        {isAdmin && (
+        {(canConfigureSystem || canManageMigraciones || canViewAuditLog) && (
           <>
             <Separator className="bg-gray-100" />
             <div className="space-y-3">
               <p className="text-sm font-semibold text-[#334155]">Vistas del sistema</p>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  className="rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50"
-                  onClick={() => navigate("/configuracion")}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configuración
-                </Button>
+                {canConfigureSystem && (
+                  <Button
+                    variant="outline"
+                    className="rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50"
+                    onClick={() => navigate("/configuracion")}
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Configuración
+                  </Button>
+                )}
                 {canManageMigraciones && (
                   <Button
                     variant="outline"
@@ -635,7 +651,7 @@ export default function Seguridad() {
     </Card>
   );
 
-  const personalizationCard = isAdmin ? (
+  const personalizationCard = canConfigureSystem ? (
     <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
       <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB] flex flex-row items-center gap-3">
         <div className="p-2 bg-blue-100 rounded-lg">
@@ -763,16 +779,16 @@ export default function Seguridad() {
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
           <div className="space-y-6">
-            {isAdmin ? personalizationCard : passwordCard}
-            {isAdmin && securityStatusCard}
-            {!isAdmin && twoFactorCard}
-            {!isAdmin && securityStatusCard}
+            {canConfigureSystem ? personalizationCard : passwordCard}
+            {canConfigureSystem && securityStatusCard}
+            {!canConfigureSystem && twoFactorCard}
+            {!canConfigureSystem && securityStatusCard}
           </div>
 
           <div className="space-y-6">
             {sessionsCard}
-            {isAdmin && passwordCard}
-            {isAdmin && twoFactorCard}
+            {canConfigureSystem && passwordCard}
+            {canConfigureSystem && twoFactorCard}
           </div>
         </div>
       </div>
