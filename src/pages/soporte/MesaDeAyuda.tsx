@@ -325,6 +325,16 @@ export default function MesaDeAyuda() {
         return `${principal.usuario.nombre}${apellido}`;
     };
 
+    const getSolicitanteLabel = (ticket: Ticket) => {
+        if (ticket.solicitante) {
+            const apellidos = [ticket.solicitante.primer_apellido, ticket.solicitante.segundo_apellido]
+                .filter(Boolean)
+                .join(" ");
+            return `${ticket.solicitante.nombre} ${apellidos}`.trim();
+        }
+        return ticket.solicitante_id;
+    };
+
     const filteredTickets = tickets.filter(ticket =>
         ticket.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ticket.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
@@ -500,6 +510,7 @@ export default function MesaDeAyuda() {
                                 <TableHeader className="bg-[#F8FAFC]">
                                     <TableRow>
                                         <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Título</TableHead>
+                                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Enviado por</TableHead>
                                         <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Área</TableHead>
                                         <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Categoría</TableHead>
                                         <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Prioridad</TableHead>
@@ -511,7 +522,7 @@ export default function MesaDeAyuda() {
                                 <TableBody>
                                     {filteredTickets.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={7} className="text-center py-20 text-[#6B7280]">
+                                            <TableCell colSpan={8} className="text-center py-20 text-[#6B7280]">
                                                 <div className="flex flex-col items-center">
                                                     <LifeBuoy className="h-16 w-16 text-gray-300 mb-4" />
                                                     <p className="text-lg font-medium">
@@ -535,6 +546,14 @@ export default function MesaDeAyuda() {
                                                         <span className="text-sm text-[#6B7280] line-clamp-2 max-w-md">
                                                             {ticket.descripcion || "Sin descripción"}
                                                         </span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="px-6 py-4 text-[#374151]">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium">{getSolicitanteLabel(ticket)}</span>
+                                                        {ticket.solicitante?.correo_electronico && (
+                                                            <span className="text-xs text-[#6B7280]">{ticket.solicitante.correo_electronico}</span>
+                                                        )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="px-6 py-4">
@@ -619,6 +638,10 @@ export default function MesaDeAyuda() {
                                                 <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha</Label>
                                                 <p className="mt-1">{new Date(selectedTicket.creado_en).toLocaleString('es-CO')}</p>
                                             </div>
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#6B7280] uppercase text-xs font-bold">Enviado por</Label>
+                                            <p className="mt-1 font-medium">{getSolicitanteLabel(selectedTicket)}</p>
                                         </div>
                                     </div>
 

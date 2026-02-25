@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -125,7 +126,7 @@ export default function EditarUsuario() {
 
             // Cargar roles del usuario
             if (usuario.roles && Array.isArray(usuario.roles)) {
-                setSelectedRoleIds(usuario.roles.map((r: any) => r.id || r.rol_id));
+                setSelectedRoleIds(usuario.roles.map((r: any) => String(r.id || r.rol_id)));
             }
         } catch (error) {
             console.error("Error al cargar usuario:", error);
@@ -273,15 +274,22 @@ export default function EditarUsuario() {
         }
     };
 
-    const removeRole = (roleId: string) => {
-        setSelectedRoleIds(prev => prev.filter(r => r !== roleId));
-        if (errors.roles) {
-            setErrors(prev => {
-                const newErrors = { ...prev };
-                delete newErrors.roles;
-                return newErrors;
-            });
-        }
+    const toggleRole = (roleId: string) => {
+        setSelectedRoleIds((prev) => {
+            const newRoles = prev.includes(roleId)
+                ? prev.filter((id) => id !== roleId)
+                : [...prev, roleId];
+
+            if (newRoles.length > 0 && errors.roles) {
+                setErrors((prevErrors) => {
+                    const newErrors = { ...prevErrors };
+                    delete newErrors.roles;
+                    return newErrors;
+                });
+            }
+
+            return newRoles;
+        });
     };
 
     if (loading) {
@@ -466,58 +474,80 @@ export default function EditarUsuario() {
                                 Asignación de Roles
                             </h3>
 
-                            <div className="space-y-2">
-                                <label htmlFor="roles" className="text-sm font-medium text-gray-700">
-                                    Roles <span className="text-red-500">*</span>
-                                </label>
-                                <div className="relative">
-                                    <Shield className="absolute left-3 top-3 text-gray-400 w-4 h-4 z-10" />
-                                    <select
-                                        id="roles"
-                                        multiple
-                                        value={selectedRoleIds}
-                                        onChange={(e) => {
-                                            const selected = Array.from(e.target.selectedOptions, option => option.value);
-                                            setSelectedRoleIds(selected);
-                                        }}
-                                        className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-32 ${errors.roles ? "border-red-500" : "border-gray-300"
-                                            }`}
-                                    >
-                                        {roles.map((rol) => (
-                                            <option key={rol.id} value={rol.id}>
-                                                {rol.nombre} ({rol.clave})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <p className="text-xs text-gray-500">
-                                    Mantén presionada la tecla <kbd className="px-1 bg-gray-200 rounded">Ctrl</kbd> (o <kbd className="px-1 bg-gray-200 rounded">Cmd</kbd>) para seleccionar múltiples roles
-                                </p>
-                                {errors.roles && (
-                                    <p className="text-sm text-red-500 flex items-center gap-1">
-                                        <AlertCircle className="w-3 h-3" />
-                                        {errors.roles}
+                            <div className="space-y-6">
+                                <div>
+                                    <p className="text-sm text-[#6B7280] mt-1">
+                                        {roles.length > 0
+                                            ? `${roles.length} roles disponibles en el sistema`
+                                            : "Cargando roles desde la base de datos..."}
                                     </p>
-                                )}
+                                    {errors.roles && (
+                                        <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
+                                            <AlertCircle className="h-4 w-4" />
+                                            {errors.roles}
+                                        </p>
+                                    )}
+                                </div>
 
-                                {/* Mostrar roles seleccionados como badges */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {roles.length === 0 ? (
+                                        <div className="col-span-2 text-center py-8 text-[#6B7280]">
+                                            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
+                                            <p>Cargando roles...</p>
+                                        </div>
+                                    ) : (
+                                        roles.map((rol) => {
+                                            const roleId = String(rol.id);
+                                            const isSelected = selectedRoleIds.includes(roleId);
+                                            return (
+                                                <div
+                                                    key={rol.id}
+                                                    className={`p-5 rounded-xl border-2 transition-all ${isSelected
+                                                        ? "bg-[#E0EDFF] border-[#2563EB] shadow-sm"
+                                                        : "bg-white border-[#E5E7EB] hover:border-[#2563EB]/50 hover:shadow-sm"
+                                                        }`}
+                                                >
+                                                    <div className="flex items-start gap-4">
+                                                        <Checkbox
+                                                            id={`role-${rol.id}`}
+                                                            checked={isSelected}
+                                                            onCheckedChange={() => toggleRole(roleId)}
+                                                        />
+                                                        <label
+                                                            htmlFor={`role-${rol.id}`}
+                                                            className="flex-1 cursor-pointer"
+                                                        >
+                                                            <div className="font-semibold text-gray-900">{rol.nombre}</div>
+                                                            <div className="text-xs text-gray-400 font-mono uppercase mt-1">{rol.clave}</div>
+                                                            {rol.descripcion && (
+                                                                <div className="text-sm text-[#6B7280] mt-2">{rol.descripcion}</div>
+                                                            )}
+                                                        </label>
+                                                        {isSelected && (
+                                                            <CheckCircle className="h-6 w-6 text-[#2563EB] flex-shrink-0" />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+
                                 {selectedRoleIds.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-3">
-                                        {selectedRoleIds.map((roleId) => {
-                                            const rol = roles.find(r => r.id === roleId);
-                                            return rol ? (
-                                                <Badge key={roleId} variant="secondary" className="flex items-center gap-1">
-                                                    {rol.nombre}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeRole(roleId)}
-                                                        className="ml-1 text-xs hover:text-red-600"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </Badge>
-                                            ) : null;
-                                        })}
+                                    <div className="bg-[#F8FAFC] rounded-xl p-4 border border-[#E5E7EB]">
+                                        <p className="text-sm font-medium text-[#6B7280] mb-3">
+                                            Roles seleccionados ({selectedRoleIds.length})
+                                        </p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedRoleIds.map((roleId) => {
+                                                const rol = roles.find((r) => String(r.id) === roleId);
+                                                return rol ? (
+                                                    <Badge key={roleId} className="bg-[#E0EDFF] text-[#2563EB] text-sm px-4 py-1">
+                                                        {rol.nombre}
+                                                    </Badge>
+                                                ) : null;
+                                            })}
+                                        </div>
                                     </div>
                                 )}
                             </div>

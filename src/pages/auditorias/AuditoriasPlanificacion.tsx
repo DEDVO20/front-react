@@ -164,7 +164,7 @@ const auditoriaService = {
 
 const usuarioService = {
   async getAll(): Promise<Usuario[]> {
-    const response = await fetch(`${API_BASE_URL}/usuarios`, {
+    const response = await fetch(`${API_BASE_URL}/usuarios?activo=true&limit=1000`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'Content-Type': 'application/json'

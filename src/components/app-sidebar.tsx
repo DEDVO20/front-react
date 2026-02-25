@@ -34,6 +34,7 @@ import axios from "axios";
 
 import { API_BASE_URL as API_URL } from "@/lib/api";
 import { configuracionService } from "@/services/configuracion.service";
+import { hasAnyPermission, getUserPermissions } from "@/lib/permissions";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [user, setUser] = React.useState(getCurrentUser());
@@ -112,12 +113,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 
   // Lógica de Permisos Detallada
-  const userPermisos = user?.permisos || [];
+  const userPermisos = getUserPermissions();
   const isAdmin = userPermisos.includes("sistema.admin");
 
   const hasPermission = (permiso?: string) => {
     if (!permiso || isAdmin) return true;
-    return userPermisos.includes(permiso);
+    return hasAnyPermission([permiso]);
   };
 
   // Definición de tipos para los elementos del menú

@@ -242,6 +242,14 @@ const ObjetivosActivos: React.FC = () => {
   };
 
   const handleEliminar = async (id: string) => {
+    const objetivo = objetivos.find((o) => o.id === id);
+    const tieneSeguimientos = (seguimientosMap[id] || []).length > 0;
+    const puedeEliminar = objetivo?.estado === 'cancelado' && !tieneSeguimientos;
+    if (!puedeEliminar) {
+      toast.error("Solo se pueden eliminar objetivos cancelados y sin seguimientos");
+      return;
+    }
+
     if (window.confirm('¿Está seguro de eliminar este objetivo?')) {
       try {
         await objetivoCalidadService.delete(id);
@@ -249,7 +257,11 @@ const ObjetivosActivos: React.FC = () => {
         cargarObjetivos();
       } catch (error: any) {
         console.error('Error al eliminar objetivo:', error);
-        toast.error('Error al eliminar el objetivo');
+        const detail = error?.response?.data?.detail;
+        const message = typeof detail === 'string'
+          ? detail
+          : 'Error al eliminar el objetivo';
+        toast.error(message);
       }
     }
   };
@@ -482,6 +494,7 @@ const ObjetivosActivos: React.FC = () => {
               </div>
             ) : (
               objetivosFiltrados.map((objetivo) => {
+                const puedeEliminar = objetivo.estado === 'cancelado' && (seguimientosMap[objetivo.id] || []).length === 0;
                 return (
                   <div key={objetivo.id} className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] p-6 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between mb-4">
@@ -516,13 +529,15 @@ const ObjetivosActivos: React.FC = () => {
                         >
                           <Edit className="w-5 h-5" />
                         </button>
-                        <button
-                          onClick={() => handleEliminar(objetivo.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                        {puedeEliminar && (
+                          <button
+                            onClick={() => handleEliminar(objetivo.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
                       </div>
                     </div>
 
