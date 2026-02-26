@@ -85,23 +85,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   React.useEffect(() => {
     const fetchSystemConfig = async () => {
       try {
-        // Cargar logo
-        const logoConfig = await configuracionService.get("logo_universidad");
-        if (logoConfig && logoConfig.valor) {
-          setLogoUrl(logoConfig.valor);
-        }
+        const configs = await configuracionService.list({ categoria: "sistema", limit: 500 });
+        const byKey = new Map(configs.map((cfg) => [cfg.clave, cfg.valor]));
 
-        // Cargar título del sistema
-        const titleConfig = await configuracionService.get("sistema_titulo");
-        if (titleConfig && titleConfig.valor) {
-          setSystemTitle(titleConfig.valor);
-        }
+        const logo = byKey.get("logo_universidad");
+        const title = byKey.get("sistema_titulo");
+        const subtitle = byKey.get("sistema_subtitulo");
 
-        // Cargar subtítulo del sistema
-        const subtitleConfig = await configuracionService.get("sistema_subtitulo");
-        if (subtitleConfig && subtitleConfig.valor) {
-          setSystemSubtitle(subtitleConfig.valor);
-        }
+        setLogoUrl(logo || null);
+        if (title) setSystemTitle(title);
+        if (subtitle) setSystemSubtitle(subtitle);
       } catch (error) {
         console.error("Error cargando configuración del sistema:", error);
       }
@@ -132,7 +125,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   interface MenuItem {
     title: string;
     url: string;
-    icon?: any; // Usamos any para evitar conflictos con LucideIcon si no se importa directamente
+    icon?: React.ElementType;
     isActive?: boolean;
     badge?: string;
     badgeVariant?: "default" | "destructive" | "outline" | "secondary";

@@ -2,6 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, Search, Download, Eye, Filter, Send, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import { documentoService, type DocumentoResponse } from "@/services/documento.service";
 import { areaService, type Area } from "@/services/area.service";
@@ -16,6 +26,8 @@ type SolicitudForm = {
   archivo: File | null;
 };
 
+type DecisionAction = "aprobar" | "declinar";
+
 export default function DocumentosPublicos() {
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
@@ -27,7 +39,11 @@ export default function DocumentosPublicos() {
   const [search, setSearch] = useState("");
   const [tipo, setTipo] = useState("");
   const [sending, setSending] = useState(false);
+  const [resolviendoDecision, setResolviendoDecision] = useState(false);
   const [selectedDocumento, setSelectedDocumento] = useState<DocumentoResponse | null>(null);
+  const [decisionTicketId, setDecisionTicketId] = useState<string | null>(null);
+  const [decisionAccion, setDecisionAccion] = useState<DecisionAction>("aprobar");
+  const [decisionComentario, setDecisionComentario] = useState("");
   const [solicitudForm, setSolicitudForm] = useState<SolicitudForm>({
     areaId: "",
     descripcion: "",
@@ -162,14 +178,20 @@ export default function DocumentosPublicos() {
     }
   };
 
-  const decidirSolicitud = async (ticketId: string, accion: "aprobar" | "declinar") => {
-    const comentario = window.prompt(
-      accion === "aprobar"
-        ? "Comentario de aprobacion (opcional):"
-        : "Motivo de declinacion (opcional):",
-    ) || "";
+  const abrirDecisionModal = (ticketId: string, accion: DecisionAction) => {
+    setDecisionTicketId(ticketId);
+    setDecisionAccion(accion);
+    setDecisionComentario("");
+  };
 
+  const cerrarDecisionModal = () => {
+    setDecisionTicketId(null);
+    setDecisionComentario("");
+  };
+
+  const decidirSolicitud = async (ticketId: string, accion: DecisionAction, comentario: string) => {
     try {
+      setResolviendoDecision(true);
       if (accion === "aprobar") {
         await ticketService.aprobar(ticketId, { comentario });
         toast.success("Solicitud aprobada");
@@ -178,10 +200,18 @@ export default function DocumentosPublicos() {
         toast.success("Solicitud declinada");
       }
       await cargarDatos();
+      cerrarDecisionModal();
     } catch (error) {
       console.error("Error al resolver solicitud:", error);
       toast.error("No se pudo actualizar la solicitud");
+    } finally {
+      setResolviendoDecision(false);
     }
+  };
+
+  const confirmarDecision = async () => {
+    if (!decisionTicketId) return;
+    await decidirSolicitud(decisionTicketId, decisionAccion, decisionComentario.trim());
   };
 
   return (
@@ -226,14 +256,14 @@ export default function DocumentosPublicos() {
                       </button>
                     )}
                     <button
-                      onClick={() => decidirSolicitud(t.id, "aprobar")}
+                      onClick={() => abrirDecisionModal(t.id, "aprobar")}
                       className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#16A34A] text-white text-sm font-medium hover:bg-[#15803D]"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       Aprobar
                     </button>
                     <button
-                      onClick={() => decidirSolicitud(t.id, "declinar")}
+                      onClick={() => abrirDecisionModal(t.id, "declinar")}
                       className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#DC2626] text-white text-sm font-medium hover:bg-[#B91C1C]"
                     >
                       <XCircle className="w-4 h-4" />
@@ -345,6 +375,72 @@ export default function DocumentosPublicos() {
           </div>
         )}
       </div>
+
+      <Dialog
+        open={Boolean(decisionTicketId)}
+        onOpenChange={(open) => {
+          if (!open && !resolviendoDecision) {
+            cerrarDecisionModal();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md rounded-2xl border border-[#E5E7EB]">
+          <DialogHeader>
+            <DialogTitle className={decisionAccion === "aprobar" ? "text-[#166534]" : "text-[#991B1B]"}>
+              {decisionAccion === "aprobar" ? "Aprobar solicitud" : "Declinar solicitud"}
+            </DialogTitle>
+            <DialogDescription className="text-[#6B7280]">
+              {decisionAccion === "aprobar"
+                ? "Puedes dejar un comentario opcional para la aprobación."
+                : "Puedes dejar un motivo opcional para la declinación."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-[#111827]">
+              {decisionAccion === "aprobar" ? "Comentario de aprobación" : "Motivo de declinación"} (opcional)
+            </label>
+            <Textarea
+              value={decisionComentario}
+              onChange={(e) => setDecisionComentario(e.target.value)}
+              placeholder={
+                decisionAccion === "aprobar"
+                  ? "Ej: Solicitud revisada y aprobada."
+                  : "Ej: El archivo no cumple el formato requerido."
+              }
+              className="min-h-[100px] border-[#E5E7EB] focus-visible:ring-[#2563EB]/30"
+            />
+          </div>
+
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="border-[#D1D5DB]"
+              onClick={cerrarDecisionModal}
+              disabled={resolviendoDecision}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={confirmarDecision}
+              disabled={resolviendoDecision}
+              className={
+                decisionAccion === "aprobar"
+                  ? "bg-[#16A34A] hover:bg-[#15803D]"
+                  : "bg-[#DC2626] hover:bg-[#B91C1C]"
+              }
+            >
+              {resolviendoDecision
+                ? "Procesando..."
+                : decisionAccion === "aprobar"
+                  ? "Aprobar solicitud"
+                  : "Declinar solicitud"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {selectedDocumento && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
