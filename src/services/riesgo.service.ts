@@ -4,6 +4,7 @@ export interface Riesgo {
   id: string;
   proceso_id?: string;
   codigo: string;
+  nombre?: string;
   descripcion?: string;
   categoria?: string;
   tipo_riesgo?: string;
