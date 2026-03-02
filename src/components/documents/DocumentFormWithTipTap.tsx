@@ -404,6 +404,7 @@ export const DocumentFormWithTipTap = ({
               className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="formato">Formato</option>
+              <option value="proceso">Proceso</option>
               <option value="procedimiento">Procedimiento</option>
               <option value="instructivo">Instructivo</option>
               <option value="manual">Manual</option>
