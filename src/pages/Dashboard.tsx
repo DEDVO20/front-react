@@ -18,7 +18,8 @@ import {
   ShieldAlert,
   BarChart3,
   CalendarDays,
-  Settings
+  Settings,
+  ArrowUpRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -34,24 +35,8 @@ import { analyticsService } from "@/services/analytics";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-/* ─── Design System ──────────────────────────────────────────────────────── */
-const T = {
-  navy: "#0F172A",
-  blue: "#3B82F6",
-  indigo: "#6366F1",
-  emerald: "#10B981",
-  amber: "#F59E0B",
-  rose: "#F43F5E",
-  violet: "#A855F7",
-  cyan: "#06B6D4",
-  pink: "#EC4899",
-  orange: "#F97316",
-  slate: "#64748B",
-  bg: "#F8FAFC",
-  surface: "#FFFFFF",
-  border: "#E2E8F0",
-};
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface GlobalStats {
   docsPendientes: number;
@@ -107,7 +92,7 @@ export default function Dashboard() {
         docsPendientes: docsRes.filter(d => d.estado === 'revision' || d.estado === 'aprobacion_pendiente').length,
         ncAbiertas: Object.values(calidadRes.noconformidades || {}).reduce((a: number, b: any) => a + (Number(b) || 0), 0) as number,
         auditoriasProximas: auditoriasRes.length,
-        riesgosCriticos: metricsRes.plan.riesgosIdentificados > 0 ? Math.ceil(metricsRes.plan.riesgosIdentificados * 0.15) : 0 // Estimado si no hay servicio directo
+        riesgosCriticos: metricsRes.plan.riesgosIdentificados > 0 ? Math.ceil(metricsRes.plan.riesgosIdentificados * 0.15) : 0
       });
 
     } catch (error: any) {
@@ -123,335 +108,315 @@ export default function Dashboard() {
   const stats = [
     {
       label: "Documentos",
-      value: `${globalStats.docsPendientes} Pend.`,
+      value: `${globalStats.docsPendientes}`,
+      suffix: "Pendientes",
       icon: FileText,
-      color: T.blue,
-      trend: "Revisar",
-      bg: "from-blue-500/20 to-cyan-500/20",
-      glow: "glow-blue",
-      path: "/Aprobaciones_Pendientes"
+      color: "text-blue-600",
+      iconBg: "bg-white/50",
+      cardBg: "bg-[#E0EDFF] border-[#C7D2FE]",
+      titleColor: "text-[#1E3A8A]",
+      path: "/Aprobaciones_Pendientes",
+      trend: "Revisión Crítica"
     },
     {
       label: "No Conformidades",
-      value: `${globalStats.ncAbiertas} Activas`,
+      value: `${globalStats.ncAbiertas}`,
+      suffix: "Activas",
       icon: ShieldAlert,
-      color: T.rose,
-      trend: "Gestión NC",
-      bg: "from-rose-500/20 to-pink-500/20",
-      glow: "glow-rose",
-      path: "/No_conformidades_Abiertas"
+      color: "text-rose-600",
+      iconBg: "bg-white/50",
+      cardBg: "bg-[#FFF1F2] border-[#FECDD3]",
+      titleColor: "text-[#9F1239]",
+      path: "/No_conformidades_Abiertas",
+      trend: "Gestión NC"
     },
     {
-      label: "Próximas Auditorías",
-      value: globalStats.auditoriasProximas,
+      label: "Auditorías",
+      value: `${globalStats.auditoriasProximas}`,
+      suffix: "Planificadas",
       icon: CalendarDays,
-      color: T.amber,
-      trend: "Ver Plan",
-      bg: "from-amber-500/20 to-orange-500/20",
-      glow: "glow-amber",
-      path: "/AuditoriasPlanificacion"
+      color: "text-amber-600",
+      iconBg: "bg-white/50",
+      cardBg: "bg-[#FFFBEB] border-[#FDE68A]",
+      titleColor: "text-[#92400E]",
+      path: "/AuditoriasPlanificacion",
+      trend: "Ver Plan"
     },
     {
-      label: "Riesgos Críticos",
-      value: globalStats.riesgosCriticos,
+      label: "Riesgos",
+      value: `${globalStats.riesgosCriticos}`,
+      suffix: "Críticos",
       icon: ShieldCheck,
-      color: T.emerald,
-      trend: "Matriz",
-      bg: "from-emerald-500/20 to-teal-500/20",
-      glow: "glow-emerald",
-      path: "/riesgos/matriz"
+      color: "text-emerald-600",
+      iconBg: "bg-white/50",
+      cardBg: "bg-[#ECFDF5] border-[#D1FAE5]",
+      titleColor: "text-[#065F46]",
+      path: "/riesgos/matriz",
+      trend: "Matriz QMS"
     },
   ];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-12">
-      <style>{`
-        .glass-card {
-          background: rgba(255, 255, 255, 0.8);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.5);
-          box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
-        }
-        
-        .hero-gradient {
-          background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.2), transparent 45%),
-                      radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.18), transparent 45%),
-                      radial-gradient(circle at center, rgba(168, 85, 247, 0.08), transparent 65%);
-        }
-        
-        .glow-blue { box-shadow: 0 0 20px -5px rgba(59, 130, 246, 0.5); }
-        .glow-emerald { box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.5); }
-        .glow-rose { box-shadow: 0 0 20px -5px rgba(244, 63, 94, 0.5); }
-        .glow-amber { box-shadow: 0 0 20px -5px rgba(245, 158, 11, 0.5); }
-        .glow-indigo { box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.4); }
+    <div className="min-h-screen bg-[#F5F7FA] pb-12">
+      <TooltipProvider>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        .scroll-hide::-webkit-scrollbar { display: none; }
-        .scroll-hide { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
-
-      <div className="font-sans max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 hero-gradient">
-
-        {/* ── Header Area ── */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-3 py-1 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white text-[10px] font-extrabold uppercase tracking-widest shadow-lg shadow-indigo-200/50">
-                SGC PRO v2.5.0
-              </span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10B981]" />
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-heading">Sistema Operativo</span>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-none mb-2 font-heading">
-              {greeting} <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-500 bg-clip-text text-transparent italic">Admin</span>
-            </h1>
-            <p className="text-slate-500 font-medium">Pulso global de calidad y cumplimiento organizacional.</p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-3"
-          >
-            <div className="hidden lg:flex items-center px-4 py-2 bg-white rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-indigo-300 group">
-              <Search className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
-              <input
-                type="text"
-                placeholder="Buscar reporte..."
-                className="bg-transparent border-none outline-none text-sm px-3 w-48 font-medium"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && toast.info(`Búsqueda: "${searchValue}" (En desarrollo)`)}
-              />
-              <kbd className="text-[10px] font-bold text-slate-400 border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">⌘K</kbd>
-            </div>
-            <Button
-              size="icon"
-              variant="outline"
-              className="rounded-2xl bg-white relative"
-              onClick={() => toast.info("No tienes notificaciones pendientes")}
-            >
-              <Bell className="w-5 h-5 text-slate-600" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
-            </Button>
-            <Button
-              className="rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 hover:scale-105 transition-all shadow-xl shadow-indigo-200/50 gap-2 px-8 border-none text-white font-bold h-12"
-              onClick={() => toast.success("Configuración de diseño guardada")}
-            >
-              <LayoutDashboard className="w-5 h-5" />
-              <span>Personalizar</span>
-            </Button>
-          </motion.div>
-        </header>
-
-        {/* ── Key Highlights (Pulse Global) ── */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <AnimatePresence>
-            {stats.map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ y: -6, scale: 1.03 }}
-                onClick={() => navigate(stat.path)}
-                className={`glass-card p-5 rounded-3xl transition-all duration-300 hover:border-white/50 cursor-pointer ${stat.glow}`}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`p-4 rounded-2xl bg-gradient-to-br ${stat.bg} shadow-inner`} style={{ color: stat.color }}>
-                    <stat.icon className="w-6 h-6" />
-                  </div>
-                  <span className={`text-[11px] font-black text-indigo-500 flex items-center gap-1 bg-indigo-50 px-2 py-0.5 rounded-full`}>
-                    {stat.trend} <ArrowRight className="w-3 h-3" />
-                  </span>
+          {/* ── Header Area (Premium Style) ── */}
+          <header className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB] font-bold px-3 py-0.5 rounded-full text-[10px] uppercase">
+                    QMS Intelligence v3.0
+                  </Badge>
+                  <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Sistema Operativo Conectado</span>
                 </div>
-                <div>
-                  <h3 className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1 font-heading">{stat.label}</h3>
-                  <p className="text-2xl font-extrabold text-slate-900 tracking-tight font-heading">{stat.value}</p>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </section>
-
-        {/* ── Module Health Matrix ── */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3 font-heading uppercase italic">
-            Matriz de Salud de Módulos
-            <div className="h-0.5 w-12 bg-indigo-600 rounded-full" />
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            {[
-              { label: "Documentación", icon: FileText, color: "blue", path: "/documentos", status: "88%" },
-              { label: "Procesos", icon: LayoutDashboard, color: "indigo", path: "/procesos", status: "Opt" },
-              { label: "Auditorías", icon: CheckCircle2, color: "amber", path: "/AuditoriasPlanificacion", status: "Plan" },
-              { label: "Riesgos", icon: ShieldAlert, color: "rose", path: "/riesgos/matriz", status: "Crit" },
-              { label: "Indicadores", icon: BarChart3, color: "emerald", path: "/indicadores/tablero", status: "OK" },
-              { label: "Usuarios", icon: Users, color: "violet", path: "/ListaDeUsuarios", status: "Act" },
-            ].map((m) => (
-              <button
-                key={m.label}
-                onClick={() => navigate(m.path)}
-                className="group flex flex-col p-4 bg-white/60 hover:bg-white rounded-[2rem] border border-slate-100 transition-all hover:shadow-xl hover:shadow-indigo-50/50"
-              >
-                <div className={`w-10 h-10 rounded-2xl bg-${m.color}-50 text-${m.color}-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
-                  <m.icon className="w-5 h-5" />
-                </div>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{m.label}</span>
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-sm font-bold text-slate-800">{m.status}</span>
-                  <div className={`w-1.5 h-1.5 rounded-full ${m.status === 'Crit' ? 'bg-rose-500 animate-pulse' : m.status === 'Plan' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* ── Main Dashboard Content ── */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-
-          {/* Left Column: PHVA & Charts */}
-          <div className="xl:col-span-8 space-y-8">
-
-            {/* PHVA Section */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="bg-white/40 p-1 rounded-[2.5rem] border border-white/60"
-            >
-              <div className="bg-white rounded-[2.2rem] p-6 shadow-sm border border-slate-100">
-                <DashboardPHVA metrics={metrics} />
+                <h1 className="text-3xl md:text-4xl font-extrabold text-[#1E3A8A] tracking-tight mb-2">
+                  {greeting} <span className="text-[#2563EB]">Admin</span>
+                </h1>
+                <p className="text-[#6B7280] text-lg font-medium">Control global y cumplimiento de la gestión de calidad.</p>
               </div>
-            </motion.div>
 
-            {/* Charts Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="space-y-4"
-            >
-              <div className="flex items-center justify-between px-2">
-                <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3 font-heading uppercase italic">
-                  Analítica QMS
-                  <div className="h-0.5 w-12 bg-indigo-600 rounded-full" />
-                </h2>
+              <div className="flex items-center gap-3">
+                <div className="hidden lg:flex items-center px-4 py-2 bg-white rounded-xl border border-[#E5E7EB] shadow-sm group focus-within:ring-2 focus-within:ring-[#2563EB]/20 transition-all">
+                  <Search className="w-4 h-4 text-[#6B7280] group-hover:text-[#2563EB] transition-colors" />
+                  <input
+                    type="text"
+                    placeholder="Buscar procesos..."
+                    className="bg-transparent border-none outline-none text-sm px-3 w-48 font-medium text-[#111827]"
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                  />
+                  <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold text-[#6B7280] bg-[#F9FAFB] border border-[#E5E7EB] rounded-md">⌘K</kbd>
+                </div>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" className="rounded-xl bg-white relative h-11 w-11">
+                      <Bell className="w-5 h-5 text-[#4B5563]" />
+                      <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Notificaciones</TooltipContent>
+                </Tooltip>
+
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-indigo-600 font-bold hover:bg-indigo-50 rounded-xl"
-                  onClick={() => navigate("/indicadores/tablero")}
+                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-lg shadow-[#2563EB]/20 rounded-xl px-6 h-11 font-bold transition-all hover:-translate-y-0.5"
+                  onClick={() => toast.success("Configuración de diseño sincronizada")}
                 >
-                  Ver detalle analítico <ChevronRight className="w-4 h-4 ml-1" />
+                  <LayoutDashboard className="w-5 h-5 mr-2" />
+                  Panel Maestro
                 </Button>
               </div>
-              <GraficosAcciones acciones={acciones} />
-            </motion.div>
-          </div>
+            </div>
+          </header>
 
-          {/* Right Column: Feed & Actions */}
-          <div className="xl:col-span-4 space-y-8">
-
-            {/* Quick Actions */}
-            <button
-              onClick={() => navigate("/configuracion")}
-              className="w-full flex items-center justify-between p-6 bg-gradient-to-r from-slate-900 to-slate-800 rounded-[2rem] text-white group overflow-hidden relative"
-            >
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-125 transition-transform">
-                <Settings className="w-20 h-20" />
-              </div>
-              <div className="z-10 text-left">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1">Configuración Especial</p>
-                <h4 className="text-lg font-black tracking-tight">Panel de Control SGC</h4>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors z-10">
-                <ChevronRight className="w-5 h-5" />
-              </div>
-            </button>
-
-            <motion.section
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-              className="space-y-4"
-            >
-              <h3 className="text-lg font-bold text-slate-900 px-2">Accesos Rápidos</h3>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: "Nuevo Proceso", icon: Plus, color: "indigo", path: "/procesos/nuevo" },
-                  { label: "Reportar NC", icon: AlertCircle, color: "rose", path: "/No_conformidades_Abiertas" },
-                  { label: "Plan Auditoría", icon: Clock, color: "amber", path: "/AuditoriasPlanificacion" },
-                  { label: "Aprobaciones", icon: CheckCircle2, color: "emerald", path: "/Aprobaciones_Pendientes" },
-                ].map((act) => (
-                  <button
-                    key={act.label}
-                    onClick={() => navigate(act.path)}
-                    className="flex flex-col items-center justify-center p-4 bg-white border border-slate-100 rounded-3xl hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-50 transition-all group"
-                  >
-                    <div className={`p-3 rounded-2xl bg-${act.color}-50 text-${act.color}-600 group-hover:scale-110 transition-transform`}>
-                      <act.icon className="w-5 h-5" />
+          {/* ── Key Highlights (Stats Grid) ── */}
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <AnimatePresence>
+              {stats.map((stat, i) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                  onClick={() => navigate(stat.path)}
+                  className={`${stat.cardBg} p-6 rounded-2xl border shadow-sm hover:shadow-md transition-all cursor-pointer group`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`p-3 rounded-xl ${stat.iconBg} ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
+                      <stat.icon className="w-6 h-6" />
                     </div>
-                    <span className="text-xs font-bold text-slate-600 mt-3">{act.label}</span>
-                  </button>
-                ))}
-              </div>
-            </motion.section>
-
-            {/* Recent Activity */}
-            <motion.section
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.7 }}
-              className="bg-white border border-slate-100 rounded-[2.5rem] p-6 shadow-sm overflow-hidden"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-slate-900">Actividad Reciente</h3>
-                <Badge variant="secondary" className="rounded-lg bg-slate-100 text-slate-600">Hoy</Badge>
-              </div>
-
-              <div className="space-y-6">
-                {acciones.slice(0, 5).map((acc, i) => (
-                  <div
-                    key={acc.id}
-                    className="flex gap-4 relative group cursor-pointer"
-                    onClick={() => navigate(`/acciones-correctivas/${acc.id}/solucionar`)}
-                  >
-                    {i !== 4 && <div className="absolute left-[15px] top-8 bottom-[-24px] w-0.5 bg-slate-100" />}
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 z-10 ${acc.estado === 'cerrada' ? 'bg-emerald-100 text-emerald-600' :
-                      acc.estado === 'pendiente' ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600'
-                      }`}>
-                      {acc.estado === 'cerrada' ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">
-                        {acc.descripcion.length > 40 ? acc.descripcion.substring(0, 40) + "..." : acc.descripcion}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">{acc.tipo}</span>
-                        <span className="w-1 h-1 rounded-full bg-slate-200" />
-                        <span className="text-[10px] font-medium text-slate-400">Hace 2 horas</span>
-                      </div>
+                    <Badge variant="secondary" className="bg-white/50 text-[#6B7280] font-bold text-[10px] uppercase px-2 py-0.5 rounded-lg flex items-center gap-1 group-hover:bg-[#E0EDFF] group-hover:text-[#2563EB] transition-colors">
+                      {stat.trend} <ArrowUpRight className="w-3 h-3" />
+                    </Badge>
+                  </div>
+                  <div>
+                    <h3 className={`${stat.titleColor} text-xs font-bold uppercase tracking-widest mb-1 opacity-80`}>{stat.label}</h3>
+                    <div className="flex items-baseline gap-2">
+                      <span className={`text-3xl font-black ${stat.titleColor}`}>{stat.value}</span>
+                      <span className={`text-sm font-bold ${stat.titleColor} opacity-70`}>{stat.suffix}</span>
                     </div>
                   </div>
-                ))}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </section>
+
+          {/* ── Dashboard Core Layout ── */}
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+
+            {/* Left Column: Health Matrix & PHVA */}
+            <div className="xl:col-span-8 space-y-8">
+
+              {/* Module Health Matrix */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <h2 className="text-xl font-bold text-[#1E3A8A] uppercase tracking-tight">Estado de Módulos</h2>
+                  <div className="h-0.5 flex-1 bg-gradient-to-r from-[#2563EB]/20 to-transparent rounded-full" />
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {[
+                    { label: "Documentación", icon: FileText, color: "blue", path: "/documentos", status: "88%", level: "active", bg: "bg-[#E0EDFF]" },
+                    { label: "Procesos", icon: LayoutDashboard, color: "indigo", path: "/procesos", status: "Optimizado", level: "success", bg: "bg-[#F5F3FF]" },
+                    { label: "Auditorías", icon: CheckCircle2, color: "emerald", path: "/AuditoriasPlanificacion", status: "Planificado", level: "warning", bg: "bg-[#ECFDF5]" },
+                    { label: "Riesgos", icon: ShieldAlert, color: "rose", path: "/riesgos/matriz", status: "Crítico (3)", level: "danger", bg: "bg-[#FFF1F2]" },
+                    { label: "Indicadores", icon: BarChart3, color: "violet", path: "/indicadores/tablero", status: "En Meta", level: "success", bg: "bg-[#F5F3FF]" },
+                    { label: "Usuarios", icon: Users, color: "slate", path: "/ListaDeUsuarios", status: "Activos", level: "active", bg: "bg-[#F8FAFC]" },
+                  ].map((m) => (
+                    <button
+                      key={m.label}
+                      onClick={() => navigate(m.path)}
+                      className={`group flex flex-col p-5 ${m.bg} rounded-2xl border border-[#E5E7EB] transition-all hover:shadow-lg hover:shadow-[#2563EB]/5 active:scale-[0.98] text-left`}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className={`w-10 h-10 rounded-xl bg-white/60 text-${m.color}-600 flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                          <m.icon className="w-5 h-5" />
+                        </div>
+                        <div className={`h-2 w-2 rounded-full ${m.level === 'danger' ? 'bg-rose-500 animate-pulse' : m.level === 'warning' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                      </div>
+                      <span className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest mb-1">{m.label}</span>
+                      <span className="text-sm font-bold text-[#111827]">{m.status}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* PHVA Integration */}
+              <Card className="rounded-2xl border-[#E5E7EB] shadow-sm overflow-hidden">
+                <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB] flex flex-row items-center justify-between py-4">
+                  <div>
+                    <CardTitle className="text-[#1E3A8A] text-lg font-bold">Ciclo de Mejora Continua</CardTitle>
+                    <CardDescription>Metodología PHVA Proyectada</CardDescription>
+                  </div>
+                  <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold uppercase text-[10px]">ISO 9001:2015</Badge>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <DashboardPHVA metrics={metrics} />
+                </CardContent>
+              </Card>
+
+              {/* Charts Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-[#1E3A8A] uppercase tracking-tight">Efectividad de Acciones</h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[#2563EB] font-bold hover:bg-[#EFF6FF] rounded-xl group"
+                    onClick={() => navigate("/indicadores/tablero")}
+                  >
+                    Métricas Detalladas <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </div>
+                <Card className="p-6 rounded-2xl border-[#E5E7EB] shadow-sm">
+                  <GraficosAcciones acciones={acciones} />
+                </Card>
               </div>
+            </div>
 
+            {/* Right Column: Feed & Quick Access */}
+            <div className="xl:col-span-4 space-y-8">
+
+              {/* System Control Card */}
               <button
-                className="w-full mt-8 py-3 bg-slate-50 text-slate-500 text-xs font-bold rounded-2xl hover:bg-slate-100 transition-colors flex items-center justify-center gap-2"
-                onClick={() => navigate("/Acciones_correctivas_Nuevas")}
+                onClick={() => navigate("/configuracion")}
+                className="w-full relative overflow-hidden group rounded-2xl shadow-lg hover:shadow-xl transition-all"
               >
-                Ver todo el historial <ArrowRight className="w-3 h-3" />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#1E3A8A] to-[#1E40AF]" />
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform duration-500">
+                  <Settings className="w-24 h-24 text-white" />
+                </div>
+                <div className="relative p-6 text-left z-10 flex items-center justify-between">
+                  <div>
+                    <p className="text-[#93C5FD] text-[10px] font-bold uppercase tracking-[0.2em] mb-1">Centro de Comando</p>
+                    <h4 className="text-xl font-black text-white tracking-tight">Ajustes del Sistema</h4>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                    <ArrowRight className="w-5 h-5 text-white" />
+                  </div>
+                </div>
               </button>
-            </motion.section>
 
+              {/* Quick Actions Matrix */}
+              <section className="space-y-4">
+                <h3 className="text-lg font-bold text-[#1E3A8A] px-2 flex items-center gap-2">
+                  <Activity className="w-5 h-5" /> Accesos Directos
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: "Nuevo Proceso", icon: Plus, color: "blue", path: "/procesos/nuevo", bg: "bg-[#E0EDFF]" },
+                    { label: "Reportar NC", icon: AlertCircle, color: "rose", path: "/No_conformidades_Abiertas", bg: "bg-[#FFF1F2]" },
+                    { label: "Plan Auditoría", icon: Clock, color: "amber", path: "/AuditoriasPlanificacion", bg: "bg-[#FFFBEB]" },
+                    { label: "Aprobaciones", icon: CheckCircle2, color: "emerald", path: "/Aprobaciones_Pendientes", bg: "bg-[#ECFDF5]" },
+                  ].map((act) => (
+                    <button
+                      key={act.label}
+                      onClick={() => navigate(act.path)}
+                      className={`flex flex-col items-center justify-center p-5 ${act.bg} border border-[#E5E7EB] rounded-2xl hover:border-[#2563EB]/30 hover:shadow-lg hover:shadow-[#2563EB]/5 transition-all group`}
+                    >
+                      <div className={`p-3 rounded-xl bg-white/60 text-${act.color}-600 group-hover:scale-110 transition-transform`}>
+                        <act.icon className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-bold text-[#4B5563] mt-3 group-hover:text-[#2563EB] transition-colors">{act.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* Recent Feed */}
+              <Card className="rounded-2xl border-[#E5E7EB] shadow-sm overflow-hidden bg-white">
+                <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB] flex flex-row items-center justify-between py-4">
+                  <CardTitle className="text-[#1E3A8A] text-lg font-bold">Actividad Reciente</CardTitle>
+                  <Badge variant="outline" className="bg-white text-[#6B7280]">Hoy</Badge>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-6">
+                    {acciones.slice(0, 5).map((acc, i) => (
+                      <div
+                        key={acc.id}
+                        className="flex gap-4 relative group cursor-pointer"
+                        onClick={() => navigate(`/acciones-correctivas/${acc.id}/solucionar`)}
+                      >
+                        {i !== acciones.slice(0, 5).length - 1 && (
+                          <div className="absolute left-[15px] top-8 bottom-[-24px] w-px bg-[#E5E7EB]" />
+                        )}
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 z-10 shadow-sm ${acc.estado === 'cerrada' ? 'bg-emerald-100 text-emerald-600' :
+                          acc.estado === 'pendiente' ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600'
+                          }`}>
+                          {acc.estado === 'cerrada' ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-[#1F2937] leading-tight group-hover:text-[#2563EB] transition-colors">
+                            {acc.descripcion.length > 40 ? acc.descripcion.substring(0, 40) + "..." : acc.descripcion}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] font-bold text-[#9CA3AF] tracking-wider uppercase">{acc.tipo}</span>
+                            <span className="w-1 h-1 rounded-full bg-[#E5E7EB]" />
+                            <span className="text-[10px] font-medium text-[#9CA3AF]">Hace 2 horas</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    className="w-full mt-8 bg-[#F9FAFB] text-[#6B7280] text-xs font-bold rounded-xl hover:bg-[#F3F4F6] transition-colors"
+                    onClick={() => navigate("/Acciones_correctivas_Nuevas")}
+                  >
+                    Ver Historial Completo <ArrowRight className="w-3 h-3 ml-2" />
+                  </Button>
+                </CardContent>
+              </Card>
+
+            </div>
           </div>
-        </div>
 
-      </div>
+        </div>
+      </TooltipProvider>
     </div>
   );
 }
