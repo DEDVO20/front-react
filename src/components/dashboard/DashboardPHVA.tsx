@@ -40,10 +40,10 @@ const buildBlocks = (metrics?: DashboardPHVAMetrics | null): PHVABlock[] => [
   {
     title: "PLANEAR",
     subtitle: "Definir & Preparar",
-    gradient: "from-blue-500 to-indigo-600",
-    borderColor: "border-blue-200 hover:border-blue-400",
-    iconBg: "bg-blue-100 text-blue-600",
-    textColor: "text-blue-700",
+    gradient: "from-indigo-500 via-blue-500 to-cyan-500",
+    borderColor: "border-indigo-200 hover:border-indigo-400",
+    iconBg: "bg-indigo-50 text-indigo-600",
+    textColor: "text-indigo-700",
     icon: ClipboardList,
     items: [
       { label: "Procesos definidos", value: metrics?.plan.procesosDefinidos ?? "—", icon: Target },
@@ -54,9 +54,9 @@ const buildBlocks = (metrics?: DashboardPHVAMetrics | null): PHVABlock[] => [
   {
     title: "HACER",
     subtitle: "Ejecutar & Operar",
-    gradient: "from-emerald-500 to-green-600",
+    gradient: "from-emerald-400 via-teal-500 to-green-600",
     borderColor: "border-emerald-200 hover:border-emerald-400",
-    iconBg: "bg-emerald-100 text-emerald-600",
+    iconBg: "bg-emerald-50 text-emerald-600",
     textColor: "text-emerald-700",
     icon: Cog,
     items: [
@@ -68,9 +68,9 @@ const buildBlocks = (metrics?: DashboardPHVAMetrics | null): PHVABlock[] => [
   {
     title: "VERIFICAR",
     subtitle: "Medir & Auditar",
-    gradient: "from-amber-500 to-orange-600",
+    gradient: "from-amber-400 via-orange-500 to-yellow-600",
     borderColor: "border-amber-200 hover:border-amber-400",
-    iconBg: "bg-amber-100 text-amber-600",
+    iconBg: "bg-amber-50 text-amber-600",
     textColor: "text-amber-700",
     icon: SearchCheck,
     items: [
@@ -82,9 +82,9 @@ const buildBlocks = (metrics?: DashboardPHVAMetrics | null): PHVABlock[] => [
   {
     title: "ACTUAR",
     subtitle: "Corregir & Mejorar",
-    gradient: "from-rose-500 to-red-600",
+    gradient: "from-rose-500 via-pink-500 to-purple-600",
     borderColor: "border-rose-200 hover:border-rose-400",
-    iconBg: "bg-rose-100 text-rose-600",
+    iconBg: "bg-rose-50 text-rose-600",
     textColor: "text-rose-700",
     icon: Rocket,
     items: [
