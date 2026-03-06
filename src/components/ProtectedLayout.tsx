@@ -23,11 +23,11 @@ export function ProtectedLayout() {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="font-sans">
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="bg-[#F8FAFC] hero-gradient">
         <SiteHeader />
-        <div className="flex flex-1 flex-col gap-4 p-4">
+        <div className="flex flex-1 flex-col gap-4 p-4 md:p-8">
           <Outlet />
         </div>
       </SidebarInset>
