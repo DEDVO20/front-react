@@ -166,11 +166,6 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-12">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap');
-        
-        .db-root { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .font-syne { font-family: 'Syne', sans-serif; }
-        
         .glass-card {
           background: rgba(255, 255, 255, 0.8);
           backdrop-filter: blur(12px);
@@ -194,7 +189,7 @@ export default function Dashboard() {
         .scroll-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      <div className="db-root max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 hero-gradient">
+      <div className="font-sans max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 hero-gradient">
 
         {/* ── Header Area ── */}
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -204,13 +199,13 @@ export default function Dashboard() {
             transition={{ duration: 0.5 }}
           >
             <div className="flex items-center gap-2 mb-2">
-              <span className="px-3 py-1 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-200/50">
+              <span className="px-3 py-1 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white text-[10px] font-extrabold uppercase tracking-widest shadow-lg shadow-indigo-200/50">
                 SGC PRO v2.5.0
               </span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10B981]" />
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sistema Operativo</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-heading">Sistema Operativo</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-none mb-2">
+            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-none mb-2 font-heading">
               {greeting} <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-500 bg-clip-text text-transparent italic">Admin</span>
             </h1>
             <p className="text-slate-500 font-medium">Pulso global de calidad y cumplimiento organizacional.</p>
@@ -274,8 +269,8 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">{stat.label}</h3>
-                  <p className="text-2xl font-black text-slate-900 tracking-tight">{stat.value}</p>
+                  <h3 className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1 font-heading">{stat.label}</h3>
+                  <p className="text-2xl font-extrabold text-slate-900 tracking-tight font-heading">{stat.value}</p>
                 </div>
               </motion.div>
             ))}
@@ -284,7 +279,7 @@ export default function Dashboard() {
 
         {/* ── Module Health Matrix ── */}
         <section className="space-y-4">
-          <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3 font-syne uppercase italic">
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3 font-heading uppercase italic">
             Matriz de Salud de Módulos
             <div className="h-0.5 w-12 bg-indigo-600 rounded-full" />
           </h2>
@@ -341,7 +336,7 @@ export default function Dashboard() {
               className="space-y-4"
             >
               <div className="flex items-center justify-between px-2">
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3 font-syne uppercase italic">
+                <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3 font-heading uppercase italic">
                   Analítica QMS
                   <div className="h-0.5 w-12 bg-indigo-600 rounded-full" />
                 </h2>
