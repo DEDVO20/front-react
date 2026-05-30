@@ -44,9 +44,12 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { indicadorService, Indicador } from "@/services/indicador.service";
 import { riesgoService, Riesgo } from "@/services/riesgo.service";
 import { documentoService, DocumentoResponse } from "@/services/documento.service";
+import { hasAnyPermission } from "@/lib/permissions";
 
 export default function DetalleProceso() {
     const navigate = useNavigate();
+    const canManageProcesos = hasAnyPermission(["procesos.admin"]);
+    const canAsociarDocumentos = hasAnyPermission(["documentos.crear", "procesos.admin"]);
     const { id } = useParams();
     const [proceso, setProceso] = useState<Proceso | null>(null);
     const [loading, setLoading] = useState(true);
@@ -237,24 +240,26 @@ export default function DetalleProceso() {
                             <p className="text-gray-500 mt-1">Información completa del proceso</p>
                         </div>
                     </div>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => navigate(`/procesos/${id}/editar`)}
-                            className="rounded-xl"
-                        >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Editar
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={() => setDeleteDialogOpen(true)}
-                            className="rounded-xl"
-                        >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Eliminar
-                        </Button>
-                    </div>
+                    {canManageProcesos && (
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => navigate(`/procesos/${id}/editar`)}
+                                className="rounded-xl"
+                            >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Editar
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                onClick={() => setDeleteDialogOpen(true)}
+                                className="rounded-xl"
+                            >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Eliminar
+                            </Button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Información Principal */}
@@ -494,31 +499,33 @@ export default function DetalleProceso() {
                                 )}
                             </TabsContent>
                             <TabsContent value="documentos">
-                                <div className="flex flex-col md:flex-row gap-2 md:items-center md:justify-between mb-3">
-                                    <div className="flex gap-2 w-full md:w-auto">
-                                        <select
-                                            value={documentoSeleccionado}
-                                            onChange={(e) => setDocumentoSeleccionado(e.target.value)}
-                                            className="w-full md:w-96 p-2 border rounded-lg bg-white text-sm"
-                                        >
-                                            <option value="">Seleccionar documento para asociar...</option>
-                                            {todosDocumentos
-                                                .filter((doc) => !documentosProceso.some((d) => d.id === doc.id))
-                                                .map((doc) => (
-                                                    <option key={doc.id} value={doc.id}>
-                                                        {doc.codigo} - {doc.nombre}
-                                                    </option>
-                                                ))}
-                                        </select>
-                                        <Button
-                                            onClick={asociarDocumento}
-                                            disabled={!documentoSeleccionado || asociandoDocumento}
-                                            className="rounded-lg"
-                                        >
-                                            {asociandoDocumento ? "Asociando..." : "Asociar"}
-                                        </Button>
+                                {canAsociarDocumentos && (
+                                    <div className="flex flex-col md:flex-row gap-2 md:items-center md:justify-between mb-3">
+                                        <div className="flex gap-2 w-full md:w-auto">
+                                            <select
+                                                value={documentoSeleccionado}
+                                                onChange={(e) => setDocumentoSeleccionado(e.target.value)}
+                                                className="w-full md:w-96 p-2 border rounded-lg bg-white text-sm"
+                                            >
+                                                <option value="">Seleccionar documento para asociar...</option>
+                                                {todosDocumentos
+                                                    .filter((doc) => !documentosProceso.some((d) => d.id === doc.id))
+                                                    .map((doc) => (
+                                                        <option key={doc.id} value={doc.id}>
+                                                            {doc.codigo} - {doc.nombre}
+                                                        </option>
+                                                    ))}
+                                            </select>
+                                            <Button
+                                                onClick={asociarDocumento}
+                                                disabled={!documentoSeleccionado || asociandoDocumento}
+                                                className="rounded-lg"
+                                            >
+                                                {asociandoDocumento ? "Asociando..." : "Asociar"}
+                                            </Button>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                                 {loadingGestion ? (
                                     <p className="text-sm text-gray-600">Cargando documentos...</p>
                                 ) : documentosProceso.length === 0 ? (
@@ -587,7 +594,7 @@ export default function DetalleProceso() {
             </div>
 
             {/* Diálogo de confirmación de eliminación */}
-            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialog open={deleteDialogOpen && canManageProcesos} onOpenChange={setDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-[#1E3A8A]">

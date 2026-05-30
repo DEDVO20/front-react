@@ -68,6 +68,7 @@ import { capacitacionService, Capacitacion } from "@/services/capacitacion.servi
 import { areaService, Area } from "@/services/area.service";
 import { usuarioService, Usuario } from "@/services/usuario.service";
 import { getCurrentUser } from "@/services/auth";
+import { hasAnyPermission } from "@/lib/permissions";
 
 type FormDataState = {
   nombre: string;
@@ -83,6 +84,7 @@ type FormDataState = {
 };
 
 export default function CapacitacionesProgramadas() {
+  const canGestionCapacitaciones = hasAnyPermission(["capacitaciones.gestion"]);
   const [capacitaciones, setCapacitaciones] = useState<Capacitacion[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
   const [usuariosActivos, setUsuariosActivos] = useState<Usuario[]>([]);
@@ -420,13 +422,15 @@ export default function CapacitacionesProgramadas() {
                   )}
                 </div>
               </div>
-              <Button
-                onClick={handleCreate}
-                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold"
-              >
-                <Plus className="mr-2 h-5 w-5" />
-                Agregar Capacitación
-              </Button>
+              {canGestionCapacitaciones && (
+                <Button
+                  onClick={handleCreate}
+                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold"
+                >
+                  <Plus className="mr-2 h-5 w-5" />
+                  Agregar Capacitación
+                </Button>
+              )}
             </div>
           </div>
 
@@ -558,7 +562,7 @@ export default function CapacitacionesProgramadas() {
                   <p className="text-lg font-medium text-[#6B7280]">
                     {searchTerm ? "No se encontraron capacitaciones" : "No hay capacitaciones registradas"}
                   </p>
-                  {!searchTerm && (
+                  {!searchTerm && canGestionCapacitaciones && (
                     <Button onClick={handleCreate} className="mt-6 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl">
                       <Plus className="mr-2 h-5 w-5" />
                       Agregar primera capacitación
@@ -637,7 +641,7 @@ export default function CapacitacionesProgramadas() {
                               {cap.estado === "programada" ? "Pendiente" : cap.estado === "en_curso" ? "En curso" : "Completada"}
                             </Badge>
 
-                            {cap.estado === "programada" && (
+                            {cap.estado === "programada" && canGestionCapacitaciones && (
                               <Button
                                 onClick={() => iniciarCapacitacion(cap.id)}
                                 className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl"
@@ -647,7 +651,7 @@ export default function CapacitacionesProgramadas() {
                               </Button>
                             )}
 
-                            {cap.estado === "en_curso" && (
+                            {cap.estado === "en_curso" && canGestionCapacitaciones && (
                               <Button
                                 onClick={() => finalizarCapacitacion(cap.id)}
                                 className="bg-[#F97316] hover:bg-[#EA580C] text-white rounded-xl"
@@ -684,22 +688,26 @@ export default function CapacitacionesProgramadas() {
                                 </TooltipTrigger>
                                 <TooltipContent><p>Ver detalles</p></TooltipContent>
                               </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="sm" variant="outline" onClick={() => handleEdit(cap)} className="rounded-xl">
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Editar</p></TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="sm" variant="destructive" onClick={() => openDeleteDialog(cap)} className="rounded-xl">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Eliminar</p></TooltipContent>
-                              </Tooltip>
+                              {canGestionCapacitaciones && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button size="sm" variant="outline" onClick={() => handleEdit(cap)} className="rounded-xl">
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p>Editar</p></TooltipContent>
+                                </Tooltip>
+                              )}
+                              {canGestionCapacitaciones && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button size="sm" variant="destructive" onClick={() => openDeleteDialog(cap)} className="rounded-xl">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p>Eliminar</p></TooltipContent>
+                                </Tooltip>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -972,7 +980,7 @@ export default function CapacitacionesProgramadas() {
                 <Button variant="outline" onClick={() => setShowDialog(false)} className="rounded-xl">
                   {dialogMode === 'view' ? 'Cerrar' : 'Cancelar'}
                 </Button>
-                {dialogMode !== 'view' && (
+                {dialogMode !== 'view' && canGestionCapacitaciones && (
                   <Button
                     onClick={handleSave}
                     disabled={saving}
@@ -996,7 +1004,7 @@ export default function CapacitacionesProgramadas() {
           </Dialog>
 
           {/* AlertDialog Eliminación */}
-          <AlertDialog open={deleteDialog.open} onOpenChange={closeDeleteDialog}>
+          <AlertDialog open={deleteDialog.open && canGestionCapacitaciones} onOpenChange={closeDeleteDialog}>
             <AlertDialogContent className="rounded-2xl">
               <AlertDialogHeader>
                 <AlertDialogTitle className="flex items-center gap-2">

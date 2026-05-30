@@ -137,6 +137,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     badge?: string;
     badgeVariant?: "default" | "destructive" | "outline" | "secondary";
     permiso?: string;
+    permisos?: string[];
     items?: MenuItem[];
     onClick?: () => void;
   }
@@ -153,7 +154,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         // 2. O tiene hijos permitidos visibles
         // 3. O no tiene permiso requerido (público) y no es un contenedor vacío
 
-        const hasDirectPermission = item.permiso ? hasPermission(item.permiso) : true;
+        const hasDirectPermission = item.permisos
+          ? hasAnyPermission(item.permisos)
+          : item.permiso
+            ? hasPermission(item.permiso)
+            : true;
         const hasChildren = filteredSubItems && filteredSubItems.length > 0;
 
         // Si es un contenedor (#) solo es visible si tiene hijos
@@ -194,7 +199,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "#",
         icon: Building2,
         items: [
-          { title: "Gestionar Áreas", url: "/gestionar_areas", permiso: "areas.ver" },
+          { title: "Gestionar Áreas", url: "/gestionar_areas", permiso: "areas.gestionar" },
           { title: "Asignar Responsables", url: "/Asignar_Responsables", permiso: "areas.gestionar" },
         ],
       },
@@ -205,7 +210,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           { title: "Lista de Usuarios", url: "/ListaDeUsuarios", permiso: "usuarios.ver" },
           { title: "Nuevo Usuario", url: "/NuevoUsuario", permiso: "usuarios.crear" },
-          { title: "Roles y Permisos", url: "/Roles_y_Permisos", permiso: "roles.administrar" },
+          { title: "Roles y Permisos", url: "/Roles_y_Permisos", permiso: "usuarios.gestion" },
         ],
       },
       {
@@ -217,7 +222,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           { title: "Gestionar Documentos", url: "/documentos", permiso: "documentos.ver" },
           { title: "Documentos Publicos", url: "/Documentos_Publicos" },
-          { title: "Control de Versiones", url: "/control-versiones", permiso: "documentos.editar" },
+          { title: "Control de Versiones", url: "/control-versiones", permiso: "documentos.revisar" },
           {
             title: "Aprobaciones Pendientes",
             url: "/Aprobaciones_Pendientes",
@@ -227,9 +232,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           {
             title: "Revisiones Pendientes",
             url: "/Revisiones_Pendientes",
-            permiso: "documentos.editar",
+            permiso: "documentos.revisar",
           },
-          { title: "Documentos Obsoletos", url: "/Documentos_Obsoletos", permiso: "documentos.eliminar" },
+          { title: "Documentos Obsoletos", url: "/Documentos_Obsoletos", permiso: "documentos.anular" },
         ],
       },
       {
@@ -237,8 +242,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "#",
         icon: FolderOpen,
         items: [
-          { title: "Mapa de Procesos", url: "/procesos", permiso: "procesos.ver" },
-          { title: "Listado de Procesos", url: "/procesos/listado", permiso: "procesos.ver" },
+          { title: "Mapa de Procesos", url: "/procesos", permiso: "procesos.admin" },
+          { title: "Listado de Procesos", url: "/procesos/listado", permiso: "procesos.admin" },
         ],
       },
     ]),
@@ -248,11 +253,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: AlertTriangle,
         url: "#",
         items: [
-          { title: "Tablero", url: "/acciones-correctivas/dashboard", permiso: "acciones_correctivas.gestionar" },
-          { title: "Nuevas", url: "/Acciones_correctivas_Nuevas", permiso: "acciones_correctivas.gestionar" },
-          { title: "En Proceso", url: "/Acciones_correctivas_EnProceso", permiso: "acciones_correctivas.gestionar" },
-          { title: "Cerradas", url: "/Acciones_correctivas_Cerradas", permiso: "acciones_correctivas.gestionar" },
-          { title: "Verificadas", url: "/Acciones_correctivas_Verificadas", permiso: "acciones_correctivas.gestionar" },
+          { title: "Tablero", url: "/acciones-correctivas/dashboard", permiso: "noconformidades.gestion" },
+          { title: "Nuevas", url: "/Acciones_correctivas_Nuevas", permiso: "noconformidades.gestion" },
+          { title: "En Proceso", url: "/Acciones_correctivas_EnProceso", permiso: "noconformidades.gestion" },
+          { title: "Cerradas", url: "/Acciones_correctivas_Cerradas", permisos: ["noconformidades.gestion", "noconformidades.cerrar"] },
+          { title: "Verificadas", url: "/Acciones_correctivas_Verificadas", permiso: "noconformidades.cerrar" },
         ],
       },
       {
@@ -260,9 +265,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: ClipboardCheck,
         url: "#",
         items: [
-          { title: "Abiertas", url: "/No_conformidades_Abiertas", permiso: "no_conformidades.gestionar" },
-          { title: "En Tratamiento", url: "/No_conformidades_EnTratamiento", permiso: "no_conformidades.gestionar" },
-          { title: "Cerradas", url: "/No_conformidades_Cerradas", permiso: "no_conformidades.gestionar" },
+          { title: "Abiertas", url: "/No_conformidades_Abiertas", permisos: ["noconformidades.gestion", "noconformidades.reportar"] },
+          { title: "En Tratamiento", url: "/No_conformidades_EnTratamiento", permiso: "noconformidades.gestion" },
+          { title: "Cerradas", url: "/No_conformidades_Cerradas", permisos: ["noconformidades.gestion", "noconformidades.cerrar"] },
         ],
       },
       {
@@ -283,9 +288,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: Shield,
         url: "#",
         items: [
-          { title: "Matriz de Riesgos", url: "/riesgos/matriz", permiso: "riesgos.administrar" },
-          { title: "Controles", url: "/riesgos/controles", permiso: "riesgos.administrar" },
-          { title: "Tratamientos", url: "/riesgos/tratamiento", permiso: "riesgos.administrar" },
+          { title: "Matriz de Riesgos", url: "/riesgos/matriz", permisos: ["riesgos.ver", "riesgos.gestion"] },
+          { title: "Controles", url: "/riesgos/controles", permiso: "riesgos.gestion" },
+          { title: "Tratamientos", url: "/riesgos/tratamiento", permiso: "riesgos.gestion" },
         ],
       },
       {
@@ -293,9 +298,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: Target,
         url: "#",
         items: [
-          { title: "Objetivos Activos", url: "/Activos", permiso: "objetivos.seguimiento" },
-          { title: "Seguimiento", url: "/Seguimiento", permiso: "objetivos.seguimiento" },
-          { title: "Historial", url: "/Historial", permiso: "objetivos.seguimiento" },
+          { title: "Objetivos Activos", url: "/Activos", permiso: "calidad.ver" },
+          { title: "Seguimiento", url: "/Seguimiento", permiso: "calidad.ver" },
+          { title: "Historial", url: "/Historial", permiso: "calidad.ver" },
         ],
       },
       {
@@ -303,9 +308,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: TrendingUp,
         url: "#",
         items: [
-          { title: "Tablero", url: "/indicadores/tablero", permiso: "indicadores.ver" },
-          { title: "Eficiencia", url: "/indicadores/eficiencia", permiso: "indicadores.ver" },
-          { title: "Cumplimiento", url: "/indicadores/cumplimiento", permiso: "indicadores.medir" },
+          { title: "Tablero", url: "/indicadores/tablero", permiso: "calidad.ver" },
+          { title: "Eficiencia", url: "/indicadores/eficiencia", permiso: "calidad.ver" },
+          { title: "Cumplimiento", url: "/indicadores/cumplimiento", permiso: "calidad.ver" },
         ],
       },
       {
@@ -313,10 +318,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: GraduationCap,
         url: "#",
         items: [
-          { title: "Programadas", url: "/capacitaciones/programadas", permiso: "capacitaciones.gestionar" },
-          { title: "Historial", url: "/capacitaciones/historial", permiso: "capacitaciones.gestionar" },
-          { title: "Asistencias", url: "/capacitaciones/asistencias", permiso: "capacitaciones.gestionar" },
-          { title: "Competencias", url: "/capacitaciones/competencias", permiso: "capacitaciones.gestionar" },
+          { title: "Programadas", url: "/capacitaciones/programadas", permiso: "capacitaciones.gestion" },
+          { title: "Historial", url: "/capacitaciones/historial", permiso: "capacitaciones.gestion" },
+          { title: "Asistencias", url: "/capacitaciones/asistencias", permiso: "capacitaciones.gestion" },
+          { title: "Competencias", url: "/capacitaciones/competencias", permiso: "capacitaciones.gestion" },
         ],
       },
     ]),
@@ -326,8 +331,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "#",
         icon: Shield,
         items: [
-          { title: "Configuración Global", url: "#", permiso: "sistema.configurar" },
-          { title: "Migraciones de BD", url: "/sistema/migraciones", permiso: "sistema.migraciones" },
+          { title: "Configuración Global", url: "/configuracion", permiso: "sistema.config" },
+          { title: "Migraciones de BD", url: "/sistema/migraciones", permiso: "sistema.admin" },
           { title: "Audit Log", url: "/sistema/audit-log", permiso: "sistema.admin" },
         ],
       },
@@ -335,7 +340,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Reportes",
         url: "/reportes",
         icon: BarChart3,
-        permiso: "indicadores.ver",
       },
       {
         title: "Mesa de Ayuda",

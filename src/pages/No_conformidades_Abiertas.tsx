@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { hasAnyPermission } from "@/lib/permissions";
 
 interface NoConformidadUI {
   id: string;
@@ -45,6 +46,8 @@ interface NoConformidadUI {
 }
 
 export default function NoConformidadesAbiertas() {
+  const canReportar = hasAnyPermission(["noconformidades.reportar"]);
+  const canGestionar = hasAnyPermission(["noconformidades.gestion"]);
   const [noConformidades, setNoConformidades] = useState<NoConformidadUI[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -183,30 +186,32 @@ export default function NoConformidadesAbiertas() {
                 )}
               </div>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold"
-                  onClick={handleCrear}
-                >
-                  <PlusIcon className="mr-2 h-5 w-5" />
-                  Nueva No Conformidad
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>{selectedNoConformidad ? "Editar No Conformidad" : "Nueva No Conformidad"}</DialogTitle>
-                </DialogHeader>
-                <NuevaNoConformidadForm
-                  initialData={selectedNoConformidad}
-                  onSuccess={() => {
-                    fetchNoConformidadesAbiertas();
-                    setIsDialogOpen(false);
-                  }}
-                  onCancel={() => setIsDialogOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
+            {(canReportar || canGestionar) && (
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold"
+                    onClick={handleCrear}
+                  >
+                    <PlusIcon className="mr-2 h-5 w-5" />
+                    Nueva No Conformidad
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>{selectedNoConformidad ? "Editar No Conformidad" : "Nueva No Conformidad"}</DialogTitle>
+                  </DialogHeader>
+                  <NuevaNoConformidadForm
+                    initialData={selectedNoConformidad}
+                    onSuccess={() => {
+                      fetchNoConformidadesAbiertas();
+                      setIsDialogOpen(false);
+                    }}
+                    onCancel={() => setIsDialogOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
             <VerNoConformidad
               noConformidad={selectedNoConformidad}
               open={isViewDialogOpen}
@@ -333,21 +338,25 @@ export default function NoConformidadesAbiertas() {
                   label: "Ver Detalles",
                   onClick: (row) => handleVerDetalles(String(row.id)),
                 },
-                {
-                  label: "Iniciar Tratamiento",
-                  onClick: async (row) => {
-                    await handleIniciarTratamiento(String(row.id));
-                  },
-                },
-                {
-                  label: "Editar",
-                  onClick: (row) => handleEditar(String(row.id)),
-                },
-                {
-                  label: "Eliminar",
-                  onClick: (row) => setDeleteId(String(row.id)),
-                  variant: "destructive" as const,
-                },
+                ...(canGestionar
+                  ? [
+                      {
+                        label: "Iniciar Tratamiento",
+                        onClick: async (row: any) => {
+                          await handleIniciarTratamiento(String(row.id));
+                        },
+                      },
+                      {
+                        label: "Editar",
+                        onClick: (row: any) => handleEditar(String(row.id)),
+                      },
+                      {
+                        label: "Eliminar",
+                        onClick: (row: any) => setDeleteId(String(row.id)),
+                        variant: "destructive" as const,
+                      },
+                    ]
+                  : []),
               ]}
             />
           </div>

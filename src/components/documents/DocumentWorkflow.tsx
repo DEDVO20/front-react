@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { hasAnyPermission } from "@/lib/permissions";
 import { toast } from "sonner";
 import {
   CheckCircle,
@@ -35,6 +36,10 @@ export const DocumentWorkflow = ({
   onStateChange,
 }: DocumentWorkflowProps) => {
   const { user } = useAuth();
+  const canCrearDocumento = hasAnyPermission(["documentos.crear"]);
+  const canRevisarDocumento = hasAnyPermission(["documentos.revisar"]);
+  const canAprobarDocumento = hasAnyPermission(["documentos.aprobar"]);
+  const canAnularDocumento = hasAnyPermission(["documentos.anular"]);
   const [loading, setLoading] = useState(false);
 
   // Determinar las acciones disponibles según el estado actual
@@ -44,7 +49,7 @@ export const DocumentWorkflow = ({
     switch (currentState) {
       case "borrador":
         // El creador puede enviar a revisión
-        if (user?.id === creadoPorId) {
+        if (user?.id === creadoPorId && canCrearDocumento) {
           actions.push({
             label: "Enviar a Revisión",
             action: "send_to_review",
@@ -57,7 +62,7 @@ export const DocumentWorkflow = ({
 
       case "en_revision":
         // El revisor puede aprobar o rechazar
-        if (user?.id === revisadoPorId) {
+        if (user?.id === revisadoPorId && (canRevisarDocumento || canAprobarDocumento)) {
           actions.push({
             label: "Aprobar para Validación Final",
             action: "approve_for_final",
@@ -77,7 +82,7 @@ export const DocumentWorkflow = ({
 
       case "pendiente_aprobacion":
         // El aprobador final puede aprobar o rechazar
-        if (user?.id === aprobadoPorId) {
+        if (user?.id === aprobadoPorId && canAprobarDocumento) {
           actions.push({
             label: "Aprobar Definitivamente",
             action: "approve_final",
@@ -98,9 +103,10 @@ export const DocumentWorkflow = ({
       case "aprobado":
         // Cualquier responsable puede marcar como obsoleto
         if (
-          user?.id === creadoPorId ||
-          user?.id === revisadoPorId ||
-          user?.id === aprobadoPorId
+          (user?.id === creadoPorId ||
+            user?.id === revisadoPorId ||
+            user?.id === aprobadoPorId) &&
+          canAnularDocumento
         ) {
           actions.push({
             label: "Marcar como Obsoleto",
@@ -114,7 +120,7 @@ export const DocumentWorkflow = ({
 
       case "obsoleto":
         // El aprobador puede reactivar
-        if (user?.id === aprobadoPorId) {
+        if (user?.id === aprobadoPorId && canAprobarDocumento) {
           actions.push({
             label: "Reactivar Documento",
             action: "reactivate",

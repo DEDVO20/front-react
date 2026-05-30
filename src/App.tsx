@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -84,7 +85,7 @@ import { Toaster } from "sonner";
 import "./App.css";
 
 function App() {
-  const withPermission = (element: JSX.Element, permissions: string[]) => (
+  const withPermission = (element: ReactNode, permissions: string[]) => (
     <PermissionRoute permissions={permissions}>{element}</PermissionRoute>
   );
 
@@ -123,7 +124,6 @@ function App() {
               element={withPermission(<AreasResponsables />, ["areas.gestionar"])}
             />
             <Route path="/reportes" element={<ReportesView />} />
-            <Route path="/Asignar_Responsables" element={withPermission(<AreasResponsables />, ["areas.gestionar"])} />
 
             {/* Usuarios */}
             <Route path="/ListaDeUsuarios" element={withPermission(<ListaDeUsuarios />, ["usuarios.ver"])} />

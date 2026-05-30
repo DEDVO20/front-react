@@ -24,6 +24,7 @@ import { VerNoConformidad } from "@/components/calidad/VerNoConformidad";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import { usuarioService } from "@/services/usuario.service";
+import { hasAnyPermission } from "@/lib/permissions";
 
 interface NoConformidadUI {
   id: string;
@@ -37,6 +38,7 @@ interface NoConformidadUI {
 }
 
 export default function NoConformidadesCerradas() {
+  const canCrearNc = hasAnyPermission(["noconformidades.reportar", "noconformidades.gestion"]);
   const [noConformidades, setNoConformidades] = useState<NoConformidadUI[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -222,26 +224,28 @@ export default function NoConformidadesCerradas() {
                 </Badge>
               </div>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold">
-                  <PlusIcon className="mr-2 h-5 w-5" />
-                  Nueva No Conformidad
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Nueva No Conformidad</DialogTitle>
-                </DialogHeader>
-                <NuevaNoConformidadForm
-                  onSuccess={() => {
-                    fetchNoConformidadesCerradas();
-                    setIsDialogOpen(false);
-                  }}
-                  onCancel={() => setIsDialogOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
+            {canCrearNc && (
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold">
+                    <PlusIcon className="mr-2 h-5 w-5" />
+                    Nueva No Conformidad
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Nueva No Conformidad</DialogTitle>
+                  </DialogHeader>
+                  <NuevaNoConformidadForm
+                    onSuccess={() => {
+                      fetchNoConformidadesCerradas();
+                      setIsDialogOpen(false);
+                    }}
+                    onCancel={() => setIsDialogOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
         </div>
 

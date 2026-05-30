@@ -57,11 +57,16 @@ import {
 } from "@/components/ui/tooltip";
 import { apiClient } from "@/lib/api";
 import { usuarioService, Usuario } from "@/services/usuario.service";
+import { hasAnyPermission } from "@/lib/permissions";
 
 
 
 export default function ListaUsuarios() {
   const navigate = useNavigate();
+  const canCreateUser = hasAnyPermission(["usuarios.crear", "usuarios.gestion"]);
+  const canEditUser = hasAnyPermission(["usuarios.editar", "usuarios.gestion"]);
+  const canDeleteUser = hasAnyPermission(["usuarios.eliminar", "usuarios.gestion"]);
+  const canToggleEstado = hasAnyPermission(["usuarios.editar", "usuarios.gestion"]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [usuariosFiltrados, setUsuariosFiltrados] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -222,7 +227,11 @@ export default function ListaUsuarios() {
               <div className="flex flex-wrap items-center gap-3">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" onClick={() => navigate("/usuarios/carga-masiva")}>
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate("/usuarios/carga-masiva")}
+                      disabled={!canCreateUser}
+                    >
                       <FileSpreadsheet className="mr-2 h-4 w-4" />
                       Importar Usuarios
                     </Button>
@@ -230,18 +239,20 @@ export default function ListaUsuarios() {
                   <TooltipContent><p>Importar usuarios desde archivo Excel</p></TooltipContent>
                 </Tooltip>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={() => navigate("/NuevoUsuario")}
-                      className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm"
-                    >
-                      <Plus className="mr-2 h-5 w-5" />
-                      Nuevo Usuario
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent><p>Crear un nuevo usuario manualmente</p></TooltipContent>
-                </Tooltip>
+                {canCreateUser && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => navigate("/NuevoUsuario")}
+                        className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm"
+                      >
+                        <Plus className="mr-2 h-5 w-5" />
+                        Nuevo Usuario
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Crear un nuevo usuario manualmente</p></TooltipContent>
+                  </Tooltip>
+                )}
 
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -449,6 +460,7 @@ export default function ListaUsuarios() {
                               <Switch
                                 checked={usuario.activo}
                                 onCheckedChange={(checked) => handleToggleEstado(usuario.id, checked)}
+                                disabled={!canToggleEstado}
                               />
                               <span className={usuario.activo ? "text-[#22C55E] font-medium" : "text-[#6B7280]"}>
                                 {usuario.activo ? "Activo" : "Inactivo"}
@@ -465,22 +477,26 @@ export default function ListaUsuarios() {
                                 </TooltipTrigger>
                                 <TooltipContent><p>Ver detalles</p></TooltipContent>
                               </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="sm" variant="ghost" onClick={() => navigate(`/usuarios/${usuario.id}/editar`)}>
-                                    <Edit className="h-4 w-4 text-[#4B5563]" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Editar usuario</p></TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="sm" variant="ghost" onClick={() => openDeleteDialog(usuario)}>
-                                    <Trash2 className="h-4 w-4 text-[#EF4444]" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Eliminar usuario</p></TooltipContent>
-                              </Tooltip>
+                              {canEditUser && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button size="sm" variant="ghost" onClick={() => navigate(`/usuarios/${usuario.id}/editar`)}>
+                                      <Edit className="h-4 w-4 text-[#4B5563]" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p>Editar usuario</p></TooltipContent>
+                                </Tooltip>
+                              )}
+                              {canDeleteUser && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button size="sm" variant="ghost" onClick={() => openDeleteDialog(usuario)}>
+                                      <Trash2 className="h-4 w-4 text-[#EF4444]" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p>Eliminar usuario</p></TooltipContent>
+                                </Tooltip>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -575,7 +591,7 @@ export default function ListaUsuarios() {
 
 
           {/* Dialog Eliminar */}
-          <AlertDialog open={deleteDialog.open} onOpenChange={closeDeleteDialog}>
+          <AlertDialog open={deleteDialog.open && canDeleteUser} onOpenChange={closeDeleteDialog}>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle className="text-[#1E3A8A]">¿Eliminar usuario?</AlertDialogTitle>
@@ -615,4 +631,3 @@ export default function ListaUsuarios() {
     </div>
   );
 }
-

@@ -41,9 +41,11 @@ import {
 import { toast } from "sonner";
 import procesoService, { Proceso, TipoProceso, EstadoProceso } from "@/services/proceso.service";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { hasAnyPermission } from "@/lib/permissions";
 
 export default function MapaProcesos() {
     const navigate = useNavigate();
+    const canManageProcesos = hasAnyPermission(["procesos.admin"]);
     const [procesos, setProcesos] = useState<Proceso[]>([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState("");
@@ -236,21 +238,25 @@ export default function MapaProcesos() {
                         <Eye className="h-4 w-4 mr-1" />
                         Ver
                     </Button>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => navigate(`/procesos/${proceso.id}/editar`)}
-                    >
-                        <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => abrirDialogoEliminar(proceso)}
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {canManageProcesos && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate(`/procesos/${proceso.id}/editar`)}
+                        >
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                    )}
+                    {canManageProcesos && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => abrirDialogoEliminar(proceso)}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    )}
                 </div>
             </CardContent>
         </Card>
@@ -310,13 +316,15 @@ export default function MapaProcesos() {
                                 Gestión de procesos del Sistema de Gestión de Calidad
                             </p>
                         </div>
-                        <Button
-                            onClick={() => navigate("/procesos/nuevo")}
-                            className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl px-6 py-5 h-auto font-bold"
-                        >
-                            <Plus className="h-5 w-5 mr-2" />
-                            Nuevo Proceso
-                        </Button>
+                        {canManageProcesos && (
+                            <Button
+                                onClick={() => navigate("/procesos/nuevo")}
+                                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl px-6 py-5 h-auto font-bold"
+                            >
+                                <Plus className="h-5 w-5 mr-2" />
+                                Nuevo Proceso
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -401,7 +409,7 @@ export default function MapaProcesos() {
             </div>
 
             {/* Diálogo de confirmación de eliminación */}
-            <AlertDialog open={deleteDialog.open} onOpenChange={cerrarDialogoEliminar}>
+            <AlertDialog open={deleteDialog.open && canManageProcesos} onOpenChange={cerrarDialogoEliminar}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-[#1E3A8A]">

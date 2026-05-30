@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import apiClient from "@/lib/api"; // Asumiendo que existe, o axios directo
 import { toast } from "sonner";
+import { hasAnyPermission } from "@/lib/permissions";
 
 interface Evidencia {
     id: string;
@@ -22,6 +23,15 @@ interface GestorEvidenciasProps {
 }
 
 export default function GestorEvidencias({ value, onChange, readOnly = false }: GestorEvidenciasProps) {
+    const canManageEvidencias = hasAnyPermission([
+        "noconformidades.gestion",
+        "noconformidades.reportar",
+        "auditorias.ejecutar",
+        "riesgos.gestion",
+        "capacitaciones.gestion",
+        "documentos.crear",
+    ]);
+    const isEditable = !readOnly && canManageEvidencias;
     const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
     const [nuevaUrl, setNuevaUrl] = useState("");
     const [nuevaDescripcion, setNuevaDescripcion] = useState("");
@@ -172,7 +182,7 @@ export default function GestorEvidencias({ value, onChange, readOnly = false }: 
                             )}
                         </div>
 
-                        {!readOnly && (
+                        {isEditable && (
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -191,7 +201,7 @@ export default function GestorEvidencias({ value, onChange, readOnly = false }: 
                 )}
             </div>
 
-            {!readOnly && (
+            {isEditable && (
                 <div className="bg-gray-50 p-4 rounded-xl border border-dashed border-gray-300">
                     <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
                         <Plus className="h-4 w-4" /> Agregar Nueva Evidencia

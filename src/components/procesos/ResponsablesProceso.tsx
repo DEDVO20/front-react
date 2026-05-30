@@ -23,6 +23,7 @@ import {
     ROLES_PROCESO,
 } from "@/services/responsableProceso.service";
 import LoadingSpinner from "../ui/LoadingSpinner";
+import { hasAnyPermission } from "@/lib/permissions";
 
 type Props = {
     procesoId: string;
@@ -45,6 +46,7 @@ const defaultForm = (procesoId: string): ResponsableProcesoCreate => ({
 });
 
 export default function ResponsablesProceso({ procesoId }: Props) {
+    const canManageResponsables = hasAnyPermission(["procesos.admin"]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [responsables, setResponsables] = useState<ResponsableProceso[]>([]);
@@ -157,10 +159,12 @@ export default function ResponsablesProceso({ procesoId }: Props) {
                         {responsables.length}
                     </Badge>
                 </h3>
-                <Button onClick={abrirNuevo} className="gap-2" size="sm">
-                    <Plus className="h-4 w-4" />
-                    Asignar
-                </Button>
+                {canManageResponsables && (
+                    <Button onClick={abrirNuevo} className="gap-2" size="sm">
+                        <Plus className="h-4 w-4" />
+                        Asignar
+                    </Button>
+                )}
             </div>
 
             <Card>
@@ -220,22 +224,26 @@ export default function ResponsablesProceso({ procesoId }: Props) {
                                             >
                                                 {ROLES_PROCESO[principal.rol]?.label || principal.rol}
                                             </Badge>
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="h-8 w-8"
-                                                onClick={() => abrirEditar(principal)}
-                                            >
-                                                <Pencil className="h-3.5 w-3.5" />
-                                            </Button>
-                                            <Button
-                                                variant="destructive"
-                                                size="icon"
-                                                className="h-8 w-8"
-                                                onClick={() => eliminar(principal.id)}
-                                            >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
+                                            {canManageResponsables && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    onClick={() => abrirEditar(principal)}
+                                                >
+                                                    <Pencil className="h-3.5 w-3.5" />
+                                                </Button>
+                                            )}
+                                            {canManageResponsables && (
+                                                <Button
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    onClick={() => eliminar(principal.id)}
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -280,22 +288,26 @@ export default function ResponsablesProceso({ procesoId }: Props) {
                                                     )}
                                                 </Badge>
                                             )}
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="h-8 w-8"
-                                                onClick={() => abrirEditar(resp)}
-                                            >
-                                                <Pencil className="h-3.5 w-3.5" />
-                                            </Button>
-                                            <Button
-                                                variant="destructive"
-                                                size="icon"
-                                                className="h-8 w-8"
-                                                onClick={() => eliminar(resp.id)}
-                                            >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
+                                            {canManageResponsables && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    onClick={() => abrirEditar(resp)}
+                                                >
+                                                    <Pencil className="h-3.5 w-3.5" />
+                                                </Button>
+                                            )}
+                                            {canManageResponsables && (
+                                                <Button
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    onClick={() => eliminar(resp.id)}
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                     {resp.observaciones && (
@@ -311,7 +323,7 @@ export default function ResponsablesProceso({ procesoId }: Props) {
             </Card>
 
             {/* Dialog para asignar/editar */}
-            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+            <Dialog open={openDialog && canManageResponsables} onOpenChange={setOpenDialog}>
                 <DialogContent className="max-w-lg">
                     <DialogHeader>
                         <DialogTitle>
@@ -426,9 +438,11 @@ export default function ResponsablesProceso({ procesoId }: Props) {
                         <Button variant="outline" onClick={() => setOpenDialog(false)}>
                             Cancelar
                         </Button>
-                        <Button onClick={guardar} disabled={saving}>
-                            {saving ? "Guardando..." : editing ? "Actualizar" : "Asignar"}
-                        </Button>
+                        {canManageResponsables && (
+                            <Button onClick={guardar} disabled={saving}>
+                                {saving ? "Guardando..." : editing ? "Actualizar" : "Asignar"}
+                            </Button>
+                        )}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

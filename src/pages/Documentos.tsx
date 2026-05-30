@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { hasAnyPermission } from "@/lib/permissions";
 
 interface Documento {
   id: string;
@@ -31,6 +32,9 @@ interface Documento {
 
 export default function Documentos() {
   const navigate = useNavigate();
+  const canCreate = hasAnyPermission(["documentos.crear"]);
+  const canEdit = hasAnyPermission(["documentos.revisar"]);
+  const canDelete = hasAnyPermission(["documentos.anular"]);
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -207,13 +211,15 @@ export default function Documentos() {
                 </span>
               </div>
             </div>
-            <button
-              onClick={() => navigate("/documentos/crear")}
-              className="px-8 py-4 bg-blue-600 text-white hover:bg-blue-700 rounded-2xl font-bold shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-            >
-              <Plus className="w-6 h-6" />
-              Nuevo Documento
-            </button>
+            {canCreate && (
+              <button
+                onClick={() => navigate("/documentos/crear")}
+                className="px-8 py-4 bg-blue-600 text-white hover:bg-blue-700 rounded-2xl font-bold shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+              >
+                <Plus className="w-6 h-6" />
+                Nuevo Documento
+              </button>
+            )}
           </div>
         </div>
 
@@ -335,7 +341,7 @@ export default function Documentos() {
                   ? "Intenta ajustar los filtros de búsqueda"
                   : "Comienza creando tu primer documento"}
               </p>
-              {!searchTerm && !filterTipo && !filterEstado && (
+              {!searchTerm && !filterTipo && !filterEstado && canCreate && (
                 <button
                   onClick={() => navigate("/documentos/crear")}
                   className="flex items-center gap-2 px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold transition-all"
@@ -399,20 +405,24 @@ export default function Documentos() {
                     <Eye className="w-4 h-4" />
                     Ver
                   </button>
-                  <button
-                    onClick={() => handleEdit(documento.id)}
-                    className="p-2.5 bg-[#F8FAFC] text-[#6B7280] border border-[#E5E7EB] rounded-xl hover:bg-[#F1F5F9] transition-colors"
-                    title="Editar"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(documento.id, documento.nombre)}
-                    className="p-2.5 bg-red-50 text-[#EF4444] border border-red-100 rounded-xl hover:bg-red-100 transition-colors"
-                    title="Eliminar"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => handleEdit(documento.id)}
+                      className="p-2.5 bg-[#F8FAFC] text-[#6B7280] border border-[#E5E7EB] rounded-xl hover:bg-[#F1F5F9] transition-colors"
+                      title="Editar"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button
+                      onClick={() => handleDelete(documento.id, documento.nombre)}
+                      className="p-2.5 bg-red-50 text-[#EF4444] border border-red-100 rounded-xl hover:bg-red-100 transition-colors"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

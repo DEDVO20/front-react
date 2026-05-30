@@ -22,6 +22,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { hasAnyPermission } from "@/lib/permissions";
 
 interface Documento {
   id: string;
@@ -44,6 +45,8 @@ interface Documento {
 export default function VerDocumento() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const canEdit = hasAnyPermission(["documentos.revisar"]);
+  const canDelete = hasAnyPermission(["documentos.anular"]);
   const [documento, setDocumento] = useState<Documento | null>(null);
   const [versiones, setVersiones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -373,13 +376,15 @@ export default function VerDocumento() {
             </div>
 
             <div className="flex gap-2">
-              <button
-                onClick={() => navigate(`/documentos/${documento.id}/editar`)}
-                className="flex items-center gap-2 px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all"
-              >
-                <Edit className="w-4 h-4" />
-                Editar
-              </button>
+              {canEdit && (
+                <button
+                  onClick={() => navigate(`/documentos/${documento.id}/editar`)}
+                  className="flex items-center gap-2 px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all"
+                >
+                  <Edit className="w-4 h-4" />
+                  Editar
+                </button>
+              )}
               <button
                 onClick={handleExportPDF}
                 className="flex items-center gap-2 px-6 py-3 bg-white text-[#6B7280] border border-[#E5E7EB] rounded-xl hover:bg-[#F8FAFC] font-semibold transition-all"
@@ -387,13 +392,15 @@ export default function VerDocumento() {
                 <Download className="w-4 h-4" />
                 Exportar PDF
               </button>
-              <button
-                onClick={handleDelete}
-                className="flex items-center gap-2 px-6 py-3 bg-[#FEF2F2] text-[#EF4444] border border-[#EF4444]/30 rounded-xl hover:bg-red-100 font-semibold transition-all"
-              >
-                <Trash2 className="w-4 h-4" />
-                Eliminar
-              </button>
+              {canDelete && (
+                <button
+                  onClick={handleDelete}
+                  className="flex items-center gap-2 px-6 py-3 bg-[#FEF2F2] text-[#EF4444] border border-[#EF4444]/30 rounded-xl hover:bg-red-100 font-semibold transition-all"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Eliminar
+                </button>
+              )}
             </div>
           </div>
         </div>

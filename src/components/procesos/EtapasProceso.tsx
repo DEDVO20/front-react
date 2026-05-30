@@ -17,6 +17,7 @@ import {
   EtapaPhva,
 } from "@/services/etapaProceso.service";
 import LoadingSpinner from "../ui/LoadingSpinner";
+import { hasAnyPermission } from "@/lib/permissions";
 
 type Props = {
   procesoId: string;
@@ -49,6 +50,7 @@ const defaultForm = (procesoId: string): EtapaProcesoCreate => ({
 });
 
 export default function EtapasProceso({ procesoId }: Props) {
+  const canManageEtapas = hasAnyPermission(["procesos.admin"]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [etapas, setEtapas] = useState<EtapaProceso[]>([]);
@@ -181,10 +183,12 @@ export default function EtapasProceso({ procesoId }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900">Etapas del proceso</h3>
-        <Button onClick={abrirNueva} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Nueva Etapa
-        </Button>
+        {canManageEtapas && (
+          <Button onClick={abrirNueva} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Nueva Etapa
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -235,32 +239,34 @@ export default function EtapasProceso({ procesoId }: Props) {
                   </div>
                 </div>
 
-                <div className="flex gap-1">
-                  <Button variant="outline" size="icon" onClick={() => mover(etapa.id, "up")} disabled={index === 0}>
-                    <ArrowUp className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => mover(etapa.id, "down")}
-                    disabled={index === etapasOrdenadas.length - 1}
-                  >
-                    <ArrowDown className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={() => abrirEditar(etapa)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="destructive" size="icon" onClick={() => eliminar(etapa.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                {canManageEtapas && (
+                  <div className="flex gap-1">
+                    <Button variant="outline" size="icon" onClick={() => mover(etapa.id, "up")} disabled={index === 0}>
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => mover(etapa.id, "down")}
+                      disabled={index === etapasOrdenadas.length - 1}
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={() => abrirEditar(etapa)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="destructive" size="icon" onClick={() => eliminar(etapa.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </CardContent>
       </Card>
 
-      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+      <Dialog open={openDialog && canManageEtapas} onOpenChange={setOpenDialog}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Editar etapa" : "Nueva etapa"}</DialogTitle>
@@ -419,13 +425,14 @@ export default function EtapasProceso({ procesoId }: Props) {
             <Button variant="outline" onClick={() => setOpenDialog(false)}>
               Cancelar
             </Button>
-            <Button onClick={guardar} disabled={saving}>
-              {saving ? "Guardando..." : "Guardar"}
-            </Button>
+            {canManageEtapas && (
+              <Button onClick={guardar} disabled={saving}>
+                {saving ? "Guardando..." : "Guardar"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
-

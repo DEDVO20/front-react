@@ -59,8 +59,12 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getCurrentUser } from "@/services/auth";
 
 export default function MesaDeAyuda() {
+    const currentUser = getCurrentUser();
+    const currentUserId = currentUser?.id;
+    const currentAreaId = currentUser?.area_id || currentUser?.areaId;
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [areas, setAreas] = useState<Area[]>([]);
     const [loading, setLoading] = useState(true);
@@ -340,6 +344,20 @@ export default function MesaDeAyuda() {
         ticket.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const canEditTicket = (ticket: Ticket) =>
+        ticket.solicitante_id === currentUserId && ticket.estado === "abierto";
+
+    const canDeleteTicket = (ticket: Ticket) =>
+        ticket.solicitante_id === currentUserId && ticket.estado === "abierto";
+
+    const canResolveTicket = (ticket: Ticket) => {
+        if (ticket.estado === "resuelto" || ticket.estado === "cerrado") return false;
+        return (
+            ticket.asignado_a === currentUserId ||
+            (Boolean(currentAreaId) && ticket.area_destino_id === currentAreaId)
+        );
+    };
+
     if (loading) {
         return <LoadingSpinner message="Cargando tickets" />;
     }
@@ -575,22 +593,26 @@ export default function MesaDeAyuda() {
                                                             </TooltipTrigger>
                                                             <TooltipContent><p>Ver detalle</p></TooltipContent>
                                                         </Tooltip>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button size="sm" variant="outline" onClick={() => handleEdit(ticket)} className="rounded-xl">
-                                                                    <Edit className="h-4 w-4" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent><p>Editar</p></TooltipContent>
-                                                        </Tooltip>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button size="sm" variant="destructive" onClick={() => openDeleteDialog(ticket)} className="rounded-xl">
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent><p>Eliminar</p></TooltipContent>
-                                                        </Tooltip>
+                                                        {canEditTicket(ticket) && (
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Button size="sm" variant="outline" onClick={() => handleEdit(ticket)} className="rounded-xl">
+                                                                        <Edit className="h-4 w-4" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent><p>Editar</p></TooltipContent>
+                                                            </Tooltip>
+                                                        )}
+                                                        {canDeleteTicket(ticket) && (
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Button size="sm" variant="destructive" onClick={() => openDeleteDialog(ticket)} className="rounded-xl">
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent><p>Eliminar</p></TooltipContent>
+                                                            </Tooltip>
+                                                        )}
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -663,7 +685,7 @@ export default function MesaDeAyuda() {
                                             </a>
                                         </div>
                                     )}
-                                    {selectedTicket.estado !== 'resuelto' && selectedTicket.estado !== 'cerrado' && (
+                                    {canResolveTicket(selectedTicket) && (
                                         <div className="space-y-4 pt-4 border-t border-[#E5E7EB]">
                                             {!showResolveForm ? (
                                                 <Button

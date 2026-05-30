@@ -47,6 +47,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { apiClient } from "@/lib/api";
+import { hasAnyPermission } from "@/lib/permissions";
 
 
 interface Permiso {
@@ -71,6 +72,7 @@ interface RolConPermisos extends Rol {
 }
 
 export default function GestionRolesPermisos() {
+  const canGestionUsuarios = hasAnyPermission(["usuarios.gestion"]);
   const [roles, setRoles] = useState<RolConPermisos[]>([]);
   const [permisos, setPermisos] = useState<Permiso[]>([]);
   const [rolesFiltrados, setRolesFiltrados] = useState<RolConPermisos[]>([]);
@@ -282,14 +284,16 @@ export default function GestionRolesPermisos() {
                   </Badge>
                 </div>
               </div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button onClick={() => openDialog("crear")} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white">
-                    <Plus className="mr-2 h-5 w-5" /> Nuevo Rol
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Crear un nuevo rol</p></TooltipContent>
-              </Tooltip>
+              {canGestionUsuarios && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button onClick={() => openDialog("crear")} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white">
+                      <Plus className="mr-2 h-5 w-5" /> Nuevo Rol
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Crear un nuevo rol</p></TooltipContent>
+                </Tooltip>
+              )}
             </div>
           </div>
 
@@ -363,7 +367,7 @@ export default function GestionRolesPermisos() {
                     <p className="text-xl font-medium text-[#6B7280]">
                       {searchTerm ? `No se encontraron roles para "${searchTerm}"` : "No hay roles registrados"}
                     </p>
-                    {!searchTerm && (
+                    {!searchTerm && canGestionUsuarios && (
                       <Button onClick={() => openDialog("crear")} variant="outline" className="mt-6">
                         <Plus className="mr-2 h-5 w-5" /> Crear primer rol
                       </Button>
@@ -405,25 +409,29 @@ export default function GestionRolesPermisos() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[#E5E7EB]">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button size="sm" variant="ghost" onClick={() => openDialog("permisos", rol)}>
-                            <Lock className="mr-2 h-4 w-4 text-[#2563EB]" />
-                            Permisos
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent><p>Gestionar permisos del rol</p></TooltipContent>
-                      </Tooltip>
+                      {canGestionUsuarios && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button size="sm" variant="ghost" onClick={() => openDialog("permisos", rol)}>
+                              <Lock className="mr-2 h-4 w-4 text-[#2563EB]" />
+                              Permisos
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Gestionar permisos del rol</p></TooltipContent>
+                        </Tooltip>
+                      )}
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button size="sm" variant="ghost" onClick={() => openDialog("editar", rol)}>
-                            <Edit className="mr-2 h-4 w-4 text-[#4B5563]" />
-                            Editar
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent><p>Editar información del rol</p></TooltipContent>
-                      </Tooltip>
+                      {canGestionUsuarios && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button size="sm" variant="ghost" onClick={() => openDialog("editar", rol)}>
+                              <Edit className="mr-2 h-4 w-4 text-[#4B5563]" />
+                              Editar
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Editar información del rol</p></TooltipContent>
+                        </Tooltip>
+                      )}
 
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -435,15 +443,17 @@ export default function GestionRolesPermisos() {
                         <TooltipContent><p>Ver detalles del rol</p></TooltipContent>
                       </Tooltip>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button size="sm" variant="ghost" onClick={() => openDialog("eliminar", rol)} className="text-[#EF4444]">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Eliminar
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent><p>Eliminar rol permanentemente</p></TooltipContent>
-                      </Tooltip>
+                      {canGestionUsuarios && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button size="sm" variant="ghost" onClick={() => openDialog("eliminar", rol)} className="text-[#EF4444]">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Eliminar
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Eliminar rol permanentemente</p></TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -452,7 +462,7 @@ export default function GestionRolesPermisos() {
           </div>
 
           {/* Dialogo Permisos - con colores en seleccionados */}
-          <Dialog open={dialogState.open && dialogState.type === "permisos"} onOpenChange={closeDialog}>
+          <Dialog open={dialogState.open && dialogState.type === "permisos" && canGestionUsuarios} onOpenChange={closeDialog}>
             <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
               <DialogHeader>
                 <DialogTitle className="text-2xl text-[#1E3A8A] flex items-center gap-3">
@@ -520,7 +530,7 @@ export default function GestionRolesPermisos() {
           </Dialog>
 
           {/* Dialogo Crear/Editar */}
-          <Dialog open={dialogState.open && (dialogState.type === "crear" || dialogState.type === "editar")} onOpenChange={closeDialog}>
+          <Dialog open={dialogState.open && (dialogState.type === "crear" || dialogState.type === "editar") && canGestionUsuarios} onOpenChange={closeDialog}>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle className="text-2xl text-[#1E3A8A]">
@@ -660,7 +670,7 @@ export default function GestionRolesPermisos() {
                 <Button variant="outline" onClick={closeDialog}>
                   Cerrar
                 </Button>
-                {dialogState.rol && (
+                {dialogState.rol && canGestionUsuarios && (
                   <Button
                     onClick={() => {
                       closeDialog();
@@ -677,7 +687,7 @@ export default function GestionRolesPermisos() {
           </Dialog>
 
           {/* Alerta Eliminar */}
-          <AlertDialog open={dialogState.open && dialogState.type === "eliminar"} onOpenChange={closeDialog}>
+          <AlertDialog open={dialogState.open && dialogState.type === "eliminar" && canGestionUsuarios} onOpenChange={closeDialog}>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle className="text-[#1E3A8A]">¿Eliminar este rol?</AlertDialogTitle>
