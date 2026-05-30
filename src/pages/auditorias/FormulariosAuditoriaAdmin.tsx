@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, Save, ShieldCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Save, ShieldCheck, AlertTriangle, CheckCircle2, FileText, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -420,99 +420,171 @@ export default function FormulariosAuditoriaAdmin() {
     }
   };
 
+  const formulariosActivos = useMemo(
+    () => formularios.filter((item) => item.activo).length,
+    [formularios]
+  );
+  const camposActivos = useMemo(
+    () => campos.filter((item) => item.activo).length,
+    [campos]
+  );
+
   return (
-    <div className="space-y-6">
-      <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-cyan-50">
-        <CardContent className="pt-4">
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="h-5 w-5 text-blue-700 mt-0.5" />
-            <div>
-              <p className="font-semibold text-blue-900">Control ISO 9001 para formularios de auditoría</p>
-              <p className="text-sm text-blue-800">
-                El formulario debe incluir: cláusula ISO, criterio, evidencia objetiva, resultado y conclusión.
-              </p>
+    <div className="space-y-6 pb-6">
+      <Card className="overflow-hidden border-blue-100 bg-gradient-to-r from-blue-50 via-indigo-50 to-cyan-50 shadow-sm">
+        <CardContent className="p-5 md:p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 rounded-xl border border-blue-200 bg-white/80 p-2.5 shadow-sm">
+                <ShieldCheck className="h-5 w-5 text-blue-700" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-[#1E3A8A]">
+                  Formularios Dinámicos de Auditoría
+                </h1>
+                <p className="text-sm text-blue-900/80">
+                  Administra formularios y campos para checklists sin tocar la base de datos manualmente.
+                </p>
+                <p className="mt-1 text-xs text-blue-800/80">
+                  Control ISO 9001: incluye cláusula, criterio, evidencia objetiva, resultado y conclusión.
+                </p>
+              </div>
             </div>
+            <Button onClick={openCrearFormulario} className="gap-2 self-start shadow-sm">
+              <Plus className="h-4 w-4" />
+              Nuevo formulario
+            </Button>
           </div>
         </CardContent>
       </Card>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1E3A8A]">Formularios Dinámicos de Auditoría</h1>
-          <p className="text-sm text-gray-500">
-            Administra formularios y campos para checklists sin tocar la base de datos manualmente.
-          </p>
-        </div>
-        <Button onClick={openCrearFormulario} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Nuevo formulario
-        </Button>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Formularios</p>
+                <p className="text-2xl font-semibold text-slate-900">{formularios.length}</p>
+              </div>
+              <FileText className="h-6 w-6 text-slate-400" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Activos</p>
+                <p className="text-2xl font-semibold text-emerald-700">{formulariosActivos}</p>
+              </div>
+              <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Campos actuales</p>
+                <p className="text-2xl font-semibold text-slate-900">{campos.length}</p>
+              </div>
+              <ListChecks className="h-6 w-6 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">ISO pendientes</p>
+                <p className="text-2xl font-semibold text-amber-700">{missingIsoFields.length}</p>
+              </div>
+              <AlertTriangle className="h-6 w-6 text-amber-500" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <Card className="xl:col-span-1">
-          <CardHeader>
-            <CardTitle>Formularios</CardTitle>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <Card className="border-slate-200 shadow-sm xl:col-span-1">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Formularios</CardTitle>
             <CardDescription>Catálogo para módulo auditorías</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent>
             {loading ? (
               <LoadingSpinner message="Cargando" />
             ) : formularios.length === 0 ? (
-              <p className="text-sm text-gray-500">No hay formularios registrados.</p>
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                No hay formularios registrados.
+              </div>
             ) : (
-              formularios.map((formulario) => (
-                <div
-                  key={formulario.id}
-                  className={`border rounded-lg p-3 ${selectedFormularioId === formulario.id ? "border-blue-500 bg-blue-50" : "border-gray-200"
-                    }`}
-                >
-                  <div className="flex justify-between items-start gap-2">
-                    <button
-                      className="text-left flex-1"
-                      onClick={() => setSelectedFormularioId(formulario.id)}
-                    >
-                      <p className="font-medium text-gray-900">{formulario.nombre}</p>
-                      <p className="text-xs text-gray-500">{formulario.codigo}</p>
-                  <div className="mt-2">
-                        <Badge variant={formulario.activo ? "default" : "secondary"}>
-                          {formulario.activo ? "Activo" : "Inactivo"}
-                        </Badge>
-                        {formulario.estadoWorkflow && (
-                          <Badge variant="outline" className="ml-2">
-                            {formulario.estadoWorkflow}
-                          </Badge>
+              <div className="max-h-[640px] space-y-3 overflow-y-auto pr-1">
+                {formularios.map((formulario) => (
+                  <div
+                    key={formulario.id}
+                    className={`rounded-xl border p-3 transition-all ${selectedFormularioId === formulario.id
+                        ? "border-blue-300 bg-blue-50 shadow-sm"
+                        : "border-slate-200 bg-white hover:border-slate-300"
+                      }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <button
+                        className="flex-1 text-left"
+                        onClick={() => setSelectedFormularioId(formulario.id)}
+                      >
+                        <p className="text-sm font-semibold text-slate-900">{formulario.nombre}</p>
+                        <p className="text-xs text-muted-foreground">{formulario.codigo}</p>
+                        {formulario.descripcion && (
+                          <p className="mt-1 line-clamp-2 text-xs text-slate-500">{formulario.descripcion}</p>
                         )}
-                        <Badge variant="outline" className="ml-2">
-                          v{formulario.version}
-                        </Badge>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          <Badge variant={formulario.activo ? "default" : "secondary"}>
+                            {formulario.activo ? "Activo" : "Inactivo"}
+                          </Badge>
+                          {formulario.estadoWorkflow && (
+                            <Badge variant="outline">{formulario.estadoWorkflow}</Badge>
+                          )}
+                          <Badge variant="outline">v{formulario.version}</Badge>
+                        </div>
+                      </button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={() => openEditarFormulario(formulario)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={() => eliminarFormulario(formulario)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
                       </div>
-                    </button>
-                    <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => openEditarFormulario(formulario)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => eliminarFormulario(formulario)}>
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
                     </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
 
-        <Card className="xl:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="border-slate-200 shadow-sm xl:col-span-2">
+          <CardHeader className="space-y-4 xl:flex xl:flex-row xl:items-start xl:justify-between xl:space-y-0">
             <div>
-              <CardTitle>Campos del Formulario</CardTitle>
+              <CardTitle className="text-base">Campos del formulario</CardTitle>
               <CardDescription>
                 {selectedFormulario
-                  ? `${selectedFormulario.nombre} (${campos.length} campos)`
+                  ? `${selectedFormulario.nombre} (${campos.length} campos, ${camposActivos} activos)`
                   : "Selecciona un formulario para administrar campos"}
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button variant="outline" onClick={crearNuevaVersion} disabled={!selectedFormularioId} className="gap-2">
                 <Plus className="h-4 w-4" />
                 Nueva versión
@@ -521,11 +593,16 @@ export default function FormulariosAuditoriaAdmin() {
                 <ShieldCheck className="h-4 w-4" />
                 Aprobar
               </Button>
-              <Button variant="outline" onClick={aplicarPlantillaIso} disabled={!selectedFormularioId || savingCampo} className="gap-2">
+              <Button
+                variant="outline"
+                onClick={aplicarPlantillaIso}
+                disabled={!selectedFormularioId || savingCampo}
+                className="gap-2"
+              >
                 <ShieldCheck className="h-4 w-4" />
                 Plantilla ISO
               </Button>
-              <Button onClick={openCrearCampo} disabled={!selectedFormularioId} className="gap-2">
+              <Button onClick={openCrearCampo} disabled={!selectedFormularioId} className="gap-2 shadow-sm">
                 <Plus className="h-4 w-4" />
                 Nuevo campo
               </Button>
@@ -533,75 +610,87 @@ export default function FormulariosAuditoriaAdmin() {
           </CardHeader>
           <CardContent>
             {selectedFormularioId && (
-              <div className="mb-4 p-3 rounded-lg border bg-gray-50">
+              <div
+                className={`mb-4 rounded-xl border p-3 ${missingIsoFields.length === 0
+                    ? "border-emerald-200 bg-emerald-50"
+                    : "border-amber-200 bg-amber-50"
+                  }`}
+              >
                 {missingIsoFields.length === 0 ? (
-                  <div className="flex items-center gap-2 text-green-700 text-sm font-medium">
+                  <div className="flex items-center gap-2 text-sm font-medium text-emerald-700">
                     <CheckCircle2 className="h-4 w-4" />
                     Estructura conforme con ISO 9001
                   </div>
                 ) : (
                   <div className="text-sm text-amber-800">
-                    <div className="flex items-center gap-2 font-medium mb-1">
+                    <div className="mb-1 flex items-center gap-2 font-medium">
                       <AlertTriangle className="h-4 w-4" />
                       Campos ISO faltantes
                     </div>
-                    <p>{missingIsoFields.map((f) => f.etiqueta).join(" | ")}</p>
+                    <p className="text-xs sm:text-sm">{missingIsoFields.map((f) => f.etiqueta).join(" | ")}</p>
                   </div>
                 )}
               </div>
             )}
+
             {!selectedFormularioId ? (
-              <p className="text-sm text-gray-500">No hay formulario seleccionado.</p>
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">
+                No hay formulario seleccionado.
+              </div>
             ) : campos.length === 0 ? (
-              <p className="text-sm text-gray-500">Este formulario aún no tiene campos.</p>
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">
+                Este formulario aún no tiene campos.
+              </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Orden</TableHead>
-                    <TableHead>Etiqueta</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Req.</TableHead>
-                    <TableHead>Activo</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {campos.map((campo) => (
-                    <TableRow key={campo.id}>
-                      <TableCell>{campo.orden}</TableCell>
-                      <TableCell className="font-medium">{campo.etiqueta}</TableCell>
-                      <TableCell>{campo.tipoCampo}</TableCell>
-                      <TableCell>{campo.requerido ? "Sí" : "No"}</TableCell>
-                      <TableCell>{campo.activo ? "Sí" : "No"}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="inline-flex gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => openEditarCampo(campo)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" onClick={() => eliminarCampo(campo)}>
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <div className="overflow-hidden rounded-xl border border-slate-200">
+                <Table>
+                  <TableHeader className="bg-slate-50">
+                    <TableRow>
+                      <TableHead>Orden</TableHead>
+                      <TableHead>Etiqueta</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Req.</TableHead>
+                      <TableHead>Activo</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {campos.map((campo) => (
+                      <TableRow key={campo.id} className="hover:bg-slate-50/70">
+                        <TableCell>{campo.orden}</TableCell>
+                        <TableCell className="font-medium">{campo.etiqueta}</TableCell>
+                        <TableCell>{campo.tipoCampo}</TableCell>
+                        <TableCell>{campo.requerido ? "Sí" : "No"}</TableCell>
+                        <TableCell>{campo.activo ? "Sí" : "No"}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="inline-flex gap-1">
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditarCampo(campo)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => eliminarCampo(campo)}>
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
 
       <Dialog open={showFormularioDialog} onOpenChange={setShowFormularioDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editingFormulario ? "Editar formulario" : "Nuevo formulario"}</DialogTitle>
             <DialogDescription>Define la plantilla que se usará en auditorías.</DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-3 py-2">
-            <div className="space-y-1">
+          <div className="grid gap-4 py-2">
+            <div className="space-y-1.5">
               <Label>Código</Label>
               <Input
                 value={formularioForm.codigo}
@@ -610,7 +699,7 @@ export default function FormulariosAuditoriaAdmin() {
                 placeholder="CHK-AUD-ISO9001"
               />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label>Nombre</Label>
               <Input
                 value={formularioForm.nombre}
@@ -618,22 +707,23 @@ export default function FormulariosAuditoriaAdmin() {
                 placeholder="Checklist Auditoría ISO 9001"
               />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label>Descripción</Label>
               <Textarea
+                className="min-h-[88px]"
                 value={formularioForm.descripcion}
                 onChange={(e) => setFormularioForm((prev) => ({ ...prev, descripcion: e.target.value }))}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
                 <Label>Módulo</Label>
                 <Input
                   value={formularioForm.modulo}
                   disabled
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <Label>Entidad</Label>
                 <Input
                   value={formularioForm.entidadTipo}
@@ -641,10 +731,10 @@ export default function FormulariosAuditoriaAdmin() {
                 />
               </div>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label>Proceso vinculado</Label>
               <select
-                className="w-full p-2 border rounded-md bg-white"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none ring-offset-background transition placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 value={formularioForm.procesoId}
                 onChange={(e) => setFormularioForm((prev) => ({ ...prev, procesoId: e.target.value }))}
               >
@@ -656,9 +746,10 @@ export default function FormulariosAuditoriaAdmin() {
                 ))}
               </select>
             </div>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
               <input
                 type="checkbox"
+                className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
                 checked={formularioForm.activo}
                 onChange={(e) => setFormularioForm((prev) => ({ ...prev, activo: e.target.checked }))}
               />
@@ -679,14 +770,14 @@ export default function FormulariosAuditoriaAdmin() {
       </Dialog>
 
       <Dialog open={showCampoDialog} onOpenChange={setShowCampoDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{editingCampo ? "Editar campo" : "Nuevo campo"}</DialogTitle>
             <DialogDescription>Configura pregunta, tipo y validaciones del checklist.</DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-3 py-2">
-            <div className="space-y-1">
+          <div className="grid gap-4 py-2">
+            <div className="space-y-1.5">
               <Label>Nombre técnico</Label>
               <Input
                 value={campoForm.nombre}
@@ -694,7 +785,7 @@ export default function FormulariosAuditoriaAdmin() {
                 placeholder="existe_politica_calidad"
               />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label>Etiqueta visible</Label>
               <Input
                 value={campoForm.etiqueta}
@@ -702,11 +793,11 @@ export default function FormulariosAuditoriaAdmin() {
                 placeholder="¿Existe política de calidad documentada?"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
                 <Label>Tipo de campo</Label>
                 <select
-                  className="w-full p-2 border rounded-md"
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none ring-offset-background transition placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   value={campoForm.tipoCampo}
                   onChange={(e) => setCampoForm((prev) => ({ ...prev, tipoCampo: e.target.value }))}
                 >
@@ -720,7 +811,7 @@ export default function FormulariosAuditoriaAdmin() {
                   <option value="checkbox">Checkbox</option>
                 </select>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <Label>Orden</Label>
                 <Input
                   type="number"
@@ -729,11 +820,11 @@ export default function FormulariosAuditoriaAdmin() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="space-y-1">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="space-y-1.5">
                 <Label>Sección ISO</Label>
                 <select
-                  className="w-full p-2 border rounded-md"
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none ring-offset-background transition placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   value={campoForm.seccionIso}
                   onChange={(e) => setCampoForm((prev) => ({ ...prev, seccionIso: e.target.value }))}
                 >
@@ -746,7 +837,7 @@ export default function FormulariosAuditoriaAdmin() {
                   <option value="mejora">Mejora</option>
                 </select>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <Label>Cláusula ISO</Label>
                 <Input
                   value={campoForm.clausulaIso}
@@ -754,7 +845,7 @@ export default function FormulariosAuditoriaAdmin() {
                   placeholder="Ej: 9.2"
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <Label>Subcláusula</Label>
                 <Input
                   value={campoForm.subclausulaIso}
@@ -763,34 +854,38 @@ export default function FormulariosAuditoriaAdmin() {
                 />
               </div>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label>Opciones (JSON)</Label>
               <Textarea
+                className="min-h-[96px]"
                 value={campoForm.opcionesRaw}
                 onChange={(e) => setCampoForm((prev) => ({ ...prev, opcionesRaw: e.target.value }))}
                 placeholder={'["Sí","No","N/A"] o [{"label":"Cumple","value":"cumple"}]'}
               />
             </div>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 text-sm">
+            <div className="grid gap-2 sm:grid-cols-3">
+              <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                 <input
                   type="checkbox"
+                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
                   checked={campoForm.requerido}
                   onChange={(e) => setCampoForm((prev) => ({ ...prev, requerido: e.target.checked }))}
                 />
                 Requerido
               </label>
-              <label className="flex items-center gap-2 text-sm">
+              <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                 <input
                   type="checkbox"
+                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
                   checked={campoForm.evidenciaRequerida}
                   onChange={(e) => setCampoForm((prev) => ({ ...prev, evidenciaRequerida: e.target.checked }))}
                 />
                 Requiere evidencia
               </label>
-              <label className="flex items-center gap-2 text-sm">
+              <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                 <input
                   type="checkbox"
+                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
                   checked={campoForm.activo}
                   onChange={(e) => setCampoForm((prev) => ({ ...prev, activo: e.target.checked }))}
                 />

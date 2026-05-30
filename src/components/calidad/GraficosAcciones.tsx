@@ -22,14 +22,22 @@ interface GraficosAccionesProps {
 }
 
 const COLORS = {
-    correctiva: '#EF4444', // Rojo
-    preventiva: '#F59E0B', // Naranja
-    mejora: '#10B981',     // Verde
-    pendiente: '#94A3B8',  // Gris azulado
-    en_proceso: '#3B82F6', // Azul
-    implementada: '#8B5CF6', // Violeta
-    verificada: '#10B981', // Verde
-    cerrada: '#64748B',    // Gris
+    correctiva: '#F43F5E', // Rose 500
+    preventiva: '#FB923C', // Orange 400
+    mejora: '#10B981',     // Emerald 500
+    pendiente: '#94A3B8',  // Slate 400
+    en_proceso: '#3B82F6', // Blue 500
+    implementada: '#A855F7', // Purple 500
+    verificada: '#059669', // Emerald 600
+    cerrada: '#475569',    // Slate 600
+};
+
+const GRADIENTS = {
+    blue: ['#60A5FA', '#2563EB'],
+    emerald: ['#34D399', '#059669'],
+    rose: ['#FB7185', '#E11D48'],
+    amber: ['#FBBF24', '#D97706'],
+    violet: ['#A78BFA', '#7C3AED'],
 };
 
 export default function GraficosAcciones({ acciones }: GraficosAccionesProps) {
@@ -62,6 +70,9 @@ export default function GraficosAcciones({ acciones }: GraficosAccionesProps) {
             { name: 'Mejora', value: counts['mejora'] || 0, color: COLORS.mejora },
         ].filter(item => item.value > 0);
     }, [acciones]);
+
+    const totalAcciones = acciones.length;
+
 
     // Datos para tendencia mensual (últimos 6 meses)
     const datosTendencia = useMemo(() => {
@@ -96,25 +107,53 @@ export default function GraficosAcciones({ acciones }: GraficosAccionesProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Estado de Acciones - Barras */}
             <Card className="col-span-1 md:col-span-2 lg:col-span-1 rounded-2xl shadow-sm border-[#E5E7EB]">
-                <CardHeader>
-                    <CardTitle className="text-lg text-[#1E3A8A]">Estado de Acciones</CardTitle>
-                    <CardDescription>Distribución actual por estado de gestión</CardDescription>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-lg font-bold text-[#0F172A]">Estado de Gestión</CardTitle>
+                    <CardDescription>Distribución actual por fase operativa</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={datosEstado} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                                <Tooltip
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    cursor={{ fill: '#F1F5F9' }}
-                                />
-                                <Bar dataKey="valor" radius={[4, 4, 0, 0]}>
-                                    {datosEstado.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                            <BarChart data={datosEstado} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+                                <defs>
+                                    {Object.entries(GRADIENTS).map(([key, colors]) => (
+                                        <linearGradient key={key} id={`grad-${key}`} x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor={colors[0]} stopOpacity={1} />
+                                            <stop offset="100%" stopColor={colors[1]} stopOpacity={1} />
+                                        </linearGradient>
                                     ))}
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                                <XAxis
+                                    dataKey="name"
+                                    fontSize={11}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tick={{ fill: '#64748B', fontWeight: 500 }}
+                                />
+                                <YAxis
+                                    fontSize={11}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tick={{ fill: '#64748B' }}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        borderRadius: '12px',
+                                        border: 'none',
+                                        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+                                        padding: '12px'
+                                    }}
+                                    cursor={{ fill: '#F8FAFC', radius: 4 }}
+                                />
+                                <Bar dataKey="valor" radius={[6, 6, 0, 0]} barSize={40}>
+                                    {datosEstado.map((entry, index) => {
+                                        let gradId = 'grad-blue';
+                                        if (entry.name === 'Cerrada') gradId = 'grad-violet';
+                                        if (entry.name === 'Verificada') gradId = 'grad-emerald';
+                                        if (entry.name === 'Pendiente') gradId = 'grad-rose';
+                                        return <Cell key={`cell-${index}`} fill={`url(#${gradId})`} />;
+                                    })}
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
@@ -124,31 +163,46 @@ export default function GraficosAcciones({ acciones }: GraficosAccionesProps) {
 
             {/* Tipos de Acciones - Donut */}
             <Card className="col-span-1 md:col-span-2 lg:col-span-1 rounded-2xl shadow-sm border-[#E5E7EB]">
-                <CardHeader>
-                    <CardTitle className="text-lg text-[#1E3A8A]">Tipos de Acciones</CardTitle>
-                    <CardDescription>Clasificación por naturaleza de la acción</CardDescription>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-lg font-bold text-[#0F172A]">Clasificación</CardTitle>
+                    <CardDescription>Naturaleza de las acciones reportadas</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="h-[300px] w-full flex items-center justify-center">
+                    <div className="h-[300px] w-full relative flex items-center justify-center">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span className="text-3xl font-black text-[#0F172A] leading-none">{totalAcciones}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total</span>
+                        </div>
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
                                     data={datosTipo}
                                     cx="50%"
                                     cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    paddingAngle={5}
+                                    innerRadius={75}
+                                    outerRadius={95}
+                                    paddingAngle={8}
                                     dataKey="value"
+                                    stroke="none"
                                 >
                                     {datosTipo.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.color} />
                                     ))}
                                 </Pie>
                                 <Tooltip
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    contentStyle={{
+                                        borderRadius: '12px',
+                                        border: 'none',
+                                        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                                        padding: '8px 12px'
+                                    }}
                                 />
-                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                <Legend
+                                    verticalAlign="bottom"
+                                    height={36}
+                                    iconType="circle"
+                                    formatter={(value) => <span className="text-xs font-semibold text-slate-600">{value}</span>}
+                                />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
@@ -157,44 +211,72 @@ export default function GraficosAcciones({ acciones }: GraficosAccionesProps) {
 
             {/* Tendencia de Creación - Área */}
             <Card className="col-span-1 md:col-span-2 rounded-2xl shadow-sm border-[#E5E7EB]">
-                <CardHeader>
-                    <CardTitle className="text-lg text-[#1E3A8A]">Tendencia de Gestión (Últimos 6 Meses)</CardTitle>
-                    <CardDescription>Volumen de acciones creadas vs cerradas/verificadas</CardDescription>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-lg font-bold text-[#0F172A]">Dinámica Mensual</CardTitle>
+                    <CardDescription>Evolución de hallazgos vs resoluciones (Últimos 6 meses)</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="h-[300px] w-full">
+                    <div className="h-[320px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={datosTendencia} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                            <AreaChart data={datosTendencia} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
+                                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
                                         <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
                                     </linearGradient>
                                     <linearGradient id="colorCerradas" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
+                                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
                                         <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <XAxis dataKey="mes" axisLine={false} tickLine={false} />
-                                <YAxis axisLine={false} tickLine={false} />
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                <Legend verticalAlign="top" height={36} iconType="circle" />
+                                <XAxis
+                                    dataKey="mes"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    fontSize={11}
+                                    tick={{ fill: '#64748B', fontWeight: 500 }}
+                                />
+                                <YAxis
+                                    axisLine={false}
+                                    tickLine={false}
+                                    fontSize={11}
+                                    tick={{ fill: '#64748B' }}
+                                />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                                <Tooltip
+                                    contentStyle={{
+                                        borderRadius: '12px',
+                                        border: 'none',
+                                        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                                        padding: '12px'
+                                    }}
+                                />
+                                <Legend
+                                    verticalAlign="top"
+                                    align="right"
+                                    height={36}
+                                    iconType="circle"
+                                    formatter={(value) => <span className="text-xs font-bold text-slate-700">{value}</span>}
+                                />
                                 <Area
                                     type="monotone"
                                     dataKey="total"
-                                    name="Nuevas Acciones"
+                                    name="Reportadas"
                                     stroke="#3B82F6"
+                                    strokeWidth={3}
                                     fillOpacity={1}
                                     fill="url(#colorTotal)"
+                                    animationDuration={1500}
                                 />
                                 <Area
                                     type="monotone"
                                     dataKey="cerradas"
-                                    name="Cerradas/Verificadas"
+                                    name="Resueltas"
                                     stroke="#10B981"
+                                    strokeWidth={3}
                                     fillOpacity={1}
                                     fill="url(#colorCerradas)"
+                                    animationDuration={1500}
                                 />
                             </AreaChart>
                         </ResponsiveContainer>

@@ -43,6 +43,7 @@ interface ControlRiesgo {
 interface Riesgo {
   id: string;
   codigo: string;
+  nombre?: string;
   descripcion?: string;
 }
 
@@ -165,11 +166,13 @@ const ControlesRiesgos: React.FC = () => {
   const filteredControles = controles.filter((control) => {
     const riesgo = riesgoMap[control.riesgo_id];
     const riesgoCodigo = riesgo?.codigo || "";
+    const riesgoNombre = riesgo?.nombre || "";
     const riesgoDesc = riesgo?.descripcion || "";
     return (
       control.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       control.tipo_control?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       riesgoCodigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      riesgoNombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       riesgoDesc.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
@@ -337,7 +340,7 @@ const ControlesRiesgos: React.FC = () => {
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
-                placeholder="Buscar por riesgo, descripción o tipo..."
+                placeholder="Buscar por riesgo, nombre, descripción o tipo..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
@@ -401,6 +404,7 @@ const ControlesRiesgos: React.FC = () => {
                               <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold px-4 py-2">
                                 {riesgo?.codigo || '-'}
                               </Badge>
+                              <p className="text-sm font-medium text-[#1F2937] mt-1">{riesgo?.nombre || 'Sin nombre'}</p>
                               <p className="text-sm text-[#6B7280] mt-1">{riesgo?.descripcion || 'Sin descripción'}</p>
                             </div>
                           </TableCell>
@@ -463,7 +467,7 @@ const ControlesRiesgos: React.FC = () => {
                       <SelectContent>
                         {riesgos.map((riesgo) => (
                           <SelectItem key={riesgo.id} value={riesgo.id}>
-                            [{riesgo.codigo}] {riesgo.descripcion}
+                            [{riesgo.codigo}] {riesgo.nombre || 'Sin nombre'}{riesgo.descripcion ? ` - ${riesgo.descripcion}` : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -569,6 +573,7 @@ const ControlesRiesgos: React.FC = () => {
                       <Badge className="text-lg px-6 py-3 bg-[#2563EB]/10 text-[#2563EB] font-bold">
                         {riesgoMap[selectedControl.riesgo_id]?.codigo || '-'}
                       </Badge>
+                      <p className="mt-2 text-lg font-semibold text-[#1F2937]">{riesgoMap[selectedControl.riesgo_id]?.nombre || 'Sin nombre'}</p>
                       <p className="mt-2 text-lg">{riesgoMap[selectedControl.riesgo_id]?.descripcion || 'Sin descripción'}</p>
                     </div>
                   </div>

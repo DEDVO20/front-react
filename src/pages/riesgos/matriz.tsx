@@ -29,6 +29,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 interface Riesgo {
   id: string;
   codigo: string;
+  nombre?: string;
   descripcion?: string;
   tipo_riesgo?: string;
   proceso_id?: string;
@@ -64,6 +65,7 @@ const MatrizRiesgos: React.FC = () => {
   const [formData, setFormData] = useState({
     procesoId: "",
     codigo: "",
+    nombre: "",
     descripcion: "",
     tipo: "",
     probabilidad: "",
@@ -122,6 +124,7 @@ const MatrizRiesgos: React.FC = () => {
       const payload = {
         proceso_id: formData.procesoId,
         codigo: formData.codigo.toUpperCase(),
+        nombre: formData.nombre.trim() || null,
         descripcion: formData.descripcion,
         tipo_riesgo: formData.tipo || "operacional",
         probabilidad,
@@ -139,6 +142,7 @@ const MatrizRiesgos: React.FC = () => {
       setFormData({
         procesoId: "",
         codigo: "",
+        nombre: "",
         descripcion: "",
         tipo: "",
         probabilidad: "",
@@ -167,6 +171,7 @@ const MatrizRiesgos: React.FC = () => {
 
   const filteredRiesgos = riesgos.filter(r =>
     r.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (r.nombre || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (r.descripcion || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     ((r.proceso_id && procesoMap[r.proceso_id]?.nombre) || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -373,7 +378,7 @@ const MatrizRiesgos: React.FC = () => {
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
-                placeholder="Buscar por código, descripción o proceso..."
+                placeholder="Buscar por código, nombre, descripción o proceso..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
@@ -444,7 +449,8 @@ const MatrizRiesgos: React.FC = () => {
                                       className="bg-white/90 p-3 rounded-lg shadow hover:shadow-md cursor-pointer transition-all"
                                     >
                                       <div className="font-bold text-[#2563EB]">{r.codigo}</div>
-                                      <div className="text-xs text-[#6B7280] truncate">{r.descripcion}</div>
+                                      <div className="text-xs font-medium text-[#1F2937] truncate">{r.nombre || 'Sin nombre'}</div>
+                                      <div className="text-xs text-[#6B7280] truncate">{r.descripcion || 'Sin descripción'}</div>
                                     </div>
                                   ))}
                                 </div>
@@ -501,6 +507,7 @@ const MatrizRiesgos: React.FC = () => {
                 <TableHeader className="bg-[#F8FAFC]">
                   <TableRow>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Código</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Nombre</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Proceso</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Descripción</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Tratamiento</TableHead>
@@ -513,7 +520,7 @@ const MatrizRiesgos: React.FC = () => {
                 <TableBody>
                   {filteredRiesgos.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-20 text-[#6B7280]">
+                      <TableCell colSpan={9} className="text-center py-20 text-[#6B7280]">
                         <div className="flex flex-col items-center">
                           <AlertTriangle className="h-16 w-16 text-gray-300 mb-4" />
                           <p className="text-lg font-medium">
@@ -535,6 +542,9 @@ const MatrizRiesgos: React.FC = () => {
                           <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold px-4 py-2">
                             {r.codigo}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="px-6 py-4 font-medium max-w-xs">
+                          {r.nombre || <span className="italic text-[#6B7280]">Sin nombre</span>}
                         </TableCell>
                         <TableCell className="px-6 py-4 text-[#6B7280]">
                           {r.proceso_id ? procesoMap[r.proceso_id]?.nombre || '-' : '-'}
@@ -610,6 +620,16 @@ const MatrizRiesgos: React.FC = () => {
                       className="rounded-xl"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="font-bold">Nombre del Riesgo</Label>
+                  <Input
+                    value={formData.nombre}
+                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                    placeholder="Ej. Falla en respaldo de información"
+                    className="rounded-xl"
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -727,6 +747,9 @@ const MatrizRiesgos: React.FC = () => {
                       <Badge className="mt-2 text-2xl px-6 py-3 bg-[#2563EB]/10 text-[#2563EB] font-bold">
                         {selectedRiesgo.codigo}
                       </Badge>
+                      <p className="mt-2 text-lg font-semibold text-[#1F2937]">
+                        {selectedRiesgo.nombre || 'Sin nombre'}
+                      </p>
                     </div>
                     <Badge className={`text-xl px-6 py-3 ${getNivelColor(selectedRiesgo.nivel_riesgo)}`}>
                       {getNivelLabel(selectedRiesgo.nivel_riesgo)}

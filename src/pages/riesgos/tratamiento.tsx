@@ -34,6 +34,7 @@ const TratamientoRiesgos: React.FC = () => {
   // Diálogo edición
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editFormData, setEditFormData] = useState({
+    nombre: "",
     tratamiento: "",
     estado: "",
     fecha_revision: "",
@@ -66,6 +67,7 @@ const TratamientoRiesgos: React.FC = () => {
   const handleEdit = (riesgo: Riesgo) => {
     setSelectedRiesgo(riesgo);
     setEditFormData({
+      nombre: riesgo.nombre || "",
       tratamiento: riesgo.tratamiento || "",
       estado: riesgo.estado || "identificado",
       fecha_revision: riesgo.fecha_revision || "",
@@ -102,6 +104,7 @@ const TratamientoRiesgos: React.FC = () => {
   // Helpers
   const filteredRiesgos = riesgos.filter(r =>
     r.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (r.nombre || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (r.descripcion || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (r.tratamiento || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -277,7 +280,7 @@ const TratamientoRiesgos: React.FC = () => {
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
-                placeholder="Buscar por código, descripción o tratamiento..."
+                placeholder="Buscar por código, nombre, descripción o tratamiento..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
@@ -305,6 +308,7 @@ const TratamientoRiesgos: React.FC = () => {
                 <TableHeader className="bg-[#F8FAFC]">
                   <TableRow>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Código</TableHead>
+                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Nombre</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Descripción</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Tratamiento</TableHead>
                     <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Nivel</TableHead>
@@ -315,7 +319,7 @@ const TratamientoRiesgos: React.FC = () => {
                 <TableBody>
                   {filteredRiesgos.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-20 text-[#6B7280]">
+                      <TableCell colSpan={7} className="text-center py-20 text-[#6B7280]">
                         <div className="flex flex-col items-center">
                           <FileText className="h-16 w-16 text-gray-300 mb-4" />
                           <p className="text-lg font-medium">
@@ -334,6 +338,9 @@ const TratamientoRiesgos: React.FC = () => {
                           <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold px-4 py-2">
                             {r.codigo}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="px-6 py-4 font-medium max-w-xs">
+                          {r.nombre || <span className="italic text-[#6B7280]">Sin nombre</span>}
                         </TableCell>
                         <TableCell className="px-6 py-4 font-medium max-w-md">
                           {r.descripcion || <span className="italic text-[#6B7280]">Sin descripción</span>}
@@ -446,6 +453,9 @@ const TratamientoRiesgos: React.FC = () => {
                       <Badge className="mt-2 text-2xl px-6 py-3 bg-[#2563EB]/10 text-[#2563EB] font-bold">
                         {selectedRiesgo.codigo}
                       </Badge>
+                      <p className="mt-2 text-lg font-semibold text-[#1F2937]">
+                        {selectedRiesgo.nombre || 'Sin nombre'}
+                      </p>
                     </div>
                     <div className="flex gap-4">
                       <Badge className={`text-xl px-6 py-3 ${getNivelColor(selectedRiesgo.nivel_riesgo)}`}>
@@ -543,6 +553,22 @@ const TratamientoRiesgos: React.FC = () => {
                     <Badge className="mt-2 text-lg px-4 py-2 bg-[#2563EB]/10 text-[#2563EB] font-bold">
                       {selectedRiesgo.codigo}
                     </Badge>
+                    <p className="mt-2 text-base font-medium text-[#1F2937]">
+                      {selectedRiesgo.nombre || 'Sin nombre'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="nombre" className="text-[#1E3A8A] font-bold">
+                      Nombre del Riesgo
+                    </Label>
+                    <Input
+                      id="nombre"
+                      value={editFormData.nombre}
+                      onChange={(e) => setEditFormData({ ...editFormData, nombre: e.target.value })}
+                      placeholder="Escribe un nombre corto para el riesgo"
+                      className="rounded-xl border-[#E5E7EB]"
+                    />
                   </div>
 
                   <div className="space-y-2">
