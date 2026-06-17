@@ -3,9 +3,145 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login } from "@/services/auth";
+import { FileText, ShieldCheck } from "lucide-react";
+
+type LegalDocumentType = "terms" | "privacy";
+
+const legalDocuments = {
+  terms: {
+    title: "Términos de Servicio",
+    intro:
+      "Estos términos regulan el acceso y uso del Sistema de Gestión de Calidad por parte de usuarios autorizados.",
+    sections: [
+      {
+        title: "Alcance del servicio",
+        content:
+          "El sistema permite gestionar procesos, documentos, versiones, auditorías, hallazgos, riesgos, objetivos de calidad, indicadores, capacitaciones, competencias, no conformidades, acciones correctivas, tickets de soporte, notificaciones, reportes, migraciones y registros de auditoría interna.",
+      },
+      {
+        title: "Usuarios autorizados y credenciales",
+        content:
+          "El acceso es personal, controlado por usuario, contraseña, token de sesión, roles y permisos. Las credenciales son intransferibles. El usuario debe proteger su contraseña, cerrar sesión en equipos compartidos y reportar cualquier acceso no autorizado.",
+      },
+      {
+        title: "Administración de cuentas",
+        content:
+          "La creación de usuarios, asignación de áreas, roles, permisos, activación de cuentas y cambios de contraseña corresponde a usuarios con permisos administrativos. Los usuarios no deben intentar modificar privilegios, acceder a módulos restringidos o eludir controles del sistema.",
+      },
+      {
+        title: "Uso correcto de la información",
+        content:
+          "La información registrada debe ser veraz, completa, pertinente y relacionada con actividades del sistema de calidad. No se debe cargar información falsa, ofensiva, innecesaria, ajena al proceso institucional o que vulnere derechos de terceros.",
+      },
+      {
+        title: "Documentos, evidencias y archivos",
+        content:
+          "Los documentos, imágenes, soportes, evidencias, respuestas de formularios y archivos adjuntos cargados al sistema deben usarse para soportar gestión documental, auditorías, tickets, capacitaciones, no conformidades, acciones correctivas y trazabilidad operativa.",
+      },
+      {
+        title: "Trazabilidad y auditoría",
+        content:
+          "El sistema puede registrar acciones de los usuarios, fechas, responsables, cambios, aprobaciones, revisiones, estados, comentarios y eventos relevantes para control interno, auditoría, seguridad, seguimiento de responsabilidades y mejora continua.",
+      },
+      {
+        title: "Disponibilidad, soporte y cambios",
+        content:
+          "El servicio puede presentar interrupciones por mantenimiento, actualizaciones, fallas técnicas o cambios de configuración. Las solicitudes de soporte deben gestionarse mediante la mesa de ayuda o los canales definidos por la administración del sistema.",
+      },
+      {
+        title: "Uso indebido",
+        content:
+          "El incumplimiento de estos términos puede generar restricción de acceso, revisión administrativa, corrección de registros, reporte a responsables internos o las medidas que correspondan según las políticas de la organización.",
+      },
+    ],
+    footer: {
+      title: "Aceptación de los términos",
+      content:
+        "Al marcar la casilla de aceptación e iniciar sesión, el usuario declara que entiende las condiciones de uso del sistema y se compromete a utilizarlo de forma responsable, segura y conforme a los permisos asignados.",
+    },
+  },
+  privacy: {
+    title: "Política de Privacidad y Uso de la Información",
+    intro:
+      "Esta política describe cómo el software recolecta, usa, conserva y protege los datos personales e información operativa del Sistema de Gestión de Calidad.",
+    sections: [
+      {
+        title: "Responsable y finalidad general",
+        content:
+          "La organización que administra el sistema actúa como responsable o encargada del tratamiento, según corresponda. La información se usa para operar, controlar y mejorar los procesos del Sistema de Gestión de Calidad y para mantener evidencia de las actividades realizadas.",
+      },
+      {
+        title: "Datos personales tratados",
+        content:
+          "El sistema puede tratar documento de identidad, nombres, apellidos, nombre de usuario, correo electrónico, cargo, área, foto de perfil, estado de cuenta, roles, permisos, usuario creador o responsable, token de sesión y datos técnicos asociados al acceso.",
+      },
+      {
+        title: "Información operativa asociada",
+        content:
+          "La cuenta del usuario puede relacionarse con documentos creados, revisados o aprobados; versiones documentales; procesos; auditorías; hallazgos; riesgos; indicadores; objetivos; capacitaciones; asistencias; competencias; tickets; notificaciones; reportes; evidencias y registros de actividad.",
+      },
+      {
+        title: "Finalidades específicas",
+        content:
+          "Los datos se usan para autenticar usuarios, administrar permisos, asignar responsables, controlar estados y aprobaciones, generar reportes, atender soporte, conservar evidencias, realizar auditorías, gestionar acciones de mejora, enviar notificaciones y proteger la seguridad del sistema.",
+      },
+      {
+        title: "Archivos, evidencias y almacenamiento",
+        content:
+          "Los archivos cargados, como documentos, evidencias, imágenes, logos o adjuntos de tickets, pueden almacenarse en la infraestructura configurada para el proyecto, incluyendo backend, base de datos, rutas de archivo o servicios externos de almacenamiento como Supabase cuando estén habilitados.",
+      },
+      {
+        title: "Seguridad y control de acceso",
+        content:
+          "El sistema aplica autenticación, token de sesión, permisos por rol, validaciones del backend, restricciones de rutas y registros de auditoría. La información solo debe ser consultada o modificada por usuarios autorizados según su rol y necesidad operativa.",
+      },
+      {
+        title: "Conservación y trazabilidad",
+        content:
+          "La información se conserva durante el tiempo necesario para cumplir finalidades de gestión de calidad, control documental, auditoría, seguridad, soporte, mejora continua y obligaciones internas, legales o contractuales aplicables.",
+      },
+      {
+        title: "Derechos de los titulares",
+        content:
+          "Los titulares pueden solicitar conocer, actualizar, rectificar, acceder o pedir información sobre el uso dado a sus datos personales. También pueden solicitar supresión o revocatoria cuando proceda conforme a la ley y a las finalidades legítimas del sistema.",
+      },
+      {
+        title: "Confidencialidad y circulación",
+        content:
+          "La información no debe divulgarse a personas no autorizadas. Solo podrá compartirse con titulares, usuarios autorizados, administradores, responsables internos, proveedores tecnológicos necesarios, autoridades competentes o terceros permitidos por autorización, necesidad operativa o ley aplicable.",
+      },
+      {
+        title: "Datos sensibles",
+        content:
+          "El sistema no solicita datos sensibles como parte ordinaria del login. Si un usuario incluye información sensible dentro de evidencias, archivos o comentarios, dicha información debe ser estrictamente necesaria para la gestión de calidad y será tratada con acceso restringido.",
+      },
+    ],
+    footer: {
+      title: "Autorización de tratamiento",
+      content:
+        "Al marcar la casilla de aceptación e iniciar sesión, el usuario autoriza el tratamiento de sus datos personales y de la información registrada en el sistema para las finalidades descritas en esta política.",
+    },
+  },
+} satisfies Record<
+  LegalDocumentType,
+  {
+    title: string;
+    intro: string;
+    sections: Array<{ title: string; content: string }>;
+    footer: { title: string; content: string };
+  }
+>;
 
 export function LoginForm({
   className,
@@ -18,26 +154,35 @@ export function LoginForm({
   });
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [acceptedPolicies, setAcceptedPolicies] = useState(false);
+  const [openLegalDocument, setOpenLegalDocument] =
+    useState<LegalDocumentType | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
     try {
       // Validar campos
       if (!formData.nombre_usuario || !formData.password) {
         setError("Usuario/Email/Documento y contraseña son obligatorios");
-        setLoading(false);
         return;
       }
 
       // Validar longitud mínima de password
       if (formData.password.length < 6) {
         setError("La contraseña debe tener al menos 6 caracteres");
-        setLoading(false);
         return;
       }
+
+      if (!acceptedPolicies) {
+        setError(
+          "Debes aceptar los términos de servicio y la política de privacidad para iniciar sesión"
+        );
+        return;
+      }
+
+      setLoading(true);
 
       // Llamar al servicio de login
       const result = await login({
@@ -66,6 +211,12 @@ export function LoginForm({
     // Limpiar error al escribir
     if (error) setError("");
   };
+
+  const activeLegalDocument = openLegalDocument
+    ? legalDocuments[openLegalDocument]
+    : null;
+  const LegalDocumentIcon =
+    openLegalDocument === "privacy" ? ShieldCheck : FileText;
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -100,15 +251,7 @@ export function LoginForm({
               </div>
 
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Contraseña</Label>
-                  <a
-                    href="#"
-                    className="ml-auto text-sm underline-offset-2 hover:underline"
-                  >
-                    ¿Olvidaste tu contraseña?
-                  </a>
-                </div>
+                <Label htmlFor="password">Contraseña</Label>
                 <Input
                   id="password"
                   type="password"
@@ -121,52 +264,48 @@ export function LoginForm({
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <div className="flex items-start gap-3 rounded-md border bg-muted/30 p-3">
+                <Checkbox
+                  id="acceptedPolicies"
+                  checked={acceptedPolicies}
+                  onCheckedChange={(checked) => {
+                    setAcceptedPolicies(checked === true);
+                    if (error) setError("");
+                  }}
+                  disabled={loading}
+                  className="mt-0.5"
+                />
+                <Label
+                  htmlFor="acceptedPolicies"
+                  className="text-sm font-normal leading-relaxed text-muted-foreground"
+                >
+                  Acepto los{" "}
+                  <button
+                    type="button"
+                    onClick={() => setOpenLegalDocument("terms")}
+                    className="font-medium text-foreground underline underline-offset-4 hover:text-primary"
+                  >
+                    Términos de Servicio
+                  </button>{" "}
+                  y la{" "}
+                  <button
+                    type="button"
+                    onClick={() => setOpenLegalDocument("privacy")}
+                    className="font-medium text-foreground underline underline-offset-4 hover:text-primary"
+                  >
+                    Política de Privacidad y Uso de la Información
+                  </button>
+                  .
+                </Label>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || !acceptedPolicies}
+              >
                 {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
               </Button>
-
-              <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
-                <span className="relative z-10 bg-background px-2 text-muted-foreground">
-                  O continúa con
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <Button variant="outline" className="w-full" type="button">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path
-                      d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  <span className="sr-only">Login with Apple</span>
-                </Button>
-                <Button variant="outline" className="w-full" type="button">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path
-                      d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  <span className="sr-only">Login with Google</span>
-                </Button>
-                <Button variant="outline" className="w-full" type="button">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path
-                      d="M6.915 4.03c-1.968 0-3.683 1.28-4.871 3.113C.704 9.208 0 11.883 0 14.449c0 .706.07 1.369.21 1.973a6.624 6.624 0 0 0 .265.86 5.297 5.297 0 0 0 .371.761c.696 1.159 1.818 1.927 3.593 1.927 1.497 0 2.633-.671 3.965-2.444.76-1.012 1.144-1.626 2.663-4.32l.756-1.339.186-.325c.061.1.121.196.183.3l2.152 3.595c.724 1.21 1.665 2.556 2.47 3.314 1.046.987 1.992 1.22 3.06 1.22 1.075 0 1.876-.355 2.455-.843a3.743 3.743 0 0 0 .81-.973c.542-.939.861-2.127.861-3.745 0-2.72-.681-5.357-2.084-7.45-1.282-1.912-2.957-2.93-4.716-2.93-1.047 0-2.088.467-3.053 1.308-.652.57-1.257 1.29-1.82 2.05-.69-.875-1.335-1.547-1.958-2.056-1.182-.966-2.315-1.303-3.454-1.303zm10.16 2.053c1.147 0 2.188.758 2.992 1.999 1.132 1.748 1.647 4.195 1.647 6.4 0 1.548-.368 2.9-1.839 2.9-.58 0-1.027-.23-1.664-1.004-.496-.601-1.343-1.878-2.832-4.358l-.617-1.028a44.908 44.908 0 0 0-1.255-1.98c.07-.109.141-.224.211-.327 1.12-1.667 2.118-2.602 3.358-2.602zm-10.201.553c1.265 0 2.058.791 2.675 1.446.307.327.737.871 1.234 1.579l-1.02 1.566c-.757 1.163-1.882 3.017-2.837 4.338-1.191 1.649-1.81 1.817-2.486 1.817-.524 0-1.038-.237-1.383-.794-.263-.426-.464-1.13-.464-2.046 0-2.221.63-4.535 1.66-6.088.454-.687.964-1.226 1.533-1.533a2.264 2.264 0 0 1 1.088-.285z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  <span className="sr-only">Login with Meta</span>
-                </Button>
-              </div>
-
-              <div className="text-center text-sm">
-                ¿No tienes una cuenta?{" "}
-                <a href="#" className="underline underline-offset-4">
-                  Regístrate
-                </a>
-              </div>
             </div>
           </form>
           <div className="relative hidden bg-muted md:block">
@@ -179,9 +318,63 @@ export function LoginForm({
         </CardContent>
       </Card>
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
-        Al continuar, aceptas nuestros <a href="#">Términos de Servicio</a> y{" "}
-        <a href="#">Política de Privacidad</a>.
+        Al iniciar sesión, confirmas que conoces y aceptas las condiciones de uso del sistema.
       </div>
+
+      <Dialog
+        open={openLegalDocument !== null}
+        onOpenChange={(open) => {
+          if (!open) setOpenLegalDocument(null);
+        }}
+      >
+        <DialogContent className="max-h-[88vh] max-w-2xl overflow-hidden p-0 sm:rounded-lg">
+          {activeLegalDocument && (
+            <>
+              <DialogHeader className="border-b bg-muted/40 px-6 py-5 pr-14 text-left">
+                <div className="flex items-start gap-3">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md border bg-background text-foreground shadow-sm">
+                    <LegalDocumentIcon className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <DialogTitle className="text-xl leading-tight">
+                      {activeLegalDocument.title}
+                    </DialogTitle>
+                    <DialogDescription className="max-w-xl leading-relaxed">
+                      {activeLegalDocument.intro}
+                    </DialogDescription>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="max-h-[62vh] space-y-3 overflow-y-auto px-6 py-5 text-sm leading-relaxed text-muted-foreground">
+                {activeLegalDocument.sections.map((section, index) => (
+                  <section
+                    key={section.title}
+                    className="grid grid-cols-[auto_1fr] gap-3 rounded-md border bg-background p-4 shadow-sm"
+                  >
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
+                      {index + 1}
+                    </span>
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-foreground">
+                        {section.title}
+                      </h3>
+                      <p>{section.content}</p>
+                    </div>
+                  </section>
+                ))}
+
+                <div className="rounded-md border bg-muted/50 p-4 text-xs leading-relaxed text-muted-foreground">
+                  <p className="font-semibold text-foreground">
+                    {activeLegalDocument.footer.title}
+                  </p>
+                  <p>{activeLegalDocument.footer.content}</p>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
