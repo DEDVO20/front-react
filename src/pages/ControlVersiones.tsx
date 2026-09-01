@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -97,18 +98,12 @@ export default function ControlVersiones() {
 
   const filtrados = useMemo(() => {
     return documentos.filter((doc) => {
-      const term = search.trim().toLowerCase();
-      const matchesSearch =
-        !term ||
-        doc.nombre.toLowerCase().includes(term) ||
-        doc.codigo.toLowerCase().includes(term) ||
-        (doc.creado_por &&
-          `${doc.creado_por.nombre} ${doc.creado_por.primerApellido}`.toLowerCase().includes(term));
+      const matchesQuery = matchesTextSearch(search, doc);
 
       const docFecha = new Date(doc.creado_en).toISOString().split('T')[0];
       const matchesDate = !filterDate || docFecha === filterDate;
 
-      return matchesSearch && matchesDate;
+      return matchesQuery && matchesDate;
     });
   }, [documentos, search, filterDate]);
 
@@ -310,7 +305,7 @@ export default function ControlVersiones() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6B7280] w-5 h-5" />
               <Input
-                placeholder="Buscar por nombre, responsable o código..."
+                placeholder={SEARCH_ANY_PLACEHOLDER}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10 pr-4 py-6 border-[#E5E7EB] rounded-xl focus:ring-[#8B5CF6]/20"

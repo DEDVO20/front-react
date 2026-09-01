@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ClipboardList, Search, Eye, AlertCircle, Calendar, Activity, RefreshCw, CheckCircle } from "lucide-react";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import {
@@ -89,11 +90,8 @@ export default function EnProcesoAccionesCorrectivas() {
     return labels[tipo] || tipo;
   };
 
-  const filteredAcciones = acciones.filter(
-    (accion) =>
-      accion.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (accion.descripcion && accion.descripcion.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      accion.tipo.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAcciones = acciones.filter((accion) =>
+    matchesTextSearch(searchTerm, accion)
   );
 
   if (loading) {
@@ -238,7 +236,7 @@ export default function EnProcesoAccionesCorrectivas() {
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
             <Input
-              placeholder="Buscar por código, descripción o tipo..."
+              placeholder={SEARCH_ANY_PLACEHOLDER}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 py-6 rounded-xl border-[#E5E7EB]"

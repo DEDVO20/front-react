@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, Search, Download, Eye, Filter, Send, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -81,13 +82,8 @@ export default function DocumentosPublicos() {
   }, [documentos]);
 
   const documentosFiltrados = useMemo(() => {
-    const term = search.toLowerCase().trim();
     return documentos.filter((doc) => {
-      const coincideBusqueda =
-        term.length === 0 ||
-        doc.nombre.toLowerCase().includes(term) ||
-        doc.codigo.toLowerCase().includes(term);
-
+      const coincideBusqueda = matchesTextSearch(search, doc);
       const coincideTipo = tipo.length === 0 || doc.tipo_documento === tipo;
       return coincideBusqueda && coincideTipo;
     });
@@ -282,7 +278,7 @@ export default function DocumentosPublicos() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]" />
               <input
                 type="text"
-                placeholder="Buscar por nombre o codigo..."
+                placeholder={SEARCH_ANY_PLACEHOLDER}
                 className="w-full pl-10 pr-3 py-2 rounded-lg border border-[#E5E7EB] focus:ring-2 focus:ring-[#2563EB]/20 outline-none"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from "sonner";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 // Tipos TypeScript
@@ -293,16 +294,9 @@ const AuditoriasPlanificacion = () => {
     }
   };
 
-  const auditoriasFiltradas = auditorias.filter(aud => {
-    if (!busqueda) return true;
-
-    const searchLower = busqueda.toLowerCase();
-    return (
-      aud.codigo?.toLowerCase().includes(searchLower) ||
-      aud.nombre?.toLowerCase().includes(searchLower) ||
-      aud.objetivo?.toLowerCase().includes(searchLower)
-    );
-  });
+  const auditoriasFiltradas = auditorias.filter(aud =>
+    matchesTextSearch(busqueda, aud)
+  );
 
   const abrirModalCrear = () => {
     setAuditoriaEditando(null);
@@ -611,7 +605,7 @@ const AuditoriasPlanificacion = () => {
             <div className="md:col-span-2 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
-                placeholder="Buscar por código, nombre u objetivo..."
+                placeholder={SEARCH_ANY_PLACEHOLDER}
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"

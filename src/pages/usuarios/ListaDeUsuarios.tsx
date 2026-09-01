@@ -58,6 +58,7 @@ import {
 import { apiClient } from "@/lib/api";
 import { usuarioService, Usuario } from "@/services/usuario.service";
 import { hasAnyPermission } from "@/lib/permissions";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 
 
 
@@ -110,17 +111,7 @@ export default function ListaUsuarios() {
     let resultado = [...usuarios];
 
     if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      resultado = resultado.filter(
-        (user) =>
-          user.nombre.toLowerCase().includes(term) ||
-          (user.primer_apellido?.toLowerCase().includes(term)) ||
-          user.correo_electronico.toLowerCase().includes(term) ||
-          user.nombre_usuario.toLowerCase().includes(term) ||
-          user.documento.toString().includes(term) ||
-          user.area?.nombre?.toLowerCase().includes(term) ||
-          user.area?.codigo?.toLowerCase().includes(term)
-      );
+      resultado = resultado.filter((user) => matchesTextSearch(searchTerm, user));
     }
 
     if (filtroEstado === "activos") resultado = resultado.filter((u) => u.activo);
@@ -356,7 +347,7 @@ export default function ListaUsuarios() {
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-3 h-5 w-5 text-[#6B7280]" />
                   <Input
-                    placeholder="Buscar por nombre, usuario, email, documento o área..."
+                    placeholder={SEARCH_ANY_PLACEHOLDER}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"

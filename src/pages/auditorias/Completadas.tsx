@@ -5,6 +5,7 @@ import {
   XCircle, Filter, FileText, Activity, CheckCircle
 } from 'lucide-react';
 import { auditoriaService } from '@/services/auditoria.service';
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -76,10 +77,7 @@ const AuditoriasCompletadas: React.FC = () => {
   useEffect(() => {
     let filtered = [...auditorias];
     if (searchTerm) {
-      filtered = filtered.filter(a =>
-        a.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        a.objetivo?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      filtered = filtered.filter(a => matchesTextSearch(searchTerm, a));
     }
     if (filterTipo) filtered = filtered.filter(a => a.tipo === filterTipo);
     setFilteredAuditorias(filtered);
@@ -281,7 +279,7 @@ const AuditoriasCompletadas: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6B7280] w-5 h-5" />
             <input
               type="text"
-              placeholder="Buscar por código u objetivo de auditoría..."
+              placeholder={SEARCH_ANY_PLACEHOLDER}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-4 border border-[#E5E7EB] rounded-xl focus:ring-2 focus:ring-[#2563EB]/20 outline-none text-[#1E3A8A] font-medium"

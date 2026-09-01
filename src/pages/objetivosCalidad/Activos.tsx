@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Target, TrendingUp, Calendar, User, Filter, Search, Edit, Trash2, Eye, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { objetivoCalidadService, ObjetivoCalidad } from '@/services/objetivoCalidad.service';
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { areaService, Area } from '@/services/area.service';
 import { usuarioService, Usuario } from '@/services/usuario.service';
@@ -102,8 +103,7 @@ const ObjetivosActivos: React.FC = () => {
 
   // Filtrar objetivos
   const objetivosFiltrados = objetivos.filter(obj => {
-    const cumpleBusqueda = obj.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      obj.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
+    const cumpleBusqueda = matchesTextSearch(searchTerm, obj);
     const cumpleEstado = estadoFiltro === 'todos' || obj.estado === estadoFiltro;
     return cumpleBusqueda && cumpleEstado;
   });
@@ -480,7 +480,7 @@ const ObjetivosActivos: React.FC = () => {
           <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
-              <Input placeholder="Buscar por código o descripción..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 py-6 rounded-xl border-[#E5E7EB]" />
+              <Input placeholder={SEARCH_ANY_PLACEHOLDER} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 py-6 rounded-xl border-[#E5E7EB]" />
             </div>
           </div>
 

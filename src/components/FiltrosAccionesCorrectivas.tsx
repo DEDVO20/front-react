@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 
 export interface FiltrosAcciones {
     responsable?: string;
@@ -53,7 +54,7 @@ export default function FiltrosAccionesCorrectivas({
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1">
                     <Input
-                        placeholder="Buscar por código o descripción..."
+                        placeholder={SEARCH_ANY_PLACEHOLDER}
                         value={filtros.busqueda || ""}
                         onChange={(e) => handleChange("busqueda", e.target.value)}
                         className="rounded-xl border-[#E5E7EB]"

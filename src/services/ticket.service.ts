@@ -2,10 +2,13 @@ import apiClient from "@/lib/api";
 
 export interface UsuarioBasic {
     id: string;
+    documento?: number;
     nombre: string;
+    segundo_nombre?: string;
     primer_apellido: string;
     segundo_apellido?: string;
     correo_electronico: string;
+    nombre_usuario?: string;
 }
 
 export interface Ticket {

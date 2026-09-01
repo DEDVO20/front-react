@@ -24,16 +24,21 @@ export interface AccionCorrectiva {
   actualizado_en?: string;
   responsable?: {
     id: string;
+    documento?: number;
     nombre: string;
     primerApellido?: string;
+    segundoApellido?: string;
+    correoElectronico?: string;
   };
   implementador?: {
     id: string;
+    documento?: number;
     nombre: string;
     primerApellido?: string;
   };
   verificador?: {
     id: string;
+    documento?: number;
     nombre: string;
     primerApellido?: string;
   };

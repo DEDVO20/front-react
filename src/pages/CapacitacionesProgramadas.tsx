@@ -19,6 +19,7 @@ import {
   PlayCircle,
   StopCircle,
 } from "lucide-react";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -270,10 +271,9 @@ export default function CapacitacionesProgramadas() {
     return usuario.area_id === formData.areaId;
   });
 
-  const usuariosElegiblesFiltrados = usuariosElegibles.filter((usuario) => {
-    const texto = `${usuario.nombre} ${usuario.primer_apellido} ${usuario.segundo_apellido || ""} ${usuario.correo_electronico}`.toLowerCase();
-    return texto.includes(filtroUsuarios.toLowerCase());
-  });
+  const usuariosElegiblesFiltrados = usuariosElegibles.filter((usuario) =>
+    matchesTextSearch(filtroUsuarios, usuario)
+  );
 
   const toggleConvocado = (usuarioId: string, checked: boolean) => {
     setUsuariosConvocadosIds((prev) => {
@@ -374,12 +374,9 @@ export default function CapacitacionesProgramadas() {
     }
   };
 
-  const filteredCapacitaciones = Array.isArray(capacitaciones) ? capacitaciones.filter((c) =>
-    (c.nombre || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.tipoCapacitacion || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.instructor || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.lugar || "").toLowerCase().includes(searchTerm.toLowerCase())
-  ) : [];
+  const filteredCapacitaciones = Array.isArray(capacitaciones)
+    ? capacitaciones.filter((c) => matchesTextSearch(searchTerm, c))
+    : [];
 
   const total = capacitaciones.length;
   const virtuales = capacitaciones.filter(c => c.modalidad === "Virtual").length;
@@ -532,7 +529,7 @@ export default function CapacitacionesProgramadas() {
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
-                placeholder="Buscar por nombre, tipo, instructor o lugar..."
+                placeholder={SEARCH_ANY_PLACEHOLDER}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
@@ -949,7 +946,7 @@ export default function CapacitacionesProgramadas() {
                         <Input
                           value={filtroUsuarios}
                           onChange={(e) => setFiltroUsuarios(e.target.value)}
-                          placeholder="Buscar por nombre o correo"
+                          placeholder={SEARCH_ANY_PLACEHOLDER}
                           className="rounded-xl"
                         />
                         <div className="border border-[#E5E7EB] rounded-xl max-h-56 overflow-y-auto p-2 space-y-2">
@@ -963,7 +960,8 @@ export default function CapacitacionesProgramadas() {
                                   onCheckedChange={(checked) => toggleConvocado(usuario.id, checked === true)}
                                 />
                                 <span className="text-sm text-[#111827]">
-                                  {usuario.nombre} {usuario.primer_apellido} ({usuario.correo_electronico})
+                                  {usuario.nombre} {usuario.primer_apellido}
+                                  {usuario.documento ? ` — CC ${usuario.documento}` : ""} ({usuario.correo_electronico})
                                 </span>
                               </label>
                             ))

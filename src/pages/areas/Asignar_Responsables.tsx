@@ -13,6 +13,7 @@ import {
   Hash,
   RefreshCw,
 } from "lucide-react";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,9 +75,14 @@ interface Area {
 
 interface Usuario {
   id: string;
+  documento?: number;
   nombre: string;
+  segundo_nombre?: string;
+  primer_apellido?: string;
+  segundo_apellido?: string;
   correo_electronico: string;
-  rol: string;
+  nombre_usuario?: string;
+  rol?: string;
 }
 
 interface Asignacion {
@@ -109,6 +115,7 @@ export default function AsignarResponsables() {
   });
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filtroUsuarioForm, setFiltroUsuarioForm] = useState("");
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     asignacion: Asignacion | null;
@@ -141,6 +148,7 @@ export default function AsignarResponsables() {
   const handleCreate = async () => {
     setDialogMode("create");
     setFormData({ area_id: "", usuario_id: "", es_principal: false });
+    setFiltroUsuarioForm("");
     setSelectedAsignacion(null);
     setShowDialog(true);
   };
@@ -194,11 +202,12 @@ export default function AsignarResponsables() {
     }
   };
 
-  const filteredAsignaciones = asignaciones.filter(
-    (a) =>
-      a.area.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.usuario.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.area.codigo.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAsignaciones = asignaciones.filter((a) =>
+    matchesTextSearch(searchTerm, a)
+  );
+
+  const usuariosFiltradosForm = usuarios.filter((usuario) =>
+    matchesTextSearch(filtroUsuarioForm, usuario)
   );
 
   if (loading) {
@@ -360,7 +369,7 @@ export default function AsignarResponsables() {
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
-                placeholder="Buscar área, código o usuario..."
+                placeholder={SEARCH_ANY_PLACEHOLDER}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
@@ -511,14 +520,20 @@ export default function AsignarResponsables() {
                       <Label className="font-bold">
                         Responsable <span className="text-red-500">*</span>
                       </Label>
+                      <Input
+                        placeholder={SEARCH_ANY_PLACEHOLDER}
+                        value={filtroUsuarioForm}
+                        onChange={(e) => setFiltroUsuarioForm(e.target.value)}
+                        className="rounded-xl"
+                      />
                       <Select value={formData.usuario_id} onValueChange={(v) => setFormData({ ...formData, usuario_id: v })}>
                         <SelectTrigger className="rounded-xl">
                           <SelectValue placeholder="Selecciona un usuario" />
                         </SelectTrigger>
                         <SelectContent>
-                          {usuarios.map((u) => (
+                          {usuariosFiltradosForm.map((u) => (
                             <SelectItem key={u.id} value={u.id}>
-                              {u.nombre} — {u.correo_electronico}
+                              {u.nombre} {u.primer_apellido || ""} {u.documento ? `— CC ${u.documento}` : ""} — {u.correo_electronico}
                             </SelectItem>
                           ))}
                         </SelectContent>

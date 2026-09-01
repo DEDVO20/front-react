@@ -4,6 +4,7 @@ import {
   Eye, Trash2, Save, Building2, Hash, FileText, Calendar, Search, Edit, RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -178,12 +179,7 @@ export default function AreasResponsables() {
     }
   };
 
-  const filteredAreas = areas.filter(
-    (a) =>
-      a.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (a.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
-  );
+  const filteredAreas = areas.filter((a) => matchesTextSearch(searchTerm, a));
 
   if (loading) {
     return <LoadingSpinner message="Cargando" />;
@@ -343,7 +339,7 @@ export default function AreasResponsables() {
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
-                placeholder="Buscar por código, nombre o descripción..."
+                placeholder={SEARCH_ANY_PLACEHOLDER}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"

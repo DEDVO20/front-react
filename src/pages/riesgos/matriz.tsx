@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -170,10 +171,7 @@ const MatrizRiesgos: React.FC = () => {
   }, {} as Record<string, Proceso | undefined>);
 
   const filteredRiesgos = riesgos.filter(r =>
-    r.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (r.nombre || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (r.descripcion || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ((r.proceso_id && procesoMap[r.proceso_id]?.nombre) || "").toLowerCase().includes(searchTerm.toLowerCase())
+    matchesTextSearch(searchTerm, r, r.proceso_id ? procesoMap[r.proceso_id] : undefined)
   );
 
   // Estadísticas
@@ -378,7 +376,7 @@ const MatrizRiesgos: React.FC = () => {
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
-                placeholder="Buscar por código, nombre, descripción o proceso..."
+                placeholder={SEARCH_ANY_PLACEHOLDER}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"

@@ -11,6 +11,7 @@ import {
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import {
   Shield,
   Search,
@@ -136,13 +137,7 @@ export default function GestionRolesPermisos() {
   const filtrarRoles = () => {
     let resultado = [...roles];
     if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      resultado = resultado.filter(
-        (rol) =>
-          rol.nombre.toLowerCase().includes(term) ||
-          rol.clave.toLowerCase().includes(term) ||
-          (rol.descripcion && rol.descripcion.toLowerCase().includes(term))
-      );
+      resultado = resultado.filter((rol) => matchesTextSearch(searchTerm, rol));
     }
     setRolesFiltrados(resultado);
   };
@@ -345,7 +340,7 @@ export default function GestionRolesPermisos() {
               <div className="relative">
                 <Search className="absolute left-3 top-3.5 h-5 w-5 text-[#6B7280]" />
                 <Input
-                  placeholder="Buscar por nombre, clave o descripción..."
+                  placeholder={SEARCH_ANY_PLACEHOLDER}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"

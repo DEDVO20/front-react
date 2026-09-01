@@ -11,9 +11,13 @@ export interface Area {
     es_principal: boolean;
     usuario?: {
       id: string;
+      documento?: number;
       nombre: string;
+      segundo_nombre?: string;
       primer_apellido?: string;
+      segundo_apellido?: string;
       correo_electronico?: string;
+      nombre_usuario?: string;
     };
   }[];
   creado_en?: string;      // Cambiado de creadoEn a creado_en (snake_case)

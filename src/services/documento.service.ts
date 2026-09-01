@@ -17,10 +17,13 @@ export interface DocumentoData {
 
 export interface UsuarioNested {
   id: string;
+  documento?: number;
   nombre: string;
+  segundoNombre?: string;
   primerApellido?: string;
   segundoApellido?: string;
   correoElectronico?: string;
+  nombreUsuario?: string;
 }
 
 export interface DocumentoResponse {

@@ -14,6 +14,7 @@ import {
   Layers,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -193,12 +194,8 @@ export default function ListadoProcesos() {
     );
   };
 
-  const filteredProcesos = procesos.filter(
-    (proceso) =>
-      proceso.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      proceso.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (proceso.area_nombre && proceso.area_nombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (proceso.responsable_nombre && proceso.responsable_nombre.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredProcesos = procesos.filter((proceso) =>
+    matchesTextSearch(searchTerm, proceso)
   );
 
   if (loading) {
@@ -321,7 +318,7 @@ export default function ListadoProcesos() {
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
             <Input
-              placeholder="Buscar por nombre, código, área o responsable..."
+              placeholder={SEARCH_ANY_PLACEHOLDER}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
