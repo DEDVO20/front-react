@@ -34,6 +34,15 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Axios debe calcular el boundary; si se fuerza multipart/form-data el archivo no llega.
+    if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+      const headers = config.headers as any;
+      if (headers && typeof headers.set === "function") {
+        headers.set("Content-Type", false);
+      } else if (headers) {
+        headers["Content-Type"] = undefined;
+      }
+    }
     return config;
   },
   (error) => {
