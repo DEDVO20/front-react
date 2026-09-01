@@ -25,9 +25,9 @@ export function ProtectedLayout() {
   return (
     <SidebarProvider className="font-sans">
       <AppSidebar />
-      <SidebarInset className="bg-[#F8FAFC] hero-gradient">
+      <SidebarInset className="min-w-0 overflow-x-clip bg-[#F8FAFC] hero-gradient">
         <SiteHeader />
-        <div className="flex flex-1 flex-col gap-4 p-4 md:p-8">
+        <div className="flex min-w-0 flex-1 flex-col">
           <Outlet />
         </div>
       </SidebarInset>

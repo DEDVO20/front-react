@@ -158,27 +158,27 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[#F5F7FA] pb-12">
       <TooltipProvider>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-8">
 
           {/* ── Header Area (Premium Style) ── */}
-          <header className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
+          <header className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-5 sm:p-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-3 mb-2">
                   <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB] font-bold px-3 py-0.5 rounded-full text-[10px] uppercase">
                     QMS Intelligence v3.0
                   </Badge>
-                  <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Sistema Operativo Conectado</span>
+                  <span className="hidden sm:flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="hidden sm:inline text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Sistema Operativo Conectado</span>
                 </div>
-                <h1 className="text-3xl md:text-4xl font-extrabold text-[#1E3A8A] tracking-tight mb-2">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1E3A8A] tracking-tight mb-2">
                   {greeting} <span className="text-[#2563EB]">Admin</span>
                 </h1>
-                <p className="text-[#6B7280] text-lg font-medium">Control global y cumplimiento de la gestión de calidad.</p>
+                <p className="text-[#6B7280] text-base sm:text-lg font-medium">Control global y cumplimiento de la gestión de calidad.</p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="hidden lg:block">
+              <div className="flex w-full md:w-auto flex-wrap items-center gap-3">
+                <div className="hidden xl:block">
                   <GlobalSearch placeholder="Buscar procesos, módulos..." />
                 </div>
 
@@ -187,7 +187,7 @@ export default function Dashboard() {
                 </div>
 
                 <Button
-                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-lg shadow-[#2563EB]/20 rounded-xl px-6 h-11 font-bold transition-all hover:-translate-y-0.5"
+                  className="flex-1 sm:flex-none bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-lg shadow-[#2563EB]/20 rounded-xl px-4 sm:px-6 h-11 font-bold transition-all hover:-translate-y-0.5"
                   onClick={() => navigate("/indicadores/tablero")}
                 >
                   <LayoutDashboard className="w-5 h-5 mr-2" />
@@ -271,7 +271,7 @@ export default function Dashboard() {
 
               {/* PHVA Integration */}
               <Card className="rounded-2xl border-[#E5E7EB] shadow-sm overflow-hidden">
-                <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB] flex flex-row items-center justify-between py-4">
+                <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB] flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between py-4">
                   <div>
                     <CardTitle className="text-[#1E3A8A] text-lg font-bold">Ciclo de Mejora Continua</CardTitle>
                     <CardDescription>Metodología PHVA Proyectada</CardDescription>
@@ -285,7 +285,7 @@ export default function Dashboard() {
 
               {/* Charts Section */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-xl font-bold text-[#1E3A8A] uppercase tracking-tight">Efectividad de Acciones</h2>
                   <Button
                     variant="ghost"
@@ -296,7 +296,7 @@ export default function Dashboard() {
                     Métricas Detalladas <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </div>
-                <Card className="p-6 rounded-2xl border-[#E5E7EB] shadow-sm">
+                <Card className="p-3 sm:p-6 rounded-2xl border-[#E5E7EB] shadow-sm overflow-x-clip">
                   <GraficosAcciones acciones={acciones} />
                 </Card>
               </div>

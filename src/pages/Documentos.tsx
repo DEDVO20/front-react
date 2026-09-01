@@ -185,7 +185,7 @@ export default function Documentos() {
     <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header Profesional */}
-        <div className="premium-gradient rounded-3xl shadow-sm p-8 md:p-12 relative overflow-hidden group">
+        <div className="premium-gradient rounded-3xl shadow-sm p-5 sm:p-8 md:p-12 relative overflow-hidden group">
           <div className="absolute top-0 right-0 -mt-20 -mr-20 h-64 w-64 bg-white/40 rounded-full blur-3xl group-hover:bg-white/60 transition-all duration-700" />
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div>
@@ -194,8 +194,8 @@ export default function Documentos() {
                   Inventario Oficial
                 </Badge>
               </div>
-              <h1 className="text-3xl md:text-4xl font-black text-slate-900 flex items-center gap-3">
-                <FileText className="h-10 w-10 text-blue-600" />
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 flex items-center gap-3">
+                <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600" />
                 Gestión Documental
               </h1>
               <p className="text-slate-600 mt-3 text-lg max-w-2xl font-medium">
@@ -214,7 +214,7 @@ export default function Documentos() {
             {canCreate && (
               <button
                 onClick={() => navigate("/documentos/crear")}
-                className="px-8 py-4 bg-blue-600 text-white hover:bg-blue-700 rounded-2xl font-bold shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                className="w-full md:w-auto px-8 py-4 bg-blue-600 text-white hover:bg-blue-700 rounded-2xl font-bold shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
               >
                 <Plus className="w-6 h-6" />
                 Nuevo Documento
@@ -274,7 +274,7 @@ export default function Documentos() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <div className="premium-card p-6 rounded-2xl bg-blue-50/50 dark:bg-blue-900/10">
             <div className="flex items-center justify-between mb-4">
               <p className="text-blue-900 dark:text-blue-100 font-bold uppercase text-[10px] tracking-widest">Total Documentos</p>
@@ -330,7 +330,7 @@ export default function Documentos() {
 
         {/* Content */}
         {filteredDocumentos.length === 0 ? (
-          <div className="bg-white p-20 rounded-2xl border border-[#E5E7EB] shadow-sm text-center">
+          <div className="bg-white p-8 sm:p-20 rounded-2xl border border-[#E5E7EB] shadow-sm text-center">
             <div className="flex flex-col items-center">
               <FileText className="w-16 h-16 text-gray-300 mb-4" />
               <h3 className="text-xl font-semibold mb-2 text-[#1E3A8A]">

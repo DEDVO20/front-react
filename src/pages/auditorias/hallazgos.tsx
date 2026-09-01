@@ -851,7 +851,7 @@ const AuditoriasHallazgosView: React.FC = () => {
         showModal && (
           <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#E5E7EB]">
-              <div className="sticky top-0 bg-[#F8FAFC] border-b p-8 flex justify-between items-center z-10">
+              <div className="sticky top-0 bg-[#F8FAFC] border-b p-4 sm:p-8 flex justify-between items-center gap-3 z-10">
                 <h2 className="text-2xl font-bold text-[#1E3A8A]">
                   {modalMode === 'view' ? 'Detalles de Auditoría' : modalMode === 'edit' ? 'Editar Auditoría' : 'Nueva Auditoría'}
                 </h2>
@@ -968,7 +968,7 @@ const AuditoriasHallazgosView: React.FC = () => {
         showHallazgoModal && (
           <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-[#E5E7EB]">
-              <div className="sticky top-0 bg-[#F8FAFC] border-b p-8 flex justify-between items-center z-10">
+              <div className="sticky top-0 bg-[#F8FAFC] border-b p-4 sm:p-8 flex justify-between items-center gap-3 z-10">
                 <h2 className="text-2xl font-bold text-[#1E3A8A]">
                   {modalMode === 'edit' ? 'Editar Hallazgo' : 'Registro de Hallazgo'}
                 </h2>
