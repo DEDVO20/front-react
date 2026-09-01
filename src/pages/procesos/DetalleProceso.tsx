@@ -222,30 +222,29 @@ export default function DetalleProceso() {
     const colorScheme = getColorPorTipo(proceso.tipo_proceso);
 
     return (
-        <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+        <div className="min-h-screen min-w-0 bg-[#F5F7FA] p-4 md:p-8">
             <div className="max-w-5xl mx-auto space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex items-start gap-3 min-w-0">
                         <Button
                             variant="outline"
                             size="icon"
                             onClick={() => navigate("/procesos/listado")}
-                            className="rounded-xl"
+                            className="rounded-xl shrink-0"
                         >
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
-                        <div>
-                            <h1 className="text-3xl font-bold text-[#1E3A8A]">Detalle del Proceso</h1>
-                            <p className="text-gray-500 mt-1">Información completa del proceso</p>
+                        <div className="min-w-0">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-[#1E3A8A] break-words">Detalle del Proceso</h1>
+                            <p className="text-gray-500 mt-1 text-sm sm:text-base">Información completa del proceso</p>
                         </div>
                     </div>
                     {canManageProcesos && (
-                        <div className="flex gap-2">
+                        <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
                             <Button
                                 variant="outline"
                                 onClick={() => navigate(`/procesos/${id}/editar`)}
-                                className="rounded-xl"
+                                className="rounded-xl w-full sm:w-auto"
                             >
                                 <Edit className="h-4 w-4 mr-2" />
                                 Editar
@@ -253,7 +252,7 @@ export default function DetalleProceso() {
                             <Button
                                 variant="destructive"
                                 onClick={() => setDeleteDialogOpen(true)}
-                                className="rounded-xl"
+                                className="rounded-xl w-full sm:w-auto"
                             >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Eliminar
@@ -265,12 +264,12 @@ export default function DetalleProceso() {
                 {/* Información Principal */}
                 <Card className={`rounded-2xl shadow-sm border-l-4 ${colorScheme.bg}`}>
                     <CardHeader className={`${colorScheme.bgLight} rounded-t-2xl`}>
-                        <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <Network className={`h-8 w-8 ${colorScheme.text}`} />
-                                    <div>
-                                        <CardTitle className="text-2xl text-gray-900">{proceso.nombre}</CardTitle>
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-start gap-3 mb-2">
+                                    <Network className={`h-7 w-7 sm:h-8 sm:w-8 ${colorScheme.text} shrink-0 mt-0.5`} />
+                                    <div className="min-w-0">
+                                        <CardTitle className="text-xl sm:text-2xl text-gray-900 break-words">{proceso.nombre}</CardTitle>
                                         <p className="text-sm text-gray-500 mt-1">Código: {proceso.codigo}</p>
                                     </div>
                                 </div>
@@ -280,37 +279,37 @@ export default function DetalleProceso() {
                     </CardHeader>
                     <CardContent className="pt-6 space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                                <Layers className="h-5 w-5 text-gray-600" />
-                                <div>
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl min-w-0">
+                                <Layers className="h-5 w-5 text-gray-600 shrink-0" />
+                                <div className="min-w-0">
                                     <p className="text-xs text-gray-500">Tipo de Proceso</p>
-                                    <p className="font-semibold text-gray-900">{getTipoLabel(proceso.tipo_proceso)}</p>
+                                    <p className="font-semibold text-gray-900 break-words">{getTipoLabel(proceso.tipo_proceso)}</p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                                <TrendingUp className="h-5 w-5 text-gray-600" />
-                                <div>
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl min-w-0">
+                                <TrendingUp className="h-5 w-5 text-gray-600 shrink-0" />
+                                <div className="min-w-0">
                                     <p className="text-xs text-gray-500">Etapa PHVA</p>
-                                    <p className="font-semibold text-gray-900">{getEtapaPHVALabel(proceso.etapa_phva)}</p>
+                                    <p className="font-semibold text-gray-900 break-words">{getEtapaPHVALabel(proceso.etapa_phva)}</p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                                <FileText className="h-5 w-5 text-gray-600" />
-                                <div>
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl min-w-0">
+                                <FileText className="h-5 w-5 text-gray-600 shrink-0" />
+                                <div className="min-w-0">
                                     <p className="text-xs text-gray-500">Versión</p>
-                                    <p className="font-semibold text-gray-900">{proceso.version || "1.0"}</p>
+                                    <p className="font-semibold text-gray-900 break-words">{proceso.version || "1.0"}</p>
                                 </div>
                             </div>
                         </div>
 
                         {proceso.responsable_nombre && (
-                            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl">
-                                <User className="h-5 w-5 text-blue-600" />
-                                <div>
+                            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl min-w-0">
+                                <User className="h-5 w-5 text-blue-600 shrink-0" />
+                                <div className="min-w-0">
                                     <p className="text-xs text-blue-600">Responsable</p>
-                                    <p className="font-semibold text-gray-900">{proceso.responsable_nombre}</p>
+                                    <p className="font-semibold text-gray-900 break-words">{proceso.responsable_nombre}</p>
                                 </div>
                             </div>
                         )}
@@ -429,15 +428,17 @@ export default function DetalleProceso() {
                         <CardTitle className="text-xl">Gestión del Proceso</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <Tabs defaultValue="etapas" className="w-full">
-                            <TabsList className="w-full justify-start overflow-x-auto">
-                                <TabsTrigger value="informacion">Información General</TabsTrigger>
-                                <TabsTrigger value="equipo">Equipo</TabsTrigger>
-                                <TabsTrigger value="etapas">Etapas</TabsTrigger>
-                                <TabsTrigger value="indicadores">Indicadores</TabsTrigger>
-                                <TabsTrigger value="riesgos">Riesgos</TabsTrigger>
-                                <TabsTrigger value="documentos">Documentos</TabsTrigger>
+                        <Tabs defaultValue="etapas" className="w-full min-w-0">
+                            <div className="w-full overflow-x-auto">
+                            <TabsList className="h-auto justify-start inline-flex w-max min-w-full">
+                                <TabsTrigger value="informacion" className="shrink-0">Información</TabsTrigger>
+                                <TabsTrigger value="equipo" className="shrink-0">Equipo</TabsTrigger>
+                                <TabsTrigger value="etapas" className="shrink-0">Etapas</TabsTrigger>
+                                <TabsTrigger value="indicadores" className="shrink-0">Indicadores</TabsTrigger>
+                                <TabsTrigger value="riesgos" className="shrink-0">Riesgos</TabsTrigger>
+                                <TabsTrigger value="documentos" className="shrink-0">Documentos</TabsTrigger>
                             </TabsList>
+                            </div>
 
                             <TabsContent value="informacion">
                                 <p className="text-sm text-gray-600">
@@ -459,12 +460,12 @@ export default function DetalleProceso() {
                                     <div className="space-y-3 mt-3">
                                         {indicadoresProceso.map((ind) => (
                                             <div key={ind.id} className="p-3 border rounded-xl bg-gray-50">
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <Gauge className="h-4 w-4 text-blue-600" />
-                                                        <p className="font-semibold text-gray-900">{ind.nombre}</p>
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <Gauge className="h-4 w-4 text-blue-600 shrink-0" />
+                                                        <p className="font-semibold text-gray-900 break-words">{ind.nombre}</p>
                                                     </div>
-                                                    <Badge variant="outline">{ind.codigo}</Badge>
+                                                    <Badge variant="outline" className="w-fit shrink-0">{ind.codigo}</Badge>
                                                 </div>
                                                 <p className="text-xs text-gray-600 mt-1">
                                                     Frecuencia: {ind.frecuencia_medicion} {ind.meta != null ? `| Meta: ${ind.meta}` : ""}
@@ -483,12 +484,12 @@ export default function DetalleProceso() {
                                     <div className="space-y-3 mt-3">
                                         {riesgosProceso.map((riesgo) => (
                                             <div key={riesgo.id} className="p-3 border rounded-xl bg-gray-50">
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <ShieldAlert className="h-4 w-4 text-rose-600" />
-                                                        <p className="font-semibold text-gray-900">{riesgo.descripcion || "Sin descripción"}</p>
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <ShieldAlert className="h-4 w-4 text-rose-600 shrink-0" />
+                                                        <p className="font-semibold text-gray-900 break-words">{riesgo.descripcion || "Sin descripción"}</p>
                                                     </div>
-                                                    <Badge variant="outline">{riesgo.codigo}</Badge>
+                                                    <Badge variant="outline" className="w-fit shrink-0">{riesgo.codigo}</Badge>
                                                 </div>
                                                 <p className="text-xs text-gray-600 mt-1">
                                                     Nivel: {riesgo.nivel_riesgo || "—"} {riesgo.nivel_residual != null ? `| Residual: ${riesgo.nivel_residual}` : ""} | Estado: {riesgo.estado || "activo"}
@@ -501,11 +502,11 @@ export default function DetalleProceso() {
                             <TabsContent value="documentos">
                                 {canAsociarDocumentos && (
                                     <div className="flex flex-col md:flex-row gap-2 md:items-center md:justify-between mb-3">
-                                        <div className="flex gap-2 w-full md:w-auto">
+                                        <div className="flex flex-col sm:flex-row gap-2 w-full">
                                             <select
                                                 value={documentoSeleccionado}
                                                 onChange={(e) => setDocumentoSeleccionado(e.target.value)}
-                                                className="w-full md:w-96 p-2 border rounded-lg bg-white text-sm"
+                                                className="w-full min-w-0 p-2 border rounded-lg bg-white text-sm"
                                             >
                                                 <option value="">Seleccionar documento para asociar...</option>
                                                 {todosDocumentos
@@ -534,12 +535,12 @@ export default function DetalleProceso() {
                                     <div className="space-y-3 mt-3">
                                         {documentosProceso.map((doc) => (
                                             <div key={doc.id} className="p-3 border rounded-xl bg-gray-50">
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <FolderOpen className="h-4 w-4 text-emerald-600" />
-                                                        <p className="font-semibold text-gray-900">{doc.nombre}</p>
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <FolderOpen className="h-4 w-4 text-emerald-600 shrink-0" />
+                                                        <p className="font-semibold text-gray-900 break-words">{doc.nombre}</p>
                                                     </div>
-                                                    <Badge variant="outline">{doc.codigo}</Badge>
+                                                    <Badge variant="outline" className="w-fit shrink-0">{doc.codigo}</Badge>
                                                 </div>
                                                 <p className="text-xs text-gray-600 mt-1">
                                                     Tipo: {doc.tipo_documento} | Estado: {doc.estado} | Versión: {doc.version_actual}

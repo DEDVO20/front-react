@@ -34,13 +34,13 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // Axios debe calcular el boundary; si se fuerza multipart/form-data el archivo no llega.
+    // Axios 1.x: hay que borrar Content-Type para que el navegador ponga el boundary.
     if (typeof FormData !== "undefined" && config.data instanceof FormData) {
       const headers = config.headers as any;
-      if (headers && typeof headers.set === "function") {
-        headers.set("Content-Type", false);
+      if (headers && typeof headers.delete === "function") {
+        headers.delete("Content-Type");
       } else if (headers) {
-        headers["Content-Type"] = undefined;
+        delete headers["Content-Type"];
       }
     }
     return config;
@@ -64,10 +64,15 @@ apiClient.interceptors.response.use(
     }
 
     // Extraer mensaje de error de la respuesta de FastAPI
-    const errorMessage =
-      (error.response?.data as any)?.detail ||
+    const rawDetail = (error.response?.data as any)?.detail;
+    let errorMessage =
+      (typeof rawDetail === "string" ? rawDetail : null) ||
       error.message ||
       "Error desconocido";
+
+    if (!error.response && /network error|err_network|failed to fetch|networkerror/i.test(String(error.message))) {
+      errorMessage = "No se pudo conectar con el servidor. Verifique su conexión e inténtelo de nuevo.";
+    }
 
     const errorObj = new Error(errorMessage) as any;
     errorObj.response = error.response;

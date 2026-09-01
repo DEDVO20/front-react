@@ -104,9 +104,9 @@ export default function GraficosAcciones({ acciones }: GraficosAccionesProps) {
     }, [acciones]);
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
             {/* Estado de Acciones - Barras */}
-            <Card className="col-span-1 md:col-span-2 lg:col-span-1 rounded-2xl shadow-sm border-[#E5E7EB]">
+            <Card className="col-span-1 md:col-span-2 lg:col-span-1 rounded-2xl shadow-sm border-[#E5E7EB] min-w-0">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-lg font-bold text-[#0F172A]">Estado de Gestión</CardTitle>
                     <CardDescription>Distribución actual por fase operativa</CardDescription>
@@ -162,7 +162,7 @@ export default function GraficosAcciones({ acciones }: GraficosAccionesProps) {
             </Card>
 
             {/* Tipos de Acciones - Donut */}
-            <Card className="col-span-1 md:col-span-2 lg:col-span-1 rounded-2xl shadow-sm border-[#E5E7EB]">
+            <Card className="col-span-1 md:col-span-2 lg:col-span-1 rounded-2xl shadow-sm border-[#E5E7EB] min-w-0">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-lg font-bold text-[#0F172A]">Clasificación</CardTitle>
                     <CardDescription>Naturaleza de las acciones reportadas</CardDescription>
@@ -210,7 +210,7 @@ export default function GraficosAcciones({ acciones }: GraficosAccionesProps) {
             </Card>
 
             {/* Tendencia de Creación - Área */}
-            <Card className="col-span-1 md:col-span-2 rounded-2xl shadow-sm border-[#E5E7EB]">
+            <Card className="col-span-1 md:col-span-2 rounded-2xl shadow-sm border-[#E5E7EB] min-w-0">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-lg font-bold text-[#0F172A]">Dinámica Mensual</CardTitle>
                     <CardDescription>Evolución de hallazgos vs resoluciones (Últimos 6 meses)</CardDescription>

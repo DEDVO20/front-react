@@ -74,21 +74,21 @@ export default function CalendarioAcciones({ acciones, onSelectAccion }: Calenda
 
     return (
         <Card className="rounded-2xl shadow-sm border-[#E5E7EB] h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between pb-4">
-                <div>
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-4">
+                <div className="min-w-0">
                     <CardTitle className="text-lg text-[#1E3A8A] flex items-center gap-2">
-                        <CalendarIcon className="h-5 w-5" />
-                        Calendario de Compromisos
+                        <CalendarIcon className="h-5 w-5 shrink-0" />
+                        <span className="break-words">Calendario de Compromisos</span>
                     </CardTitle>
                     <CardDescription>
                         Visualiza las fechas límite de tus acciones
                     </CardDescription>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     <Button variant="outline" size="icon" onClick={prevMonth} className="h-8 w-8 rounded-full">
                         <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <span className="text-sm font-semibold w-24 text-center capitalize">
+                    <span className="text-sm font-semibold min-w-[8rem] text-center capitalize">
                         {format(currentMonth, 'MMMM yyyy', { locale: es })}
                     </span>
                     <Button variant="outline" size="icon" onClick={nextMonth} className="h-8 w-8 rounded-full">
@@ -107,7 +107,7 @@ export default function CalendarioAcciones({ acciones, onSelectAccion }: Calenda
                         </div>
                     ))}
                 </div>
-                <div className="grid grid-cols-7 gap-1 auto-rows-fr h-[400px]">
+                <div className="grid grid-cols-7 gap-0.5 sm:gap-1 auto-rows-fr min-h-[280px] sm:h-[400px]">
                     {calendarDays.map((day, dayIdx) => {
                         const dateKey = format(day, 'yyyy-MM-dd');
                         const accionesDelDia = accionesPorFecha.get(dateKey) || [];
@@ -118,7 +118,7 @@ export default function CalendarioAcciones({ acciones, onSelectAccion }: Calenda
                             <div
                                 key={day.toString()}
                                 className={`
-                                    min-h-[50px] p-2 border rounded-lg flex flex-col gap-1 transition-colors relative
+                                    min-h-[40px] sm:min-h-[50px] p-1 sm:p-2 border rounded-lg flex flex-col gap-1 transition-colors relative
                                     ${isCurrentMonth ? 'bg-white' : 'bg-gray-50/50 text-gray-400'}
                                     ${isDayToday ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50' : 'border-gray-100'}
                                     hover:border-blue-200 hover:shadow-sm

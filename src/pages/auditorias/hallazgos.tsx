@@ -432,18 +432,18 @@ const AuditoriasHallazgosView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen min-w-0 bg-[#F5F7FA] p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 min-w-0">
 
         {/* Header Profesional */}
-        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div>
-              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                <FileText className="h-9 w-9 text-[#2563EB]" />
-                Auditorías y Hallazgos
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-5 sm:p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#1E3A8A] flex items-start sm:items-center gap-3">
+                <FileText className="h-7 w-7 sm:h-9 sm:w-9 text-[#2563EB] shrink-0" />
+                <span className="break-words">Auditorías y Hallazgos</span>
               </h1>
-              <p className="text-[#6B7280] mt-2 text-lg">
+              <p className="text-[#6B7280] mt-2 text-sm sm:text-lg">
                 Consolidado de auditorías realizadas y gestión integral de hallazgos - ISO 9001:2015
               </p>
               <div className="flex flex-wrap items-center gap-3 mt-4">
@@ -455,10 +455,10 @@ const AuditoriasHallazgosView: React.FC = () => {
                 </Badge>
               </div>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 w-full md:w-auto">
               <Button
                 onClick={activeTab === 'auditorias' ? handleCreateAuditoria : () => handleCreateHallazgo()}
-                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold flex items-center gap-2"
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold flex items-center justify-center gap-2 w-full md:w-auto"
               >
                 <Plus className="w-5 h-5" />
                 Nueva {activeTab === 'auditorias' ? 'Auditoría' : 'Hallazgo'}
@@ -566,33 +566,35 @@ const AuditoriasHallazgosView: React.FC = () => {
 
         {/* Tab Interface */}
         <Card className="rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
-          <div className="bg-[#F8FAFC] border-b border-[#E5E7EB] p-1 flex">
+          <div className="bg-[#F8FAFC] border-b border-[#E5E7EB] p-1 flex flex-col sm:flex-row">
             <button
               onClick={() => setActiveTab('auditorias')}
-              className={`flex-1 py-4 font-bold text-sm flex items-center justify-center gap-2 transition-all rounded-xl ${activeTab === 'auditorias'
+              className={`flex-1 py-3 sm:py-4 font-bold text-sm flex items-center justify-center gap-2 transition-all rounded-xl ${activeTab === 'auditorias'
                 ? 'bg-white text-[#2563EB] shadow-sm'
                 : 'text-[#6B7280] hover:text-[#1E3A8A]'
                 }`}
             >
-              <FileText className="w-5 h-5" />
-              Gestión de Auditorías
+              <FileText className="w-5 h-5 shrink-0" />
+              <span className="sm:hidden">Auditorías</span>
+              <span className="hidden sm:inline">Gestión de Auditorías</span>
             </button>
             <button
               onClick={() => setActiveTab('hallazgos')}
-              className={`flex-1 py-4 font-bold text-sm flex items-center justify-center gap-2 transition-all rounded-xl ${activeTab === 'hallazgos'
+              className={`flex-1 py-3 sm:py-4 font-bold text-sm flex items-center justify-center gap-2 transition-all rounded-xl ${activeTab === 'hallazgos'
                 ? 'bg-white text-[#2563EB] shadow-sm'
                 : 'text-[#6B7280] hover:text-[#1E3A8A]'
                 }`}
             >
-              <AlertTriangle className="w-5 h-5" />
-              Consolidado de Hallazgos
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              <span className="sm:hidden">Hallazgos</span>
+              <span className="hidden sm:inline">Consolidado de Hallazgos</span>
             </button>
           </div>
 
-          <div className="p-8">
+          <div className="p-4 sm:p-8 min-w-0">
             {/* Buscador y Filtros Dinámicos */}
-            <div className="flex flex-col md:flex-row gap-4 mb-8">
-              <div className="relative flex-1">
+            <div className="flex flex-col md:flex-row gap-4 mb-6 sm:mb-8">
+              <div className="relative flex-1 min-w-0">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6B7280] w-5 h-5" />
                 <Input
                   placeholder={SEARCH_ANY_PLACEHOLDER}
@@ -601,13 +603,13 @@ const AuditoriasHallazgosView: React.FC = () => {
                   className="pl-10 py-6 border-[#E5E7EB] rounded-xl focus:ring-[#2563EB]/20"
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 min-w-0">
                 {activeTab === 'auditorias' ? (
                   <>
                     <select
                       value={filterTipo}
                       onChange={(e) => setFilterTipo(e.target.value)}
-                      className="px-4 py-2 border border-[#E5E7EB] rounded-xl bg-[#F8FAFC] font-bold text-[#1E3A8A] min-w-[160px] outline-none"
+                      className="px-4 py-2 border border-[#E5E7EB] rounded-xl bg-[#F8FAFC] font-bold text-[#1E3A8A] w-full sm:min-w-[160px] outline-none"
                     >
                       <option value="">Tipo</option>
                       <option value="interna">Interna</option>
@@ -616,7 +618,7 @@ const AuditoriasHallazgosView: React.FC = () => {
                     <select
                       value={filterEstado}
                       onChange={(e) => setFilterEstado(e.target.value)}
-                      className="px-4 py-2 border border-[#E5E7EB] rounded-xl bg-[#F8FAFC] font-bold text-[#1E3A8A] min-w-[160px] outline-none"
+                      className="px-4 py-2 border border-[#E5E7EB] rounded-xl bg-[#F8FAFC] font-bold text-[#1E3A8A] w-full sm:min-w-[160px] outline-none"
                     >
                       <option value="">Estado</option>
                       <option value="planificada">Planificada</option>
@@ -628,7 +630,7 @@ const AuditoriasHallazgosView: React.FC = () => {
                   <select
                     value={filterTipo}
                     onChange={(e) => setFilterTipo(e.target.value)}
-                    className="px-4 py-2 border border-[#E5E7EB] rounded-xl bg-[#F8FAFC] font-bold text-[#1E3A8A] min-w-[200px] outline-none"
+                    className="px-4 py-2 border border-[#E5E7EB] rounded-xl bg-[#F8FAFC] font-bold text-[#1E3A8A] w-full sm:min-w-[200px] outline-none"
                   >
                     <option value="">Clasificación</option>
                     <option value="no_conformidad_mayor">NC Mayor</option>
@@ -664,8 +666,8 @@ const AuditoriasHallazgosView: React.FC = () => {
                       <div className="p-6">
                         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                           <div className="flex-1 space-y-2">
-                            <div className="flex items-center gap-3">
-                              <span className="font-bold text-[#1E3A8A] group-hover:text-[#2563EB] transition-colors">{auditoria.codigo}</span>
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                              <span className="font-bold text-[#1E3A8A] group-hover:text-[#2563EB] transition-colors break-all">{auditoria.codigo}</span>
                               {getEstadoBadge(auditoria.estado)}
                               <Badge className="bg-[#F1F5F9] text-[#64748B] border-none uppercase">{auditoria.tipo}</Badge>
                             </div>
@@ -699,13 +701,13 @@ const AuditoriasHallazgosView: React.FC = () => {
                       </div>
 
                       {expandedAuditoria === auditoria.id && (
-                        <div className="bg-[#F8FAFC] border-t border-[#E5E7EB] p-8">
-                          <div className="flex items-center justify-between mb-6">
+                        <div className="bg-[#F8FAFC] border-t border-[#E5E7EB] p-4 sm:p-8">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                             <h4 className="font-bold text-[#1E3A8A] flex items-center gap-2">
-                              <AlertTriangle size={18} className="text-[#EAB308]" />
+                              <AlertTriangle size={18} className="text-[#EAB308] shrink-0" />
                               Hallazgos Registrados
                             </h4>
-                            <Button onClick={() => handleCreateHallazgo(auditoria.id)} size="sm" className="bg-[#2563EB] text-white rounded-lg font-bold">
+                            <Button onClick={() => handleCreateHallazgo(auditoria.id)} size="sm" className="bg-[#2563EB] text-white rounded-lg font-bold w-full sm:w-auto">
                               <Plus size={14} className="mr-1" /> Nuevo Hallazgo
                             </Button>
                           </div>
@@ -722,7 +724,7 @@ const AuditoriasHallazgosView: React.FC = () => {
                                   <div key={hallazgo.id} className="bg-white p-3 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow">
                                     <div className="flex items-start justify-between">
                                       <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
+                                        <div className="flex flex-wrap items-center gap-2 mb-1">
                                           {getTipoHallazgoBadge(hallazgo.tipo)}
                                           <span className="text-xs text-gray-500">
                                             {formatDate(hallazgo.creadoEn)}
@@ -774,7 +776,7 @@ const AuditoriasHallazgosView: React.FC = () => {
                                       </div>
                                     </div>
                                     <p className="text-[#1E3A8A] font-bold text-sm mb-3 leading-relaxed">{hallazgo.descripcion}</p>
-                                    <div className="flex items-center gap-4 text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">
+                                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">
                                       <div className="flex items-center gap-1"><Users size={12} /> Responsable</div>
                                       <div className="flex items-center gap-1"><Calendar size={12} /> {formatDate(hallazgo.creadoEn)}</div>
                                     </div>
@@ -806,7 +808,7 @@ const AuditoriasHallazgosView: React.FC = () => {
                         <CardHeader className="pb-2">
                           <div className="flex justify-between items-center mb-2">
                             {getTipoHallazgoBadge(hallazgo.tipo)}
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                            <div className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex gap-1">
                               <button onClick={() => handleEditHallazgo(hallazgo)} className="p-1.5 text-[#10B981] hover:bg-[#ECFDF5] rounded-md"><Edit size={14} /></button>
                               <button onClick={() => handleDeleteHallazgo(hallazgo.id)} className="p-1.5 text-[#EF4444] hover:bg-[#FEF2F2] rounded-md"><Trash2 size={14} /></button>
                             </div>
@@ -842,17 +844,17 @@ const AuditoriasHallazgosView: React.FC = () => {
       {/* Modal Auditoría */}
       {
         showModal && (
-          <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#E5E7EB]">
-              <div className="sticky top-0 bg-[#F8FAFC] border-b p-4 sm:p-8 flex justify-between items-center gap-3 z-10">
-                <h2 className="text-2xl font-bold text-[#1E3A8A]">
+          <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-2 sm:p-4 z-50">
+            <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-4xl w-full max-h-[92dvh] overflow-y-auto shadow-2xl border border-[#E5E7EB]">
+              <div className="sticky top-0 bg-[#F8FAFC] border-b p-4 sm:p-6 flex justify-between items-start gap-3 z-10">
+                <h2 className="text-lg sm:text-2xl font-bold text-[#1E3A8A] break-words pr-8">
                   {modalMode === 'view' ? 'Detalles de Auditoría' : modalMode === 'edit' ? 'Editar Auditoría' : 'Nueva Auditoría'}
                 </h2>
                 <button onClick={() => setShowModal(false)} className="p-2 border border-[#E5E7EB] text-[#6B7280] hover:text-[#2563EB] hover:bg-white rounded-xl transition-all">
                   <X className="w-6 h-6" />
                 </button>
               </div>
-              <form onSubmit={handleSubmitAuditoria} className="p-8 space-y-6">
+              <form onSubmit={handleSubmitAuditoria} className="p-4 sm:p-8 space-y-6">
                 {modalMode === 'view' && selectedAuditoria ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
                     <div className="space-y-4">
@@ -890,7 +892,7 @@ const AuditoriasHallazgosView: React.FC = () => {
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-bold text-[#6B7280] uppercase">Tipo</label>
-                        <select value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none">
+                        <select value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })} className="w-full min-w-0 px-3 sm:px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none">
                           <option value="interna">Interna</option>
                           <option value="externa">Externa</option>
                           <option value="certificacion">Certificación</option>
@@ -903,11 +905,11 @@ const AuditoriasHallazgosView: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-[#6B7280] uppercase">Objetivo</label>
-                      <textarea placeholder="Objetivo" value={formData.objetivo} onChange={e => setFormData({ ...formData, objetivo: e.target.value })} rows={3} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none" />
+                      <textarea placeholder="Objetivo" value={formData.objetivo} onChange={e => setFormData({ ...formData, objetivo: e.target.value })} rows={3} className="w-full min-w-0 px-3 sm:px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-[#6B7280] uppercase">Alcance</label>
-                      <textarea placeholder="Alcance" value={formData.alcance} onChange={e => setFormData({ ...formData, alcance: e.target.value })} rows={3} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none" />
+                      <textarea placeholder="Alcance" value={formData.alcance} onChange={e => setFormData({ ...formData, alcance: e.target.value })} rows={3} className="w-full min-w-0 px-3 sm:px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none" />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
@@ -916,7 +918,7 @@ const AuditoriasHallazgosView: React.FC = () => {
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-bold text-[#6B7280] uppercase">Estado</label>
-                        <select value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none">
+                        <select value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })} className="w-full min-w-0 px-3 sm:px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none">
                           <option value="planificada">Planificada</option>
                           <option value="en_curso">En Curso</option>
                           <option value="completada">Completada</option>
@@ -927,25 +929,25 @@ const AuditoriasHallazgosView: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="space-y-1">
                         <label className="text-[10px] font-bold text-[#6B7280] uppercase px-1">Planificada</label>
-                        <input type="date" value={formData.fechaPlanificada} onChange={e => setFormData({ ...formData, fechaPlanificada: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl font-bold bg-white" />
+                        <input type="date" value={formData.fechaPlanificada} onChange={e => setFormData({ ...formData, fechaPlanificada: e.target.value })} className="w-full min-w-0 px-3 sm:px-5 py-3 border border-[#E5E7EB] rounded-2xl font-bold bg-white" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[10px] font-bold text-[#6B7280] uppercase px-1">Inicio</label>
-                        <input type="date" value={formData.fechaInicio} onChange={e => setFormData({ ...formData, fechaInicio: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl font-bold bg-white" />
+                        <input type="date" value={formData.fechaInicio} onChange={e => setFormData({ ...formData, fechaInicio: e.target.value })} className="w-full min-w-0 px-3 sm:px-5 py-3 border border-[#E5E7EB] rounded-2xl font-bold bg-white" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[10px] font-bold text-[#6B7280] uppercase px-1">Fin</label>
-                        <input type="date" value={formData.fechaFin} onChange={e => setFormData({ ...formData, fechaFin: e.target.value })} className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl font-bold bg-white" />
+                        <input type="date" value={formData.fechaFin} onChange={e => setFormData({ ...formData, fechaFin: e.target.value })} className="w-full min-w-0 px-3 sm:px-5 py-3 border border-[#E5E7EB] rounded-2xl font-bold bg-white" />
                       </div>
                     </div>
                   </>
                 )}
-                <div className="flex justify-end gap-3 pt-8 border-t border-[#E5E7EB]">
-                  <button type="button" onClick={() => setShowModal(false)} className="px-8 py-4 border border-[#E5E7EB] rounded-2xl text-[#6B7280] font-bold hover:bg-[#F8FAFC] transition-all">
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 sm:pt-8 border-t border-[#E5E7EB]">
+                  <button type="button" onClick={() => setShowModal(false)} className="px-6 sm:px-8 py-3 sm:py-4 border border-[#E5E7EB] rounded-2xl text-[#6B7280] font-bold hover:bg-[#F8FAFC] transition-all w-full sm:w-auto">
                     {modalMode === 'view' ? 'Cerrar' : 'Cancelar'}
                   </button>
                   {modalMode !== 'view' && (
-                    <button type="submit" className="px-8 py-4 bg-[#2563EB] text-white rounded-2xl font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-200 transition-all">
+                    <button type="submit" className="px-6 sm:px-8 py-3 sm:py-4 bg-[#2563EB] text-white rounded-2xl font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-200 transition-all w-full sm:w-auto">
                       {modalMode === 'edit' ? 'Actualizar Registro' : 'Crear Auditoría'}
                     </button>
                   )}
@@ -959,17 +961,17 @@ const AuditoriasHallazgosView: React.FC = () => {
       {/* Modal Hallazgo */}
       {
         showHallazgoModal && (
-          <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-[#E5E7EB]">
-              <div className="sticky top-0 bg-[#F8FAFC] border-b p-4 sm:p-8 flex justify-between items-center gap-3 z-10">
-                <h2 className="text-2xl font-bold text-[#1E3A8A]">
+          <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-2 sm:p-4 z-50">
+            <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full max-h-[92dvh] overflow-y-auto shadow-2xl border border-[#E5E7EB]">
+              <div className="sticky top-0 bg-[#F8FAFC] border-b p-4 sm:p-6 flex justify-between items-start gap-3 z-10">
+                <h2 className="text-lg sm:text-2xl font-bold text-[#1E3A8A] break-words pr-8">
                   {modalMode === 'edit' ? 'Editar Hallazgo' : 'Registro de Hallazgo'}
                 </h2>
                 <button onClick={() => setShowHallazgoModal(false)} className="p-2 border border-[#E5E7EB] text-[#6B7280] hover:text-[#2563EB] hover:bg-white rounded-xl transition-all">
                   <X className="w-6 h-6" />
                 </button>
               </div>
-              <form onSubmit={handleSubmitHallazgo} className="p-8 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <form onSubmit={handleSubmitHallazgo} className="p-4 sm:p-8 space-y-6">
                 <div className="space-y-4">
                   {/* Selector de Auditoría si no viene preseleccionada */}
                   <div className="space-y-2">
@@ -977,7 +979,7 @@ const AuditoriasHallazgosView: React.FC = () => {
                     <select
                       value={hallazgoFormData.auditoriaId}
                       onChange={e => setHallazgoFormData({ ...hallazgoFormData, auditoriaId: e.target.value })}
-                      className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none"
+                      className="w-full min-w-0 px-3 sm:px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none"
                       disabled={modalMode === 'edit'} // No permitir cambiar auditoría en edición
                       required
                     >
@@ -995,7 +997,7 @@ const AuditoriasHallazgosView: React.FC = () => {
                     <select
                       value={hallazgoFormData.tipo}
                       onChange={e => setHallazgoFormData({ ...hallazgoFormData, tipo: e.target.value })}
-                      className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none"
+                      className="w-full min-w-0 px-3 sm:px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none"
                     >
                       <option value="no_conformidad_mayor">No Conformidad Mayor</option>
                       <option value="no_conformidad_menor">No Conformidad Menor</option>
@@ -1012,7 +1014,7 @@ const AuditoriasHallazgosView: React.FC = () => {
                     onChange={e => setHallazgoFormData({ ...hallazgoFormData, descripcion: e.target.value })}
                     rows={4}
                     required
-                    className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none font-medium"
+                    className="w-full min-w-0 px-3 sm:px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none font-medium"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1031,14 +1033,14 @@ const AuditoriasHallazgosView: React.FC = () => {
                     value={hallazgoFormData.evidencia}
                     onChange={e => setHallazgoFormData({ ...hallazgoFormData, evidencia: e.target.value })}
                     rows={3}
-                    className="w-full px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none italic text-gray-600"
+                    className="w-full min-w-0 px-3 sm:px-5 py-3 border border-[#E5E7EB] rounded-2xl resize-none outline-none italic text-gray-600"
                   />
                 </div>
-                <div className="flex justify-end gap-3 pt-8 border-t border-[#E5E7EB]">
-                  <button type="button" onClick={() => setShowHallazgoModal(false)} className="px-8 py-4 border border-[#E5E7EB] rounded-2xl text-[#6B7280] font-bold hover:bg-[#F8FAFC] transition-all">
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 sm:pt-8 border-t border-[#E5E7EB]">
+                  <button type="button" onClick={() => setShowHallazgoModal(false)} className="px-6 sm:px-8 py-3 sm:py-4 border border-[#E5E7EB] rounded-2xl text-[#6B7280] font-bold hover:bg-[#F8FAFC] transition-all w-full sm:w-auto">
                     Descartar
                   </button>
-                  <button type="submit" className="px-8 py-4 bg-[#2563EB] text-white rounded-2xl font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-200 transition-all">
+                  <button type="submit" className="px-6 sm:px-8 py-3 sm:py-4 bg-[#2563EB] text-white rounded-2xl font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-200 transition-all w-full sm:w-auto">
                     {modalMode === 'edit' ? 'Actualizar Hallazgo' : 'Registrar Hallazgo'}
                   </button>
                 </div>

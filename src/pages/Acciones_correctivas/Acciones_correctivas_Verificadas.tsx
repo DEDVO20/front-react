@@ -138,16 +138,16 @@ export default function AccionesCorrectivasVerificadas() {
   ).length;
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+    <div className="min-h-screen min-w-0 bg-[#F5F7FA] p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
 
         {/* Header Profesional */}
-        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-5 sm:p-8">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div>
-              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                <CheckCircle2 className="h-9 w-9 text-[#22C55E]" />
-                Acciones Correctivas Verificadas
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#1E3A8A] flex items-start sm:items-center gap-3">
+                <CheckCircle2 className="h-7 w-7 sm:h-9 sm:w-9 text-[#22C55E] shrink-0" />
+                <span className="break-words">Acciones Correctivas Verificadas</span>
               </h1>
               <p className="text-[#6B7280] mt-2 text-lg">
                 Acciones cuya eficacia ha sido comprobada y confirmada
@@ -163,16 +163,17 @@ export default function AccionesCorrectivasVerificadas() {
             </div>
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold">
+                <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold w-full sm:w-auto">
                   <PlusIcon className="mr-2 h-5 w-5" />
                   Nueva Acción Correctiva
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl">
+              <DialogContent className="max-w-4xl w-[calc(100%-1rem)] max-h-[90dvh] overflow-y-auto rounded-2xl p-4 sm:p-6">
                 <DialogHeader>
                   <DialogTitle>Nueva Acción Correctiva</DialogTitle>
                 </DialogHeader>
                 <NuevasAccionesCorrectivas
+                  embedded
                   onSuccess={() => {
                     setIsModalOpen(false);
                     fetchAccionesCorrectivasVerificadas();
@@ -282,10 +283,10 @@ export default function AccionesCorrectivasVerificadas() {
         </Card>
 
         {/* Tabla principal */}
-        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
-          <div className="p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#1E3A8A]">Historial de Acciones Verificadas</h2>
-            <div className="flex items-center gap-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden min-w-0">
+          <div className="p-4 sm:p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-lg sm:text-xl font-bold text-[#1E3A8A] break-words">Historial de Acciones Verificadas</h2>
+            <div className="flex flex-wrap items-center gap-3">
               <Button variant="outline" size="sm" onClick={fetchAccionesCorrectivasVerificadas}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Actualizar

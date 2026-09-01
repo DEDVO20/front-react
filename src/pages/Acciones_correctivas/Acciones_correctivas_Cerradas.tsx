@@ -154,16 +154,17 @@ export default function AccionesCorrectivasCerradas() {
             </div>
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold">
+                <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold w-full sm:w-auto">
                   <PlusIcon className="mr-2 h-5 w-5" />
                   Nueva Acción Correctiva
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl">
+              <DialogContent className="max-w-4xl w-[calc(100%-1rem)] max-h-[90dvh] overflow-y-auto rounded-2xl p-4 sm:p-6">
                 <DialogHeader>
                   <DialogTitle>Nueva Acción Correctiva</DialogTitle>
                 </DialogHeader>
                 <NuevasAccionesCorrectivas
+                  embedded
                   onSuccess={() => {
                     setIsModalOpen(false);
                     fetchAccionesCorrectivasCerradas();

@@ -38,9 +38,10 @@ interface Usuario {
 
 interface NuevasAccionesCorrectivasProps {
   onSuccess?: () => void;
+  embedded?: boolean;
 }
 
-export default function NuevasAccionesCorrectivas({ onSuccess }: NuevasAccionesCorrectivasProps) {
+export default function NuevasAccionesCorrectivas({ onSuccess, embedded = false }: NuevasAccionesCorrectivasProps) {
   const [noConformidades, setNoConformidades] = useState<NoConformidad[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -176,18 +177,18 @@ export default function NuevasAccionesCorrectivas({ onSuccess }: NuevasAccionesC
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className={embedded ? "min-w-0 space-y-4" : "min-h-screen min-w-0 bg-[#F5F7FA] p-4 md:p-8"}>
+      <div className={embedded ? "space-y-4" : "max-w-7xl mx-auto space-y-8"}>
 
-        {/* Header Profesional */}
-        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+        {!embedded && (
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-5 sm:p-8">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div>
-              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                <Activity className="h-9 w-9 text-[#2563EB]" />
-                Nueva Acción Correctiva
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#1E3A8A] flex items-start sm:items-center gap-3">
+                <Activity className="h-7 w-7 sm:h-9 sm:w-9 text-[#2563EB] shrink-0" />
+                <span className="break-words">Nueva Acción Correctiva</span>
               </h1>
-              <p className="text-[#6B7280] mt-2 text-lg">
+              <p className="text-[#6B7280] mt-2 text-sm sm:text-lg">
                 Registra una acción correctiva para resolver una no conformidad
               </p>
               <div className="flex flex-wrap items-center gap-3 mt-4">
@@ -198,8 +199,17 @@ export default function NuevasAccionesCorrectivas({ onSuccess }: NuevasAccionesC
             </div>
           </div>
         </div>
+        )}
 
-        {/* Guía de Proceso */}
+        {embedded && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
+              {noConformidades.length} NC disponibles
+            </Badge>
+          </div>
+        )}
+
+        {!embedded && (
         <Card className="rounded-2xl shadow-sm border-[#E5E7EB] overflow-hidden">
           <CardHeader className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
             <CardTitle className="text-lg text-[#1E3A8A]">Guía de Registro</CardTitle>
@@ -207,8 +217,8 @@ export default function NuevasAccionesCorrectivas({ onSuccess }: NuevasAccionesC
               Pasos clave para definir una acción correctiva efectiva
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+          <CardContent className="p-4 sm:p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 text-sm">
               <div className="flex items-start gap-3 p-4 bg-[#EFF6FF] rounded-xl border border-[#DBEAFE]">
                 <div className="h-8 w-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-bold flex-shrink-0">1</div>
                 <div>
@@ -233,6 +243,7 @@ export default function NuevasAccionesCorrectivas({ onSuccess }: NuevasAccionesC
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Error Alert */}
         {error && (
@@ -257,8 +268,8 @@ export default function NuevasAccionesCorrectivas({ onSuccess }: NuevasAccionesC
               Los campos marcados con <span className="text-red-500">*</span> son obligatorios
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-8">
+          <CardContent className="p-4 sm:p-6">
+            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* No Conformidad */}
                 <div className="space-y-2">
@@ -414,14 +425,14 @@ export default function NuevasAccionesCorrectivas({ onSuccess }: NuevasAccionesC
               </div>
 
               {/* Botones */}
-              <div className="flex justify-end gap-4 pt-6 border-t border-[#E5E7EB]">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 border-t border-[#E5E7EB]">
                 <Button
                   type="button"
                   variant="outline"
                   size="lg"
                   onClick={handleReset}
                   disabled={saving}
-                  className="rounded-xl px-8"
+                  className="rounded-xl px-6 sm:px-8 w-full sm:w-auto"
                 >
                   <X className="mr-2 h-5 w-5" />
                   Cancelar
@@ -430,7 +441,7 @@ export default function NuevasAccionesCorrectivas({ onSuccess }: NuevasAccionesC
                   type="submit"
                   size="lg"
                   disabled={saving}
-                  className="bg-[#2563EB] hover:bg-[#1D4ED8] rounded-xl px-8 font-bold"
+                  className="bg-[#2563EB] hover:bg-[#1D4ED8] rounded-xl px-6 sm:px-8 font-bold w-full sm:w-auto whitespace-normal h-auto py-3"
                 >
                   {saving ? (
                     <>

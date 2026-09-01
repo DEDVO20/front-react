@@ -216,42 +216,42 @@ export default function DashboardAccionesCorrectivas() {
     }
 
     return (
-        <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
-            <div className="max-w-7xl mx-auto space-y-8">
+        <div className="min-h-screen min-w-0 bg-[#F5F7FA] p-4 md:p-8">
+            <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 min-w-0">
                 {/* Header */}
-                <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                        <div>
-                            <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                                <BarChart3 className="h-9 w-9 text-[#2563EB]" />
-                                Tablero de Acciones Correctivas
+                <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-5 sm:p-8">
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6">
+                        <div className="min-w-0">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-[#1E3A8A] flex items-start sm:items-center gap-3">
+                                <BarChart3 className="h-7 w-7 sm:h-9 sm:w-9 text-[#2563EB] shrink-0 mt-0.5 sm:mt-0" />
+                                <span className="break-words">Tablero de Acciones Correctivas</span>
                             </h1>
-                            <p className="text-[#6B7280] mt-2 text-lg">
+                            <p className="text-[#6B7280] mt-2 text-sm sm:text-lg">
                                 Seguimiento y métricas de acciones correctivas
                             </p>
                         </div>
-                        <div className="flex gap-3">
+                        <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-2 sm:gap-3">
                             <Button
                                 onClick={handleExportarExcel}
                                 variant="outline"
-                                className="rounded-xl border-[#E5E7EB] hover:bg-[#F8FAFC]"
+                                className="rounded-xl border-[#E5E7EB] hover:bg-[#F8FAFC] w-full sm:w-auto"
                             >
                                 <FileSpreadsheet className="h-4 w-4 mr-2" />
-                                Exportar Excel
+                                Excel
                             </Button>
                             <Button
                                 onClick={handleExportarPDF}
                                 variant="outline"
-                                className="rounded-xl border-[#E5E7EB] hover:bg-[#F8FAFC]"
+                                className="rounded-xl border-[#E5E7EB] hover:bg-[#F8FAFC] w-full sm:w-auto"
                             >
                                 <FileDown className="h-4 w-4 mr-2" />
-                                Exportar PDF
+                                PDF
                             </Button>
                             <Button
                                 onClick={() => navigate("/Acciones_correctivas_Nuevas")}
-                                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm"
+                                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm w-full sm:w-auto"
                             >
-                                Nueva Acción Correctiva
+                                Nueva Acción
                             </Button>
                         </div>
                     </div>
@@ -264,27 +264,29 @@ export default function DashboardAccionesCorrectivas() {
                     responsables={responsables}
                 />
 
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                    <TabsList className="bg-white border border-[#E5E7EB] p-1 rounded-xl h-auto">
-                        <TabsTrigger
-                            value="resumen"
-                            className="rounded-lg px-4 py-2 text-sm font-medium data-[state=active]:bg-[#E0EDFF] data-[state=active]:text-[#1E3A8A]"
-                        >
-                            Resumen General
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="analisis"
-                            className="rounded-lg px-4 py-2 text-sm font-medium data-[state=active]:bg-[#E0EDFF] data-[state=active]:text-[#1E3A8A]"
-                        >
-                            Análisis Gráfico
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="calendario"
-                            className="rounded-lg px-4 py-2 text-sm font-medium data-[state=active]:bg-[#E0EDFF] data-[state=active]:text-[#1E3A8A]"
-                        >
-                            Calendario
-                        </TabsTrigger>
-                    </TabsList>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 min-w-0">
+                    <div className="w-full overflow-x-auto">
+                        <TabsList className="bg-white border border-[#E5E7EB] p-1 rounded-xl h-auto inline-flex w-max min-w-full justify-start">
+                            <TabsTrigger
+                                value="resumen"
+                                className="rounded-lg px-3 sm:px-4 py-2 text-sm font-medium shrink-0 data-[state=active]:bg-[#E0EDFF] data-[state=active]:text-[#1E3A8A]"
+                            >
+                                Resumen
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="analisis"
+                                className="rounded-lg px-3 sm:px-4 py-2 text-sm font-medium shrink-0 data-[state=active]:bg-[#E0EDFF] data-[state=active]:text-[#1E3A8A]"
+                            >
+                                Análisis
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="calendario"
+                                className="rounded-lg px-3 sm:px-4 py-2 text-sm font-medium shrink-0 data-[state=active]:bg-[#E0EDFF] data-[state=active]:text-[#1E3A8A]"
+                            >
+                                Calendario
+                            </TabsTrigger>
+                        </TabsList>
+                    </div>
 
                     <TabsContent value="resumen" className="space-y-8 mt-6">
                         {/* Métricas Principales */}
@@ -376,45 +378,45 @@ export default function DashboardAccionesCorrectivas() {
                                 </CardHeader>
                                 <CardContent className="p-6 space-y-4">
                                     {/* Vencidas */}
-                                    <div className="flex items-center justify-between p-4 bg-[#FEF2F2] rounded-xl border border-[#EF4444]/20">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-full bg-[#EF4444]/20 flex items-center justify-center">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[#FEF2F2] rounded-xl border border-[#EF4444]/20">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="h-10 w-10 rounded-full bg-[#EF4444]/20 flex items-center justify-center shrink-0">
                                                 <AlertTriangle className="h-5 w-5 text-[#EF4444]" />
                                             </div>
-                                            <div>
+                                            <div className="min-w-0">
                                                 <p className="font-semibold text-[#991B1B]">Acciones Vencidas</p>
                                                 <p className="text-sm text-[#6B7280]">Requieren atención inmediata</p>
                                             </div>
                                         </div>
-                                        <div className="text-3xl font-bold text-[#EF4444]">{vencidas}</div>
+                                        <div className="text-3xl font-bold text-[#EF4444] shrink-0 sm:ml-2">{vencidas}</div>
                                     </div>
 
                                     {/* Por Vencer */}
-                                    <div className="flex items-center justify-between p-4 bg-[#FFF7ED] rounded-xl border border-[#F97316]/20">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-full bg-[#F97316]/20 flex items-center justify-center">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[#FFF7ED] rounded-xl border border-[#F97316]/20">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="h-10 w-10 rounded-full bg-[#F97316]/20 flex items-center justify-center shrink-0">
                                                 <Calendar className="h-5 w-5 text-[#F97316]" />
                                             </div>
-                                            <div>
+                                            <div className="min-w-0">
                                                 <p className="font-semibold text-[#9A3412]">Por Vencer (7 días)</p>
                                                 <p className="text-sm text-[#6B7280]">Próximas a vencer</p>
                                             </div>
                                         </div>
-                                        <div className="text-3xl font-bold text-[#F97316]">{porVencer}</div>
+                                        <div className="text-3xl font-bold text-[#F97316] shrink-0 sm:ml-2">{porVencer}</div>
                                     </div>
 
                                     {/* Tiempo Promedio */}
-                                    <div className="flex items-center justify-between p-4 bg-[#EFF6FF] rounded-xl border border-[#2563EB]/20">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-full bg-[#2563EB]/20 flex items-center justify-center">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[#EFF6FF] rounded-xl border border-[#2563EB]/20">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="h-10 w-10 rounded-full bg-[#2563EB]/20 flex items-center justify-center shrink-0">
                                                 <TrendingUp className="h-5 w-5 text-[#2563EB]" />
                                             </div>
-                                            <div>
+                                            <div className="min-w-0">
                                                 <p className="font-semibold text-[#1E3A8A]">Tiempo Promedio</p>
                                                 <p className="text-sm text-[#6B7280]">De implementación</p>
                                             </div>
                                         </div>
-                                        <div className="text-3xl font-bold text-[#2563EB]">{promedioImplementacion}d</div>
+                                        <div className="text-3xl font-bold text-[#2563EB] shrink-0 sm:ml-2">{promedioImplementacion}d</div>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -504,21 +506,21 @@ export default function DashboardAccionesCorrectivas() {
                                         {accionesRecientes.map((accion) => (
                                             <div
                                                 key={accion.id}
-                                                className="flex items-center justify-between p-4 bg-[#F8FAFC] hover:bg-[#F1F5F9] rounded-xl border border-[#E5E7EB] transition-colors cursor-pointer"
+                                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[#F8FAFC] hover:bg-[#F1F5F9] rounded-xl border border-[#E5E7EB] transition-colors cursor-pointer min-w-0"
                                                 onClick={() => navigate(`/acciones-correctivas/${accion.id}/solucionar`)}
                                             >
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="font-mono font-bold text-[#1E3A8A]">{accion.codigo}</span>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                                                        <span className="font-mono font-bold text-[#1E3A8A] break-all">{accion.codigo}</span>
                                                         <Badge variant="outline" className="text-xs capitalize">
                                                             {accion.tipo}
                                                         </Badge>
                                                     </div>
-                                                    <p className="text-sm text-[#6B7280] line-clamp-1">
+                                                    <p className="text-sm text-[#6B7280] line-clamp-2 sm:line-clamp-1">
                                                         {accion.descripcion || "Sin descripción"}
                                                     </p>
                                                 </div>
-                                                <div className="flex items-center gap-3 ml-4">
+                                                <div className="flex items-center gap-3 sm:ml-4 shrink-0">
                                                     <div className="text-right">
                                                         <p className="text-xs text-[#6B7280]">
                                                             {new Date(accion.creadoEn).toLocaleDateString("es-CO")}
@@ -545,7 +547,7 @@ export default function DashboardAccionesCorrectivas() {
                         </Card>
 
                         {/* Accesos Rápidos */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <Button
                                 onClick={() => navigate("/Acciones_correctivas_EnProceso")}
                                 variant="outline"
@@ -587,12 +589,12 @@ export default function DashboardAccionesCorrectivas() {
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="analisis" className="mt-6">
+                    <TabsContent value="analisis" className="mt-6 min-w-0">
                         <GraficosAcciones acciones={accionesFiltradas} />
                     </TabsContent>
 
-                    <TabsContent value="calendario" className="mt-6">
-                        <div className="h-[600px]">
+                    <TabsContent value="calendario" className="mt-6 min-w-0">
+                        <div className="min-h-[420px] min-w-0 overflow-x-auto">
                             <CalendarioAcciones
                                 acciones={accionesFiltradas}
                                 onSelectAccion={(id) => navigate(`/acciones-correctivas/${id}/solucionar`)}
