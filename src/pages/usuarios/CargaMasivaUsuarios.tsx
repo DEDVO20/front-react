@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,27 @@ import {
     RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient } from "@/lib/api";
+import * as XLSX from "xlsx";
+import { apiClient, API_BASE_URL } from "@/lib/api";
+import { usuarioService } from "@/services/usuario.service";
+
+const COLUMNAS_USUARIO = [
+    "documento",
+    "nombre",
+    "segundo_nombre",
+    "primer_apellido",
+    "segundo_apellido",
+    "correo_electronico",
+    "nombre_usuario",
+    "contrasena",
+    "area_codigo",
+    "roles",
+    "activo",
+] as const;
+
+const descargarLibroExcel = (libro: XLSX.WorkBook, nombreArchivo: string) => {
+    XLSX.writeFile(libro, nombreArchivo);
+};
 
 interface ErrorDetalle {
     fila: number;
@@ -51,7 +71,96 @@ export default function CargaMasivaUsuarios() {
     const navigate = useNavigate();
     const [archivo, setArchivo] = useState<File | null>(null);
     const [cargando, setCargando] = useState(false);
+    const [descargando, setDescargando] = useState<"plantilla" | "usuarios" | null>(null);
     const [resultado, setResultado] = useState<ResultadoCarga | null>(null);
+    const [areas, setAreas] = useState<{ codigo: string; nombre: string }[]>([]);
+    const [roles, setRoles] = useState<{ id?: string; clave: string; nombre: string }[]>([]);
+
+    useEffect(() => {
+        const cargarCatalogos = async () => {
+            try {
+                const [areasRes, rolesRes] = await Promise.all([
+                    apiClient.get("/areas?limit=200"),
+                    apiClient.get("/roles?limit=200"),
+                ]);
+                setAreas(Array.isArray(areasRes.data) ? areasRes.data : []);
+                setRoles(Array.isArray(rolesRes.data) ? rolesRes.data : []);
+            } catch (error) {
+                console.error("No se pudieron cargar áreas o roles:", error);
+            }
+        };
+        cargarCatalogos();
+    }, []);
+
+    const extraerMensajeError = async (error: any) => {
+        const data = error?.response?.data;
+        if (data instanceof Blob) {
+            try {
+                const parsed = JSON.parse(await data.text());
+                if (typeof parsed?.detail === "string") return parsed.detail;
+            } catch {
+                /* ignore */
+            }
+        }
+        const detail = data?.detail ?? error?.detail;
+        if (typeof detail === "string") return detail;
+        if (Array.isArray(detail)) {
+            return detail.map((item) => item?.msg || item?.detail || JSON.stringify(item)).join(". ");
+        }
+        return error?.message || "Error al procesar el archivo";
+    };
+
+    const generarPlantillaLocal = () => {
+        const areaEjemplo = areas[0]?.codigo || "CAL";
+        const rolEjemplo = roles.find((r) => r.clave !== "admin")?.clave || roles[0]?.clave || "auxiliar";
+
+        const ejemplos = [
+            {
+                documento: "10000001",
+                nombre: "Juan",
+                segundo_nombre: "Carlos",
+                primer_apellido: "Perez",
+                segundo_apellido: "Garcia",
+                correo_electronico: "juan.perez@empresa.com",
+                nombre_usuario: "jperez",
+                contrasena: "Password123",
+                area_codigo: areaEjemplo,
+                roles: rolEjemplo,
+                activo: "true",
+            },
+            {
+                documento: "10000002",
+                nombre: "Maria",
+                segundo_nombre: "Elena",
+                primer_apellido: "Lopez",
+                segundo_apellido: "Martinez",
+                correo_electronico: "maria.lopez@empresa.com",
+                nombre_usuario: "mlopez",
+                contrasena: "Password123",
+                area_codigo: areaEjemplo,
+                roles: rolEjemplo,
+                activo: "true",
+            },
+        ];
+
+        const libro = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(libro, XLSX.utils.json_to_sheet(ejemplos, { header: [...COLUMNAS_USUARIO] }), "Usuarios");
+        XLSX.utils.book_append_sheet(
+            libro,
+            XLSX.utils.json_to_sheet(
+                areas.length ? areas.map((a) => ({ codigo: a.codigo, nombre: a.nombre })) : [{ codigo: "", nombre: "No hay áreas" }]
+            ),
+            "Areas"
+        );
+        XLSX.utils.book_append_sheet(
+            libro,
+            XLSX.utils.json_to_sheet(
+                roles.length ? roles.map((r) => ({ clave: r.clave, nombre: r.nombre })) : [{ clave: "", nombre: "No hay roles" }]
+            ),
+            "Roles"
+        );
+        descargarLibroExcel(libro, "plantilla_usuarios.xlsx");
+    };
 
     const handleArchivoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -85,13 +194,33 @@ export default function CargaMasivaUsuarios() {
             const formData = new FormData();
             formData.append("file", archivo);
 
-            const response = await apiClient.post("/usuarios/carga-masiva", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
+            const token = localStorage.getItem("token");
+            const response = await fetch(`${API_BASE_URL}/usuarios/carga-masiva`, {
+                method: "POST",
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                body: formData,
             });
 
-            const data: ResultadoCarga = response.data;
+            const payload = await response.json().catch(() => ({}));
+
+            if (response.status === 401) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                window.location.href = "/login";
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(
+                    typeof payload?.detail === "string"
+                        ? payload.detail
+                        : Array.isArray(payload?.detail)
+                            ? payload.detail.map((item: any) => item?.msg || item?.detail || JSON.stringify(item)).join(". ")
+                            : "Error al procesar el archivo"
+                );
+            }
+
+            const data: ResultadoCarga = payload;
             setResultado(data);
 
             if (data.errores === 0) {
@@ -103,43 +232,84 @@ export default function CargaMasivaUsuarios() {
             }
         } catch (error: any) {
             console.error("Error:", error);
-            toast.error(error.response?.data?.detail || "Error al procesar el archivo");
+            toast.error(await extraerMensajeError(error));
         } finally {
             setCargando(false);
         }
     };
 
-    const descargarPlantilla = () => {
-        // Crear CSV de plantilla
-        const headers = [
-            'documento',
-            'nombre',
-            'segundo_nombre',
-            'primer_apellido',
-            'segundo_apellido',
-            'correo_electronico',
-            'nombre_usuario',
-            'contrasena',
-            'area_codigo',
-            'roles',
-            'activo'
-        ];
+    const descargarPlantilla = async () => {
+        setDescargando("plantilla");
+        try {
+            generarPlantillaLocal();
+            toast.success("Plantilla descargada");
+        } catch (error: any) {
+            console.error(error);
+            toast.error((await extraerMensajeError(error)) || "No se pudo descargar la plantilla");
+        } finally {
+            setDescargando(null);
+        }
+    };
 
-        const ejemplos = [
-            '12345678,Juan,Carlos,Pérez,García,juan.perez@empresa.com,jperez,password123,SIS,ADMIN,true',
-            '87654321,María,Elena,López,Martínez,maria.lopez@empresa.com,mlopez,password456,CAL,USER,true',
-        ];
+    const exportarUsuarios = async () => {
+        setDescargando("usuarios");
+        try {
+            const [usuarios, rolesRes] = await Promise.all([
+                usuarioService.getAll({ limit: 5000 }),
+                roles.length ? Promise.resolve({ data: roles }) : apiClient.get("/roles"),
+            ]);
 
-        const csv = [headers.join(','), ...ejemplos].join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'plantilla_usuarios.csv';
-        a.click();
-        window.URL.revokeObjectURL(url);
+            const catalogoRoles = Array.isArray(rolesRes.data) ? rolesRes.data : roles;
+            const rolesPorId = new Map<string, string>(
+                catalogoRoles
+                    .filter((rol: { id?: string; clave: string }) => rol.id && rol.clave)
+                    .map((rol: { id?: string; clave: string }) => [String(rol.id), rol.clave])
+            );
 
-        toast.success("Plantilla descargada");
+            const filas = (Array.isArray(usuarios) ? usuarios : []).map((usuario: any) => {
+                const clavesRol = Array.isArray(usuario.roles)
+                    ? usuario.roles
+                          .map((asignacion: any) => rolesPorId.get(String(asignacion.rol_id)) || asignacion.rol?.clave || "")
+                          .filter(Boolean)
+                    : [];
+                return {
+                    documento: usuario.documento ?? "",
+                    nombre: usuario.nombre || "",
+                    segundo_nombre: usuario.segundo_nombre || "",
+                    primer_apellido: usuario.primer_apellido || "",
+                    segundo_apellido: usuario.segundo_apellido || "",
+                    correo_electronico: usuario.correo_electronico || "",
+                    nombre_usuario: usuario.nombre_usuario || "",
+                    contrasena: "",
+                    area_codigo: usuario.area?.codigo || "",
+                    roles: clavesRol.join(","),
+                    activo: usuario.activo ? "true" : "false",
+                };
+            });
+
+            const libro = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(
+                libro,
+                XLSX.utils.json_to_sheet(filas, { header: [...COLUMNAS_USUARIO] }),
+                "Usuarios"
+            );
+            XLSX.utils.book_append_sheet(
+                libro,
+                XLSX.utils.json_to_sheet([
+                    {
+                        nota: "Las contraseñas no se exportan porque están cifradas. Este archivo es de consulta; para crear usuarios use la plantilla e incluya una contraseña de al menos 8 caracteres.",
+                    },
+                ]),
+                "Nota"
+            );
+            descargarLibroExcel(libro, "usuarios_plataforma.xlsx");
+            toast.success(`${filas.length} usuarios descargados`);
+        } catch (error: any) {
+            console.error(error);
+            toast.error((await extraerMensajeError(error)) || "No se pudieron exportar los usuarios");
+        } finally {
+            setDescargando(null);
+        }
     };
 
     return (
@@ -188,21 +358,68 @@ export default function CargaMasivaUsuarios() {
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                         <h3 className="font-semibold text-amber-900 mb-2">Columnas requeridas:</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm text-amber-800">
-                            <span>• Documento</span>
-                            <span>• Nombre</span>
-                            <span>• Primer Apellido</span>
-                            <span>• Correo Electronico</span>
-                            <span>• Nombre Usuario</span>
-                            <span>• Contraseña</span>
-                            <span>• Codigo de Area</span>
-                            <span>• Roles (separados por coma)</span>
+                            <span>• documento</span>
+                            <span>• nombre</span>
+                            <span>• primer_apellido</span>
+                            <span>• correo_electronico</span>
+                            <span>• nombre_usuario</span>
+                            <span>• contrasena (mín. 8 caracteres)</span>
+                            <span>• area_codigo</span>
+                            <span>• roles (separados por coma)</span>
                         </div>
                     </div>
 
-                    <Button onClick={descargarPlantilla} variant="outline" className="w-full">
-                        <Download className="mr-2 h-4 w-4" />
-                        Descargar Plantilla de Ejemplo
-                    </Button>
+                    {(areas.length > 0 || roles.length > 0) && (
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {areas.length > 0 && (
+                                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                                    <h3 className="font-semibold text-slate-900 mb-2">Códigos de área válidos</h3>
+                                    <div className="flex flex-wrap gap-2">
+                                        {areas.map((area) => (
+                                            <Badge key={area.codigo} variant="outline">
+                                                {area.codigo} — {area.nombre}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {roles.length > 0 && (
+                                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                                    <h3 className="font-semibold text-slate-900 mb-2">Claves de rol válidas</h3>
+                                    <div className="flex flex-wrap gap-2">
+                                        {roles.map((rol) => (
+                                            <Badge key={rol.clave} variant="outline">
+                                                {rol.clave} — {rol.nombre}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                        <Button onClick={descargarPlantilla} variant="outline" disabled={!!descargando}>
+                            {descargando === "plantilla" ? (
+                                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="mr-2 h-4 w-4" />
+                            )}
+                            Descargar Plantilla de Ejemplo
+                        </Button>
+                        <Button onClick={exportarUsuarios} variant="outline" disabled={!!descargando}>
+                            {descargando === "usuarios" ? (
+                                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Users className="mr-2 h-4 w-4" />
+                            )}
+                            Descargar Usuarios de la Plataforma
+                        </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                        La plantilla incluye ejemplos y las hojas Areas/Roles con valores válidos.
+                        La exportación trae los usuarios actuales (sin contraseñas, porque están cifradas).
+                    </p>
                 </CardContent>
             </Card>
 

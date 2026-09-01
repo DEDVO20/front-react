@@ -642,7 +642,7 @@ export default function FormulariosAuditoriaAdmin() {
                 Este formulario aún no tiene campos.
               </div>
             ) : (
-              <div className="overflow-hidden rounded-xl border border-slate-200">
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
                 <Table>
                   <TableHeader className="bg-slate-50">
                     <TableRow>

@@ -198,11 +198,11 @@ export default function ListaUsuarios() {
       <TooltipProvider>
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Header Profesional */}
-          <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+          <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-5 sm:p-8">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div>
-                <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                  <Users className="h-9 w-9 text-[#2563EB]" />
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  <Users className="h-8 w-8 sm:h-9 sm:w-9 text-[#2563EB]" />
                   Gestión de Usuarios
                 </h1>
                 <p className="text-[#6B7280] mt-2 text-lg">
@@ -224,11 +224,12 @@ export default function ListaUsuarios() {
                   )}
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="outline"
+                      className="w-full sm:w-auto"
                       onClick={() => navigate("/usuarios/carga-masiva")}
                       disabled={!canCreateUser}
                     >
@@ -244,7 +245,7 @@ export default function ListaUsuarios() {
                     <TooltipTrigger asChild>
                       <Button
                         onClick={() => navigate("/NuevoUsuario")}
-                        className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm"
+                        className="w-full sm:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm"
                       >
                         <Plus className="mr-2 h-5 w-5" />
                         Nuevo Usuario
@@ -256,7 +257,7 @@ export default function ListaUsuarios() {
 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" onClick={fetchUsuarios} disabled={loading}>
+                    <Button variant="outline" className="w-full sm:w-auto" onClick={fetchUsuarios} disabled={loading}>
                       <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                       Actualizar
                     </Button>
@@ -361,7 +362,7 @@ export default function ListaUsuarios() {
                     className="pl-10"
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant={filtroEstado === "todos" ? "default" : "outline"}
                     onClick={() => setFiltroEstado("todos")}

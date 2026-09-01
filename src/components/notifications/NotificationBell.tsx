@@ -128,7 +128,7 @@ export function NotificationBell({ onOpenChange }: NotificationBellProps) {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
+      <DropdownMenuContent align="end" className="w-[min(20rem,calc(100vw-1.5rem))]">
         <DropdownMenuLabel className="flex items-center justify-between">
           <span>Notificaciones</span>
           {noLeidas > 0 && (
