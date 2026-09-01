@@ -803,6 +803,17 @@ const ObjetivosActivos: React.FC = () => {
                       </button>
                     </div>
                   )}
+                  {modalTipo === 'ver' && (
+                    <div className="flex justify-end pt-4 border-t border-gray-200">
+                      <button
+                        type="button"
+                        onClick={cerrarModal}
+                        className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                      >
+                        Cerrar
+                      </button>
+                    </div>
+                  )}
                 </form>
               </div>
             </div>

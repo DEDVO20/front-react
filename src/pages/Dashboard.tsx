@@ -6,8 +6,6 @@ import {
   Clock,
   ArrowRight,
   LayoutDashboard,
-  Bell,
-  Search,
   ChevronRight,
   Target,
   ShieldCheck,
@@ -37,6 +35,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { GlobalSearch } from "@/components/GlobalSearch";
 
 interface GlobalStats {
   docsPendientes: number;
@@ -51,7 +51,6 @@ export default function Dashboard() {
   const [acciones, setAcciones] = useState<AccionCorrectiva[]>([]);
   const [loading, setLoading] = useState(true);
   const [greeting, setGreeting] = useState("");
-  const [searchValue, setSearchValue] = useState("");
   const [globalStats, setGlobalStats] = useState<GlobalStats>({
     docsPendientes: 0,
     ncAbiertas: 0,
@@ -179,31 +178,17 @@ export default function Dashboard() {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="hidden lg:flex items-center px-4 py-2 bg-white rounded-xl border border-[#E5E7EB] shadow-sm group focus-within:ring-2 focus-within:ring-[#2563EB]/20 transition-all">
-                  <Search className="w-4 h-4 text-[#6B7280] group-hover:text-[#2563EB] transition-colors" />
-                  <input
-                    type="text"
-                    placeholder="Buscar procesos..."
-                    className="bg-transparent border-none outline-none text-sm px-3 w-48 font-medium text-[#111827]"
-                    value={searchValue}
-                    onChange={(e) => setSearchValue(e.target.value)}
-                  />
-                  <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold text-[#6B7280] bg-[#F9FAFB] border border-[#E5E7EB] rounded-md">⌘K</kbd>
+                <div className="hidden lg:block">
+                  <GlobalSearch placeholder="Buscar procesos, módulos..." />
                 </div>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="rounded-xl bg-white relative h-11 w-11">
-                      <Bell className="w-5 h-5 text-[#4B5563]" />
-                      <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Notificaciones</TooltipContent>
-                </Tooltip>
+                <div className="bg-white rounded-xl border border-[#E5E7EB] shadow-sm">
+                  <NotificationBell />
+                </div>
 
                 <Button
                   className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-lg shadow-[#2563EB]/20 rounded-xl px-6 h-11 font-bold transition-all hover:-translate-y-0.5"
-                  onClick={() => toast.success("Configuración de diseño sincronizada")}
+                  onClick={() => navigate("/indicadores/tablero")}
                 >
                   <LayoutDashboard className="w-5 h-5 mr-2" />
                   Panel Maestro
@@ -405,7 +390,7 @@ export default function Dashboard() {
                   <Button
                     variant="ghost"
                     className="w-full mt-8 bg-[#F9FAFB] text-[#6B7280] text-xs font-bold rounded-xl hover:bg-[#F3F4F6] transition-colors"
-                    onClick={() => navigate("/Acciones_correctivas_Nuevas")}
+                    onClick={() => navigate("/acciones-correctivas/dashboard")}
                   >
                     Ver Historial Completo <ArrowRight className="w-3 h-3 ml-2" />
                   </Button>

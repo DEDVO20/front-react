@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Calendar,
   Clock,
@@ -32,6 +33,7 @@ import {
 import { toast } from "sonner";
 
 const CapacitacionesHistorial = () => {
+  const navigate = useNavigate();
   const [historial, setHistorial] = useState<Capacitacion[]>([]);
   const [reporteAuditoria, setReporteAuditoria] = useState<ReporteCapacitacionAuditoria | null>(null);
   const [usuariosPendientes, setUsuariosPendientes] = useState(0);
@@ -109,6 +111,12 @@ const CapacitacionesHistorial = () => {
                   </Badge>
                 </div>
               </div>
+              <Button
+                onClick={() => navigate("/capacitaciones/programadas")}
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl px-6 py-6 h-auto font-bold"
+              >
+                Ver programadas
+              </Button>
             </div>
           </div>
 

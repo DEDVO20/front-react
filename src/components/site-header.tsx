@@ -1,17 +1,8 @@
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Bell, Search, Home, Settings, Shield, User } from "lucide-react";
+import { Home, Settings, Shield, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -88,6 +79,9 @@ export function SiteHeader() {
     // Ajustes y Seguridad
     if (path.includes("/configuracion")) return "Ajustes";
     if (path.includes("/seguridad")) return "Seguridad";
+    if (path.includes("/manual-usuario")) return "Manual de Usuario";
+    if (path.includes("/mesa-ayuda")) return "Mesa de Ayuda";
+    if (path.includes("/reportes")) return "Reportes";
 
     return "Panel de Control";
   };
@@ -122,13 +116,8 @@ export function SiteHeader() {
 
         {/* Barra de búsqueda */}
         <div className="ml-auto flex items-center gap-2">
-          <div className="relative hidden md:block">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Buscar documentos, auditorías..."
-              className="w-64 pl-8 h-9 rounded-xl"
-            />
+          <div className="hidden md:block">
+            <GlobalSearch compact placeholder="Buscar documentos, auditorías..." />
           </div>
 
           <div className="flex items-center gap-1 border-l pl-2 ml-2">

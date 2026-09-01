@@ -85,14 +85,14 @@ export default function FiltrosAccionesCorrectivas({
                                     Tipo de Acción
                                 </Label>
                                 <Select
-                                    value={filtros.tipo || ""}
-                                    onValueChange={(value) => handleChange("tipo", value)}
+                                    value={filtros.tipo || "todos"}
+                                    onValueChange={(value) => handleChange("tipo", value === "todos" ? "" : value)}
                                 >
                                     <SelectTrigger id="tipo" className="rounded-xl border-[#E5E7EB] bg-white">
                                         <SelectValue placeholder="Todos los tipos" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="">Todos los tipos</SelectItem>
+                                        <SelectItem value="todos">Todos los tipos</SelectItem>
                                         <SelectItem value="correctiva">Correctiva</SelectItem>
                                         <SelectItem value="preventiva">Preventiva</SelectItem>
                                         <SelectItem value="mejora">Mejora</SelectItem>
@@ -106,14 +106,14 @@ export default function FiltrosAccionesCorrectivas({
                                     Estado
                                 </Label>
                                 <Select
-                                    value={filtros.estado || ""}
-                                    onValueChange={(value) => handleChange("estado", value)}
+                                    value={filtros.estado || "todos"}
+                                    onValueChange={(value) => handleChange("estado", value === "todos" ? "" : value)}
                                 >
                                     <SelectTrigger id="estado" className="rounded-xl border-[#E5E7EB] bg-white">
                                         <SelectValue placeholder="Todos los estados" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="">Todos los estados</SelectItem>
+                                        <SelectItem value="todos">Todos los estados</SelectItem>
                                         <SelectItem value="pendiente">Pendiente</SelectItem>
                                         <SelectItem value="en_proceso">En Proceso</SelectItem>
                                         <SelectItem value="implementada">Implementada</SelectItem>
@@ -130,14 +130,14 @@ export default function FiltrosAccionesCorrectivas({
                                         Responsable
                                     </Label>
                                     <Select
-                                        value={filtros.responsable || ""}
-                                        onValueChange={(value) => handleChange("responsable", value)}
+                                        value={filtros.responsable || "todos"}
+                                        onValueChange={(value) => handleChange("responsable", value === "todos" ? "" : value)}
                                     >
                                         <SelectTrigger id="responsable" className="rounded-xl border-[#E5E7EB] bg-white">
                                             <SelectValue placeholder="Todos los responsables" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="">Todos los responsables</SelectItem>
+                                            <SelectItem value="todos">Todos los responsables</SelectItem>
                                             {responsables.map((resp) => (
                                                 <SelectItem key={resp.id} value={resp.id}>
                                                     {resp.nombre}

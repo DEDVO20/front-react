@@ -76,6 +76,7 @@ import AuditLogPage from "./pages/sistema/AuditLog";
 import MesaDeAyuda from "./pages/soporte/MesaDeAyuda";
 import Seguridad from "./pages/seguridad";
 import Configuracion from "./pages/configuracion";
+import ManualUsuario from "./pages/ManualUsuario";
 
 import { ProtectedLayout } from "./components/ProtectedLayout";
 import PermissionRoute from "./components/PermissionRoute";
@@ -190,6 +191,7 @@ function App() {
 
             {/* Soporte */}
             <Route path="/mesa-ayuda" element={<MesaDeAyuda />} />
+            <Route path="/manual-usuario" element={<ManualUsuario />} />
 
             {/* Configuración y Seguridad */}
             <Route path="/configuracion" element={withPermission(<Configuracion />, ["sistema.config", "sistema.admin"])} />
