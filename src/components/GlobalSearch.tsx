@@ -10,6 +10,7 @@ interface GlobalSearchProps {
   className?: string;
   inputClassName?: string;
   compact?: boolean;
+  fullWidth?: boolean;
 }
 
 export function GlobalSearch({
@@ -17,6 +18,7 @@ export function GlobalSearch({
   className,
   inputClassName,
   compact = false,
+  fullWidth = false,
 }: GlobalSearchProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -53,13 +55,17 @@ export function GlobalSearch({
   };
 
   return (
-    <div ref={containerRef} className={cn("relative", className)}>
+    <div ref={containerRef} className={cn("relative", fullWidth && "w-full", className)}>
       <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="search"
         value={query}
         placeholder={placeholder}
-        className={cn(compact ? "h-9 w-64 pl-8 rounded-xl" : "h-11 w-56 pl-9 rounded-xl", inputClassName)}
+        className={cn(
+          "pl-8 rounded-xl",
+          fullWidth ? "h-10 w-full" : compact ? "h-9 w-40 xl:w-64" : "h-11 w-full max-w-56 sm:w-56",
+          inputClassName,
+        )}
         onFocus={() => setOpen(true)}
         onChange={(e) => {
           setQuery(e.target.value);
@@ -82,7 +88,7 @@ export function GlobalSearch({
       />
 
       {open && query.trim() && (
-        <div className="absolute z-50 mt-2 w-full min-w-[280px] overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-lg">
+        <div className="absolute right-0 z-50 mt-2 w-full min-w-[min(100%,280px)] max-w-[min(100vw-1.5rem,24rem)] overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-lg">
           {results.length === 0 ? (
             <p className="px-4 py-3 text-sm text-[#6B7280]">Sin coincidencias para “{query}”</p>
           ) : (

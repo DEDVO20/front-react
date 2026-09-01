@@ -427,7 +427,7 @@ const AuditoriasCompletadas: React.FC = () => {
         {showModal && selectedAuditoria && (
           <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all">
             <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-[#E5E7EB]">
-              <div className="bg-[#F8FAFC] border-b border-[#E5E7EB] p-8 flex justify-between items-center">
+              <div className="bg-[#F8FAFC] border-b border-[#E5E7EB] p-4 sm:p-8 flex justify-between items-center gap-3">
                 <div>
                   <h2 className="text-2xl font-bold text-[#1E3A8A]">
                     {modalMode === 'edit' ? 'Actualizar Registro' : 'Expediente de Auditoría'}
@@ -438,7 +438,7 @@ const AuditoriasCompletadas: React.FC = () => {
                   <XCircle className="w-6 h-6" />
                 </button>
               </div>
-              <div className="p-8 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <div className="p-4 sm:p-8 overflow-y-auto max-h-[calc(90vh-120px)]">
                 {modalMode === 'view' ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-6">

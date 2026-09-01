@@ -125,22 +125,22 @@ export default function Configuracion() {
   return (
     <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-5 sm:p-8">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div>
-              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                <Settings className="h-9 w-9 text-[#2563EB]" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                <Settings className="h-8 w-8 sm:h-9 sm:w-9 text-[#2563EB]" />
                 Configuración
               </h1>
               <p className="text-[#6B7280] mt-2 text-lg">
                 Administra la información básica de tu cuenta y preferencias
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Button variant="outline" className="rounded-xl" onClick={() => navigate("/perfil")}>
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
+              <Button variant="outline" className="rounded-xl w-full sm:w-auto" onClick={() => navigate("/perfil")}>
                 Editar perfil
               </Button>
-              <Button variant="outline" className="rounded-xl" onClick={() => navigate("/seguridad")}>
+              <Button variant="outline" className="rounded-xl w-full sm:w-auto" onClick={() => navigate("/seguridad")}>
                 Seguridad
               </Button>
             </div>
@@ -154,7 +154,7 @@ export default function Configuracion() {
             </div>
             <CardTitle className="text-lg text-[#1E3A8A]">Perfil del Usuario</CardTitle>
           </CardHeader>
-          <CardContent className="p-8 space-y-8">
+          <CardContent className="p-4 sm:p-8 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-2">
                 <Label className="font-semibold text-gray-700">Nombre completo</Label>
@@ -232,7 +232,7 @@ export default function Configuracion() {
               <Button
                 onClick={handleSave}
                 disabled={saving}
-                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl px-8 py-6 h-auto font-bold shadow-sm"
+                className="w-full sm:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl px-8 py-6 h-auto font-bold shadow-sm"
               >
                 {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 {saving ? "Guardando..." : "Guardar cambios"}
