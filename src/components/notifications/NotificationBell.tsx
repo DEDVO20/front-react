@@ -60,10 +60,21 @@ export function NotificationBell({ onOpenChange }: NotificationBellProps) {
 
       // Navegar según el tipo de referencia
       if (notificacion.referencia_tipo && notificacion.referencia_id) {
+        const id = notificacion.referencia_id;
         const rutas: Record<string, string> = {
-          ticket: `/mesa-ayuda?ticket_id=${notificacion.referencia_id}`,
-          documento: `/documentos/${notificacion.referencia_id}`,
-          auditoria: `/AuditoriasPlanificacion`, // Temporalmente a la lista principal
+          ticket: `/mesa-ayuda?ticket_id=${id}`,
+          documento: `/documentos/${id}`,
+          auditoria: `/AuditoriasPlanificacion`,
+          hallazgo: `/AuditoriasHallazgosView`,
+          accion_correctiva: `/acciones-correctivas/${id}/solucionar`,
+          no_conformidad: `/No_conformidades_Abiertas`,
+          proceso: `/procesos/${id}`,
+          riesgo: `/riesgos/matriz`,
+          control_riesgo: `/riesgos/controles`,
+          capacitacion: `/capacitaciones/programadas`,
+          objetivo: `/Activos`,
+          indicador: `/indicadores/tablero`,
+          competencia: `/capacitaciones/competencias`,
         };
 
         const ruta = rutas[notificacion.referencia_tipo];
