@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { CheckCircle, Users, Laptop, MapPin, Download, GraduationCap, Eye, RefreshCw, Search, Save } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -172,10 +173,9 @@ const CapacitacionesAsistencia: React.FC = () => {
 
   const usuariosFiltrados = useMemo(
     () =>
-      usuariosActivos.filter((usuario) => {
-        const texto = `${usuario.nombre} ${usuario.primer_apellido} ${usuario.segundo_apellido || ""} ${usuario.correo_electronico}`.toLowerCase();
-        return texto.includes(filtroUsuarios.toLowerCase());
-      }),
+      usuariosActivos.filter((usuario) =>
+        matchesTextSearch(filtroUsuarios, usuario)
+      ),
     [usuariosActivos, filtroUsuarios]
   );
 
@@ -392,11 +392,8 @@ const CapacitacionesAsistencia: React.FC = () => {
     }
   };
 
-  const filteredAsistencias = asistencias.filter(
-    (a) =>
-      a.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.tipoCapacitacion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.instructor?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAsistencias = asistencias.filter((a) =>
+    matchesTextSearch(searchTerm, a)
   );
 
   const total = reporteAuditoria?.total_registros_asistencia ?? asistencias.length;
@@ -569,7 +566,7 @@ const CapacitacionesAsistencia: React.FC = () => {
                 <div className="space-y-2">
                   <Label>Buscar persona</Label>
                   <Input
-                    placeholder="Nombre o correo"
+                    placeholder={SEARCH_ANY_PLACEHOLDER}
                     value={filtroUsuarios}
                     onChange={(e) => setFiltroUsuarios(e.target.value)}
                     className="rounded-xl"
@@ -650,7 +647,10 @@ const CapacitacionesAsistencia: React.FC = () => {
                                     <span className="font-medium text-[#111827]">
                                       {usuario.nombre} {usuario.primer_apellido}
                                     </span>
-                                    <span className="text-xs text-[#6B7280]">{usuario.correo_electronico}</span>
+                                    <span className="text-xs text-[#6B7280]">
+                                      {usuario.documento ? `CC ${usuario.documento} · ` : ""}
+                                      {usuario.correo_electronico}
+                                    </span>
                                   </div>
                                 </TableCell>
                                 <TableCell>
@@ -697,7 +697,7 @@ const CapacitacionesAsistencia: React.FC = () => {
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
-                placeholder="Buscar por nombre, tipo o instructor..."
+                placeholder={SEARCH_ANY_PLACEHOLDER}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"

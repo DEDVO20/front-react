@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import {
   Select,
   SelectContent,
@@ -178,9 +179,7 @@ export default function DocumentosObsoletos() {
   };
 
   const documentosFiltrados = documentos.filter(doc => {
-    const matchSearch = searchTerm === "" ||
-      doc.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.codigo.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = matchesTextSearch(searchTerm, doc);
 
     const matchTipo = filtroTipo === "todos" || doc.tipo_documento.toLowerCase() === filtroTipo.toLowerCase();
 
@@ -356,7 +355,7 @@ export default function DocumentosObsoletos() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
-                placeholder="Buscar por nombre o código..."
+                placeholder={SEARCH_ANY_PLACEHOLDER}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"

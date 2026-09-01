@@ -18,6 +18,7 @@ import {
     XCircle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -107,9 +108,7 @@ export default function MapaProcesos() {
     };
 
     const procesosFiltrados = procesos.filter(proceso => {
-        const matchBusqueda =
-            proceso.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-            proceso.codigo.toLowerCase().includes(busqueda.toLowerCase());
+        const matchBusqueda = matchesTextSearch(busqueda, proceso);
 
         const matchTipo = filtroTipo === "todos" || proceso.tipo_proceso === filtroTipo;
         const matchEstado = filtroEstado === "todos" || proceso.estado === filtroEstado;
@@ -335,7 +334,7 @@ export default function MapaProcesos() {
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                                 <Input
-                                    placeholder="Buscar por nombre o código..."
+                                    placeholder={SEARCH_ANY_PLACEHOLDER}
                                     value={busqueda}
                                     onChange={(e) => setBusqueda(e.target.value)}
                                     className="pl-10 rounded-xl"

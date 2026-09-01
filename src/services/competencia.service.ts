@@ -20,8 +20,18 @@ export interface EvaluacionCompetencia {
     competencia?: Competencia;
     usuario?: {
         id: string;
+        documento?: number;
         nombre: string;
-        primerApellido: string;
+        segundo_nombre?: string;
+        segundoNombre?: string;
+        primer_apellido?: string;
+        primerApellido?: string;
+        segundo_apellido?: string;
+        segundoApellido?: string;
+        correo_electronico?: string;
+        correoElectronico?: string;
+        nombre_usuario?: string;
+        nombreUsuario?: string;
     };
     // Note: Backend might need to include usuario in response if we want to show it easily, 
     // currently `EvaluacionCompetenciaResponse` only nests `competencia`. 

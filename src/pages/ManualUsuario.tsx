@@ -16,6 +16,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -99,14 +100,8 @@ export default function ManualUsuario() {
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return SECTIONS;
-    return SECTIONS.filter(
-      (section) =>
-        section.title.toLowerCase().includes(q) ||
-        section.description.toLowerCase().includes(q) ||
-        section.steps.some((step) => step.toLowerCase().includes(q)),
-    );
+    if (!query.trim()) return SECTIONS;
+    return SECTIONS.filter((section) => matchesTextSearch(query, section));
   }, [query]);
 
   return (
@@ -143,7 +138,7 @@ export default function ManualUsuario() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar un módulo o procedimiento..."
+              placeholder={SEARCH_ANY_PLACEHOLDER}
               className="pl-10 py-6 rounded-xl"
             />
           </div>

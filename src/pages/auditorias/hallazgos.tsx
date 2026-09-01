@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { auditoriaService } from '@/services/auditoria.service';
 import { toast } from 'sonner';
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -170,11 +171,7 @@ const AuditoriasHallazgosView: React.FC = () => {
     if (activeTab === 'auditorias') {
       let filtered = auditorias;
       if (searchTerm) {
-        filtered = filtered.filter(a =>
-          a.codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          a.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          a.objetivo?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        filtered = filtered.filter(a => matchesTextSearch(searchTerm, a));
       }
       if (filterTipo) {
         filtered = filtered.filter(a => a.tipo === filterTipo);
@@ -186,11 +183,7 @@ const AuditoriasHallazgosView: React.FC = () => {
     } else {
       let filtered = hallazgos;
       if (searchTerm) {
-        filtered = filtered.filter(h =>
-          h.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          h.clausulaIso?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          h.evidencia?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        filtered = filtered.filter(h => matchesTextSearch(searchTerm, h));
       }
       if (filterTipo) {
         filtered = filtered.filter(h => h.tipo === filterTipo);
@@ -602,7 +595,7 @@ const AuditoriasHallazgosView: React.FC = () => {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6B7280] w-5 h-5" />
                 <Input
-                  placeholder={`Buscar ${activeTab === 'auditorias' ? 'auditorías...' : 'hallazgos...'}`}
+                  placeholder={SEARCH_ANY_PLACEHOLDER}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 py-6 border-[#E5E7EB] rounded-xl focus:ring-[#2563EB]/20"

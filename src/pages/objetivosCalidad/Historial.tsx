@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -97,8 +98,7 @@ const HistorialObjetivos: React.FC = () => {
   };
 
   const filteredObjetivos = objetivos.filter(o =>
-    o.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (o.descripcion || "").toLowerCase().includes(searchTerm.toLowerCase())
+    matchesTextSearch(searchTerm, o)
   );
 
   const stats = {
@@ -246,7 +246,7 @@ const HistorialObjetivos: React.FC = () => {
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
-                placeholder="Buscar por código o descripción..."
+                placeholder={SEARCH_ANY_PLACEHOLDER}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"

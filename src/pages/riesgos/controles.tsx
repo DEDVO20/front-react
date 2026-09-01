@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -163,19 +164,9 @@ const ControlesRiesgos: React.FC = () => {
     return acc;
   }, {} as Record<string, Riesgo>);
 
-  const filteredControles = controles.filter((control) => {
-    const riesgo = riesgoMap[control.riesgo_id];
-    const riesgoCodigo = riesgo?.codigo || "";
-    const riesgoNombre = riesgo?.nombre || "";
-    const riesgoDesc = riesgo?.descripcion || "";
-    return (
-      control.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      control.tipo_control?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      riesgoCodigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      riesgoNombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      riesgoDesc.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
+  const filteredControles = controles.filter((control) =>
+    matchesTextSearch(searchTerm, control, riesgoMap[control.riesgo_id])
+  );
 
   // Estadísticas
   const total = controles.length;
@@ -340,7 +331,7 @@ const ControlesRiesgos: React.FC = () => {
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
-                placeholder="Buscar por riesgo, nombre, descripción o tipo..."
+                placeholder={SEARCH_ANY_PLACEHOLDER}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"

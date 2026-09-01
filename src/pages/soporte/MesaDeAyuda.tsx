@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import ticketService, { Ticket, TicketCreate, TicketUpdate } from "@/services/ticket.service";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { uploadService } from "@/services/upload.service";
 import { areaService, Area } from "@/services/area.service";
 import { Button } from "@/components/ui/button";
@@ -340,8 +341,7 @@ export default function MesaDeAyuda() {
     };
 
     const filteredTickets = tickets.filter(ticket =>
-        ticket.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
+        matchesTextSearch(searchTerm, ticket)
     );
 
     const canEditTicket = (ticket: Ticket) =>
@@ -500,7 +500,7 @@ export default function MesaDeAyuda() {
                         <div className="relative max-w-md">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
                             <Input
-                                placeholder="Buscar por título o descripción..."
+                                placeholder={SEARCH_ANY_PLACEHOLDER}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"

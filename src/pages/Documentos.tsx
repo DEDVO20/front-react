@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { documentoService } from "@/services/documento.service";
 import { toast } from "sonner";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import {
   FileText,
   Plus,
@@ -117,9 +118,7 @@ export default function Documentos() {
   };
 
   const filteredDocumentos = documentos.filter((doc) => {
-    const matchSearch =
-      doc.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.codigo.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = matchesTextSearch(searchTerm, doc);
     const matchTipo = filterTipo === "" || doc.tipo_documento === filterTipo;
     const matchEstado = filterEstado === "" || doc.estado === filterEstado;
 
@@ -230,7 +229,7 @@ export default function Documentos() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6B7280] w-5 h-5" />
               <input
                 type="text"
-                placeholder="Buscar por nombre o código..."
+                placeholder={SEARCH_ANY_PLACEHOLDER}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 border border-[#E5E7EB] rounded-lg bg-white focus:ring-2 focus:ring-[#2563EB]/20 outline-none"

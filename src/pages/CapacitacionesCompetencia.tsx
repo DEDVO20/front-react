@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Award, Brain, TrendingUp, Eye, RefreshCw, Search, GraduationCap, Plus } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -44,6 +45,7 @@ const CapacitacionesCompetencias: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<EvaluacionCompetencia | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filtroUsuarioForm, setFiltroUsuarioForm] = useState("");
   const [form, setForm] = useState(EMPTY_FORM);
 
   useEffect(() => {
@@ -69,12 +71,15 @@ const CapacitacionesCompetencias: React.FC = () => {
     }
   };
 
-  const filteredEvaluaciones = evaluaciones.filter(
-    (e) =>
-      e.competencia?.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      e.usuario?.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      e.usuario?.primerApellido.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredEvaluaciones = evaluaciones.filter((e) =>
+    matchesTextSearch(searchTerm, e)
   );
+
+  const nombreUsuarioEvaluado = (usuario?: EvaluacionCompetencia["usuario"]) => {
+    if (!usuario) return "";
+    const apellido = usuario.primer_apellido || usuario.primerApellido || "";
+    return `${usuario.nombre} ${apellido}`.trim();
+  };
 
   const openDialog = (evaluacion: EvaluacionCompetencia) => {
     setSelectedEvaluacion(evaluacion);
@@ -145,7 +150,10 @@ const CapacitacionesCompetencias: React.FC = () => {
                 </div>
               </div>
               <Button
-                onClick={() => setCreateOpen(true)}
+                onClick={() => {
+                  setFiltroUsuarioForm("");
+                  setCreateOpen(true);
+                }}
                 className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl px-6 py-6 h-auto font-bold"
               >
                 <Plus className="h-5 w-5 mr-2" />
@@ -207,7 +215,7 @@ const CapacitacionesCompetencias: React.FC = () => {
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
-                placeholder="Buscar por competencia o usuario..."
+                placeholder={SEARCH_ANY_PLACEHOLDER}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
@@ -259,7 +267,7 @@ const CapacitacionesCompetencias: React.FC = () => {
                       <TableRow key={item.id} className="hover:bg-[#F5F3FF] transition-colors">
                         <TableCell className="px-6 py-4 font-bold">{item.competencia?.nombre || 'Desconocida'}</TableCell>
                         <TableCell className="px-6 py-4 text-[#6B7280]">
-                          {item.usuario ? `${item.usuario.nombre} ${item.usuario.primerApellido}` : 'Usuario eliminado'}
+                          {item.usuario ? nombreUsuarioEvaluado(item.usuario) : 'Usuario eliminado'}
                         </TableCell>
                         <TableCell className="px-6 py-4 text-[#6B7280]">
                           {new Date(item.fechaEvaluacion).toLocaleDateString('es-CO')}
@@ -320,7 +328,7 @@ const CapacitacionesCompetencias: React.FC = () => {
                       <div>
                         <Label className="text-[#6B7280] uppercase text-xs font-bold">Usuario Evaluado</Label>
                         <p className="mt-2 text-lg font-medium">
-                          {selectedEvaluacion.usuario ? `${selectedEvaluacion.usuario.nombre} ${selectedEvaluacion.usuario.primerApellido}` : 'N/A'}
+                          {selectedEvaluacion.usuario ? nombreUsuarioEvaluado(selectedEvaluacion.usuario) : 'N/A'}
                         </p>
                       </div>
                       <div>
@@ -382,14 +390,24 @@ const CapacitacionesCompetencias: React.FC = () => {
               <div className="space-y-4 py-2">
                 <div className="space-y-2">
                   <Label>Usuario</Label>
+                  <Input
+                    placeholder={SEARCH_ANY_PLACEHOLDER}
+                    value={filtroUsuarioForm}
+                    onChange={(e) => setFiltroUsuarioForm(e.target.value)}
+                    className="rounded-xl"
+                  />
                   <Select value={form.usuarioId} onValueChange={(value) => setForm({ ...form, usuarioId: value })}>
                     <SelectTrigger className="rounded-xl">
                       <SelectValue placeholder="Selecciona un usuario" />
                     </SelectTrigger>
                     <SelectContent>
-                      {usuarios.map((user) => (
+                      {usuarios
+                        .filter((user) => matchesTextSearch(filtroUsuarioForm, user))
+                        .map((user) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.nombre} {user.primer_apellido}
+                          {user.documento ? ` — CC ${user.documento}` : ""}
+                          {user.correo_electronico ? ` — ${user.correo_electronico}` : ""}
                         </SelectItem>
                       ))}
                     </SelectContent>

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -284,10 +285,8 @@ const ObjetivosCalidad: React.FC = () => {
     return 'text-red-600';
   };
 
-  const lower = searchTerm.toLowerCase();
   const filteredObjetivos = objetivos.filter(o =>
-    (o.codigo || '').toLowerCase().includes(lower) ||
-    (o.descripcion || '').toLowerCase().includes(lower)
+    matchesTextSearch(searchTerm, o)
   );
 
   const stats = {
@@ -436,7 +435,7 @@ const ObjetivosCalidad: React.FC = () => {
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
-                placeholder="Buscar por código o descripción..."
+                placeholder={SEARCH_ANY_PLACEHOLDER}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"

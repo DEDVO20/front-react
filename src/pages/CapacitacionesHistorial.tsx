@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import {
   Calendar,
   Clock,
@@ -63,12 +64,7 @@ const CapacitacionesHistorial = () => {
     }
   };
 
-  const filteredHistorial = historial.filter(
-    (c) =>
-      c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.tipoCapacitacion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.instructor?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredHistorial = historial.filter((c) => matchesTextSearch(searchTerm, c));
 
   // Indicadores
   const total = reporteAuditoria?.capacitaciones_ejecutadas ?? historial.length;
@@ -223,7 +219,7 @@ const CapacitacionesHistorial = () => {
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
-                placeholder="Buscar por nombre, tipo o instructor..."
+                placeholder={SEARCH_ANY_PLACEHOLDER}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 py-6 rounded-xl border-[#E5E7EB]"

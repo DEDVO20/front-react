@@ -15,6 +15,7 @@ import {
   Activity
 } from "lucide-react";
 import { auditoriaService } from "@/services/auditoria.service";
+import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -132,8 +133,7 @@ export default function AuditoriasEnCurso() {
 
   // Filtrado de auditorías
   const auditoriasFiltradas = auditorias.filter(auditoria => {
-    const matchSearch = auditoria.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      auditoria.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = matchesTextSearch(searchTerm, auditoria);
     const matchTipo = filterTipo === "todas" || auditoria.tipo === filterTipo;
     return matchSearch && matchTipo;
   });
@@ -280,7 +280,7 @@ export default function AuditoriasEnCurso() {
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6B7280] w-5 h-5" />
             <Input
-              placeholder="Buscar por código o nombre de auditoría..."
+              placeholder={SEARCH_ANY_PLACEHOLDER}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-6 border-[#E5E7EB] rounded-xl focus:ring-[#2563EB]/20 shadow-none border"

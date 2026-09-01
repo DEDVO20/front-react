@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { accionCorrectivaService, AccionCorrectiva } from "@/services/accionCorrectiva.service";
 import FiltrosAccionesCorrectivas, { FiltrosAcciones } from "@/components/FiltrosAccionesCorrectivas";
+import { matchesTextSearch } from "@/utils/textSearch";
 import { exportarAccionesAExcel } from "@/utils/exportToExcel";
 import { exportarDashboardAPDF } from "@/utils/exportToPDF";
 import { toast } from "sonner";
@@ -56,11 +57,7 @@ export default function DashboardAccionesCorrectivas() {
         return acciones.filter(accion => {
             // Filtro por búsqueda
             if (filtros.busqueda) {
-                const busqueda = filtros.busqueda.toLowerCase();
-                const coincide =
-                    accion.codigo.toLowerCase().includes(busqueda) ||
-                    (accion.descripcion?.toLowerCase().includes(busqueda) || false);
-                if (!coincide) return false;
+                if (!matchesTextSearch(filtros.busqueda, accion)) return false;
             }
 
             // Filtro por tipo
