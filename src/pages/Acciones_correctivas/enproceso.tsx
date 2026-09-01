@@ -438,6 +438,19 @@ export default function EnProcesoAccionesCorrectivas() {
                     </span>
                   </div>
                 </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button variant="outline" className="rounded-xl" onClick={() => setShowDialog(false)}>
+                    Cerrar
+                  </Button>
+                  <Button
+                    className="rounded-xl bg-[#10B981] hover:bg-[#059669] text-white"
+                    onClick={() => navigate(`/acciones-correctivas/${selectedAccion.id}/solucionar`)}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Dar Solución
+                  </Button>
+                </div>
               </div>
             )}
           </DialogContent>

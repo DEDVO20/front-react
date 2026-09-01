@@ -302,6 +302,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "#",
         items: [
           { title: "Tablero", url: "/indicadores/tablero", permiso: "calidad.ver" },
+          { title: "Eficacia", url: "/indicadores/eficacia", permiso: "calidad.ver" },
           { title: "Eficiencia", url: "/indicadores/eficiencia", permiso: "calidad.ver" },
           { title: "Cumplimiento", url: "/indicadores/cumplimiento", permiso: "calidad.ver" },
         ],
@@ -325,6 +326,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: Shield,
         items: [
           { title: "Configuración Global", url: "/configuracion", permiso: "sistema.config" },
+          { title: "Seguridad", url: "/seguridad", permiso: "sistema.admin" },
           { title: "Migraciones de BD", url: "/sistema/migraciones", permiso: "sistema.admin" },
           { title: "Audit Log", url: "/sistema/audit-log", permiso: "sistema.admin" },
         ],
@@ -341,7 +343,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       },
       {
         title: "Manual de Usuario",
-        url: "#",
+        url: "/manual-usuario",
         icon: BookOpen,
       },
     ]),

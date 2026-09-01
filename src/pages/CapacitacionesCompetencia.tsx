@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Award, Brain, TrendingUp, Eye, RefreshCw, Search, GraduationCap, X, Check } from "lucide-react";
+import { Award, Brain, TrendingUp, Eye, RefreshCw, Search, GraduationCap, Plus } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,19 +22,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { competenciaService, EvaluacionCompetencia, Competencia } from "@/services/competencia.service";
+import { usuarioService, Usuario } from "@/services/usuario.service";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const EMPTY_FORM = {
+  usuarioId: "",
+  competenciaId: "",
+  nivel: "Básico",
+  estado: "Pendiente",
+  observaciones: "",
+};
 
 const CapacitacionesCompetencias: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [evaluaciones, setEvaluaciones] = useState<EvaluacionCompetencia[]>([]);
-  const [competencias, setCompetencias] = useState<Competencia[]>([]); // To populate select if needed
+  const [competencias, setCompetencias] = useState<Competencia[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [open, setOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<EvaluacionCompetencia | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-
-  // For creating new evaluation (simplified)
-  // In a real app we'd need separate user and competence lists to select from.
+  const [form, setForm] = useState(EMPTY_FORM);
 
   useEffect(() => {
     cargarDatos();
@@ -43,12 +53,14 @@ const CapacitacionesCompetencias: React.FC = () => {
   const cargarDatos = async () => {
     try {
       setLoading(true);
-      const [evals, comps] = await Promise.all([
+      const [evals, comps, users] = await Promise.all([
         competenciaService.getEvaluaciones(),
-        competenciaService.getAll()
+        competenciaService.getAll(),
+        usuarioService.getAllActive(),
       ]);
       setEvaluaciones(evals);
       setCompetencias(comps);
+      setUsuarios(users);
     } catch (err) {
       console.error("Error al cargar competencias:", err);
       toast.error("Error al cargar las evaluaciones de competencias");
@@ -67,6 +79,34 @@ const CapacitacionesCompetencias: React.FC = () => {
   const openDialog = (evaluacion: EvaluacionCompetencia) => {
     setSelectedEvaluacion(evaluacion);
     setOpen(true);
+  };
+
+  const handleCreateEvaluacion = async () => {
+    if (!form.usuarioId || !form.competenciaId) {
+      toast.error("Selecciona un usuario y una competencia");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await competenciaService.evaluarUsuario({
+        usuario_id: form.usuarioId,
+        competencia_id: form.competenciaId,
+        nivel: form.nivel,
+        estado: form.estado,
+        fecha_evaluacion: new Date().toISOString().slice(0, 10),
+        observaciones: form.observaciones || undefined,
+      });
+      toast.success("Evaluación registrada correctamente");
+      setCreateOpen(false);
+      setForm(EMPTY_FORM);
+      await cargarDatos();
+    } catch (error) {
+      console.error(error);
+      toast.error("No se pudo registrar la evaluación");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const totalEvaluaciones = evaluaciones.length;
@@ -104,6 +144,13 @@ const CapacitacionesCompetencias: React.FC = () => {
                   )}
                 </div>
               </div>
+              <Button
+                onClick={() => setCreateOpen(true)}
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl px-6 py-6 h-auto font-bold"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Nueva Evaluación
+              </Button>
             </div>
           </div>
 
@@ -321,6 +368,97 @@ const CapacitacionesCompetencias: React.FC = () => {
               <DialogFooter className="gap-4">
                 <Button variant="outline" onClick={() => setOpen(false)} className="rounded-xl">
                   Cerrar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogContent className="max-w-lg rounded-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold text-[#1E3A8A]">Nueva Evaluación</DialogTitle>
+                <DialogDescription>Registra el nivel de competencia de un colaborador.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label>Usuario</Label>
+                  <Select value={form.usuarioId} onValueChange={(value) => setForm({ ...form, usuarioId: value })}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Selecciona un usuario" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {usuarios.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.nombre} {user.primer_apellido}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Competencia</Label>
+                  <Select value={form.competenciaId} onValueChange={(value) => setForm({ ...form, competenciaId: value })}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Selecciona una competencia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {competencias.map((comp) => (
+                        <SelectItem key={comp.id} value={comp.id}>
+                          {comp.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Nivel</Label>
+                    <Select value={form.nivel} onValueChange={(value) => setForm({ ...form, nivel: value })}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Básico">Básico</SelectItem>
+                        <SelectItem value="Intermedio">Intermedio</SelectItem>
+                        <SelectItem value="Avanzado">Avanzado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Estado</Label>
+                    <Select value={form.estado} onValueChange={(value) => setForm({ ...form, estado: value })}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pendiente">Pendiente</SelectItem>
+                        <SelectItem value="En Desarrollo">En Desarrollo</SelectItem>
+                        <SelectItem value="Reforzada">Reforzada</SelectItem>
+                        <SelectItem value="Desarrollada">Desarrollada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Observaciones</Label>
+                  <Input
+                    value={form.observaciones}
+                    onChange={(e) => setForm({ ...form, observaciones: e.target.value })}
+                    placeholder="Evidencia o comentarios de la evaluación"
+                    className="rounded-xl"
+                  />
+                </div>
+              </div>
+              <DialogFooter className="gap-3">
+                <Button variant="outline" className="rounded-xl" onClick={() => setCreateOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  className="rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
+                  onClick={handleCreateEvaluacion}
+                  disabled={saving}
+                >
+                  {saving ? "Guardando..." : "Registrar"}
                 </Button>
               </DialogFooter>
             </DialogContent>

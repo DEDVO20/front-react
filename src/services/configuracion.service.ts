@@ -48,20 +48,23 @@ export const configuracionService = {
         return response.data;
     },
 
-    async save(clave: string, value: string, descripcion: string = "Configuración del sistema"): Promise<Configuracion> {
-        const existingConfigs = await this.list({ categoria: "sistema", limit: 1000 });
-        const existing = existingConfigs.find((cfg) => cfg.clave === clave) || null;
+    async save(
+        clave: string,
+        value: string,
+        descripcion: string = "Configuración del sistema",
+        categoria: string = "sistema",
+    ): Promise<Configuracion> {
+        const existing = await this.get(clave);
         if (existing) {
-            return this.update(clave, { valor: value });
-        } else {
-            return this.create({
-                clave,
-                valor: value,
-                descripcion,
-                tipo_dato: "string", // Assuming string for URL
-                categoria: "sistema",
-                activa: true,
-            });
+            return this.update(clave, { valor: value, descripcion, categoria });
         }
+        return this.create({
+            clave,
+            valor: value,
+            descripcion,
+            tipo_dato: "string",
+            categoria,
+            activa: true,
+        });
     },
 };
