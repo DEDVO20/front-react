@@ -235,8 +235,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "#",
         icon: FolderOpen,
         items: [
-          { title: "Mapa de Procesos", url: "/procesos", permiso: "procesos.admin" },
-          { title: "Listado de Procesos", url: "/procesos/listado", permiso: "procesos.admin" },
+          { title: "Mapa de Procesos", url: "/procesos", permisos: ["procesos.ver", "procesos.admin"] },
+          { title: "Listado de Procesos", url: "/procesos/listado", permisos: ["procesos.ver", "procesos.admin"] },
         ],
       },
     ]),
@@ -272,8 +272,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           { title: "Programa Anual", url: "/auditorias/programa-anual", permiso: "auditorias.planificar" },
           { title: "Formularios", url: "/auditorias/formularios", permiso: "auditorias.planificar" },
           { title: "En Curso", url: "/AuditoriasEnCurso", permiso: "auditorias.ejecutar" },
-          { title: "Completadas", url: "/AuditoriasCompletas", permiso: "auditorias.ejecutar" },
-          { title: "Hallazgos", url: "/AuditoriasHallazgosView", permiso: "auditorias.ejecutar" },
+          { title: "Completadas", url: "/AuditoriasCompletas", permisos: ["auditorias.ejecutar", "auditorias.ver"] },
+          { title: "Hallazgos", url: "/AuditoriasHallazgosView", permisos: ["auditorias.ejecutar", "auditorias.ver"] },
         ],
       },
       {
@@ -335,6 +335,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Reportes",
         url: "/reportes",
         icon: BarChart3,
+        permisos: ["calidad.ver", "documentos.ver", "auditorias.ver", "riesgos.ver"],
       },
       {
         title: "Mesa de Ayuda",

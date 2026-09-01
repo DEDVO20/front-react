@@ -50,6 +50,7 @@ import {
 import { apiClient } from "@/lib/api";
 import { hasAnyPermission } from "@/lib/permissions";
 
+const ROLES_CANONICOS = new Set(["admin", "lider_proceso", "auditor", "colaborador", "invitado"]);
 
 interface Permiso {
   id: string;
@@ -94,6 +95,7 @@ export default function GestionRolesPermisos() {
 
   const [permisosSeleccionados, setPermisosSeleccionados] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -111,8 +113,8 @@ export default function GestionRolesPermisos() {
     setLoading(true);
     try {
       const [rolesRes, permisosRes] = await Promise.all([
-        apiClient.get("/roles"),
-        apiClient.get("/permisos"),
+        apiClient.get("/roles", { params: { limit: 200 } }),
+        apiClient.get("/permisos", { params: { limit: 500 } }),
       ]);
 
       const rolesData = rolesRes.data;
@@ -125,8 +127,11 @@ export default function GestionRolesPermisos() {
       toast.error("Error al cargar roles y permisos del servidor");
 
       const ejemploRoles: RolConPermisos[] = [
-        { id: "1", nombre: "Administrador", clave: "ADMIN", descripcion: "Acceso completo al sistema", creado_en: new Date().toISOString(), cantidad_permisos: 45 },
-        { id: "2", nombre: "Coordinador de Calidad", clave: "COORD_CALIDAD", descripcion: "Gestión del sistema de calidad", creado_en: new Date().toISOString(), cantidad_permisos: 28 },
+        { id: "1", nombre: "Administrador SGC", clave: "admin", descripcion: "Gobernanza total del SGC", creado_en: new Date().toISOString(), cantidad_permisos: 26 },
+        { id: "2", nombre: "Líder de Proceso", clave: "lider_proceso", descripcion: "Gestión de documentos, riesgos e indicadores de su área", creado_en: new Date().toISOString(), cantidad_permisos: 14 },
+        { id: "3", nombre: "Auditor", clave: "auditor", descripcion: "Consulta total y carga de hallazgos", creado_en: new Date().toISOString(), cantidad_permisos: 8 },
+        { id: "4", nombre: "Colaborador", clave: "colaborador", descripcion: "Consulta y carga de evidencias", creado_en: new Date().toISOString(), cantidad_permisos: 6 },
+        { id: "5", nombre: "Invitado", clave: "invitado", descripcion: "Mapa y documentos de acceso libre", creado_en: new Date().toISOString(), cantidad_permisos: 1 },
       ];
       setRoles(ejemploRoles);
     } finally {
@@ -239,6 +244,22 @@ export default function GestionRolesPermisos() {
     }
   };
 
+  const sincronizarCatalogoSgc = async () => {
+    setIsSyncing(true);
+    try {
+      const { data } = await apiClient.post("/roles/sincronizar-sgc");
+      toast.success(
+        `Catálogo SGC aplicado. Migrados: ${data.usuarios_migrados}. Eliminados: ${(data.roles_eliminados || []).join(", ") || "ninguno"}.`
+      );
+      await fetchData();
+    } catch (error) {
+      console.error("Error sincronizando RBAC:", error);
+      toast.error("No se pudo sincronizar el catálogo de roles SGC");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const togglePermiso = (permisoId: string) => {
     const id = String(permisoId).toLowerCase();
     setPermisosSeleccionados(prev =>
@@ -280,14 +301,32 @@ export default function GestionRolesPermisos() {
                 </div>
               </div>
               {canGestionUsuarios && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button onClick={() => openDialog("crear")} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white">
-                      <Plus className="mr-2 h-5 w-5" /> Nuevo Rol
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent><p>Crear un nuevo rol</p></TooltipContent>
-                </Tooltip>
+                <div className="flex flex-wrap gap-3">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        onClick={sincronizarCatalogoSgc}
+                        disabled={isSyncing}
+                        className="bg-white"
+                      >
+                        <RefreshCw className={`mr-2 h-5 w-5 ${isSyncing ? "animate-spin" : ""}`} />
+                        Aplicar catálogo SGC
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Crea los 5 roles de la documentación, migra usuarios y elimina roles obsoletos</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button onClick={() => openDialog("crear")} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white">
+                        <Plus className="mr-2 h-5 w-5" /> Nuevo Rol
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Crear un nuevo rol</p></TooltipContent>
+                  </Tooltip>
+                </div>
               )}
             </div>
           </div>
@@ -438,7 +477,7 @@ export default function GestionRolesPermisos() {
                         <TooltipContent><p>Ver detalles del rol</p></TooltipContent>
                       </Tooltip>
 
-                      {canGestionUsuarios && (
+                      {canGestionUsuarios && !ROLES_CANONICOS.has((rol.clave || "").toLowerCase()) && (
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button size="sm" variant="ghost" onClick={() => openDialog("eliminar", rol)} className="text-[#EF4444]">

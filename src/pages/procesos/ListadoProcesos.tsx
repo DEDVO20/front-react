@@ -29,9 +29,11 @@ import {
 import { toast } from "sonner";
 import procesoService, { Proceso, TipoProceso, EstadoProceso, EtapaPHVA } from "@/services/proceso.service";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { hasAnyPermission } from "@/lib/permissions";
 
 export default function ListadoProcesos() {
   const navigate = useNavigate();
+  const canManageProcesos = hasAnyPermission(["procesos.admin"]);
   const [procesos, setProcesos] = useState<Proceso[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -240,6 +242,7 @@ export default function ListadoProcesos() {
                 )}
               </div>
             </div>
+            {canManageProcesos && (
             <Button
               onClick={() => navigate("/procesos/nuevo")}
               className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl shadow-sm"
@@ -247,6 +250,7 @@ export default function ListadoProcesos() {
               <Plus className="h-4 w-4 mr-2" />
               Nuevo Proceso
             </Button>
+            )}
           </div>
         </div>
 
@@ -415,6 +419,7 @@ export default function ListadoProcesos() {
                             <Eye className="h-4 w-4 mr-1" />
                             Ver
                           </Button>
+                          {canManageProcesos && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -427,6 +432,7 @@ export default function ListadoProcesos() {
                             <Edit className="h-4 w-4 mr-1" />
                             Editar
                           </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

@@ -9,6 +9,8 @@ const PERMISSION_ALIASES: Record<string, string[]> = {
   "noconformidades.cerrar": ["noconformidades.cerrar"],
   "riesgos.gestion": ["riesgos.gestion", "riesgos.administrar"],
   "capacitaciones.gestion": ["capacitaciones.gestion", "capacitaciones.gestionar"],
+  "procesos.admin": ["procesos.admin", "procesos.gestionar"],
+  "procesos.ver": ["procesos.ver", "procesos.admin", "procesos.gestionar"],
 };
 
 export function getUserPermissions(): string[] {

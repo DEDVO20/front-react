@@ -372,7 +372,7 @@ export default function CargaMasivaUsuarios() {
 
     const generarPlantillaLocal = () => {
         const areaEjemplo = areas[0]?.codigo || "CAL";
-        const rolEjemplo = roles.find((r) => r.clave !== "admin")?.clave || roles[0]?.clave || "auxiliar";
+            const rolEjemplo = roles.find((r) => r.clave !== "admin")?.clave || roles[0]?.clave || "colaborador";
 
         const ejemplos = [
             {

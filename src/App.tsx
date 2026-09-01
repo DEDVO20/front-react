@@ -124,7 +124,7 @@ function App() {
               path="/Asignar_Responsables"
               element={withPermission(<AreasResponsables />, ["areas.gestionar"])}
             />
-            <Route path="/reportes" element={<ReportesView />} />
+            <Route path="/reportes" element={withPermission(<ReportesView />, ["calidad.ver", "documentos.ver", "auditorias.ver", "riesgos.ver"])} />
 
             {/* Usuarios */}
             <Route path="/ListaDeUsuarios" element={withPermission(<ListaDeUsuarios />, ["usuarios.ver"])} />
@@ -136,8 +136,8 @@ function App() {
             {/* Auditorías */}
             <Route path="/AuditoriasPlanificacion" element={withPermission(<AuditoriasPlanificacion />, ["auditorias.planificar"])} />
             <Route path="/AuditoriasEnCurso" element={withPermission(<AuditoriasEnCurso />, ["auditorias.ejecutar"])} />
-            <Route path="/AuditoriasCompletas" element={withPermission(<AuditoriasCompletas />, ["auditorias.ejecutar"])} />
-            <Route path="/AuditoriasHallazgosView" element={withPermission(<AuditoriasHallazgosView />, ["auditorias.ejecutar"])} />
+            <Route path="/AuditoriasCompletas" element={withPermission(<AuditoriasCompletas />, ["auditorias.ejecutar", "auditorias.ver"])} />
+            <Route path="/AuditoriasHallazgosView" element={withPermission(<AuditoriasHallazgosView />, ["auditorias.ejecutar", "auditorias.ver"])} />
             <Route path="/auditorias/ejecucion/:id" element={withPermission(<AuditoriaEjecucion />, ["auditorias.ejecutar"])} />
             <Route path="/auditorias/programa-anual" element={withPermission(<ProgramaAnual />, ["auditorias.planificar"])} />
             <Route path="/auditorias/formularios" element={withPermission(<FormulariosAuditoriaAdmin />, ["auditorias.planificar"])} />
@@ -179,10 +179,10 @@ function App() {
             <Route path="/riesgos/tratamiento" element={withPermission(<TratamientoRiesgos />, ["riesgos.gestion"])} />
 
             {/* Procesos */}
-            <Route path="/procesos" element={withPermission(<MapaProcesos />, ["procesos.admin"])} />
-            <Route path="/procesos/listado" element={withPermission(<ListadoProcesos />, ["procesos.admin"])} />
+            <Route path="/procesos" element={withPermission(<MapaProcesos />, ["procesos.ver", "procesos.admin"])} />
+            <Route path="/procesos/listado" element={withPermission(<ListadoProcesos />, ["procesos.ver", "procesos.admin"])} />
             <Route path="/procesos/nuevo" element={withPermission(<FormularioProceso />, ["procesos.admin"])} />
-            <Route path="/procesos/:id" element={withPermission(<DetalleProceso />, ["procesos.admin"])} />
+            <Route path="/procesos/:id" element={withPermission(<DetalleProceso />, ["procesos.ver", "procesos.admin"])} />
             <Route path="/procesos/:id/editar" element={withPermission(<FormularioProceso />, ["procesos.admin"])} />
 
             {/* Sistema */}
