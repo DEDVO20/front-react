@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,55 +10,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import notificacionService, { Notificacion } from "@/services/notificacion.service";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
+import { useNotifications } from "@/context/NotificationContext";
+import type { Notificacion } from "@/services/notificacion.service";
 
 interface NotificationBellProps {
   onOpenChange?: (open: boolean) => void;
 }
 
 export function NotificationBell({ onOpenChange }: NotificationBellProps) {
-  const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
-  const [noLeidas, setNoLeidas] = useState(0);
+  const { notificaciones, noLeidas, marcarLeida, marcarTodas } = useNotifications();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-
-  // Cargar notificaciones y contador
-  const cargarNotificaciones = async () => {
-    try {
-      const [lista, count] = await Promise.all([
-        notificacionService.getNotificaciones(false),
-        notificacionService.getNoLeidas(),
-      ]);
-      setNotificaciones(lista.slice(0, 10)); // Solo las 10 más recientes
-      setNoLeidas(count);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      if (message !== "Network Error") {
-        console.error("Error cargando notificaciones:", error);
-      }
-    }
-  };
-
-  useEffect(() => {
-    cargarNotificaciones();
-
-    // Actualizar cada 30 segundos
-    const interval = setInterval(cargarNotificaciones, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleMarcarLeida = async (notificacion: Notificacion) => {
     try {
       if (!notificacion.leida) {
-        await notificacionService.marcarComoLeida(notificacion.id);
-        await cargarNotificaciones();
+        await marcarLeida(notificacion.id);
       }
 
-      // Navegar según el tipo de referencia
       if (notificacion.referencia_tipo && notificacion.referencia_id) {
         const id = notificacion.referencia_id;
         const rutas: Record<string, string> = {
@@ -81,17 +54,15 @@ export function NotificationBell({ onOpenChange }: NotificationBellProps) {
         if (ruta) {
           navigate(ruta);
           setOpen(false);
+          onOpenChange?.(false);
         }
       }
     } catch (error: unknown) {
       console.error("Error marcando notificación:", error);
       const status = (error as { response?: { status?: number } })?.response?.status;
-
       if (status === 403 || status === 404) {
-        await cargarNotificaciones();
         return;
       }
-
       const mensaje = error instanceof Error ? error.message : "Error al marcar notificación";
       toast.error(mensaje);
     }
@@ -99,8 +70,7 @@ export function NotificationBell({ onOpenChange }: NotificationBellProps) {
 
   const handleMarcarTodasLeidas = async () => {
     try {
-      await notificacionService.marcarTodasLeidas();
-      await cargarNotificaciones();
+      await marcarTodas();
       toast.success("Todas las notificaciones marcadas como leídas");
     } catch (error) {
       console.error("Error marcando todas como leídas:", error);
@@ -124,7 +94,7 @@ export function NotificationBell({ onOpenChange }: NotificationBellProps) {
       onOpenChange?.(isOpen);
     }}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative" type="button">
           <Bell className="h-5 w-5" />
           {noLeidas > 0 && (
             <Badge
@@ -137,12 +107,17 @@ export function NotificationBell({ onOpenChange }: NotificationBellProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[min(20rem,calc(100vw-1.5rem))]">
-        <DropdownMenuLabel className="flex items-center justify-between">
+        <DropdownMenuLabel className="flex items-center justify-between gap-2">
           <span>Notificaciones</span>
           {noLeidas > 0 && (
             <Button
+              type="button"
               variant="ghost"
               size="sm"
+              onPointerDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -166,7 +141,9 @@ export function NotificationBell({ onOpenChange }: NotificationBellProps) {
                 key={notif.id}
                 className={`flex flex-col items-start p-3 cursor-pointer ${!notif.leida ? "bg-accent/50" : ""
                   }`}
-                onClick={() => handleMarcarLeida(notif)}
+                onSelect={() => {
+                  void handleMarcarLeida(notif);
+                }}
               >
                 <div className="flex items-start gap-2 w-full">
                   <span className="text-lg">{getTipoIcon(notif.tipo)}</span>
