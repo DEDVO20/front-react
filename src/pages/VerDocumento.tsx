@@ -298,6 +298,7 @@ export default function VerDocumento() {
               </p>
             </div>
 
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={handleExportPDF}
                 disabled={exporting}
