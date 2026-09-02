@@ -13,6 +13,14 @@ const PERMISSION_ALIASES: Record<string, string[]> = {
   "procesos.ver": ["procesos.ver", "procesos.admin", "procesos.gestionar"],
 };
 
+export function sameId(a: unknown, b: unknown): boolean {
+  return String(a || "").toLowerCase() === String(b || "").toLowerCase();
+}
+
+export function asId(value: unknown): string {
+  return String(value || "").toLowerCase();
+}
+
 export function getUserPermissions(): string[] {
   const user = getCurrentUser();
   return Array.isArray(user?.permisos) ? user.permisos : [];

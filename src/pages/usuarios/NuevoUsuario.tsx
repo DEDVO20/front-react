@@ -35,6 +35,8 @@ import {
 import { apiClient } from "@/lib/api";
 import { usuarioService } from "@/services/usuario.service";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { asId, sameId } from "@/lib/permissions";
+import { getCurrentUser, refreshCurrentUserSession } from "@/services/auth";
 
 interface Area {
   id: string;
@@ -105,7 +107,7 @@ export default function FormularioUsuario() {
         setAreas(Array.isArray(areasData) ? areasData : []);
 
         // Cargar roles
-        const rolesResponse = await apiClient.get("/roles");
+        const rolesResponse = await apiClient.get("/roles", { params: { limit: 200 } });
         const rolesData = rolesResponse.data;
         console.log("Roles cargados desde BD:", rolesData); // Para debug
         setRoles(Array.isArray(rolesData) ? rolesData : []);
@@ -132,7 +134,7 @@ export default function FormularioUsuario() {
           // Cargar roles del usuario
           if (userData.roles && Array.isArray(userData.roles)) {
             const roleIds = userData.roles
-              .map((ur: any) => String(ur.rol_id || ur.rol?.id || ""))
+              .map((ur: any) => asId(ur.rol_id || ur.rol?.id))
               .filter(Boolean);
             console.log("Roles del usuario:", roleIds); // Para debug
             setSelectedRoleIds(roleIds);
@@ -245,6 +247,13 @@ export default function FormularioUsuario() {
 
       if (isEditing && id) {
         await usuarioService.update(id, payload);
+        if (getCurrentUser()?.id && sameId(getCurrentUser()?.id, id)) {
+          try {
+            await refreshCurrentUserSession();
+          } catch {
+            // El usuario ya se actualizó; el refresco de sesión es opcional
+          }
+        }
         toast.success(`Usuario "${formData.nombreUsuario}" actualizado exitosamente`);
       } else {
         await usuarioService.create(payload);
@@ -260,16 +269,19 @@ export default function FormularioUsuario() {
     }
   };
 
-  const toggleRole = (roleId: string) => {
+  const toggleRole = (roleId: string, checked?: boolean) => {
+    const normalized = asId(roleId);
+    if (!normalized) return;
     setSelectedRoleIds(prev => {
-      const newRoles = prev.includes(roleId)
-        ? prev.filter(id => id !== roleId)
-        : [...prev, roleId];
+      const already = prev.includes(normalized);
+      const shouldSelect = checked === undefined ? !already : checked;
+      const newRoles = shouldSelect
+        ? (already ? prev : [...prev, normalized])
+        : prev.filter(id => id !== normalized);
 
-      // Limpiar error de roles si se selecciona al menos uno
       if (newRoles.length > 0 && errors.roles) {
-        setErrors(prev => {
-          const newErrors = { ...prev };
+        setErrors(prevErrors => {
+          const newErrors = { ...prevErrors };
           delete newErrors.roles;
           return newErrors;
         });
@@ -486,11 +498,12 @@ export default function FormularioUsuario() {
                     </div>
                   ) : (
                     roles.map(rol => {
-                      const isSelected = selectedRoleIds.includes(String(rol.id));
+                      const isSelected = selectedRoleIds.includes(asId(rol.id));
                       return (
                         <div
                           key={rol.id}
-                          className={`p-5 rounded-xl border-2 transition-all ${isSelected
+                          onClick={() => toggleRole(asId(rol.id))}
+                          className={`p-5 rounded-xl border-2 cursor-pointer transition-all ${isSelected
                             ? "bg-[#E0EDFF] border-[#2563EB] shadow-sm"
                             : "bg-white border-[#E5E7EB] hover:border-[#2563EB]/50 hover:shadow-sm"
                             }`}
@@ -499,11 +512,13 @@ export default function FormularioUsuario() {
                             <Checkbox
                               id={`role-${rol.id}`}
                               checked={isSelected}
-                              onCheckedChange={() => toggleRole(String(rol.id))}
+                              onClick={(e) => e.stopPropagation()}
+                              onCheckedChange={(checked) => toggleRole(asId(rol.id), checked === true)}
                             />
                             <label
                               htmlFor={`role-${rol.id}`}
                               className="flex-1 cursor-pointer"
+                              onClick={(e) => e.preventDefault()}
                             >
                               <div className="font-semibold text-gray-900">{rol.nombre}</div>
                               <div className="text-xs text-gray-400 font-mono uppercase mt-1">{rol.clave}</div>
@@ -529,7 +544,7 @@ export default function FormularioUsuario() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {selectedRoleIds.map(id => {
-                        const rol = roles.find(r => String(r.id) === id);
+                        const rol = roles.find(r => sameId(r.id, id));
                         return rol ? (
                           <Badge key={id} className="bg-[#E0EDFF] text-[#2563EB] text-sm px-4 py-1">
                             {rol.nombre}

@@ -33,6 +33,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { asId, sameId } from "@/lib/permissions";
+import { getCurrentUser, refreshCurrentUserSession } from "@/services/auth";
 
 interface Area {
     id: string;
@@ -128,7 +130,7 @@ export default function EditarUsuario() {
             if (usuario.roles && Array.isArray(usuario.roles)) {
                 setSelectedRoleIds(
                     usuario.roles
-                        .map((r: any) => String(r.rol_id || r.rol?.id || ""))
+                        .map((r: any) => asId(r.rol_id || r.rol?.id))
                         .filter(Boolean)
                 );
             }
@@ -154,7 +156,7 @@ export default function EditarUsuario() {
 
     const fetchRoles = async () => {
         try {
-            const response = await apiClient.get("/roles");
+            const response = await apiClient.get("/roles", { params: { limit: 200 } });
             const data = response.data;
             setRoles(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -262,6 +264,14 @@ export default function EditarUsuario() {
 
             await apiClient.put(`/usuarios/${id}`, dataToSend);
 
+            if (getCurrentUser()?.id && sameId(getCurrentUser()?.id, id)) {
+                try {
+                    await refreshCurrentUserSession();
+                } catch {
+                    // El usuario ya se actualizó; el refresco de sesión es opcional
+                }
+            }
+
             toast.success(`Usuario "${formData.nombreUsuario}" actualizado exitosamente`);
             navigate("/ListaDeUsuarios");
         } catch (error: any) {
@@ -278,11 +288,15 @@ export default function EditarUsuario() {
         }
     };
 
-    const toggleRole = (roleId: string) => {
+    const toggleRole = (roleId: string, checked?: boolean) => {
+        const normalized = asId(roleId);
+        if (!normalized) return;
         setSelectedRoleIds((prev) => {
-            const newRoles = prev.includes(roleId)
-                ? prev.filter((id) => id !== roleId)
-                : [...prev, roleId];
+            const already = prev.includes(normalized);
+            const shouldSelect = checked === undefined ? !already : checked;
+            const newRoles = shouldSelect
+                ? (already ? prev : [...prev, normalized])
+                : prev.filter((id) => id !== normalized);
 
             if (newRoles.length > 0 && errors.roles) {
                 setErrors((prevErrors) => {
@@ -501,12 +515,13 @@ export default function EditarUsuario() {
                                         </div>
                                     ) : (
                                         roles.map((rol) => {
-                                            const roleId = String(rol.id);
+                                            const roleId = asId(rol.id);
                                             const isSelected = selectedRoleIds.includes(roleId);
                                             return (
                                                 <div
                                                     key={rol.id}
-                                                    className={`p-5 rounded-xl border-2 transition-all ${isSelected
+                                                    onClick={() => toggleRole(roleId)}
+                                                    className={`p-5 rounded-xl border-2 cursor-pointer transition-all ${isSelected
                                                         ? "bg-[#E0EDFF] border-[#2563EB] shadow-sm"
                                                         : "bg-white border-[#E5E7EB] hover:border-[#2563EB]/50 hover:shadow-sm"
                                                         }`}
@@ -515,11 +530,13 @@ export default function EditarUsuario() {
                                                         <Checkbox
                                                             id={`role-${rol.id}`}
                                                             checked={isSelected}
-                                                            onCheckedChange={() => toggleRole(roleId)}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onCheckedChange={(checked) => toggleRole(roleId, checked === true)}
                                                         />
                                                         <label
                                                             htmlFor={`role-${rol.id}`}
                                                             className="flex-1 cursor-pointer"
+                                                            onClick={(e) => e.preventDefault()}
                                                         >
                                                             <div className="font-semibold text-gray-900">{rol.nombre}</div>
                                                             <div className="text-xs text-gray-400 font-mono uppercase mt-1">{rol.clave}</div>
@@ -544,7 +561,7 @@ export default function EditarUsuario() {
                                         </p>
                                         <div className="flex flex-wrap gap-2">
                                             {selectedRoleIds.map((roleId) => {
-                                                const rol = roles.find((r) => String(r.id) === roleId);
+                                                const rol = roles.find((r) => sameId(r.id, roleId));
                                                 return rol ? (
                                                     <Badge key={roleId} className="bg-[#E0EDFF] text-[#2563EB] text-sm px-4 py-1">
                                                         {rol.nombre}

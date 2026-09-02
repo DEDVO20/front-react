@@ -85,6 +85,21 @@ export function getCurrentUser() {
   }
 }
 
+export async function refreshCurrentUserSession() {
+  const stored = getCurrentUser();
+  const response = await apiClient.get("/auth/me");
+  const data = response.data || {};
+  const merged = {
+    ...stored,
+    ...data,
+    email: data.correo_electronico || stored?.email,
+    nombre_completo: data.nombre_completo || stored?.nombre_completo,
+    permisos: Array.isArray(data.permisos) ? data.permisos : stored?.permisos || [],
+  };
+  localStorage.setItem("user", JSON.stringify(merged));
+  return merged;
+}
+
 //Funcion para verificar si el usuario esta autenticado
 export function isAuthenticated(): boolean {
   const token = getToken();

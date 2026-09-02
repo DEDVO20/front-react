@@ -18,6 +18,17 @@ export interface Usuario {
     nombre: string;
     descripcion?: string;
   };
+  roles?: Array<{
+    id?: string;
+    rol_id?: string;
+    rol?: {
+      id: string;
+      nombre: string;
+      clave: string;
+      descripcion?: string;
+    };
+  }>;
+  permisos?: string[];
   creado_en: string;
   actualizado_en: string;
 }

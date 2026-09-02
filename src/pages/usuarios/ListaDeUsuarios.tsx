@@ -61,6 +61,13 @@ import { getCurrentUser } from "@/services/auth";
 import { hasAnyPermission } from "@/lib/permissions";
 import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 
+function getRolNombres(usuario: Usuario): string[] {
+  if (!Array.isArray(usuario.roles)) return [];
+  return usuario.roles
+    .map((asignacion) => asignacion.rol?.nombre)
+    .filter((nombre): nombre is string => Boolean(nombre));
+}
+
 
 
 export default function ListaUsuarios() {
@@ -404,6 +411,7 @@ export default function ListaUsuarios() {
                       <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">Usuario</th>
                       <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">Documento</th>
                       <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">Área</th>
+                      <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">Roles</th>
                       <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">Contacto</th>
                       <th className="text-left p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider">Estado</th>
                       <th className="text-right p-6 text-sm font-semibold text-[#1E3A8A] uppercase tracking-wider pr-10">Acciones</th>
@@ -412,7 +420,7 @@ export default function ListaUsuarios() {
                   <tbody className="bg-white divide-y divide-[#E5E7EB]">
                     {usuariosFiltrados.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="text-center py-20 text-[#6B7280]">
+                        <td colSpan={7} className="text-center py-20 text-[#6B7280]">
                           <div className="flex flex-col items-center">
                             <Users className="h-16 w-16 text-gray-300 mb-4" />
                             <p className="text-xl font-medium">
@@ -450,6 +458,19 @@ export default function ListaUsuarios() {
                               </div>
                             ) : (
                               <span className="text-[#6B7280] italic">Sin área</span>
+                            )}
+                          </td>
+                          <td className="p-6">
+                            {getRolNombres(usuario).length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {getRolNombres(usuario).map((nombre) => (
+                                  <Badge key={`${usuario.id}-${nombre}`} className="bg-[#E0EDFF] text-[#2563EB]">
+                                    {nombre}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-[#6B7280] italic">Sin roles</span>
                             )}
                           </td>
                           <td className="p-6 text-[#6B7280]">{usuario.correo_electronico}</td>
@@ -560,6 +581,20 @@ export default function ListaUsuarios() {
                           <span className="italic text-[#6B7280]">Sin área asignada</span>
                         )}
                       </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-[#6B7280] mb-1">Roles</p>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {getRolNombres(selectedUsuario).length > 0 ? (
+                          getRolNombres(selectedUsuario).map((nombre) => (
+                            <Badge key={nombre} className="bg-[#E0EDFF] text-[#2563EB] text-sm px-3 py-1">
+                              {nombre}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="italic text-[#6B7280]">Sin roles asignados</span>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <p className="text-sm text-[#6B7280] mb-1">Fecha de Registro</p>

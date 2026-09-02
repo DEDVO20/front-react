@@ -48,7 +48,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { apiClient } from "@/lib/api";
-import { hasAnyPermission } from "@/lib/permissions";
+import { hasAnyPermission, asId, sameId } from "@/lib/permissions";
+import { refreshCurrentUserSession } from "@/services/auth";
 
 const ROLES_CANONICOS = new Set(["admin", "lider_proceso", "auditor", "colaborador", "invitado"]);
 
@@ -164,7 +165,7 @@ export default function GestionRolesPermisos() {
         try {
           const response = await apiClient.get(`/roles/${rol.id}`);
           const data = response.data;
-          const ids = data.permisos?.map((p: any) => String(p.permiso_id).toLowerCase()) || [];
+          const ids = data.permisos?.map((p: any) => asId(p.permiso_id || p.permiso?.id)).filter(Boolean) || [];
           setPermisosSeleccionados(ids);
         } catch (error) {
           console.error("Error:", error);
@@ -236,6 +237,11 @@ export default function GestionRolesPermisos() {
 
       toast.success("Permisos actualizados correctamente");
       await fetchData();
+      try {
+        await refreshCurrentUserSession();
+      } catch {
+        // Si falla el refresco de sesión, los permisos ya quedaron guardados en servidor
+      }
       closeDialog();
     } catch (error: any) {
       toast.error("Error al asignar permisos");
@@ -260,13 +266,17 @@ export default function GestionRolesPermisos() {
     }
   };
 
-  const togglePermiso = (permisoId: string) => {
-    const id = String(permisoId).toLowerCase();
-    setPermisosSeleccionados(prev =>
-      prev.includes(id)
-        ? prev.filter(p => p !== id)
-        : [...prev, id]
-    );
+  const togglePermiso = (permisoId: string, checked?: boolean) => {
+    const id = asId(permisoId);
+    if (!id) return;
+    setPermisosSeleccionados((prev) => {
+      const already = prev.includes(id);
+      const shouldSelect = checked === undefined ? !already : checked;
+      if (shouldSelect) {
+        return already ? prev : [...prev, id];
+      }
+      return prev.filter((p) => p !== id);
+    });
   };
 
   if (loading && !dialogState.open) {
@@ -507,7 +517,7 @@ export default function GestionRolesPermisos() {
               <div className="flex-1 overflow-y-auto py-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {permisos.map((p) => {
-                    const isSelected = permisosSeleccionados.includes(String(p.id).toLowerCase());
+                    const isSelected = permisosSeleccionados.includes(asId(p.id));
                     return (
                       <div
                         key={p.id}
@@ -518,7 +528,11 @@ export default function GestionRolesPermisos() {
                           }`}
                       >
                         <div className="flex items-start gap-4">
-                          <Checkbox checked={isSelected} onCheckedChange={() => togglePermiso(p.id)} />
+                          <Checkbox
+                            checked={isSelected}
+                            onClick={(e) => e.stopPropagation()}
+                            onCheckedChange={(checked) => togglePermiso(p.id, checked === true)}
+                          />
                           <div className="flex-1">
                             <div className="font-semibold text-gray-900">{p.nombre}</div>
                             <div className="text-sm font-mono text-[#6B7280]">{p.codigo}</div>
@@ -668,7 +682,9 @@ export default function GestionRolesPermisos() {
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
                         {dialogState.rol.permisos.map((rp: any) => {
-                          const permiso = permisos.find(p => p.id === rp.permiso_id);
+                          const permiso = permisos.find((p) =>
+                            sameId(p.id, rp.permiso_id || rp.permiso?.id)
+                          ) || rp.permiso;
                           if (!permiso) return null;
                           return (
                             <div
