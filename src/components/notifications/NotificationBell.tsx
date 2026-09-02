@@ -83,21 +83,17 @@ export function NotificationBell({ onOpenChange }: NotificationBellProps) {
           setOpen(false);
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error marcando notificación:", error);
+      const status = (error as { response?: { status?: number } })?.response?.status;
 
-      // Manejar errores específicos
-      if (error.response?.status === 403) {
-        console.warn(`Notificación ${notificacion.id} no pertenece al usuario actual`);
-        // Recargar notificaciones para actualizar la lista
+      if (status === 403 || status === 404) {
         await cargarNotificaciones();
-      } else if (error.response?.status === 404) {
-        console.warn(`Notificación ${notificacion.id} no encontrada`);
-        // Recargar notificaciones para actualizar la lista
-        await cargarNotificaciones();
-      } else {
-        toast.error(error.response?.data?.detail || "Error al marcar notificación");
+        return;
       }
+
+      const mensaje = error instanceof Error ? error.message : "Error al marcar notificación";
+      toast.error(mensaje);
     }
   };
 
@@ -108,7 +104,8 @@ export function NotificationBell({ onOpenChange }: NotificationBellProps) {
       toast.success("Todas las notificaciones marcadas como leídas");
     } catch (error) {
       console.error("Error marcando todas como leídas:", error);
-      toast.error("Error al marcar notificaciones");
+      const mensaje = error instanceof Error ? error.message : "Error al marcar notificaciones";
+      toast.error(mensaje);
     }
   };
 
@@ -146,7 +143,11 @@ export function NotificationBell({ onOpenChange }: NotificationBellProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleMarcarTodasLeidas}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                void handleMarcarTodasLeidas();
+              }}
               className="h-auto p-1 text-xs"
             >
               Marcar todas como leídas

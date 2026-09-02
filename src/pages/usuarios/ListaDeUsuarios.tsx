@@ -57,6 +57,7 @@ import {
 } from "@/components/ui/tooltip";
 import { apiClient } from "@/lib/api";
 import { usuarioService, Usuario } from "@/services/usuario.service";
+import { getCurrentUser } from "@/services/auth";
 import { hasAnyPermission } from "@/lib/permissions";
 import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 
@@ -64,6 +65,7 @@ import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 
 export default function ListaUsuarios() {
   const navigate = useNavigate();
+  const currentUserId = getCurrentUser()?.id;
   const canCreateUser = hasAnyPermission(["usuarios.crear", "usuarios.gestion"]);
   const canEditUser = hasAnyPermission(["usuarios.editar", "usuarios.gestion"]);
   const canDeleteUser = hasAnyPermission(["usuarios.eliminar", "usuarios.gestion"]);
@@ -137,15 +139,19 @@ export default function ListaUsuarios() {
     const usuario = deleteDialog.usuario;
     if (!usuario) return;
 
+    if (currentUserId === usuario.id) {
+      toast.error("No puede eliminar su propio usuario mientras tiene la sesión activa");
+      return;
+    }
+
     try {
       await usuarioService.delete(usuario.id);
-
       toast.success(`Usuario "${usuario.nombre_usuario}" eliminado correctamente`);
-      await fetchUsuarios();
       closeDeleteDialog();
-    } catch (error) {
+      await fetchUsuarios();
+    } catch (error: any) {
       console.error(error);
-      toast.error("Error al eliminar el usuario");
+      toast.error(error.message || "Error al eliminar el usuario");
     }
   };
 
@@ -160,9 +166,9 @@ export default function ListaUsuarios() {
       const updatedUser = await usuarioService.update(id, { activo: nuevoEstado });
 
       toast.success(updatedUser.activo ? "Usuario activo" : "Usuario inactivo");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("Error al actualizar el estado");
+      toast.error(error.message || "Error al actualizar el estado");
       // Revertir cambio si falla
       setUsuarios((prev) =>
         prev.map((u) => (u.id === id ? { ...u, activo: !nuevoEstado } : u))
@@ -482,11 +488,22 @@ export default function ListaUsuarios() {
                               {canDeleteUser && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button size="sm" variant="ghost" onClick={() => openDeleteDialog(usuario)}>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => openDeleteDialog(usuario)}
+                                      disabled={currentUserId === usuario.id}
+                                    >
                                       <Trash2 className="h-4 w-4 text-[#EF4444]" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent><p>Eliminar usuario</p></TooltipContent>
+                                  <TooltipContent>
+                                    <p>
+                                      {currentUserId === usuario.id
+                                        ? "No puede eliminar su propio usuario"
+                                        : "Eliminar usuario"}
+                                    </p>
+                                  </TooltipContent>
                                 </Tooltip>
                               )}
                             </div>
@@ -583,7 +600,7 @@ export default function ListaUsuarios() {
 
 
           {/* Dialog Eliminar */}
-          <AlertDialog open={deleteDialog.open && canDeleteUser} onOpenChange={closeDeleteDialog}>
+          <AlertDialog open={deleteDialog.open && canDeleteUser} onOpenChange={(open) => { if (!open) closeDeleteDialog(); }}>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle className="text-[#1E3A8A]">¿Eliminar usuario?</AlertDialogTitle>
@@ -604,7 +621,7 @@ export default function ListaUsuarios() {
                         </div>
                       </div>
                       <p className="text-[#EF4444] font-medium">
-                        Esta acción es permanente y no se puede deshacer.
+                        Esta acción elimina al usuario. Si tiene registros asociados, se desactivará su cuenta.
                       </p>
                     </>
                   )}
@@ -612,7 +629,13 @@ export default function ListaUsuarios() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleEliminar} className="bg-[#EF4444] hover:bg-red-700">
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault();
+                    void handleEliminar();
+                  }}
+                  className="bg-[#EF4444] hover:bg-red-700"
+                >
                   Eliminar Usuario
                 </AlertDialogAction>
               </AlertDialogFooter>

@@ -124,9 +124,13 @@ export default function EditarUsuario() {
                 activo: usuario.activo ?? true,
             });
 
-            // Cargar roles del usuario
+            // Cargar roles del usuario (rol_id de la asignación, no el id de usuario_roles)
             if (usuario.roles && Array.isArray(usuario.roles)) {
-                setSelectedRoleIds(usuario.roles.map((r: any) => String(r.id || r.rol_id)));
+                setSelectedRoleIds(
+                    usuario.roles
+                        .map((r: any) => String(r.rol_id || r.rol?.id || ""))
+                        .filter(Boolean)
+                );
             }
         } catch (error) {
             console.error("Error al cargar usuario:", error);
@@ -207,8 +211,8 @@ export default function EditarUsuario() {
 
         // Validar contraseña solo si se está cambiando
         if (formData.contrasena || formData.confirmarContrasena) {
-            if (formData.contrasena.length < 6) {
-                newErrors.contrasena = "La contraseña debe tener al menos 6 caracteres";
+            if (formData.contrasena.length < 8) {
+                newErrors.contrasena = "La contraseña debe tener al menos 8 caracteres";
             }
 
             if (formData.contrasena !== formData.confirmarContrasena) {
@@ -262,7 +266,7 @@ export default function EditarUsuario() {
             navigate("/ListaDeUsuarios");
         } catch (error: any) {
             console.error("Error:", error);
-            toast.error(error.response?.data?.detail || "Error al actualizar el usuario");
+            toast.error(error.message || "Error al actualizar el usuario");
         } finally {
             setSaving(false);
         }

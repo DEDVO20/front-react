@@ -131,7 +131,9 @@ export default function FormularioUsuario() {
 
           // Cargar roles del usuario
           if (userData.roles && Array.isArray(userData.roles)) {
-            const roleIds = userData.roles.map((ur: any) => String(ur.rol_id || ur.id));
+            const roleIds = userData.roles
+              .map((ur: any) => String(ur.rol_id || ur.rol?.id || ""))
+              .filter(Boolean);
             console.log("Roles del usuario:", roleIds); // Para debug
             setSelectedRoleIds(roleIds);
           }

@@ -65,10 +65,19 @@ apiClient.interceptors.response.use(
 
     // Extraer mensaje de error de la respuesta de FastAPI
     const rawDetail = (error.response?.data as any)?.detail;
-    let errorMessage =
-      (typeof rawDetail === "string" ? rawDetail : null) ||
-      error.message ||
-      "Error desconocido";
+    let errorMessage: string | null = null;
+    if (typeof rawDetail === "string") {
+      errorMessage = rawDetail;
+    } else if (Array.isArray(rawDetail)) {
+      errorMessage = rawDetail
+        .map((item: any) => item?.msg || item?.detail || (typeof item === "string" ? item : null))
+        .filter(Boolean)
+        .join("; ");
+    }
+
+    if (!errorMessage) {
+      errorMessage = error.message || "Error desconocido";
+    }
 
     if (!error.response && /network error|err_network|failed to fetch|networkerror/i.test(String(error.message))) {
       errorMessage = "No se pudo conectar con el servidor. Verifique su conexión e inténtelo de nuevo.";
