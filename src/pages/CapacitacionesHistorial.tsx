@@ -80,19 +80,19 @@ const CapacitacionesHistorial = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+    <div className="min-h-screen min-w-0 w-full overflow-x-hidden bg-[#F5F7FA] p-4 md:p-8">
       <TooltipProvider>
-        <div className="max-w-7xl mx-auto space-y-8">
+        <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 min-w-0">
 
           {/* Header */}
-          <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div>
-                <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                  <GraduationCap className="h-9 w-9 text-[#2563EB]" />
-                  Historial de Capacitaciones
+          <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-4 sm:p-6 md:p-8">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-6">
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  <GraduationCap className="h-7 w-7 sm:h-9 sm:w-9 text-[#2563EB] shrink-0" />
+                  <span className="break-words">Historial de Capacitaciones</span>
                 </h1>
-                <p className="text-[#6B7280] mt-2 text-lg">
+                <p className="text-[#6B7280] mt-2 text-sm sm:text-lg">
                   Registro completo de todas las capacitaciones realizadas
                 </p>
                 <div className="flex flex-wrap items-center gap-3 mt-4">
@@ -109,7 +109,7 @@ const CapacitacionesHistorial = () => {
               </div>
               <Button
                 onClick={() => navigate("/capacitaciones/programadas")}
-                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl px-6 py-6 h-auto font-bold"
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl px-6 py-6 h-auto font-bold w-full md:w-auto"
               >
                 Ver programadas
               </Button>
@@ -117,7 +117,7 @@ const CapacitacionesHistorial = () => {
           </div>
 
           {/* Tarjetas de métricas */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
             <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -215,8 +215,8 @@ const CapacitacionesHistorial = () => {
           </Card>
 
           {/* Buscador */}
-          <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
-            <div className="relative max-w-md">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
+            <div className="relative w-full max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
                 placeholder={SEARCH_ANY_PLACEHOLDER}
@@ -228,11 +228,11 @@ const CapacitacionesHistorial = () => {
           </div>
 
           {/* Lista de capacitaciones */}
-          <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
-            <div className="p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
-              <h2 className="text-xl font-bold text-[#1E3A8A]">Listado de Capacitaciones</h2>
-              <div className="flex items-center gap-4">
-                <Button variant="outline" size="sm" onClick={cargarHistorial}>
+          <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden min-w-0">
+            <div className="p-4 sm:p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-lg sm:text-xl font-bold text-[#1E3A8A] break-words">Listado de Capacitaciones</h2>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button variant="outline" size="sm" onClick={cargarHistorial} className="w-full sm:w-auto">
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Actualizar
                 </Button>
@@ -242,7 +242,7 @@ const CapacitacionesHistorial = () => {
               </div>
             </div>
 
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {filteredHistorial.length === 0 ? (
                 <div className="flex flex-col items-center py-20 text-center">
                   <GraduationCap className="h-16 w-16 text-gray-300 mb-4" />
@@ -251,58 +251,58 @@ const CapacitacionesHistorial = () => {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {filteredHistorial.map((cap) => (
                     <Card key={cap.id} className="hover:shadow-md transition-shadow border-[#E5E7EB]">
-                      <CardContent className="p-6">
-                        <div className="flex flex-col md:flex-row justify-between gap-6">
-                          <div className="flex-1">
-                            <h3 className="text-xl font-bold text-[#111827] mb-4">{cap.nombre}</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-[#6B7280]">
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex flex-col md:flex-row justify-between gap-4 md:gap-6">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg sm:text-xl font-bold text-[#111827] mb-4 break-words">{cap.nombre}</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm text-[#6B7280]">
                               {cap.tipoCapacitacion && (
-                                <div className="flex items-center gap-2">
-                                  <Tag className="w-4 h-4 text-indigo-500" />
-                                  <span>{cap.tipoCapacitacion}</span>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Tag className="w-4 h-4 text-indigo-500 shrink-0" />
+                                  <span className="break-words">{cap.tipoCapacitacion}</span>
                                 </div>
                               )}
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
                                 {cap.modalidad === "Virtual" ? (
-                                  <Laptop className="w-4 h-4 text-blue-500" />
+                                  <Laptop className="w-4 h-4 text-blue-500 shrink-0" />
                                 ) : (
-                                  <MapPin className="w-4 h-4 text-green-500" />
+                                  <MapPin className="w-4 h-4 text-green-500 shrink-0" />
                                 )}
-                                <span>{cap.modalidad}</span>
+                                <span className="break-words">{cap.modalidad}</span>
                               </div>
                               {cap.fechaProgramada && (
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="w-4 h-4 text-gray-500" />
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Calendar className="w-4 h-4 text-gray-500 shrink-0" />
                                   <span>{new Date(cap.fechaProgramada).toLocaleDateString('es-CO')}</span>
                                 </div>
                               )}
                               {cap.duracionHoras && (
-                                <div className="flex items-center gap-2">
-                                  <Clock className="w-4 h-4 text-gray-500" />
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Clock className="w-4 h-4 text-gray-500 shrink-0" />
                                   <span>{cap.duracionHoras} horas</span>
                                 </div>
                               )}
                               {cap.instructor && (
-                                <div className="flex items-center gap-2">
-                                  <Users className="w-4 h-4 text-gray-500" />
-                                  <span>Instructor: {cap.instructor}</span>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Users className="w-4 h-4 text-gray-500 shrink-0" />
+                                  <span className="break-words">Instructor: {cap.instructor}</span>
                                 </div>
                               )}
                             </div>
                           </div>
 
-                          <div className="flex flex-col items-center gap-4">
+                          <div className="flex flex-row md:flex-col items-center justify-between md:justify-center gap-3 md:gap-4 shrink-0">
                             <div className="flex items-center text-[#065F46] font-semibold">
-                              <CheckCircle className="w-5 h-5 mr-2" />
+                              <CheckCircle className="w-5 h-5 mr-2 shrink-0" />
                               Completada
                             </div>
                             <Button
                               size="sm"
                               variant="outline"
-                              className="rounded-xl"
+                              className="rounded-xl w-full sm:w-auto"
                               onClick={() => {
                                 setSelectedCap(cap);
                                 setShowDocumento(true);

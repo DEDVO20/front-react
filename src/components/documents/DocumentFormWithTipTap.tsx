@@ -564,7 +564,7 @@ export const DocumentFormWithTipTap = ({
       <div className="bg-card p-6 rounded-lg border border-border">
         {/* Mode Selection Tabs */}
         <div className="mb-6">
-          <div className="flex gap-2 border-b border-border">
+          <div className="flex flex-wrap gap-2 border-b border-border">
             <button
               type="button"
               onClick={() => setDocumentMode('editor')}
@@ -595,9 +595,9 @@ export const DocumentFormWithTipTap = ({
         {/* Editor Mode */}
         {documentMode === 'editor' && (
           <>
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4">
               <h3 className="text-lg font-semibold">Contenido del Documento</h3>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => setPreview(!preview)}
@@ -620,7 +620,7 @@ export const DocumentFormWithTipTap = ({
 
             {preview ? (
               <div className="overflow-x-auto rounded-md border border-border bg-[#F8FAFC] p-3">
-                <div className="mx-auto min-w-[640px] max-w-[816px]">
+                <div className="mx-auto w-full max-w-[816px]">
                   <DocumentoSGCPaper
                     marca={marca}
                     data={{

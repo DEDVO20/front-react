@@ -153,19 +153,19 @@ const TratamientoRiesgos: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+    <div className="min-h-screen min-w-0 w-full overflow-x-hidden bg-[#F5F7FA] p-4 md:p-8">
       <TooltipProvider>
-        <div className="max-w-7xl mx-auto space-y-8">
+        <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 min-w-0">
 
           {/* Header */}
-          <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div>
-                <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                  <FileText className="h-9 w-9 text-[#2563EB]" />
-                  Tratamiento de Riesgos
+          <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-4 sm:p-6 md:p-8">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-6">
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  <FileText className="h-7 w-7 sm:h-9 sm:w-9 text-[#2563EB] shrink-0" />
+                  <span className="break-words">Tratamiento de Riesgos</span>
                 </h1>
-                <p className="text-[#6B7280] mt-2 text-lg">
+                <p className="text-[#6B7280] mt-2 text-sm sm:text-lg">
                   Monitorea el plan de tratamiento y estado de cada riesgo
                 </p>
                 <div className="flex flex-wrap items-center gap-3 mt-4">
@@ -183,7 +183,7 @@ const TratamientoRiesgos: React.FC = () => {
           </div>
 
           {/* Tarjetas de métricas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
             <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -276,8 +276,8 @@ const TratamientoRiesgos: React.FC = () => {
           </Card>
 
           {/* Buscador */}
-          <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
-            <div className="relative max-w-md">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
+            <div className="relative w-full max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
                 placeholder={SEARCH_ANY_PLACEHOLDER}
@@ -290,9 +290,9 @@ const TratamientoRiesgos: React.FC = () => {
 
           {/* Tabla */}
           <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
-            <div className="p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
-              <h2 className="text-xl font-bold text-[#1E3A8A]">Plan de Tratamiento de Riesgos</h2>
-              <div className="flex items-center gap-4">
+            <div className="p-4 sm:p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-lg sm:text-xl font-bold text-[#1E3A8A]">Plan de Tratamiento de Riesgos</h2>
+              <div className="flex flex-wrap items-center gap-3">
                 <Button variant="outline" size="sm" onClick={fetchRiesgos}>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Actualizar
@@ -303,65 +303,132 @@ const TratamientoRiesgos: React.FC = () => {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-[#F8FAFC]">
-                  <TableRow>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Código</TableHead>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Nombre</TableHead>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Descripción</TableHead>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Tratamiento</TableHead>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Nivel</TableHead>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Estado</TableHead>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A] text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRiesgos.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-20 text-[#6B7280]">
-                        <div className="flex flex-col items-center">
-                          <FileText className="h-16 w-16 text-gray-300 mb-4" />
-                          <p className="text-lg font-medium">
-                            {searchTerm ? "No se encontraron riesgos" : "No hay riesgos registrados"}
-                          </p>
-                          <p className="text-sm mt-2">
-                            {searchTerm ? "Intenta con otros términos" : "Los riesgos aparecerán aquí cuando se identifiquen"}
-                          </p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredRiesgos.map((r) => (
-                      <TableRow key={r.id} className="hover:bg-[#F5F3FF] transition-colors">
-                        <TableCell className="px-6 py-4">
-                          <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold px-4 py-2">
+            {filteredRiesgos.length === 0 ? (
+              <div className="flex flex-col items-center py-16 px-4 text-center text-[#6B7280]">
+                <FileText className="h-16 w-16 text-gray-300 mb-4" />
+                <p className="text-lg font-medium">
+                  {searchTerm ? "No se encontraron riesgos" : "No hay riesgos registrados"}
+                </p>
+                <p className="text-sm mt-2">
+                  {searchTerm ? "Intenta con otros términos" : "Los riesgos aparecerán aquí cuando se identifiquen"}
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="md:hidden divide-y divide-[#E5E7EB]">
+                  {filteredRiesgos.map((r) => (
+                    <div key={r.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold px-3 py-1">
                             {r.codigo}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="px-6 py-4 font-medium max-w-xs">
-                          {r.nombre || <span className="italic text-[#6B7280]">Sin nombre</span>}
-                        </TableCell>
-                        <TableCell className="px-6 py-4 font-medium max-w-md">
-                          {r.descripcion || <span className="italic text-[#6B7280]">Sin descripción</span>}
-                        </TableCell>
-                        <TableCell className="px-6 py-4 text-[#6B7280] max-w-lg">
-                          {r.tratamiento ? (
-                            <p className="line-clamp-3">{r.tratamiento}</p>
-                          ) : (
-                            <span className="italic">Sin tratamiento definido</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="px-6 py-4">
+                          <p className="mt-2 font-semibold text-[#111827] break-words">
+                            {r.nombre || "Sin nombre"}
+                          </p>
+                        </div>
+                        <div className="shrink-0 space-y-1 text-right">
                           <Badge className={getNivelColor(r.nivel_riesgo)}>
                             {getNivelLabel(r.nivel_riesgo)}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="px-6 py-4">
-                          {getEstadoBadge(r.estado)}
-                        </TableCell>
-                        <TableCell className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
+                          <div>{getEstadoBadge(r.estado)}</div>
+                        </div>
+                      </div>
+                      <p className="text-sm text-[#6B7280] break-words line-clamp-3">
+                        {r.descripcion || "Sin descripción"}
+                      </p>
+                      <p className="text-sm text-[#6B7280] break-words line-clamp-2">
+                        {r.tratamiento || "Sin tratamiento definido"}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button size="sm" variant="outline" onClick={() => handleView(r)} className="rounded-xl flex-1 min-w-[7rem]">
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ver
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(r)} className="rounded-xl flex-1 min-w-[7rem]">
+                          <Edit className="h-4 w-4 mr-1" />
+                          Editar
+                        </Button>
+                        {r.estado === 'identificado' && (
+                          <Button
+                            size="sm"
+                            className="rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white flex-1 min-w-[7rem]"
+                            onClick={() => handleQuickStatusChange(r, 'en_tratamiento')}
+                          >
+                            <Play className="h-4 w-4 mr-1" />
+                            Iniciar
+                          </Button>
+                        )}
+                        {r.estado === 'en_tratamiento' && (
+                          <Button
+                            size="sm"
+                            className="rounded-xl bg-[#10B981] hover:bg-[#059669] text-white flex-1 min-w-[7rem]"
+                            onClick={() => handleQuickStatusChange(r, 'mitigado')}
+                          >
+                            <Check className="h-4 w-4 mr-1" />
+                            Mitigar
+                          </Button>
+                        )}
+                        {(r.estado === 'identificado' || r.estado === 'en_tratamiento') && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-xl flex-1 min-w-[7rem]"
+                            onClick={() => handleQuickStatusChange(r, 'aceptado')}
+                          >
+                            <Ban className="h-4 w-4 mr-1" />
+                            Aceptar
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-[#F8FAFC]">
+                      <TableRow>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Código</TableHead>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Nombre</TableHead>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Descripción</TableHead>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Tratamiento</TableHead>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Nivel</TableHead>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Estado</TableHead>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A] text-right">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredRiesgos.map((r) => (
+                        <TableRow key={r.id} className="hover:bg-[#F5F3FF] transition-colors">
+                          <TableCell className="px-6 py-4">
+                            <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold px-4 py-2">
+                              {r.codigo}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="px-3 sm:px-6 py-4 font-medium max-w-[220px] sm:max-w-xs break-words">
+                            {r.nombre || <span className="italic text-[#6B7280]">Sin nombre</span>}
+                          </TableCell>
+                          <TableCell className="px-3 sm:px-6 py-4 font-medium max-w-[240px] sm:max-w-md break-words">
+                            {r.descripcion || <span className="italic text-[#6B7280]">Sin descripción</span>}
+                          </TableCell>
+                          <TableCell className="px-3 sm:px-6 py-4 text-[#6B7280] max-w-[240px] sm:max-w-lg break-words">
+                            {r.tratamiento ? (
+                              <p className="line-clamp-3">{r.tratamiento}</p>
+                            ) : (
+                              <span className="italic">Sin tratamiento definido</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            <Badge className={getNivelColor(r.nivel_riesgo)}>
+                              {getNivelLabel(r.nivel_riesgo)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            {getEstadoBadge(r.estado)}
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-right">
+                            <div className="flex flex-wrap items-center justify-end gap-2">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button size="sm" variant="outline" onClick={() => handleView(r)} className="rounded-xl">
@@ -428,11 +495,12 @@ const TratamientoRiesgos: React.FC = () => {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
           </div>
 
           <VistaDocumentoSGCDialog
@@ -446,10 +514,10 @@ const TratamientoRiesgos: React.FC = () => {
 
           {/* Diálogo de Edición de Tratamiento */}
           <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-            <DialogContent className="max-w-3xl rounded-2xl">
+            <DialogContent className="max-w-3xl w-[calc(100%-0.75rem)] rounded-2xl max-h-[90dvh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                  <Edit className="h-7 w-7 text-[#2563EB]" />
+                <DialogTitle className="text-xl sm:text-2xl font-bold text-[#1E3A8A] flex items-center gap-3 pr-8">
+                  <Edit className="h-6 w-6 sm:h-7 sm:w-7 text-[#2563EB] shrink-0" />
                   Editar Tratamiento
                 </DialogTitle>
               </DialogHeader>
@@ -492,7 +560,7 @@ const TratamientoRiesgos: React.FC = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="estado" className="text-[#1E3A8A] font-bold">
                         Estado del Riesgo
@@ -526,7 +594,7 @@ const TratamientoRiesgos: React.FC = () => {
                 </div>
               )}
 
-              <DialogFooter>
+              <DialogFooter className="gap-2 sm:gap-3 [&_button]:w-full sm:[&_button]:w-auto">
                 <Button
                   variant="outline"
                   onClick={() => setShowEditDialog(false)}

@@ -65,23 +65,23 @@ export function VistaDocumentoSGCDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl rounded-2xl max-h-[92vh] overflow-hidden p-0 gap-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#E5E7EB] bg-[#F8FAFC]">
-          <DialogTitle className="text-2xl font-bold text-[#1E3A8A]">{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+      <DialogContent className="flex w-[calc(100%-0.75rem)] min-w-0 max-w-5xl max-h-[92dvh] flex-col overflow-hidden rounded-2xl p-0 gap-0 sm:w-[calc(100%-1.5rem)]">
+        <DialogHeader className="shrink-0 border-b border-[#E5E7EB] bg-[#F8FAFC] px-4 py-4 pr-12 sm:px-6 sm:pt-6 sm:pb-4">
+          <DialogTitle className="text-lg font-bold text-[#1E3A8A] break-words sm:text-2xl">{title}</DialogTitle>
+          <DialogDescription className="text-sm">{description}</DialogDescription>
         </DialogHeader>
 
-        <div className="overflow-y-auto max-h-[calc(92vh-180px)] bg-[#F8FAFC] p-3 sm:p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[#F8FAFC] p-2 sm:p-4 md:p-6">
           {data ? (
-            <div className="min-w-[640px] max-w-[816px] mx-auto border border-[#E5E7EB] shadow-sm bg-white">
+            <div className="mx-auto w-full max-w-[816px] border border-[#E5E7EB] bg-white shadow-sm">
               <DocumentoSGCPaper data={data} marca={marca} />
             </div>
           ) : (
-            <p className="text-center text-[#6B7280] py-16">No hay información para mostrar.</p>
+            <p className="py-16 text-center text-[#6B7280]">No hay información para mostrar.</p>
           )}
         </div>
 
-        <DialogFooter className="px-6 py-4 border-t border-[#E5E7EB] bg-white gap-2 flex-wrap sm:justify-end">
+        <DialogFooter className="shrink-0 flex-col-reverse gap-2 border-t border-[#E5E7EB] bg-white px-4 py-3 sm:flex-row sm:justify-end sm:px-6 sm:py-4 [&_button]:w-full sm:[&_button]:w-auto">
           <Button variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>
             Cerrar
           </Button>

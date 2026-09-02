@@ -307,7 +307,7 @@ export default function DetalleProceso() {
                 </div>
 
                 <div className="overflow-x-auto rounded-2xl border border-[#E5E7EB] bg-white shadow-sm">
-                    <div className="min-w-[640px] max-w-[816px] mx-auto">
+                    <div className="mx-auto w-full max-w-[816px]">
                         <DocumentoSGCPaper data={datosSGCDesdeProceso(proceso)} marca={marca} />
                     </div>
                 </div>

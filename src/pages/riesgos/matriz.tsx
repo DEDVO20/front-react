@@ -251,19 +251,19 @@ const MatrizRiesgos: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+    <div className="min-h-screen min-w-0 w-full overflow-x-hidden bg-[#F5F7FA] p-4 md:p-8">
       <TooltipProvider>
-        <div className="max-w-7xl mx-auto space-y-8">
+        <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 min-w-0">
 
           {/* Header */}
-          <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div>
-                <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                  <AlertTriangle className="h-9 w-9 text-[#2563EB]" />
-                  Matriz de Riesgos
+          <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-4 sm:p-6 md:p-8">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-6">
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  <AlertTriangle className="h-7 w-7 sm:h-9 sm:w-9 text-[#2563EB] shrink-0" />
+                  <span className="break-words">Matriz de Riesgos</span>
                 </h1>
-                <p className="text-[#6B7280] mt-2 text-lg">
+                <p className="text-[#6B7280] mt-2 text-sm sm:text-lg">
                   Identificación y evaluación de riesgos organizacionales
                 </p>
                 <div className="flex flex-wrap items-center gap-3 mt-4">
@@ -277,7 +277,7 @@ const MatrizRiesgos: React.FC = () => {
                   )}
                 </div>
               </div>
-              <Button onClick={() => setShowCreateDialog(true)} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold">
+              <Button onClick={() => setShowCreateDialog(true)} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold w-full md:w-auto">
                 <Plus className="mr-2 h-5 w-5" />
                 Nuevo Riesgo
               </Button>
@@ -285,7 +285,7 @@ const MatrizRiesgos: React.FC = () => {
           </div>
 
           {/* Tarjetas de métricas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
             <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow rounded-2xl">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -380,8 +380,8 @@ const MatrizRiesgos: React.FC = () => {
           </Card>
 
           {/* Buscador */}
-          <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
-            <div className="relative max-w-md">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
+            <div className="relative w-full max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
               <Input
                 placeholder={SEARCH_ANY_PLACEHOLDER}
@@ -398,14 +398,15 @@ const MatrizRiesgos: React.FC = () => {
               <CardTitle className="text-xl text-[#1E3A8A]">Matriz de Probabilidad vs Impacto</CardTitle>
               <CardDescription>Visualización gráfica de riesgos según su evaluación</CardDescription>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-sm">
+            <CardContent className="p-3 sm:p-6">
+              <p className="mb-3 text-xs text-[#6B7280] sm:hidden">Desliza la matriz hacia los lados para ver todos los niveles.</p>
+              <div className="overflow-x-auto -mx-1 px-1">
+                <table className="w-full min-w-[520px] border-collapse text-xs sm:text-sm">
                   <thead>
                     <tr>
-                      <th className="border border-[#E5E7EB] bg-[#F8FAFC] p-4 w-32 text-left font-bold text-[#1E3A8A]"></th>
+                      <th className="border border-[#E5E7EB] bg-[#F8FAFC] p-2 sm:p-4 w-24 sm:w-32 text-left font-bold text-[#1E3A8A]"></th>
                       {[1, 2, 3, 4, 5].map((imp) => (
-                        <th key={imp} className="border border-[#E5E7EB] bg-[#F8FAFC] p-4 text-center font-bold text-[#1E3A8A]">
+                        <th key={imp} className="border border-[#E5E7EB] bg-[#F8FAFC] p-2 sm:p-4 text-center font-bold text-[#1E3A8A] whitespace-nowrap">
                           Impacto {imp}
                         </th>
                       ))}
@@ -414,7 +415,7 @@ const MatrizRiesgos: React.FC = () => {
                   <tbody>
                     {[5, 4, 3, 2, 1].map((prob) => (
                       <tr key={prob}>
-                        <td className="border border-[#E5E7EB] bg-[#F8FAFC] p-4 text-center font-bold text-[#1E3A8A]">
+                        <td className="border border-[#E5E7EB] bg-[#F8FAFC] p-2 sm:p-4 text-center font-bold text-[#1E3A8A] whitespace-nowrap">
                           Prob. {prob}
                         </td>
                         {[1, 2, 3, 4, 5].map((imp) => {
@@ -427,7 +428,7 @@ const MatrizRiesgos: React.FC = () => {
                           return (
                             <td
                               key={imp}
-                              className={`border-2 ${bgColor} p-4 min-h-32 align-top transition-all cursor-pointer hover:opacity-80 ${isSelected ? 'ring-4 ring-blue-500' : ''
+                              className={`border-2 ${bgColor} p-2 sm:p-4 min-h-16 sm:min-h-32 align-top transition-all cursor-pointer hover:opacity-80 ${isSelected ? 'ring-4 ring-blue-500' : ''
                                 }`}
                               onClick={() => setSelectedCell(isSelected ? null : { prob, imp })}
                             >
@@ -495,9 +496,9 @@ const MatrizRiesgos: React.FC = () => {
 
           {/* Tabla de Listado */}
           <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
-            <div className="p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
-              <h2 className="text-xl font-bold text-[#1E3A8A]">Listado de Riesgos</h2>
-              <div className="flex items-center gap-4">
+            <div className="p-4 sm:p-6 border-b border-[#E5E7EB] bg-[#F8FAFC] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-lg sm:text-xl font-bold text-[#1E3A8A]">Listado de Riesgos</h2>
+              <div className="flex flex-wrap items-center gap-3">
                 <Button variant="outline" size="sm" onClick={fetchRiesgos}>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Actualizar
@@ -508,102 +509,133 @@ const MatrizRiesgos: React.FC = () => {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-[#F8FAFC]">
-                  <TableRow>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Código</TableHead>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Nombre</TableHead>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Proceso</TableHead>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Descripción</TableHead>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Tratamiento</TableHead>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Prob.</TableHead>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Impacto</TableHead>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Nivel</TableHead>
-                    <TableHead className="px-6 py-4 font-bold text-[#1E3A8A] text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRiesgos.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={9} className="text-center py-20 text-[#6B7280]">
-                        <div className="flex flex-col items-center">
-                          <AlertTriangle className="h-16 w-16 text-gray-300 mb-4" />
-                          <p className="text-lg font-medium">
-                            {searchTerm ? "No se encontraron riesgos" : "No hay riesgos identificados"}
-                          </p>
-                          {!searchTerm && (
-                            <Button onClick={() => setShowCreateDialog(true)} className="mt-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl">
-                              <Plus className="mr-2 h-5 w-5" />
-                              Identificar primer riesgo
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredRiesgos.map((r) => (
-                      <TableRow key={r.id} className="hover:bg-[#F5F3FF] transition-colors">
-                        <TableCell className="px-6 py-4">
-                          <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold px-4 py-2">
+            {filteredRiesgos.length === 0 ? (
+              <div className="flex flex-col items-center py-16 px-4 text-center text-[#6B7280]">
+                <AlertTriangle className="h-16 w-16 text-gray-300 mb-4" />
+                <p className="text-lg font-medium">
+                  {searchTerm ? "No se encontraron riesgos" : "No hay riesgos identificados"}
+                </p>
+                {!searchTerm && (
+                  <Button onClick={() => setShowCreateDialog(true)} className="mt-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl w-full sm:w-auto">
+                    <Plus className="mr-2 h-5 w-5" />
+                    Identificar primer riesgo
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="md:hidden divide-y divide-[#E5E7EB]">
+                  {filteredRiesgos.map((r) => (
+                    <div key={r.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold px-3 py-1">
                             {r.codigo}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="px-6 py-4 font-medium max-w-xs">
-                          {r.nombre || <span className="italic text-[#6B7280]">Sin nombre</span>}
-                        </TableCell>
-                        <TableCell className="px-6 py-4 text-[#6B7280]">
-                          {r.proceso_id ? procesoMap[r.proceso_id]?.nombre || '-' : '-'}
-                        </TableCell>
-                        <TableCell className="px-6 py-4 font-medium max-w-md">
-                          {r.descripcion || <span className="italic text-[#6B7280]">Sin descripción</span>}
-                        </TableCell>
-                        <TableCell className="px-6 py-4">
-                          <div className="max-w-md">
-                            {r.tratamiento ? (
-                              <p className="text-sm line-clamp-2">{r.tratamiento}</p>
-                            ) : (
-                              <span className="text-sm text-gray-400">Sin tratamiento</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="px-6 py-4 text-center">{r.probabilidad || '-'}</TableCell>
-                        <TableCell className="px-6 py-4 text-center">{r.impacto || '-'}</TableCell>
-                        <TableCell className="px-6 py-4">
-                          <Badge className={getNivelColor(r.nivel_riesgo)}>
-                            {getNivelLabel(r.nivel_riesgo)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="px-6 py-4 text-right">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button size="sm" variant="outline" onClick={() => handleView(r)} className="rounded-xl">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Ver detalles</p></TooltipContent>
-                          </Tooltip>
-                        </TableCell>
+                          <p className="mt-2 font-semibold text-[#111827] break-words">
+                            {r.nombre || "Sin nombre"}
+                          </p>
+                          <p className="text-sm text-[#6B7280] break-words">
+                            {r.proceso_id ? procesoMap[r.proceso_id]?.nombre || "-" : "-"}
+                          </p>
+                        </div>
+                        <Badge className={`${getNivelColor(r.nivel_riesgo)} shrink-0`}>
+                          {getNivelLabel(r.nivel_riesgo)}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-[#6B7280] break-words line-clamp-3">
+                        {r.descripcion || "Sin descripción"}
+                      </p>
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#6B7280]">
+                        <span>Prob. {r.probabilidad || "-"} · Impacto {r.impacto || "-"}</span>
+                        <Button size="sm" variant="outline" onClick={() => handleView(r)} className="rounded-xl">
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ver
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-[#F8FAFC]">
+                      <TableRow>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Código</TableHead>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Nombre</TableHead>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Proceso</TableHead>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Descripción</TableHead>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Tratamiento</TableHead>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Prob.</TableHead>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Impacto</TableHead>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Nivel</TableHead>
+                        <TableHead className="px-6 py-4 font-bold text-[#1E3A8A] text-right">Acciones</TableHead>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredRiesgos.map((r) => (
+                        <TableRow key={r.id} className="hover:bg-[#F5F3FF] transition-colors">
+                          <TableCell className="px-6 py-4">
+                            <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold px-4 py-2">
+                              {r.codigo}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="px-3 sm:px-6 py-4 font-medium max-w-[180px] sm:max-w-xs break-words">
+                            {r.nombre || <span className="italic text-[#6B7280]">Sin nombre</span>}
+                          </TableCell>
+                          <TableCell className="px-3 sm:px-6 py-4 text-[#6B7280] break-words">
+                            {r.proceso_id ? procesoMap[r.proceso_id]?.nombre || '-' : '-'}
+                          </TableCell>
+                          <TableCell className="px-3 sm:px-6 py-4 font-medium max-w-[200px] sm:max-w-md break-words">
+                            {r.descripcion || <span className="italic text-[#6B7280]">Sin descripción</span>}
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            <div className="max-w-md">
+                              {r.tratamiento ? (
+                                <p className="text-sm line-clamp-2">{r.tratamiento}</p>
+                              ) : (
+                                <span className="text-sm text-gray-400">Sin tratamiento</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-center">{r.probabilidad || '-'}</TableCell>
+                          <TableCell className="px-6 py-4 text-center">{r.impacto || '-'}</TableCell>
+                          <TableCell className="px-6 py-4">
+                            <Badge className={getNivelColor(r.nivel_riesgo)}>
+                              {getNivelLabel(r.nivel_riesgo)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-right">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="outline" onClick={() => handleView(r)} className="rounded-xl">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Ver detalles</p></TooltipContent>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Diálogo Crear Riesgo */}
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogContent className="max-w-4xl rounded-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl w-[calc(100%-0.75rem)] rounded-2xl max-h-[90dvh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                <DialogTitle className="text-xl sm:text-2xl font-bold text-[#1E3A8A] flex items-center gap-3 pr-8">
                   <Plus className="h-7 w-7 text-[#2563EB]" />
                   Nuevo Riesgo
                 </DialogTitle>
               </DialogHeader>
 
               <div className="space-y-6 py-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-2">
                     <Label className="font-bold">Proceso <span className="text-red-500">*</span></Label>
                     <Select value={formData.procesoId} onValueChange={(v) => setFormData({ ...formData, procesoId: v })}>
@@ -649,7 +681,7 @@ const MatrizRiesgos: React.FC = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                   <div className="space-y-2">
                     <Label className="font-bold">Tipo</Label>
                     <Select value={formData.tipo} onValueChange={(v) => setFormData({ ...formData, tipo: v })}>
@@ -714,7 +746,7 @@ const MatrizRiesgos: React.FC = () => {
                 </div>
               </div>
 
-              <DialogFooter className="gap-4">
+              <DialogFooter className="gap-2 sm:gap-4 [&_button]:w-full sm:[&_button]:w-auto">
                 <Button variant="outline" onClick={() => setShowCreateDialog(false)} className="rounded-xl">
                   Cancelar
                 </Button>

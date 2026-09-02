@@ -275,10 +275,10 @@ export default function VerDocumento() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen min-w-0 w-full overflow-x-hidden bg-[#F5F7FA] p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 min-w-0">
         {/* Header Profesional */}
-        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-4 sm:p-6 md:p-8">
           <button
             onClick={() => navigate("/documentos")}
             className="inline-flex items-center gap-2 text-[#6B7280] hover:text-[#1E3A8A] mb-4 transition-colors"
@@ -287,22 +287,22 @@ export default function VerDocumento() {
             Volver a documentos
           </button>
 
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                <FileText className="h-9 w-9 text-[#2563EB]" />
-                {documento.nombre}
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-6">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                <FileText className="h-7 w-7 sm:h-9 sm:w-9 text-[#2563EB] shrink-0" />
+                <span className="break-words">{documento.nombre}</span>
               </h1>
-              <p className="text-[#6B7280] mt-2 text-lg font-mono">
+              <p className="text-[#6B7280] mt-2 text-sm sm:text-lg font-mono break-all">
                 {documento.codigo}
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full md:w-auto">
               <button
                 onClick={handleExportPDF}
                 disabled={exporting}
-                className="flex items-center gap-2 px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all disabled:opacity-50"
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all disabled:opacity-50 w-full sm:w-auto"
               >
                 <Download className="w-4 h-4" />
                 {exporting ? "Generando PDF..." : "Exportar PDF"}
@@ -310,7 +310,7 @@ export default function VerDocumento() {
               {canEdit && (
                 <button
                   onClick={() => navigate(`/documentos/${documento.id}/editar`)}
-                  className="flex items-center gap-2 px-6 py-3 bg-white text-[#6B7280] border border-[#E5E7EB] rounded-xl hover:bg-[#F8FAFC] font-semibold transition-all"
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-white text-[#6B7280] border border-[#E5E7EB] rounded-xl hover:bg-[#F8FAFC] font-semibold transition-all w-full sm:w-auto"
                 >
                   <Edit className="w-4 h-4" />
                   Editar
@@ -319,7 +319,7 @@ export default function VerDocumento() {
               {canDelete && (
                 <button
                   onClick={handleDelete}
-                  className="flex items-center gap-2 px-6 py-3 bg-[#FEF2F2] text-[#EF4444] border border-[#EF4444]/30 rounded-xl hover:bg-red-100 font-semibold transition-all"
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-[#FEF2F2] text-[#EF4444] border border-[#EF4444]/30 rounded-xl hover:bg-red-100 font-semibold transition-all w-full sm:w-auto"
                 >
                   <Trash2 className="w-4 h-4" />
                   Eliminar
@@ -344,14 +344,14 @@ export default function VerDocumento() {
             <button
               onClick={handleExportPDF}
               disabled={exporting}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all disabled:opacity-50 w-full sm:w-auto"
             >
               <Download className="w-4 h-4" />
               {exporting ? "Generando PDF..." : "Descargar PDF"}
             </button>
           </div>
           <div className="p-3 sm:p-6 bg-[#F8FAFC] overflow-x-auto">
-            <div className="min-w-[640px] max-w-[816px] mx-auto border border-[#E5E7EB] shadow-sm">
+            <div className="mx-auto w-full max-w-[816px] border border-[#E5E7EB] shadow-sm">
               {(() => {
                 const datos = construirDatosSGC();
                 return datos ? <DocumentoSGCPaper data={datos} marca={marca} /> : null;
