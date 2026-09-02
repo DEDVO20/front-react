@@ -40,3 +40,45 @@ export function hasAnyPermission(required: string[]): boolean {
   const expanded = expandPermissions(required);
   return expanded.some((perm) => userPerms.includes(perm));
 }
+
+export function collectUserPermissionCodes(usuario: {
+  permisos?: string[];
+  roles?: Array<{
+    rol?: {
+      clave?: string;
+      permisos?: Array<{ permiso?: { codigo?: string } }>;
+    };
+  }>;
+} | null | undefined): string[] {
+  const codes = new Set<string>();
+  (usuario?.permisos || []).forEach((code) => {
+    if (code) codes.add(code);
+  });
+  (usuario?.roles || []).forEach((asignacion) => {
+    (asignacion.rol?.permisos || []).forEach((item) => {
+      if (item?.permiso?.codigo) codes.add(item.permiso.codigo);
+    });
+  });
+  return Array.from(codes);
+}
+
+type UsuarioConPermisos = {
+  permisos?: string[];
+  roles?: Array<{
+    rol?: {
+      permisos?: Array<{
+        permiso?: { codigo?: string };
+      }>;
+    };
+  }>;
+};
+
+export function usuarioTienePermiso(
+  usuario: UsuarioConPermisos | null | undefined,
+  required: string[],
+): boolean {
+  const userPerms = collectUserPermissionCodes(usuario);
+  if (userPerms.includes("sistema.admin")) return true;
+  const expanded = expandPermissions(required);
+  return expanded.some((perm) => userPerms.includes(perm));
+}

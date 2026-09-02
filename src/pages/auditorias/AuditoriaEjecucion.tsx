@@ -810,6 +810,5 @@ export default function AuditoriaEjecucion() {
             />
 
         </div>
-        </div>
     );
 }
