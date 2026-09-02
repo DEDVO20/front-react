@@ -18,14 +18,17 @@ export default function CreateDocument() {
 
       // Convert FormData to JSON object with backend field names
       const contenidoHtml = (formData.get("contenidoHtml") as string) || "";
+      const codigoRaw = String(formData.get("codigoDocumento") || formData.get("codigo") || "").trim();
       const documentData: any = {
-        codigo: (formData.get("codigoDocumento") as string) || undefined,
         nombre: formData.get("nombreArchivo") as string,
         descripcion: contenidoHtml || (formData.get("descripcion") as string) || `Documento ${formData.get("nombreArchivo")}`,
         tipo_documento: formData.get("tipo_documento") as string,
         version_actual: formData.get("version_actual") as string || "1.0",
         estado: formData.get("estado") as string || "borrador",
       };
+      if (codigoRaw && codigoRaw.toLowerCase() !== "se asignará al guardar") {
+        documentData.codigo = codigoRaw;
+      }
 
       // Add optional fields
       const creado_por = formData.get("creado_por") as string || formData.get("subidoPor") as string;

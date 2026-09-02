@@ -1,7 +1,7 @@
 import { apiClient } from "@/lib/api";
 
 export interface DocumentoData {
-  codigo: string;
+  codigo?: string;
   nombre: string;
   descripcion?: string;
   tipo_documento: string;
