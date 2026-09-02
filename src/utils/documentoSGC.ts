@@ -59,6 +59,7 @@ const TIPOS: Record<string, string> = {
   objetivo_calidad: "OBJETIVO DE CALIDAD",
   capacitacion: "CAPACITACIÓN",
   asistencia_capacitacion: "ASISTENCIA A CAPACITACIÓN",
+  hallazgo: "HALLAZGO DE AUDITORÍA",
 };
 
 export function etiquetaTipoDocumento(tipo?: string): string {

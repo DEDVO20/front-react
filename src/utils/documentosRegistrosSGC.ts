@@ -283,6 +283,51 @@ export function datosSGCDesdeAuditoria(
   };
 }
 
+export function datosSGCDesdeHallazgo(
+  hallazgo: Partial<HallazgoAuditoria> & { id: string },
+  auditoria?: { codigo?: string; nombre?: string } | null,
+): DocumentoSGCData {
+  const raw = hallazgo as Partial<HallazgoAuditoria> & {
+    id: string;
+    tipo_hallazgo?: string;
+    clausula_norma?: string;
+  };
+  const tipo = raw.tipo || raw.tipo_hallazgo;
+  const clausula = raw.clausulaIso || raw.clausula_norma;
+  const contenidoHtml = [
+    seccionSGC(
+      "Datos del hallazgo",
+      tablaCamposSGC([
+        ["Código", raw.codigo || "—"],
+        ["Tipo", etiquetaTipoHallazgo(tipo)],
+        ["Estado", (raw.estado || "—").replace(/_/g, " ")],
+        ["Gravedad", raw.gravedad || "—"],
+        ["Cláusula ISO", clausula || "—"],
+        ["Requisito", raw.requisito || "—"],
+        ["Auditoría", auditoria?.codigo || raw.auditoria?.codigo || "—"],
+        ["Nombre de la auditoría", auditoria?.nombre || raw.auditoria?.nombre || "—"],
+        ["Fecha de registro", formatearFechaSGC(raw.creadoEn)],
+        ["Responsable", nombreUsuarioSGC(raw.responsable, "Sin asignar")],
+      ]),
+    ),
+    seccionSGC("Descripción", textoAHtmlSGC(raw.descripcion, "Sin descripción.")),
+    seccionSGC("Evidencia", textoAHtmlSGC(raw.evidencia, "Sin evidencia registrada.")),
+  ].join("");
+
+  return {
+    nombre: `Hallazgo ${raw.codigo || ""}`.trim() || "Hallazgo de auditoría",
+    codigo: raw.codigo || auditoria?.codigo || "S/C",
+    version: "1.0",
+    tipoDocumento: "hallazgo",
+    estado: raw.estado,
+    contenidoHtml,
+    fechaCreacion: raw.creadoEn,
+    elaboradoPor: nombreUsuarioSGC(raw.responsable, "Sistema"),
+    revisadoPor: "Pendiente",
+    aprobadoPor: "Pendiente",
+  };
+}
+
 export interface ControlRiesgoSGC {
   id: string;
   riesgo_id: string;

@@ -23,6 +23,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import apiClient from "@/lib/api";
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeAuditoria, datosSGCDesdeHallazgo } from "@/utils/documentosRegistrosSGC";
+import type { Auditoria as AuditoriaSGC, HallazgoAuditoria } from "@/services/auditoria.service";
 
 
 
@@ -98,6 +101,8 @@ const AuditoriasHallazgosView: React.FC = () => {
   const [filterEstado, setFilterEstado] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showHallazgoModal, setShowHallazgoModal] = useState(false);
+  const [showDocumentoAuditoria, setShowDocumentoAuditoria] = useState(false);
+  const [showDocumentoHallazgo, setShowDocumentoHallazgo] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create');
   const [selectedAuditoria, setSelectedAuditoria] = useState<Auditoria | null>(null);
   const [selectedHallazgo, setSelectedHallazgo] = useState<Hallazgo | null>(null);
@@ -232,9 +237,13 @@ const AuditoriasHallazgosView: React.FC = () => {
   };
 
   const handleViewAuditoria = (auditoria: Auditoria) => {
-    setModalMode('view');
     setSelectedAuditoria(auditoria);
-    setShowModal(true);
+    setShowDocumentoAuditoria(true);
+  };
+
+  const handleViewHallazgo = (hallazgo: Hallazgo) => {
+    setSelectedHallazgo(hallazgo);
+    setShowDocumentoHallazgo(true);
   };
 
   const handleSubmitAuditoria = async (e: React.FormEvent) => {
@@ -744,6 +753,13 @@ const AuditoriasHallazgosView: React.FC = () => {
                                       </div>
                                       <div className="flex gap-1">
                                         <button
+                                          onClick={() => handleViewHallazgo(hallazgo)}
+                                          className="p-1 text-[#2563EB] hover:bg-[#EFF6FF] rounded"
+                                          title="Ver hallazgo"
+                                        >
+                                          <Eye className="w-4 h-4" />
+                                        </button>
+                                        <button
                                           onClick={() => handleEditHallazgo(hallazgo)}
                                           className="p-1 text-gray-600 hover:bg-gray-100 rounded"
                                         >
@@ -809,6 +825,7 @@ const AuditoriasHallazgosView: React.FC = () => {
                           <div className="flex justify-between items-center mb-2">
                             {getTipoHallazgoBadge(hallazgo.tipo)}
                             <div className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex gap-1">
+                              <button onClick={() => handleViewHallazgo(hallazgo)} className="p-1.5 text-[#2563EB] hover:bg-[#EFF6FF] rounded-md" title="Ver hallazgo"><Eye size={14} /></button>
                               <button onClick={() => handleEditHallazgo(hallazgo)} className="p-1.5 text-[#10B981] hover:bg-[#ECFDF5] rounded-md"><Edit size={14} /></button>
                               <button onClick={() => handleDeleteHallazgo(hallazgo.id)} className="p-1.5 text-[#EF4444] hover:bg-[#FEF2F2] rounded-md"><Trash2 size={14} /></button>
                             </div>
@@ -841,6 +858,66 @@ const AuditoriasHallazgosView: React.FC = () => {
           </div>
         </Card>
       </div >
+      <VistaDocumentoSGCDialog
+        open={showDocumentoAuditoria}
+        onOpenChange={setShowDocumentoAuditoria}
+        data={
+          selectedAuditoria
+            ? datosSGCDesdeAuditoria(
+                selectedAuditoria as AuditoriaSGC,
+                hallazgos
+                  .filter((h) => h.auditoriaId === selectedAuditoria.id)
+                  .map((h) => h as unknown as HallazgoAuditoria),
+              )
+            : null
+        }
+        title="Auditoría"
+        description="Documento controlado con el expediente de la auditoría y sus hallazgos."
+        extraActions={
+          selectedAuditoria ? (
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => {
+                setShowDocumentoAuditoria(false);
+                handleEditAuditoria(selectedAuditoria);
+              }}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Editar
+            </Button>
+          ) : null
+        }
+      />
+      <VistaDocumentoSGCDialog
+        open={showDocumentoHallazgo}
+        onOpenChange={setShowDocumentoHallazgo}
+        data={
+          selectedHallazgo
+            ? datosSGCDesdeHallazgo(
+                selectedHallazgo as unknown as HallazgoAuditoria,
+                auditorias.find((a) => a.id === selectedHallazgo.auditoriaId) || selectedHallazgo.auditoria,
+              )
+            : null
+        }
+        title="Hallazgo de auditoría"
+        description="Documento controlado con el detalle, la evidencia y la cláusula del hallazgo."
+        extraActions={
+          selectedHallazgo ? (
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => {
+                setShowDocumentoHallazgo(false);
+                handleEditHallazgo(selectedHallazgo);
+              }}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Editar
+            </Button>
+          ) : null
+        }
+      />
       {/* Modal Auditoría */}
       {
         showModal && (
