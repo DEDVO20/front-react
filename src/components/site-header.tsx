@@ -20,6 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { NotificationBell } from "./notifications/NotificationBell";
+import { getRouteTitle } from "@/utils/appSearch";
 
 export function SiteHeader() {
   const location = useLocation();
@@ -31,66 +32,7 @@ export function SiteHeader() {
     setMobileSearchOpen(false);
   }, [location.pathname]);
 
-  // Obtener el nombre de la página actual desde la ruta
-  const getPageName = () => {
-    const path = location.pathname;
-    if (path === "/dashboard") return "Panel de Control";
-    if (path.includes("/perfil")) return "Mi Perfil";
-    if (path.includes("/usuarios")) return "Usuarios";
-    if (path.includes("/documentos")) return "Documentos";
-    if (path.includes("/control-versiones")) return "Control de Versiones";
-    if (path.includes("/procesos")) return "Procesos";
-    if (path.includes("/auditorias") || path.includes("/Auditorias") || path.includes("/Auditoria"))
-      return "Auditorías";
-    if (path.includes("/Activos")) return "Objetivos Activos";
-    if (path.includes("/Seguimiento")) return "Seguimiento de Objetivos";
-    if (path.includes("/Historial")) return "Historial de Objetivos";
-
-    // Gestión de Áreas
-    if (path.includes("/gestionar_areas")) return "Gestionar Áreas";
-    if (path.includes("/Asignar_Responsables")) return "Asignar Responsables";
-
-    //usuarios 
-    if (path.includes("/ListaDeUsuarios")) return "Lista de Usuarios";
-    if (path.includes("/NuevoUsuario")) return "Nuevo Usuario";
-
-    // No Conformidades - rutas específicas
-    if (path.includes("/No_conformidades_Abiertas"))
-      return "No Conformidades Abiertas";
-    if (path.includes("/No_conformidades_EnTratamiento"))
-      return "No Conformidades en Tratamiento";
-    if (path.includes("/No_conformidades_Cerradas"))
-      return "No Conformidades Cerradas";
-    if (path.includes("/no-conformidades")) return "No Conformidades";
-
-    if (path.includes("/Acciones_correctivas_Cerradas"))
-      return "Acciones Correctivas Cerradas";
-
-    if (path.includes("/Acciones_correctivas_Verificadas"))
-      return "Acciones Correctivas Verificadas";
-
-    if (path.includes("/acciones-correctivas")) return "Acciones Correctivas";
-    // Rutas específicas de riesgos
-    if (path.includes("/riesgos/matriz")) return "Matriz de Riesgo";
-    if (path.includes("/riesgos/controles")) return "Controles de Riesgos";
-    if (path.includes("/riesgos/tratamiento")) return "Tratamiento";
-
-    if (path.includes("/indicadores")) return "Indicadores";
-
-    if (path.includes("/capacitaciones/programadas")) return "Capacitaciones Programadas";
-    if (path.includes("/capacitaciones/historial")) return "Capacitaciones Historial";
-    if (path.includes("/capacitaciones/asistencias")) return "Capacitaciones Asistencias";
-    if (path.includes("/capacitaciones/competencias")) return "Capacitaciones Competencias";
-
-    // Ajustes y Seguridad
-    if (path.includes("/configuracion")) return "Ajustes";
-    if (path.includes("/seguridad")) return "Seguridad";
-    if (path.includes("/manual-usuario")) return "Manual de Usuario";
-    if (path.includes("/mesa-ayuda")) return "Mesa de Ayuda";
-    if (path.includes("/reportes")) return "Reportes";
-
-    return "Panel de Control";
-  };
+  const pageName = getRouteTitle(location.pathname);
   return (
     <header className="sticky top-0 z-50 flex min-h-12 shrink-0 flex-col border-b bg-background">
       <div className="flex w-full min-w-0 items-center gap-1 px-2 sm:px-4 lg:gap-2 lg:px-6">
@@ -113,7 +55,7 @@ export function SiteHeader() {
             <BreadcrumbSeparator className="hidden xl:block" />
             <BreadcrumbItem className="min-w-0">
               <BreadcrumbPage className="block max-w-[46vw] truncate font-medium sm:max-w-[280px] md:max-w-none">
-                {getPageName()}
+                {pageName}
               </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
