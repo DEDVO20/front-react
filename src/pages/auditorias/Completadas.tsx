@@ -4,9 +4,10 @@ import {
   Users, CheckCircle2, AlertCircle, Clock, ChevronDown, ChevronUp,
   XCircle, Filter, FileText, Activity, CheckCircle
 } from 'lucide-react';
-import { auditoriaService } from '@/services/auditoria.service';
+import { auditoriaService, Auditoria, HallazgoAuditoria } from '@/services/auditoria.service';
 import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -15,8 +16,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from 'sonner';
-import { Auditoria } from '@/services/auditoria.service';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeAuditoria } from "@/utils/documentosRegistrosSGC";
 
 // === COMPONENTE: AUDITORÍAS COMPLETADAS ===
 const AuditoriasCompletadas: React.FC = () => {
@@ -29,6 +31,8 @@ const AuditoriasCompletadas: React.FC = () => {
   const [selectedAuditoria, setSelectedAuditoria] = useState<Auditoria | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
+  const [showDocumento, setShowDocumento] = useState(false);
+  const [hallazgosVista, setHallazgosVista] = useState<HallazgoAuditoria[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -110,22 +114,35 @@ const AuditoriasCompletadas: React.FC = () => {
     });
   };
 
+  const openView = async (auditoria: Auditoria) => {
+    setSelectedAuditoria(auditoria);
+    setShowDocumento(true);
+    try {
+      const hallazgos = await auditoriaService.getHallazgos(auditoria.id);
+      setHallazgosVista(Array.isArray(hallazgos) ? hallazgos : []);
+    } catch {
+      setHallazgosVista([]);
+    }
+  };
+
   const openModal = (mode: 'view' | 'edit', auditoria: Auditoria) => {
+    if (mode === 'view') {
+      void openView(auditoria);
+      return;
+    }
     setModalMode(mode);
     setSelectedAuditoria(auditoria);
-    if (mode === 'edit') {
-      setFormData({
-        codigo: auditoria.codigo,
-        tipo: auditoria.tipo,
-        objetivo: auditoria.objetivo || '',
-        alcance: auditoria.alcance || '',
-        normaReferencia: auditoria.normaReferencia || 'ISO 9001:2015',
-        fechaPlanificada: auditoria.fechaPlanificada || '',
-        fechaInicio: auditoria.fechaInicio || '',
-        fechaFin: auditoria.fechaFin || '',
-        estado: 'completada'
-      });
-    }
+    setFormData({
+      codigo: auditoria.codigo,
+      tipo: auditoria.tipo,
+      objetivo: auditoria.objetivo || '',
+      alcance: auditoria.alcance || '',
+      normaReferencia: auditoria.normaReferencia || 'ISO 9001:2015',
+      fechaPlanificada: auditoria.fechaPlanificada || '',
+      fechaInicio: auditoria.fechaInicio || '',
+      fechaFin: auditoria.fechaFin || '',
+      estado: 'completada'
+    });
     setShowModal(true);
   };
 
@@ -421,15 +438,40 @@ const AuditoriasCompletadas: React.FC = () => {
           </div>
         </div>
 
-        {/* Modal */}
-        {showModal && selectedAuditoria && (
+        <VistaDocumentoSGCDialog
+          open={showDocumento}
+          onOpenChange={(open) => {
+            setShowDocumento(open);
+            if (!open) {
+              setHallazgosVista([]);
+            }
+          }}
+          data={selectedAuditoria ? datosSGCDesdeAuditoria(selectedAuditoria, hallazgosVista) : null}
+          title="Auditoría completada"
+          description="Documento controlado con el expediente de la auditoría, informe y hallazgos."
+          extraActions={
+            selectedAuditoria ? (
+              <Button
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => {
+                  setShowDocumento(false);
+                  openModal("edit", selectedAuditoria);
+                }}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
+            ) : null
+          }
+        />
+
+        {showModal && selectedAuditoria && modalMode === "edit" && (
           <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all">
             <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-[#E5E7EB]">
               <div className="bg-[#F8FAFC] border-b border-[#E5E7EB] p-4 sm:p-8 flex justify-between items-center gap-3">
                 <div>
-                  <h2 className="text-2xl font-bold text-[#1E3A8A]">
-                    {modalMode === 'edit' ? 'Actualizar Registro' : 'Expediente de Auditoría'}
-                  </h2>
+                  <h2 className="text-2xl font-bold text-[#1E3A8A]">Actualizar Registro</h2>
                   <p className="text-[#6B7280] text-sm mt-1">{selectedAuditoria.codigo} • {selectedAuditoria.tipo.toUpperCase()}</p>
                 </div>
                 <button onClick={() => setShowModal(false)} className="p-2 border border-[#E5E7EB] text-[#6B7280] hover:text-[#2563EB] hover:bg-white rounded-xl transition-all">
@@ -437,108 +479,54 @@ const AuditoriasCompletadas: React.FC = () => {
                 </button>
               </div>
               <div className="p-4 sm:p-8 overflow-y-auto max-h-[calc(90vh-120px)]">
-                {modalMode === 'view' ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-6">
-                      <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
-                        <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Información General</h4>
-                        <div className="space-y-4">
-                          <p className="text-sm text-[#1E3A8A] leading-relaxed"><strong>Objetivo:</strong> {selectedAuditoria.objetivo}</p>
-                          <p className="text-sm text-[#1E3A8A] leading-relaxed"><strong>Alcance:</strong> {selectedAuditoria.alcance}</p>
-                        </div>
-                      </div>
-                      <div className="bg-[#F8FAFC] p-6 rounded-2xl border border-[#E5E7EB]">
-                        <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Metodología</h4>
-                        <div className="space-y-2 text-sm text-[#1E3A8A]">
-                          <p><strong>Norma:</strong> {selectedAuditoria.normaReferencia}</p>
-                          <p><strong>Tipo:</strong> <span className="capitalize">{selectedAuditoria.tipo}</span></p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-6">
-                      <Card className="rounded-2xl border-[#E5E7EB] bg-[#EFF6FF] border-none shadow-none">
-                        <CardHeader className="pb-2">
-                          <CardDescription className="text-xs font-bold text-[#2563EB] uppercase tracking-widest">Cronología</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="flex justify-between items-center text-sm font-medium">
-                            <span className="text-[#6B7280]">Inicio:</span>
-                            <span className="text-[#1E3A8A]">{formatDate(selectedAuditoria.fechaInicio)}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-sm font-medium">
-                            <span className="text-[#6B7280]">Finalización:</span>
-                            <span className="text-[#1E3A8A]">{formatDate(selectedAuditoria.fechaFin)}</span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      <Card className="rounded-2xl border-[#E5E7EB] bg-[#F8FAFC] border-none shadow-none">
-                        <CardHeader className="pb-2">
-                          <CardDescription className="text-xs font-bold text-[#6B7280] uppercase tracking-widest">Asignación</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-[#E0EDFF] text-[#2563EB] flex items-center justify-center font-bold">
-                              {selectedAuditoria.auditorLider?.nombre?.charAt(0)}
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold text-[#1E3A8A]">{selectedAuditoria.auditorLider?.nombre}</p>
-                              <p className="text-xs text-[#6B7280]">Auditor Líder Asignado</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                ) : (
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#6B7280] uppercase px-1">Código de Auditoría</label>
-                        <input type="text" value={formData.codigo} readOnly className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl bg-[#F8FAFC] text-[#1E3A8A] font-bold" />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#6B7280] uppercase px-1">Tipo de Auditoría</label>
-                        <select
-                          value={formData.tipo}
-                          onChange={e => setFormData({ ...formData, tipo: e.target.value })}
-                          className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold focus:ring-2 focus:ring-[#2563EB]/20 outline-none"
-                        >
-                          <option value="interna">Interna</option>
-                          <option value="externa">Externa</option>
-                          <option value="certificacion">Certificación</option>
-                          <option value="seguimiento">Seguimiento</option>
-                        </select>
-                      </div>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-[#6B7280] uppercase px-1">Código de Auditoría</label>
+                      <input type="text" value={formData.codigo} readOnly className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl bg-[#F8FAFC] text-[#1E3A8A] font-bold" />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-[#6B7280] uppercase px-1">Objetivo del Programa</label>
-                      <textarea
-                        value={formData.objetivo}
-                        onChange={e => setFormData({ ...formData, objetivo: e.target.value })}
-                        rows={3}
-                        className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-medium focus:ring-2 focus:ring-[#2563EB]/20 outline-none resize-none"
-                      />
+                      <label className="text-xs font-bold text-[#6B7280] uppercase px-1">Tipo de Auditoría</label>
+                      <select
+                        value={formData.tipo}
+                        onChange={e => setFormData({ ...formData, tipo: e.target.value })}
+                        className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold focus:ring-2 focus:ring-[#2563EB]/20 outline-none"
+                      >
+                        <option value="interna">Interna</option>
+                        <option value="externa">Externa</option>
+                        <option value="certificacion">Certificación</option>
+                        <option value="seguimiento">Seguimiento</option>
+                      </select>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#6B7280] uppercase px-1">Fecha de Inicio</label>
-                        <input type="date" value={formData.fechaInicio} onChange={e => setFormData({ ...formData, fechaInicio: e.target.value })} className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold" />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#6B7280] uppercase px-1">Fecha de Cierre</label>
-                        <input type="date" value={formData.fechaFin} onChange={e => setFormData({ ...formData, fechaFin: e.target.value })} className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold" />
-                      </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-[#6B7280] uppercase px-1">Objetivo del Programa</label>
+                    <textarea
+                      value={formData.objetivo}
+                      onChange={e => setFormData({ ...formData, objetivo: e.target.value })}
+                      rows={3}
+                      className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-medium focus:ring-2 focus:ring-[#2563EB]/20 outline-none resize-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-[#6B7280] uppercase px-1">Fecha de Inicio</label>
+                      <input type="date" value={formData.fechaInicio} onChange={e => setFormData({ ...formData, fechaInicio: e.target.value })} className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold" />
                     </div>
-                    <div className="flex justify-end gap-3 pt-8 border-t border-[#E5E7EB]">
-                      <button type="button" onClick={() => setShowModal(false)} className="px-8 py-4 border border-[#E5E7EB] rounded-2xl text-[#6B7280] font-bold hover:bg-[#F8FAFC] transition-all">
-                        Descartar
-                      </button>
-                      <button type="submit" className="px-8 py-4 bg-[#2563EB] text-white rounded-2xl font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-200 transition-all">
-                        Guardar Registro
-                      </button>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-[#6B7280] uppercase px-1">Fecha de Cierre</label>
+                      <input type="date" value={formData.fechaFin} onChange={e => setFormData({ ...formData, fechaFin: e.target.value })} className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold" />
                     </div>
-                  </form>
-                )}
+                  </div>
+                  <div className="flex justify-end gap-3 pt-8 border-t border-[#E5E7EB]">
+                    <button type="button" onClick={() => setShowModal(false)} className="px-8 py-4 border border-[#E5E7EB] rounded-2xl text-[#6B7280] font-bold hover:bg-[#F8FAFC] transition-all">
+                      Descartar
+                    </button>
+                    <button type="submit" className="px-8 py-4 bg-[#2563EB] text-white rounded-2xl font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-200 transition-all">
+                      Guardar Registro
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>

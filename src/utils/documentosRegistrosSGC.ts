@@ -1,4 +1,5 @@
 import type { AccionCorrectiva } from "@/services/accionCorrectiva.service";
+import type { Auditoria, HallazgoAuditoria } from "@/services/auditoria.service";
 import type { NoConformidad } from "@/services/noConformidad.service";
 import type { Riesgo } from "@/services/riesgo.service";
 import {
@@ -182,6 +183,96 @@ export function datosSGCDesdeNoConformidad(nc: NoConformidad): DocumentoSGCData 
     fechaVigencia: nc.fecha_deteccion,
     elaboradoPor: nombreUsuarioSGC(nc.detector, "Sistema"),
     revisadoPor: nombreUsuarioSGC(nc.responsable, "Pendiente"),
+    aprobadoPor: "Pendiente",
+  };
+}
+
+function etiquetaTipoAuditoria(tipo?: string): string {
+  const mapa: Record<string, string> = {
+    interna: "Interna",
+    externa: "Externa",
+    certificacion: "Certificación",
+    seguimiento: "Seguimiento",
+  };
+  return mapa[(tipo || "").toLowerCase()] || tipo || "—";
+}
+
+function etiquetaTipoHallazgo(tipo?: string): string {
+  const mapa: Record<string, string> = {
+    no_conformidad_mayor: "No conformidad mayor",
+    no_conformidad_menor: "No conformidad menor",
+    observacion: "Observación",
+    oportunidad_mejora: "Oportunidad de mejora",
+  };
+  return mapa[(tipo || "").toLowerCase()] || (tipo || "—").replace(/_/g, " ");
+}
+
+function hallazgosAuditoriaAHtml(hallazgos: HallazgoAuditoria[] = []): string {
+  if (!hallazgos.length) return textoAHtmlSGC("", "Sin hallazgos registrados.");
+  return tablaCamposSGC(
+    hallazgos.map((hallazgo) => {
+      const raw = hallazgo as HallazgoAuditoria & {
+        tipo_hallazgo?: string;
+        clausula_norma?: string;
+      };
+      const tipo = raw.tipo || raw.tipo_hallazgo;
+      const clausula = raw.clausulaIso || raw.clausula_norma;
+      return [
+        `${raw.codigo || "S/C"} — ${etiquetaTipoHallazgo(tipo)}`,
+        [
+          raw.descripcion || "Sin descripción",
+          raw.requisito ? `Requisito: ${raw.requisito}` : null,
+          clausula ? `Cláusula ISO: ${clausula}` : null,
+          raw.gravedad ? `Gravedad: ${raw.gravedad}` : null,
+          `Estado: ${(raw.estado || "—").replace(/_/g, " ")}`,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      ];
+    }),
+  );
+}
+
+export function datosSGCDesdeAuditoria(
+  auditoria: Auditoria,
+  hallazgos: HallazgoAuditoria[] = [],
+): DocumentoSGCData {
+  const areas =
+    auditoria.areasAuditadas?.filter(Boolean).join(", ") || "—";
+  const contenidoHtml = [
+    seccionSGC(
+      "Datos de la auditoría",
+      tablaCamposSGC([
+        ["Código", auditoria.codigo || "—"],
+        ["Nombre", auditoria.nombre || "—"],
+        ["Tipo", etiquetaTipoAuditoria(auditoria.tipo)],
+        ["Estado", (auditoria.estado || "—").replace(/_/g, " ")],
+        ["Norma de referencia", auditoria.normaReferencia || "—"],
+        ["Fecha planificada", formatearFechaSGC(auditoria.fechaPlanificada)],
+        ["Fecha de inicio", formatearFechaSGC(auditoria.fechaInicio)],
+        ["Fecha de finalización", formatearFechaSGC(auditoria.fechaFin)],
+        ["Auditor líder", nombreUsuarioSGC(auditoria.auditorLider, "Sin asignar")],
+        ["Registrado por", nombreUsuarioSGC(auditoria.creadoPorUsuario, "Sistema de Calidad")],
+        ["Áreas auditadas", areas],
+      ]),
+    ),
+    seccionSGC("Objetivo", textoAHtmlSGC(auditoria.objetivo || auditoria.objetivos, "Sin objetivo.")),
+    seccionSGC("Alcance", textoAHtmlSGC(auditoria.alcance, "Sin alcance.")),
+    seccionSGC("Informe final", textoAHtmlSGC(auditoria.informeFinal, "Sin informe final registrado.")),
+    seccionSGC("Hallazgos", hallazgosAuditoriaAHtml(hallazgos)),
+  ].join("");
+
+  return {
+    nombre: auditoria.nombre || `Auditoría ${auditoria.codigo || ""}`.trim(),
+    codigo: auditoria.codigo || "S/C",
+    version: "1.0",
+    tipoDocumento: "auditoria",
+    estado: auditoria.estado,
+    contenidoHtml,
+    fechaCreacion: auditoria.creadoEn,
+    fechaVigencia: auditoria.fechaFin || auditoria.fechaPlanificada,
+    elaboradoPor: nombreUsuarioSGC(auditoria.auditorLider, "Sistema"),
+    revisadoPor: nombreUsuarioSGC(auditoria.creadoPorUsuario, "Pendiente"),
     aprobadoPor: "Pendiente",
   };
 }

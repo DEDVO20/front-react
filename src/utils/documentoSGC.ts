@@ -54,6 +54,7 @@ const TIPOS: Record<string, string> = {
   accion_mejora: "ACCIÓN DE MEJORA",
   tratamiento_riesgo: "TRATAMIENTO DE RIESGO",
   no_conformidad: "NO CONFORMIDAD",
+  auditoria: "AUDITORÍA",
 };
 
 export function etiquetaTipoDocumento(tipo?: string): string {
@@ -78,6 +79,9 @@ const ESTADOS: Record<string, string> = {
   identificado: "identificado",
   mitigado: "mitigado",
   aceptado: "aceptado",
+  planificada: "planificada",
+  en_curso: "en curso",
+  completada: "completada",
 };
 
 export function etiquetaEstadoDocumento(estado?: string): string {
