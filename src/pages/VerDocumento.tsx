@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { documentoService } from "@/services/documento.service";
-import { DocumentWorkflow } from "@/components/documents/DocumentWorkflow";
+import { DocumentoSGCPaper } from "@/components/documents/DocumentoSGCPaper";
 import { toast } from "sonner";
 import {
   FileText,
@@ -12,7 +12,6 @@ import {
   CheckCircle,
   Calendar,
   Eye,
-  Shield,
   Hash,
   FileType,
   Trash2,
@@ -23,6 +22,12 @@ import {
 } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { hasAnyPermission } from "@/lib/permissions";
+import {
+  cargarMarcaSGC,
+  exportarDocumentoSGC,
+  type DocumentoSGCData,
+  type MarcaSGC,
+} from "@/utils/documentoSGC";
 
 interface Documento {
   id: string;
@@ -49,8 +54,13 @@ export default function VerDocumento() {
   const canDelete = hasAnyPermission(["documentos.anular"]);
   const [documento, setDocumento] = useState<Documento | null>(null);
   const [versiones, setVersiones] = useState<any[]>([]);
+  const [marca, setMarca] = useState<MarcaSGC>({
+    logoUrl: null,
+    titulo: "Universitaria de Colombia",
+    subtitulo: "Sistema de Gestión de Calidad",
+  });
   const [loading, setLoading] = useState(true);
-  const [loadingVersiones, setLoadingVersiones] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const fetchDocumento = async () => {
     if (!id) return;
@@ -77,29 +87,10 @@ export default function VerDocumento() {
     if (!id) return;
 
     try {
-      setLoadingVersiones(true);
       const data = await documentoService.getVersiones(id);
       setVersiones(data || []);
     } catch (error) {
       console.error("Error al cargar versiones:", error);
-      // No mostrar error al usuario, solo log
-    } finally {
-      setLoadingVersiones(false);
-    }
-  };
-
-  const handleWorkflowStateChange = async (newState: string) => {
-    if (!id) return;
-
-    try {
-      // Actualizar el estado del documento
-      await documentoService.update(id, { estado: newState });
-
-      // Recargar el documento para mostrar los cambios
-      await fetchDocumento();
-    } catch (error) {
-      console.error("Error al cambiar estado:", error);
-      throw error;
     }
   };
 
@@ -110,111 +101,43 @@ export default function VerDocumento() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const handleExportPDF = () => {
-    if (!documento) return;
+  useEffect(() => {
+    cargarMarcaSGC().then(setMarca);
+  }, []);
 
-    const printWindow = window.open("", "", "height=600,width=800");
-    if (printWindow) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>${documento.nombre}</title>
-            <style>
-              body {
-                font-family: Arial, sans-serif;
-                padding: 40px;
-                max-width: 210mm;
-                margin: 0 auto;
-              }
-              .header {
-                border-bottom: 2px solid #333;
-                padding-bottom: 20px;
-                margin-bottom: 30px;
-              }
-              .header h1 {
-                margin: 0;
-                color: #0A4BA0;
-              }
-              .metadata {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-                margin-bottom: 30px;
-                font-size: 14px;
-              }
-              .metadata-item {
-                padding: 8px;
-                background: #f5f5f5;
-                border-radius: 4px;
-              }
-              .metadata-label {
-                font-weight: bold;
-                color: #666;
-              }
-              table {
-                border-collapse: collapse;
-                width: 100%;
-                margin: 20px 0;
-              }
-              td, th {
-                border: 1px solid #ddd;
-                padding: 8px;
-                text-align: left;
-              }
-              th {
-                background-color: #0A4BA0;
-                color: white;
-              }
-              h1, h2, h3 {
-                color: #333;
-                margin-top: 20px;
-              }
-              img {
-                max-width: 100%;
-                height: auto;
-              }
-              .footer {
-                margin-top: 50px;
-                padding-top: 20px;
-                border-top: 1px solid #ddd;
-                font-size: 12px;
-                color: #666;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h1>${documento.nombre}</h1>
-            </div>
+  const construirDatosSGC = (): DocumentoSGCData | null => {
+    if (!documento) return null;
+    return {
+      nombre: documento.nombre,
+      codigo: documento.codigo,
+      version: documento.version_actual,
+      tipoDocumento: documento.tipo_documento,
+      estado: documento.estado,
+      contenidoHtml: documento.descripcion,
+      fechaCreacion: documento.creado_en,
+      fechaAprobacion: documento.estado === "aprobado" ? documento.actualizado_en : undefined,
+      elaboradoPor: getNombreCompleto(documento.creador, "Sistema"),
+      revisadoPor: getNombreCompleto(documento.revisor, "Pendiente"),
+      aprobadoPor: getNombreCompleto(documento.aprobador, "Pendiente"),
+      versiones,
+    };
+  };
 
-            <div class="metadata">
-              <div class="metadata-item">
-                <span class="metadata-label">Código:</span> ${documento.codigo}
-              </div>
-              <div class="metadata-item">
-                <span class="metadata-label">Versión:</span> ${documento.version_actual}
-              </div>
-              <div class="metadata-item">
-                <span class="metadata-label">Tipo:</span> ${documento.tipo_documento}
-              </div>
-              <div class="metadata-item">
-                <span class="metadata-label">Estado:</span> ${documento.estado}
-              </div>
-            </div>
+  const handleExportPDF = async () => {
+    const datos = construirDatosSGC();
+    if (!datos) return;
 
-            <div class="content">
-              ${documento.descripcion || "<p>Sin contenido</p>"}
-            </div>
-
-            <div class="footer">
-              <p>Documento generado el ${new Date().toLocaleDateString("es-ES")}</p>
-            </div>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
+    try {
+      setExporting(true);
+      await exportarDocumentoSGC(datos, marca);
+      toast.success("Seleccione 'Guardar como PDF' en el cuadro de impresión");
+    } catch (error) {
+      console.error("Error al exportar PDF:", error);
+      toast.error(
+        error instanceof Error ? error.message : "No se pudo generar el PDF del documento",
+      );
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -387,10 +310,11 @@ export default function VerDocumento() {
               )}
               <button
                 onClick={handleExportPDF}
-                className="flex items-center gap-2 px-6 py-3 bg-white text-[#6B7280] border border-[#E5E7EB] rounded-xl hover:bg-[#F8FAFC] font-semibold transition-all"
+                disabled={exporting}
+                className="flex items-center gap-2 px-6 py-3 bg-white text-[#6B7280] border border-[#E5E7EB] rounded-xl hover:bg-[#F8FAFC] font-semibold transition-all disabled:opacity-50"
               >
                 <Download className="w-4 h-4" />
-                Exportar PDF
+                {exporting ? "Generando PDF..." : "Exportar PDF"}
               </button>
               {canDelete && (
                 <button
@@ -457,7 +381,7 @@ export default function VerDocumento() {
           <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <Clock className="w-5 h-5 text-[#2563EB]" />
-              <span className="text-sm font|-semibold text-[#1E3A8A]">Última Actualización</span>
+              <span className="text-sm font-semibold text-[#1E3A8A]">Última Actualización</span>
             </div>
             <p className="text-lg text-[#6B7280]">
               {new Date(documento.actualizado_en).toLocaleDateString("es-ES", {
@@ -516,29 +440,27 @@ export default function VerDocumento() {
           </div>
         </div>
 
-        {/* Contenido del Documento */}
-        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm">
+        {/* Documento en formato oficial SGC */}
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
           <div className="p-6 border-b border-[#E5E7EB] bg-[#F1F5F9]">
             <div className="flex items-center gap-2">
               <FileText className="w-6 h-6 text-[#2563EB]" />
-              <h2 className="text-xl font-semibold text-[#1E3A8A]">Contenido del Documento</h2>
+              <h2 className="text-xl font-semibold text-[#1E3A8A]">Documento controlado</h2>
+            </div>
+            <p className="text-sm text-[#6B7280] mt-1">
+              Vista previa del formato oficial para descarga PDF
+            </p>
+          </div>
+          <div className="p-3 sm:p-6 bg-[#F8FAFC] overflow-x-auto">
+            <div className="min-w-[640px] max-w-[816px] mx-auto shadow-sm">
+              {(() => {
+                const datos = construirDatosSGC();
+                return datos ? <DocumentoSGCPaper data={datos} marca={marca} /> : null;
+              })()}
             </div>
           </div>
-          <div className="p-8">
-            {documento.descripcion ? (
-              <div
-                className="prose prose-sm max-w-none text-[#6B7280]"
-                dangerouslySetInnerHTML={{ __html: documento.descripcion }}
-              />
-            ) : (
-              <div className="text-center py-12 text-[#6B7280]">
-                <FileText className="w-12 h-12 mx-auto mb-3 opacity-30 text-gray-300" />
-                <p>Este documento no tiene contenido</p>
-              </div>
-            )}
-          </div>
         </div>
-      </div >
-    </div >
+      </div>
+    </div>
   );
 }

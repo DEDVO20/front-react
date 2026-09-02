@@ -55,6 +55,7 @@ import {
 import { documentoService } from "@/services/documento.service";
 import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { datosSGCDesdeDocumento, esContenidoHtml, exportarDocumentoSGC } from "@/utils/documentoSGC";
 
 interface Documento {
   id: string;
@@ -154,11 +155,22 @@ export default function DocumentosObsoletos() {
     window.location.href = `/documentos/${documento.id}`;
   };
 
-  const handleDescargar = (documento: Documento) => {
-    if (documento.ruta_archivo) {
-      window.open(documento.ruta_archivo, '_blank');
-    } else {
+  const handleDescargar = async (documento: Documento) => {
+    try {
+      const completo = await documentoService.getById(documento.id);
+      if (esContenidoHtml(completo.descripcion)) {
+        await exportarDocumentoSGC(datosSGCDesdeDocumento(completo));
+        toast.success("Seleccione 'Guardar como PDF' en el cuadro de impresión");
+        return;
+      }
+      if (completo.ruta_archivo || documento.ruta_archivo) {
+        window.open(completo.ruta_archivo || documento.ruta_archivo, "_blank");
+        return;
+      }
       toast.info(`No hay archivo disponible para "${documento.nombre}"`);
+    } catch (error) {
+      console.error("Error al descargar documento:", error);
+      toast.error("No se pudo descargar el documento");
     }
   };
 

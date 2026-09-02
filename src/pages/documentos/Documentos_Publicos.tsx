@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { documentoService, type DocumentoResponse } from "@/services/documento.service";
+import { datosSGCDesdeDocumento, esContenidoHtml, exportarDocumentoSGC } from "@/utils/documentoSGC";
 import { areaService, type Area } from "@/services/area.service";
 import ticketService, { type Ticket } from "@/services/ticket.service";
 import { uploadService } from "@/services/upload.service";
@@ -110,7 +111,19 @@ export default function DocumentosPublicos() {
     return new Map(areas.map((a) => [a.id, a.nombre]));
   }, [areas]);
 
-  const handleDescargar = (doc: DocumentoResponse) => {
+  const handleDescargar = async (doc: DocumentoResponse) => {
+    if (esContenidoHtml(doc.descripcion)) {
+      try {
+        await exportarDocumentoSGC(datosSGCDesdeDocumento(doc));
+        toast.success("Seleccione 'Guardar como PDF' en el cuadro de impresión");
+        return;
+      } catch (error) {
+        console.error("Error al exportar PDF:", error);
+        toast.error("No se pudo generar el PDF del documento");
+        return;
+      }
+    }
+
     if (!doc.ruta_archivo) {
       toast.info(`"${doc.nombre}" no tiene archivo descargable.`);
       return;

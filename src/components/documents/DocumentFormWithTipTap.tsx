@@ -2,9 +2,16 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { TipTapEditor } from "./TipTapEditor";
 import { FileUpload } from "./FileUpload";
+import { DocumentoSGCPaper } from "./DocumentoSGCPaper";
 import { usuarioService, Usuario } from "@/services/usuario.service";
 import { toast } from "sonner";
 import { Save, Eye, Download, FileText, Upload as UploadIcon, Edit, AlertCircle } from "lucide-react";
+import {
+  cargarMarcaSGC,
+  exportarDocumentoSGC,
+  nombreUsuarioSGC,
+  type MarcaSGC,
+} from "@/utils/documentoSGC";
 
 interface InitialData {
   nombreArchivo?: string;
@@ -39,6 +46,12 @@ export const DocumentFormWithTipTap = ({
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [preview, setPreview] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [exporting, setExporting] = useState(false);
+  const [marca, setMarca] = useState<MarcaSGC>({
+    logoUrl: null,
+    titulo: "Universitaria de Colombia",
+    subtitulo: "Sistema de Gestión de Calidad",
+  });
 
   // Document creation mode: 'editor' or 'upload'
   const [documentMode, setDocumentMode] = useState<'editor' | 'upload'>(
@@ -97,6 +110,10 @@ export const DocumentFormWithTipTap = ({
       }
     };
     fetchUsuarios();
+  }, []);
+
+  useEffect(() => {
+    cargarMarcaSGC().then(setMarca);
   }, []);
 
   const handleInputChange = (
@@ -204,109 +221,39 @@ export const DocumentFormWithTipTap = ({
     }
   };
 
-  const handleExportPDF = () => {
-    const printWindow = window.open("", "", "height=600,width=800");
-    if (printWindow) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>${formData.nombreArchivo}</title>
-            <style>
-              body {
-                font-family: Arial, sans-serif;
-                padding: 40px;
-                max-width: 210mm;
-                margin: 0 auto;
-              }
-              .header {
-                border-bottom: 2px solid #333;
-                padding-bottom: 20px;
-                margin-bottom: 30px;
-              }
-              .header h1 {
-                margin: 0;
-                color: #0A4BA0;
-              }
-              .metadata {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-                margin-bottom: 30px;
-                font-size: 14px;
-              }
-              .metadata-item {
-                padding: 8px;
-                background: #f5f5f5;
-                border-radius: 4px;
-              }
-              .metadata-label {
-                font-weight: bold;
-                color: #666;
-              }
-              table {
-                border-collapse: collapse;
-                width: 100%;
-                margin: 20px 0;
-              }
-              td, th {
-                border: 1px solid #ddd;
-                padding: 8px;
-                text-align: left;
-              }
-              th {
-                background-color: #0A4BA0;
-                color: white;
-              }
-              h1, h2, h3 {
-                color: #333;
-                margin-top: 20px;
-              }
-              img {
-                max-width: 100%;
-                height: auto;
-              }
-              .footer {
-                margin-top: 50px;
-                padding-top: 20px;
-                border-top: 1px solid #ddd;
-                font-size: 12px;
-                color: #666;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h1>${formData.nombreArchivo}</h1>
-            </div>
+  const nombrePorId = (id?: string, fallback = "Pendiente") => {
+    if (!id) return fallback;
+    const usuario = usuarios.find((item) => item.id === id);
+    return usuario ? nombreUsuarioSGC(usuario, fallback) : fallback;
+  };
 
-            <div class="metadata">
-              <div class="metadata-item">
-                <span class="metadata-label">Código:</span> ${formData.codigoDocumento}
-              </div>
-              <div class="metadata-item">
-                <span class="metadata-label">Versión:</span> ${formData.version}
-              </div>
-              <div class="metadata-item">
-                <span class="metadata-label">Tipo:</span> ${formData.tipoDocumento}
-              </div>
-              <div class="metadata-item">
-                <span class="metadata-label">Estado:</span> ${formData.estado}
-              </div>
-            </div>
-
-            <div class="content">
-              ${content}
-            </div>
-
-            <div class="footer">
-              <p>Documento generado el ${new Date().toLocaleDateString("es-ES")}</p>
-            </div>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
+  const handleExportPDF = async () => {
+    try {
+      setExporting(true);
+      await exportarDocumentoSGC(
+        {
+          nombre: formData.nombreArchivo || "Documento sin título",
+          codigo: formData.codigoDocumento,
+          version: formData.version,
+          tipoDocumento: formData.tipoDocumento,
+          estado: formData.estado,
+          contenidoHtml: content,
+          fechaCreacion: new Date().toISOString(),
+          fechaVigencia: formData.proximaRevision || undefined,
+          elaboradoPor: nombrePorId(formData.subidoPor, "Sistema"),
+          revisadoPor: nombrePorId(formData.revisadoPor),
+          aprobadoPor: nombrePorId(formData.aprobadoPor),
+        },
+        marca,
+      );
+      toast.success("Seleccione 'Guardar como PDF' en el cuadro de impresión");
+    } catch (error) {
+      console.error("Error al exportar PDF:", error);
+      toast.error(
+        error instanceof Error ? error.message : "No se pudo generar el PDF del documento",
+      );
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -662,21 +609,45 @@ export const DocumentFormWithTipTap = ({
                 <button
                   type="button"
                   onClick={handleExportPDF}
-                  className="flex items-center gap-2 px-3 py-2 border border-border rounded-md hover:bg-accent transition-colors"
+                  disabled={exporting}
+                  className="flex items-center gap-2 px-3 py-2 border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
                 >
                   <Download className="w-4 h-4" />
-                  Exportar PDF
+                  {exporting ? "Generando PDF..." : "Exportar PDF"}
                 </button>
               </div>
             </div>
 
-            <div className={!canEditContent ? "opacity-75 pointer-events-none" : ""}>
-              <TipTapEditor
-                content={content}
-                onChange={setContent}
-                editable={canEditContent && !preview}
-              />
-            </div>
+            {preview ? (
+              <div className="overflow-x-auto rounded-md border border-border bg-[#F8FAFC] p-3">
+                <div className="mx-auto min-w-[640px] max-w-[816px]">
+                  <DocumentoSGCPaper
+                    marca={marca}
+                    data={{
+                      nombre: formData.nombreArchivo || "Documento sin título",
+                      codigo: formData.codigoDocumento,
+                      version: formData.version,
+                      tipoDocumento: formData.tipoDocumento,
+                      estado: formData.estado,
+                      contenidoHtml: content,
+                      fechaCreacion: new Date().toISOString(),
+                      fechaVigencia: formData.proximaRevision || undefined,
+                      elaboradoPor: nombrePorId(formData.subidoPor, "Sistema"),
+                      revisadoPor: nombrePorId(formData.revisadoPor),
+                      aprobadoPor: nombrePorId(formData.aprobadoPor),
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className={!canEditContent ? "opacity-75 pointer-events-none" : ""}>
+                <TipTapEditor
+                  content={content}
+                  onChange={setContent}
+                  editable={canEditContent && !preview}
+                />
+              </div>
+            )}
 
             {!canEditContent && (
               <p className="text-amber-600 text-sm mt-2 flex items-center gap-2">
