@@ -275,32 +275,24 @@ export default function FormularioUsuario() {
     setSelectedRoleIds(prev => {
       const already = prev.includes(normalized);
       const shouldSelect = checked === undefined ? !already : checked;
-      const newRoles = shouldSelect
-        ? (already ? prev : [...prev, normalized])
-        : prev.filter(id => id !== normalized);
-
-      if (newRoles.length > 0 && errors.roles) {
-        setErrors(prevErrors => {
-          const newErrors = { ...prevErrors };
-          delete newErrors.roles;
-          return newErrors;
-        });
+      if (shouldSelect) {
+        return already ? prev : [...prev, normalized];
       }
-
-      return newRoles;
+      return prev.filter(currentId => currentId !== normalized);
+    });
+    setErrors(prevErrors => {
+      if (!prevErrors.roles) return prevErrors;
+      const newErrors = { ...prevErrors };
+      delete newErrors.roles;
+      return newErrors;
     });
   };
 
   // Pantalla de carga mientras se obtienen los datos
   if (fetchingData) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F5F7FA]">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-[#2563EB] mx-auto" />
-          <p className="mt-4 text-lg font-medium text-[#6B7280]">
-            <LoadingSpinner message={`Cargando ${isEditing ? "usuario" : "formulario"}...`} />
-          </p>
-        </div>
+      <div className="min-h-[60vh] bg-[#F5F7FA] p-4 md:p-8">
+        <LoadingSpinner fullScreen={false} message={`Cargando ${isEditing ? "usuario" : "formulario"}...`} />
       </div>
     );
   }
@@ -354,7 +346,7 @@ export default function FormularioUsuario() {
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-[#1E3A8A]">Datos Personales</h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label className={errors.documento ? "text-red-500" : ""}>
                       Documento <span className="text-red-500">*</span>
@@ -437,7 +429,7 @@ export default function FormularioUsuario() {
                       Área <span className="text-red-500">*</span>
                     </Label>
                     <Select
-                      value={formData.areaId}
+                      value={formData.areaId || undefined}
                       onValueChange={(val) => {
                         setFormData(p => ({ ...p, areaId: val }));
                         if (errors.areaId) {
@@ -490,19 +482,19 @@ export default function FormularioUsuario() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {roles.length === 0 ? (
                     <div className="col-span-2 text-center py-8 text-[#6B7280]">
                       <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
                       <p>Cargando roles...</p>
                     </div>
                   ) : (
-                    roles.map(rol => {
-                      const isSelected = selectedRoleIds.includes(asId(rol.id));
+                    roles.filter((rol) => Boolean(asId(rol.id))).map(rol => {
+                      const roleId = asId(rol.id);
+                      const isSelected = selectedRoleIds.includes(roleId);
                       return (
                         <div
-                          key={rol.id}
-                          onClick={() => toggleRole(asId(rol.id))}
+                          key={roleId}
                           className={`p-5 rounded-xl border-2 cursor-pointer transition-all ${isSelected
                             ? "bg-[#E0EDFF] border-[#2563EB] shadow-sm"
                             : "bg-white border-[#E5E7EB] hover:border-[#2563EB]/50 hover:shadow-sm"
@@ -510,15 +502,13 @@ export default function FormularioUsuario() {
                         >
                           <div className="flex items-start gap-4">
                             <Checkbox
-                              id={`role-${rol.id}`}
+                              id={`role-${roleId}`}
                               checked={isSelected}
-                              onClick={(e) => e.stopPropagation()}
-                              onCheckedChange={(checked) => toggleRole(asId(rol.id), checked === true)}
+                              onCheckedChange={(checked) => toggleRole(roleId, checked === true)}
                             />
                             <label
-                              htmlFor={`role-${rol.id}`}
+                              htmlFor={`role-${roleId}`}
                               className="flex-1 cursor-pointer"
-                              onClick={(e) => e.preventDefault()}
                             >
                               <div className="font-semibold text-gray-900">{rol.nombre}</div>
                               <div className="text-xs text-gray-400 font-mono uppercase mt-1">{rol.clave}</div>
@@ -560,7 +550,7 @@ export default function FormularioUsuario() {
               <div className="pt-8 border-t border-[#E5E7EB] space-y-6">
                 <h3 className="text-lg font-semibold text-[#1E3A8A]">Credenciales de Acceso</h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label className={errors.correoElectronico ? "text-red-500" : ""}>
                       Correo Electrónico <span className="text-red-500">*</span>

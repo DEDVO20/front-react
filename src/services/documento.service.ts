@@ -43,6 +43,14 @@ export interface DocumentoResponse {
   creador?: UsuarioNested;  // Objeto usuario completo
   aprobador?: UsuarioNested;  // Objeto usuario completo
   revisor?: UsuarioNested;  // Objeto usuario completo
+  versiones?: Array<{
+    id: string;
+    version: string;
+    descripcion_cambios?: string;
+    ruta_archivo?: string;
+    creado_en: string;
+    creador?: UsuarioNested;
+  }>;
   creado_en: string;
   actualizado_en: string;
 }
@@ -54,7 +62,7 @@ class DocumentoService {
   }
 
   async getAll(params?: Record<string, string>): Promise<DocumentoResponse[]> {
-    const response = await apiClient.get("/documentos", { params });
+    const response = await apiClient.get("/documentos", { params: { limit: "1000", ...params } });
     return response.data;
   }
 

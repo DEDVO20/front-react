@@ -2,10 +2,17 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { DocumentFormWithTipTap } from "@/components/documents/DocumentFormWithTipTap";
 import { documentoService } from "@/services/documento.service";
-import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle, ArrowLeft, FileText } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+
+function siguienteVersion(version?: string): string {
+  const raw = String(version || "1.0").trim().replace(",", ".") || "1.0";
+  const partes = raw.split(".").filter(Boolean);
+  const mayor = Number.parseInt(partes[0] || "1", 10);
+  const menor = Number.parseInt(partes[1] || "0", 10);
+  return `${Number.isFinite(mayor) ? mayor : 1}.${(Number.isFinite(menor) ? menor : 0) + 1}`;
+}
 
 interface DocumentoData {
   nombreArchivo?: string;
@@ -23,7 +30,6 @@ interface DocumentoData {
 export default function EditarDocumento() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [initialData, setInitialData] = useState<DocumentoData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,70 +85,38 @@ export default function EditarDocumento() {
     try {
       setError(null);
 
-      // Obtener el contenido HTML actual del formulario
       const nuevoContenido = formData.get("contenidoHtml") as string;
-      const contenidoOriginal = initialData?.contenidoHtml || '';
+      const versionFormulario =
+        (formData.get("version_actual") as string) ||
+        (formData.get("version") as string) ||
+        initialData?.version ||
+        "1.0";
+      const versionActual = siguienteVersion(versionFormulario);
 
-      // Detectar si hubo cambios en el contenido
-      const huboCambios = nuevoContenido !== contenidoOriginal;
+      toast.info(`Nueva versión del documento: ${versionActual}`);
 
-      // Incrementar versión automáticamente si hubo cambios
-      let versionActual = formData.get("version") as string;
-      if (huboCambios && versionActual) {
-        // Parsear la versión (ej: "1.0" -> [1, 0])
-        const partes = versionActual.split('.');
-        if (partes.length >= 2) {
-          const mayor = parseInt(partes[0]) || 1;
-          const menor = parseInt(partes[1]) || 0;
-          // Incrementar el número menor
-          versionActual = `${mayor}.${menor + 1}`;
-
-          toast.info(`Cambios detectados. Versión actualizada a ${versionActual}`);
-        }
-      }
-
-      // Convert FormData to JSON object with backend field names
       const documentData: any = {
         codigo: formData.get("codigoDocumento") as string,
         nombre: formData.get("nombreArchivo") as string,
         descripcion: nuevoContenido || `Documento ${formData.get("nombreArchivo")}`,
         tipo_documento: formData.get("tipo_documento") as string,
-        version_actual: versionActual || "1.0",
+        version_actual: versionActual,
         estado: formData.get("estado") as string,
       };
 
-      // Add optional fields
       const creado_por = formData.get("creado_por") as string || formData.get("subidoPor") as string;
       if (creado_por) {
         documentData.creado_por = creado_por;
       }
 
-      // Corregido: Usar snake_case para aprobador
       const aprobado_por = formData.get("aprobado_por") as string;
       if (aprobado_por) {
         documentData.aprobado_por = aprobado_por;
       }
 
-      // Corregido: Agregar revisado_por
       const revisado_por = formData.get("revisado_por") as string;
       if (revisado_por) {
         documentData.revisado_por = revisado_por;
-      }
-
-      // Si hubo cambios, guardar la versión anterior en el historial
-      if (huboCambios && initialData) {
-        try {
-          await documentoService.createVersion({
-            documento_id: id,
-            version: initialData.version || '1.0',
-            descripcion_cambios: 'Versión anterior guardada automáticamente antes de actualizar',
-            creado_por: user?.id || undefined
-          });
-          console.log('✅ Versión anterior guardada en historial');
-        } catch (versionError) {
-          console.error('⚠️ Error al guardar versión anterior:', versionError);
-          // Continuar con la actualización aunque falle el guardado de versión
-        }
       }
 
       await documentoService.update(id, documentData);

@@ -621,6 +621,11 @@ export default function AreasResponsables() {
                     <div className="bg-[#F8FAFC] p-4 rounded-xl border border-[#E5E7EB] mt-4">
                       <p className="font-bold">{deleteDialog.area.nombre}</p>
                       <p className="text-sm text-[#6B7280]">Código: {deleteDialog.area.codigo}</p>
+                      {deleteDialog.area.asignaciones?.length ? (
+                        <p className="text-sm mt-3 text-[#9A3412] font-medium">
+                          Los {deleteDialog.area.asignaciones.length} usuario(s) asignados quedarán sin área y se eliminarán las asignaciones de responsables.
+                        </p>
+                      ) : null}
                       <p className="text-sm mt-3 text-[#991B1B] font-medium">
                         Esta acción es permanente y no se podrá deshacer.
                       </p>

@@ -31,7 +31,8 @@ import { toast } from "sonner";
 import { documentoService, type DocumentoResponse } from "@/services/documento.service";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
-import { datosSGCDesdeDocumento } from "@/utils/documentoSGC";
+import { DocumentoSGCPaper } from "@/components/documents/DocumentoSGCPaper";
+import { datosSGCDesdeDocumento, esContenidoHtml } from "@/utils/documentoSGC";
 
 type Version = {
   id: string;
@@ -39,6 +40,11 @@ type Version = {
   descripcion_cambios?: string;
   creado_en: string;
   creado_por?: {
+    nombre?: string;
+    primerApellido?: string;
+    segundoApellido?: string;
+  };
+  creador?: {
     nombre?: string;
     primerApellido?: string;
     segundoApellido?: string;
@@ -53,7 +59,14 @@ type Documento = {
   estado: string;
   creado_en: string;
   version_actual: string;
+  descripcion?: string;
+  tipo_documento?: string;
   creado_por?: {
+    nombre?: string;
+    primerApellido?: string;
+    segundoApellido?: string;
+  };
+  creador?: {
     nombre?: string;
     primerApellido?: string;
     segundoApellido?: string;
@@ -61,6 +74,24 @@ type Documento = {
   versiones?: Version[];
   ruta_archivo?: string;
 };
+
+function responsableDe(entidad?: { creado_por?: Version["creado_por"]; creador?: Version["creador"] }) {
+  return entidad?.creador || entidad?.creado_por;
+}
+
+function normalizarDocumento(doc: any): Documento {
+  const versiones = Array.isArray(doc.versiones)
+    ? doc.versiones.map((v: any) => ({
+        ...v,
+        creado_por: v.creador || v.creado_por,
+      }))
+    : [];
+  return {
+    ...doc,
+    creado_por: doc.creador || doc.creado_por,
+    versiones,
+  };
+}
 
 export default function ControlVersiones() {
   const [search, setSearch] = useState("");
@@ -81,7 +112,7 @@ export default function ControlVersiones() {
     try {
       setLoading(true);
       const docs = await documentoService.getAll();
-      setDocumentos(docs as any);
+      setDocumentos((Array.isArray(docs) ? docs : []).map(normalizarDocumento));
     } catch (error) {
       console.error("Error al cargar documentos:", error);
       toast.error("Error al cargar los documentos");
@@ -93,7 +124,10 @@ export default function ControlVersiones() {
   const cargarVersiones = async (documentoId: string) => {
     try {
       const versiones = await documentoService.getVersiones(documentoId);
-      return versiones;
+      return (Array.isArray(versiones) ? versiones : []).map((v: any) => ({
+        ...v,
+        creado_por: v.creador || v.creado_por,
+      }));
     } catch (error) {
       console.error("Error al cargar versiones:", error);
       toast.error("Error al cargar las versiones del documento");
@@ -132,12 +166,14 @@ export default function ControlVersiones() {
   }, [documentos]);
 
   const openDoc = async (doc: Documento) => {
-    setSelectedDoc(doc);
+    const completo = await documentoService.getById(doc.id).catch(() => null);
+    const base = completo ? normalizarDocumento({ ...doc, ...completo, versiones: completo.versiones || doc.versiones }) : doc;
+    setSelectedDoc(base);
     setSelectedVersion(null);
 
-    if (!doc.versiones || doc.versiones.length === 0) {
+    if (!base.versiones || base.versiones.length === 0) {
       const versiones = await cargarVersiones(doc.id);
-      setSelectedDoc({ ...doc, versiones });
+      setSelectedDoc({ ...base, versiones });
     }
   };
 
@@ -152,7 +188,10 @@ export default function ControlVersiones() {
         ? doc.versiones
         : await documentoService.getVersiones(doc.id).catch(() => []);
       setDocumentoSGC(completo);
-      setVersionesSGC(Array.isArray(versiones) ? versiones : []);
+      setVersionesSGC((Array.isArray(versiones) ? versiones : []).map((v: any) => ({
+        ...v,
+        creado_por: v.creador || v.creado_por,
+      })));
       setShowDocumento(true);
     } catch (error) {
       console.error("Error al abrir documento SGC:", error);
@@ -415,16 +454,16 @@ export default function ControlVersiones() {
                       <TableCell className="px-8 py-4">
                         <div className="flex items-center gap-2">
                           <div className="h-8 w-8 rounded-full bg-[#8B5CF6] text-white flex items-center justify-center text-xs font-bold">
-                            {doc.creado_por?.nombre?.charAt(0) || "-"}
+                            {doc.creado_por?.nombre?.charAt(0) || responsableDe(doc)?.nombre?.charAt(0) || "-"}
                           </div>
                           <span className="text-sm font-medium text-[#1E3A8A]">
-                            {obtenerNombreCompleto(doc.creado_por)}
+                            {obtenerNombreCompleto(responsableDe(doc) || doc.creado_por)}
                           </span>
                         </div>
                       </TableCell>
                       <TableCell className="px-8 py-4 text-center">
                         <Badge className="bg-[#F3F4F6] text-[#4B5563] font-bold">
-                          {doc.versiones?.length || 0}
+                          {doc.versiones?.length || 0} · v{doc.version_actual || "1.0"}
                         </Badge>
                       </TableCell>
                       <TableCell className="px-8 py-4 text-right">
@@ -525,10 +564,10 @@ export default function ControlVersiones() {
                                           <TableCell>
                                             <div className="flex items-center gap-2">
                                               <div className="h-6 w-6 rounded-full bg-[#F3F4F6] text-[#6B7280] flex items-center justify-center text-[10px] font-bold">
-                                                {v.creado_por?.nombre?.charAt(0) || "-"}
+                                                {v.creado_por?.nombre?.charAt(0) || responsableDe(v)?.nombre?.charAt(0) || "-"}
                                               </div>
-                                              <span className="text-sm text-[#4B5563] truncate max-w-[100px]" title={obtenerNombreCompleto(v.creado_por)}>
-                                                {v.creado_por?.nombre || '-'}
+                                              <span className="text-sm text-[#4B5563] truncate max-w-[100px]" title={obtenerNombreCompleto(responsableDe(v) || v.creado_por)}>
+                                                {responsableDe(v)?.nombre || v.creado_por?.nombre || '-'}
                                               </span>
                                             </div>
                                           </TableCell>
@@ -576,19 +615,49 @@ export default function ControlVersiones() {
                                       </Badge>
                                     )}
                                   </div>
-                                  <div className="flex-1 bg-[#F1F5F9] p-4 flex items-center justify-center rounded-b-2xl overflow-hidden relative">
-                                    {(selectedVersion?.ruta_archivo || selectedDoc?.ruta_archivo) ? (
-                                      <iframe
-                                        src={selectedVersion?.ruta_archivo || selectedDoc?.ruta_archivo}
-                                        className="w-full h-full rounded-xl border border-[#E5E7EB] bg-white shadow-inner"
-                                        title="Visor de Documento"
-                                      />
-                                    ) : (
-                                      <div className="text-center p-8">
-                                        <FileText className="h-16 w-16 text-[#CBD5E1] mx-auto mb-4" />
-                                        <p className="text-[#6B7280] font-medium">No hay archivo disponible para visualizar</p>
-                                      </div>
-                                    )}
+                                  <div className="flex-1 bg-[#F1F5F9] p-4 flex items-center justify-center rounded-b-2xl overflow-auto relative min-h-[420px]">
+                                    {(() => {
+                                      const archivo = selectedVersion?.ruta_archivo || selectedDoc?.ruta_archivo;
+                                      const html = selectedDoc?.descripcion;
+                                      if (archivo && !esContenidoHtml(archivo)) {
+                                        return (
+                                          <iframe
+                                            src={archivo}
+                                            className="w-full h-full min-h-[400px] rounded-xl border border-[#E5E7EB] bg-white shadow-inner"
+                                            title="Visor de Documento"
+                                          />
+                                        );
+                                      }
+                                      if (html) {
+                                        return (
+                                          <div className="w-full max-w-[816px] bg-white rounded-xl border border-[#E5E7EB] shadow-inner">
+                                            <DocumentoSGCPaper
+                                              data={datosSGCDesdeDocumento({
+                                                nombre: selectedDoc?.nombre || "",
+                                                codigo: selectedDoc?.codigo || "",
+                                                version_actual: selectedVersion?.version || selectedDoc?.version_actual,
+                                                tipo_documento: (selectedDoc as Documento)?.tipo_documento || "formato",
+                                                estado: selectedDoc?.estado,
+                                                descripcion: html,
+                                                creado_en: selectedVersion?.creado_en || selectedDoc?.creado_en,
+                                                creador: responsableDe(selectedVersion) || responsableDe(selectedDoc),
+                                              })}
+                                              marca={{
+                                                logoUrl: null,
+                                                titulo: "Universitaria de Colombia",
+                                                subtitulo: "Sistema de Gestión de Calidad",
+                                              }}
+                                            />
+                                          </div>
+                                        );
+                                      }
+                                      return (
+                                        <div className="text-center p-8">
+                                          <FileText className="h-16 w-16 text-[#CBD5E1] mx-auto mb-4" />
+                                          <p className="text-[#6B7280] font-medium">No hay archivo disponible para visualizar</p>
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
                                 </div>
                               </div>

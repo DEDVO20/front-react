@@ -138,9 +138,9 @@ export default function AsignarResponsables() {
         apiClient.get<Usuario[]>("/usuarios", { params: { limit: 1000, activo: true } }),
       ]);
 
-      setAsignaciones(asignacionesRes.data);
-      setAreas(areasRes.data);
-      setUsuarios(usuariosRes.data);
+      setAsignaciones(Array.isArray(asignacionesRes.data) ? asignacionesRes.data : []);
+      setAreas(Array.isArray(areasRes.data) ? areasRes.data : []);
+      setUsuarios(Array.isArray(usuariosRes.data) ? usuariosRes.data : []);
     } catch (error: any) {
       toast.error(error.message || "Error al cargar datos");
     } finally {
@@ -205,11 +205,29 @@ export default function AsignarResponsables() {
   };
 
   const filteredAsignaciones = asignaciones.filter((a) =>
-    matchesTextSearch(searchTerm, a)
+    matchesTextSearch(
+      searchTerm,
+      a,
+      a.area,
+      a.usuario,
+      a.usuario?.documento,
+      a.usuario?.correo_electronico,
+      a.usuario?.nombre_usuario,
+      `${a.usuario?.nombre || ""} ${a.usuario?.segundo_nombre || ""} ${a.usuario?.primer_apellido || ""} ${a.usuario?.segundo_apellido || ""}`,
+      a.area?.codigo,
+      a.area?.nombre,
+    )
   );
 
   const usuariosFiltradosForm = usuarios.filter((usuario) =>
-    matchesTextSearch(filtroUsuarioForm, usuario)
+    matchesTextSearch(
+      filtroUsuarioForm,
+      usuario,
+      usuario.documento,
+      usuario.correo_electronico,
+      usuario.nombre_usuario,
+      `${usuario.nombre || ""} ${usuario.segundo_nombre || ""} ${usuario.primer_apellido || ""} ${usuario.segundo_apellido || ""}`,
+    )
   );
 
   if (loading) {
@@ -430,19 +448,19 @@ export default function AsignarResponsables() {
                       <TableRow key={asignacion.id} className="hover:bg-[#F5F3FF] transition-colors">
                         <TableCell className="px-6 py-4">
                           <Badge className="bg-[#E0EDFF] text-[#2563EB] font-bold px-4 py-2">
-                            {asignacion.area.codigo}
+                            {asignacion.area?.codigo || "—"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="px-6 py-4 font-bold">{asignacion.area.nombre}</TableCell>
+                        <TableCell className="px-6 py-4 font-bold">{asignacion.area?.nombre || "Área no disponible"}</TableCell>
                         <TableCell className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-full bg-[#2563EB] flex items-center justify-center text-white font-bold text-lg">
-                              {asignacion.usuario.nombre.charAt(0).toUpperCase()}
+                              {(asignacion.usuario?.nombre || "?").charAt(0).toUpperCase()}
                             </div>
-                            <span className="font-medium">{asignacion.usuario.nombre}</span>
+                            <span className="font-medium">{asignacion.usuario?.nombre || "Usuario no disponible"}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="px-6 py-4 text-[#6B7280]">{asignacion.usuario.correo_electronico}</TableCell>
+                        <TableCell className="px-6 py-4 text-[#6B7280]">{asignacion.usuario?.correo_electronico || "—"}</TableCell>
                         <TableCell className="px-6 py-4">
                           {asignacion.es_principal ? (
                             <Badge className="bg-[#ECFDF5] text-[#22C55E] border-[#22C55E]/30">
@@ -539,18 +557,35 @@ export default function AsignarResponsables() {
                         onChange={(e) => setFiltroUsuarioForm(e.target.value)}
                         className="rounded-xl"
                       />
-                      <Select value={formData.usuario_id} onValueChange={(v) => setFormData({ ...formData, usuario_id: v })}>
-                        <SelectTrigger className="rounded-xl">
-                          <SelectValue placeholder="Selecciona un usuario" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {usuariosFiltradosForm.map((u) => (
-                            <SelectItem key={u.id} value={u.id}>
-                              {u.nombre} {u.primer_apellido || ""} {u.documento ? `— CC ${u.documento}` : ""} — {u.correo_electronico}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="max-h-56 overflow-y-auto rounded-xl border border-[#E5E7EB] bg-white">
+                        {usuariosFiltradosForm.length === 0 ? (
+                          <p className="px-4 py-6 text-sm text-[#6B7280] text-center">
+                            No se encontraron usuarios con ese criterio (CC, correo, nombre o usuario).
+                          </p>
+                        ) : (
+                          usuariosFiltradosForm.map((u) => {
+                            const seleccionado = formData.usuario_id === u.id;
+                            const nombre = `${u.nombre} ${u.segundo_nombre || ""} ${u.primer_apellido || ""} ${u.segundo_apellido || ""}`.replace(/\s+/g, " ").trim();
+                            return (
+                              <button
+                                key={u.id}
+                                type="button"
+                                onClick={() => setFormData({ ...formData, usuario_id: u.id })}
+                                className={`w-full text-left px-4 py-3 border-b border-[#F3F4F6] last:border-b-0 ${
+                                  seleccionado ? "bg-[#EFF6FF]" : "hover:bg-[#F8FAFC]"
+                                }`}
+                              >
+                                <p className="font-medium text-[#111827]">{nombre}</p>
+                                <p className="text-xs text-[#6B7280]">
+                                  {u.documento ? `CC ${u.documento} · ` : ""}
+                                  {u.correo_electronico || "Sin correo"}
+                                  {u.nombre_usuario ? ` · @${u.nombre_usuario}` : ""}
+                                </p>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center space-x-4 p-4 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB]">

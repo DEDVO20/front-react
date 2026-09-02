@@ -294,24 +294,21 @@ export default function EditarUsuario() {
         setSelectedRoleIds((prev) => {
             const already = prev.includes(normalized);
             const shouldSelect = checked === undefined ? !already : checked;
-            const newRoles = shouldSelect
-                ? (already ? prev : [...prev, normalized])
-                : prev.filter((id) => id !== normalized);
-
-            if (newRoles.length > 0 && errors.roles) {
-                setErrors((prevErrors) => {
-                    const newErrors = { ...prevErrors };
-                    delete newErrors.roles;
-                    return newErrors;
-                });
+            if (shouldSelect) {
+                return already ? prev : [...prev, normalized];
             }
-
-            return newRoles;
+            return prev.filter((currentId) => currentId !== normalized);
+        });
+        setErrors((prevErrors) => {
+            if (!prevErrors.roles) return prevErrors;
+            const newErrors = { ...prevErrors };
+            delete newErrors.roles;
+            return newErrors;
         });
     };
 
     if (loading) {
-        return <LoadingSpinner message="Cargando datos del usuario" />;
+        return <LoadingSpinner fullScreen={false} message="Cargando datos del usuario" />;
     }
 
     return (
@@ -355,7 +352,7 @@ export default function EditarUsuario() {
                                 Datos Personales
                             </h3>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {/* Documento */}
                                 <div className="space-y-2">
                                     <label htmlFor="documento" className="text-sm font-medium text-gray-700">
@@ -507,20 +504,19 @@ export default function EditarUsuario() {
                                     )}
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {roles.length === 0 ? (
                                         <div className="col-span-2 text-center py-8 text-[#6B7280]">
                                             <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
                                             <p>Cargando roles...</p>
                                         </div>
                                     ) : (
-                                        roles.map((rol) => {
+                                        roles.filter((rol) => Boolean(asId(rol.id))).map((rol) => {
                                             const roleId = asId(rol.id);
                                             const isSelected = selectedRoleIds.includes(roleId);
                                             return (
                                                 <div
-                                                    key={rol.id}
-                                                    onClick={() => toggleRole(roleId)}
+                                                    key={roleId}
                                                     className={`p-5 rounded-xl border-2 cursor-pointer transition-all ${isSelected
                                                         ? "bg-[#E0EDFF] border-[#2563EB] shadow-sm"
                                                         : "bg-white border-[#E5E7EB] hover:border-[#2563EB]/50 hover:shadow-sm"
@@ -528,15 +524,13 @@ export default function EditarUsuario() {
                                                 >
                                                     <div className="flex items-start gap-4">
                                                         <Checkbox
-                                                            id={`role-${rol.id}`}
+                                                            id={`role-${roleId}`}
                                                             checked={isSelected}
-                                                            onClick={(e) => e.stopPropagation()}
                                                             onCheckedChange={(checked) => toggleRole(roleId, checked === true)}
                                                         />
                                                         <label
-                                                            htmlFor={`role-${rol.id}`}
+                                                            htmlFor={`role-${roleId}`}
                                                             className="flex-1 cursor-pointer"
-                                                            onClick={(e) => e.preventDefault()}
                                                         >
                                                             <div className="font-semibold text-gray-900">{rol.nombre}</div>
                                                             <div className="text-xs text-gray-400 font-mono uppercase mt-1">{rol.clave}</div>
@@ -581,7 +575,7 @@ export default function EditarUsuario() {
                                 Información de Cuenta
                             </h3>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {/* Correo Electrónico */}
                                 <div className="space-y-2">
                                     <label htmlFor="correoElectronico" className="text-sm font-medium text-gray-700">

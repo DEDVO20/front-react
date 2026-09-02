@@ -14,6 +14,7 @@ import {
   type MarcaSGC,
 } from "@/utils/documentoSGC";
 import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
+import { usuarioTienePermiso } from "@/lib/permissions";
 
 interface InitialData {
   nombreArchivo?: string;
@@ -73,8 +74,17 @@ export const DocumentFormWithTipTap = ({
     revisadoPor: initialData?.revisadoPor || "",
     aprobadoPor: initialData?.aprobadoPor || "",
   });
-
   const [content, setContent] = useState(initialData?.contenidoHtml || "");
+
+  const revisores = usuarios.filter((usuario) => usuarioTienePermiso(usuario, ["documentos.revisar"]));
+  const aprobadores = usuarios.filter((usuario) => usuarioTienePermiso(usuario, ["documentos.aprobar"]));
+  const revisoresOpciones = formData.revisadoPor && !revisores.some((u) => u.id === formData.revisadoPor)
+    ? [...revisores, ...usuarios.filter((u) => u.id === formData.revisadoPor)]
+    : revisores;
+  const aprobadoresOpciones = formData.aprobadoPor && !aprobadores.some((u) => u.id === formData.aprobadoPor)
+    ? [...aprobadores, ...usuarios.filter((u) => u.id === formData.aprobadoPor)]
+    : aprobadores;
+
   const codigoAutomatico = useCodigoAutomatico(
     "documento",
     mode === "create",
@@ -162,7 +172,7 @@ export const DocumentFormWithTipTap = ({
         newErrors.content = "El contenido del documento es requerido";
       }
     } else if (documentMode === 'upload') {
-      if (!uploadedFile) {
+      if (!uploadedFile && !(mode === "edit" && initialData?.rutaArchivo)) {
         newErrors.file = "Debe seleccionar un archivo para subir";
       }
     }
@@ -480,16 +490,19 @@ export const DocumentFormWithTipTap = ({
               disabled={!canAssign}
               className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <option value="">Seleccionar (opcional)</option>
-              {usuarios?.map((usuario) => (
+              <option value="">Seleccionar revisor con permiso</option>
+              {revisoresOpciones.map((usuario) => (
                 <option key={usuario.id} value={usuario.id}>
                   {`${usuario.nombre} ${usuario.primer_apellido}`}
                 </option>
               ))}
             </select>
             <p className="text-xs text-muted-foreground mt-1">
-              Persona que revisa el documento
+              Solo usuarios con rol/permiso de revisión de documentos
             </p>
+            {revisores.length === 0 && (
+              <p className="text-xs text-amber-600 mt-1">No hay usuarios con permiso documentos.revisar.</p>
+            )}
           </div>
 
           {/* 3. Aprobado por */}
@@ -509,16 +522,19 @@ export const DocumentFormWithTipTap = ({
               disabled={!canAssign}
               className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <option value="">Seleccionar (opcional)</option>
-              {usuarios?.map((usuario) => (
+              <option value="">Seleccionar aprobador con permiso</option>
+              {aprobadoresOpciones.map((usuario) => (
                 <option key={usuario.id} value={usuario.id}>
                   {`${usuario.nombre} ${usuario.primer_apellido}`}
                 </option>
               ))}
             </select>
             <p className="text-xs text-muted-foreground mt-1">
-              Jefe del área que aprueba
+              Solo usuarios con rol/permiso de aprobación de documentos
             </p>
+            {aprobadores.length === 0 && (
+              <p className="text-xs text-amber-600 mt-1">No hay usuarios con permiso documentos.aprobar.</p>
+            )}
           </div>
         </div>
 

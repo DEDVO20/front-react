@@ -21,6 +21,7 @@ import ticketService, { type Ticket } from "@/services/ticket.service";
 import { uploadService } from "@/services/upload.service";
 import { getCurrentUser } from "@/services/auth";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { sameId } from "@/lib/permissions";
 
 type SolicitudForm = {
   areaId: string;
@@ -29,6 +30,23 @@ type SolicitudForm = {
 };
 
 type DecisionAction = "aprobar" | "declinar";
+
+function nombreUsuario(u?: { nombre?: string; segundo_nombre?: string; primer_apellido?: string; segundo_apellido?: string } | null) {
+  if (!u) return "—";
+  return `${u.nombre || ""} ${u.segundo_nombre || ""} ${u.primer_apellido || ""} ${u.segundo_apellido || ""}`.replace(/\s+/g, " ").trim() || "—";
+}
+
+function etiquetaEstadoSolicitud(estado: string) {
+  const map: Record<string, string> = {
+    abierto: "Abierta",
+    en_progreso: "En revisión",
+    resuelto: "Resuelta",
+    cerrado: "Cerrada",
+    aprobado: "Aprobada",
+    declinado: "Declinada",
+  };
+  return map[estado] || estado;
+}
 
 export default function DocumentosPublicos() {
   const navigate = useNavigate();
@@ -59,11 +77,20 @@ export default function DocumentosPublicos() {
   const cargarDatos = async () => {
     try {
       setLoading(true);
-      const [docs, areasData, ticketsData] = await Promise.all([
-        documentoService.getAll({ estado: "aprobado" }),
-        areaService.getAll(),
-        ticketService.getAll(),
-      ]);
+      const docsPromise = documentoService.getAll({ estado: "aprobado" }).catch((error) => {
+        console.error("Error al cargar documentos publicos:", error);
+        toast.error("No se pudieron cargar los documentos públicos");
+        return [] as DocumentoResponse[];
+      });
+      const areasPromise = areaService.getAll().catch((error) => {
+        console.error("Error al cargar áreas:", error);
+        return [] as Area[];
+      });
+      const ticketsPromise = ticketService.getAll().catch((error) => {
+        console.error("Error al cargar solicitudes:", error);
+        return [] as Ticket[];
+      });
+      const [docs, areasData, ticketsData] = await Promise.all([docsPromise, areasPromise, ticketsPromise]);
       setDocumentos(docs || []);
       setAreas(areasData || []);
       setTickets(ticketsData || []);
@@ -93,7 +120,7 @@ export default function DocumentosPublicos() {
   const misSolicitudes = useMemo(() => {
     if (!currentUser?.id) return [];
     return tickets.filter(
-      (t) => t.categoria === "solicitud_documento" && t.solicitante_id === currentUser.id,
+      (t) => t.categoria === "solicitud_documento" && sameId(t.solicitante_id, currentUser.id),
     );
   }, [tickets, currentUser]);
 
@@ -103,9 +130,13 @@ export default function DocumentosPublicos() {
       (t) =>
         t.categoria === "solicitud_documento" &&
         t.estado === "abierto" &&
-        t.asignado_a === currentUser.id,
+        sameId(t.asignado_a, currentUser.id),
     );
   }, [tickets, currentUser]);
+
+  const areasConResponsable = useMemo(() => {
+    return areas.filter((a) => Array.isArray(a.asignaciones) && a.asignaciones.length > 0);
+  }, [areas]);
 
   const areaNombrePorId = useMemo(() => {
     return new Map(areas.map((a) => [a.id, a.nombre]));
@@ -155,17 +186,21 @@ export default function DocumentosPublicos() {
   const enviarSolicitud = async () => {
     if (!selectedDocumento) return;
     if (!solicitudForm.areaId) {
-      toast.error("Selecciona el area destino");
+      toast.error("Selecciona el área destino");
       return;
     }
-    if (!solicitudForm.archivo) {
-      toast.error("Debes cargar el formato diligenciado");
+    if (!solicitudForm.descripcion.trim() && !solicitudForm.archivo) {
+      toast.error("Describe la solicitud o adjunta el formato diligenciado");
       return;
     }
 
     try {
       setSending(true);
-      const subida = await uploadService.uploadEvidencia(solicitudForm.archivo);
+      let archivoUrl: string | undefined;
+      if (solicitudForm.archivo) {
+        const subida = await uploadService.uploadEvidencia(solicitudForm.archivo);
+        archivoUrl = subida.url;
+      }
 
       await ticketService.create({
         titulo: `Solicitud ${selectedDocumento.codigo} - ${selectedDocumento.nombre}`,
@@ -176,15 +211,15 @@ export default function DocumentosPublicos() {
         prioridad: "media",
         area_destino_id: solicitudForm.areaId,
         documento_publico_id: selectedDocumento.id,
-        archivo_adjunto_url: subida.url,
+        archivo_adjunto_url: archivoUrl,
       });
 
-      toast.success("Solicitud enviada al responsable del area");
+      toast.success("Solicitud enviada. Quedó registrada con trazabilidad para el área responsable.");
       cerrarSolicitud();
       await cargarDatos();
     } catch (error) {
       console.error("Error al enviar solicitud:", error);
-      toast.error("No se pudo enviar la solicitud");
+      toast.error(error instanceof Error ? error.message : "No se pudo enviar la solicitud");
     } finally {
       setSending(false);
     }
@@ -254,8 +289,15 @@ export default function DocumentosPublicos() {
                 <div key={t.id} className="border border-[#E5E7EB] rounded-xl p-4">
                   <p className="font-semibold text-[#111827]">{t.titulo}</p>
                   <p className="text-sm text-[#6B7280] mt-1">{t.descripcion}</p>
+                  <p className="text-xs text-[#6B7280] mt-2">
+                    Solicitante: <span className="font-semibold">{nombreUsuario(t.solicitante)}</span>
+                    {t.solicitante?.correo_electronico ? ` · ${t.solicitante.correo_electronico}` : ""}
+                    {t.solicitante?.documento ? ` · CC ${t.solicitante.documento}` : ""}
+                  </p>
                   <p className="text-xs text-[#6B7280] mt-1">
-                    Area: {t.area_destino_id ? areaNombrePorId.get(t.area_destino_id) || "Sin area" : "Sin area"}
+                    Área: {t.area_destino_id ? areaNombrePorId.get(t.area_destino_id) || "Sin área" : "Sin área"}
+                    {" · "}
+                    Creada: {new Date(t.creado_en).toLocaleString("es-CO")}
                   </p>
                   <div className="flex flex-wrap gap-2 mt-3">
                     {t.archivo_adjunto_url && (
@@ -384,10 +426,25 @@ export default function DocumentosPublicos() {
               {misSolicitudes.map((t) => (
                 <div key={t.id} className="border border-[#E5E7EB] rounded-xl p-3">
                   <p className="font-medium text-[#111827]">{t.titulo}</p>
-                  <p className="text-xs text-[#6B7280]">
-                    Estado: <span className="font-semibold">{t.estado}</span> | Area:{" "}
-                    {t.area_destino_id ? areaNombrePorId.get(t.area_destino_id) || "Sin area" : "Sin area"}
+                  <p className="text-xs text-[#6B7280] mt-1">
+                    Estado: <span className="font-semibold">{etiquetaEstadoSolicitud(t.estado)}</span>
+                    {" · Área: "}
+                    {t.area_destino_id ? areaNombrePorId.get(t.area_destino_id) || "Sin área" : "Sin área"}
                   </p>
+                  <p className="text-xs text-[#6B7280] mt-1">
+                    Solicitante: {nombreUsuario(t.solicitante)}
+                    {" · Responsable: "}
+                    {nombreUsuario(t.asignado)}
+                  </p>
+                  <p className="text-xs text-[#6B7280] mt-1">
+                    Enviada: {new Date(t.creado_en).toLocaleString("es-CO")}
+                    {t.fecha_resolucion ? ` · Resolución: ${new Date(t.fecha_resolucion).toLocaleString("es-CO")}` : ""}
+                  </p>
+                  {t.solucion && (
+                    <p className="text-sm text-[#374151] mt-2 bg-[#F8FAFC] rounded-lg p-2">
+                      Comentario: {t.solucion}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -471,19 +528,24 @@ export default function DocumentosPublicos() {
 
             <div className="space-y-4 mt-4">
               <div>
-                <label className="text-sm font-medium text-[#111827] block mb-1">Area destino</label>
+                <label className="text-sm font-medium text-[#111827] block mb-1">Área destino</label>
                 <select
                   className="w-full p-2 rounded-lg border border-[#E5E7EB]"
                   value={solicitudForm.areaId}
                   onChange={(e) => setSolicitudForm({ ...solicitudForm, areaId: e.target.value })}
                 >
-                  <option value="">Selecciona un area</option>
-                  {areas.map((a) => (
+                  <option value="">Selecciona un área con responsable</option>
+                  {(areasConResponsable.length > 0 ? areasConResponsable : areas).map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.nombre}
                     </option>
                   ))}
                 </select>
+                {areasConResponsable.length === 0 && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    El área debe tener un responsable asignado para poder enviar la solicitud.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -498,7 +560,7 @@ export default function DocumentosPublicos() {
 
               <div>
                 <label className="text-sm font-medium text-[#111827] block mb-1">
-                  Formato diligenciado
+                  Formato diligenciado (opcional)
                 </label>
                 <input
                   type="file"
@@ -510,6 +572,9 @@ export default function DocumentosPublicos() {
                     })
                   }
                 />
+                <p className="text-xs text-[#6B7280] mt-1">
+                  Puedes enviar la solicitud con una descripción o adjuntando el formato.
+                </p>
               </div>
             </div>
 
