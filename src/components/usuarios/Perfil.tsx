@@ -221,10 +221,15 @@ export default function ProfilePage() {
     );
 
   return (
-    <div className="flex justify-center p-6">
-      <Card className="w-full max-w-3xl shadow-lg">
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <div className="max-w-3xl mx-auto space-y-8">
+      <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+        <h1 className="text-3xl font-bold text-[#1E3A8A]">Mi Perfil</h1>
+        <p className="text-[#6B7280] mt-2">Datos personales y foto de usuario del SGC</p>
+      </div>
+      <Card className="w-full rounded-2xl shadow-sm border border-[#E5E7EB]">
         <CardHeader>
-          <CardTitle>Mi Perfil</CardTitle>
+          <CardTitle className="text-[#1E3A8A]">Información de la cuenta</CardTitle>
         </CardHeader>
         <Separator />
 
@@ -394,6 +399,7 @@ export default function ProfilePage() {
           </AlertDialog>
         </CardFooter>
       </Card>
+      </div>
     </div>
   );
 }

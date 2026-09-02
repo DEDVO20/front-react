@@ -574,23 +574,24 @@ export default function CargaMasivaUsuarios() {
     };
 
     return (
-        <div className="min-w-0 flex-1 space-y-6 p-4 md:p-6 pt-6 max-w-7xl mx-auto">
+        <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+            <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-start sm:items-center gap-3">
-                        <div className="p-2 bg-blue-100 rounded-lg shrink-0">
-                            <Upload className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600" />
-                        </div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[#1E3A8A] flex items-start sm:items-center gap-3">
+                        <Upload className="h-8 w-8 text-[#2563EB] shrink-0" />
                         <span className="break-words">Carga Masiva de Usuarios</span>
                     </h1>
-                    <p className="text-gray-600 mt-2 text-sm sm:text-base">
+                    <p className="text-[#6B7280] mt-2 text-sm sm:text-base">
                         Cargue múltiples usuarios desde un archivo Excel o CSV
                     </p>
                 </div>
-                <Button variant="outline" size="sm" className="w-full sm:w-auto shrink-0" onClick={() => navigate("/ListaDeUsuarios")}>
+                <Button variant="outline" size="sm" className="w-full sm:w-auto shrink-0 rounded-xl" onClick={() => navigate("/ListaDeUsuarios")}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Volver
                 </Button>
+            </div>
             </div>
 
             {/* Instrucciones y Plantilla */}
@@ -839,6 +840,7 @@ export default function CargaMasivaUsuarios() {
                     )}
                 </>
             )}
+        </div>
         </div>
     );
 }

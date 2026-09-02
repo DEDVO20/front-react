@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    Calendar, CheckCircle, AlertTriangle, FileText,
+    Calendar, CheckCircle, AlertTriangle, FileText, Eye,
     ArrowLeft, Plus, Play, ExternalLink, Activity, Save, ShieldCheck
 } from 'lucide-react';
 import { auditoriaService, Auditoria, HallazgoAuditoria } from '@/services/auditoria.service';
@@ -28,10 +28,11 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-// Importar componentes de formulario si es necesario o simplificar
 import { Input } from "@/components/ui/input";
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeAuditoria, datosSGCDesdeHallazgo } from "@/utils/documentosRegistrosSGC";
 
 export default function AuditoriaEjecucion() {
     const { id } = useParams<{ id: string }>();
@@ -40,6 +41,8 @@ export default function AuditoriaEjecucion() {
     const [hallazgos, setHallazgos] = useState<HallazgoAuditoria[]>([]);
     const [loading, setLoading] = useState(true);
     const [showHallazgoModal, setShowHallazgoModal] = useState(false);
+    const [showDocumento, setShowDocumento] = useState(false);
+    const [hallazgoVista, setHallazgoVista] = useState<HallazgoAuditoria | null>(null);
     const [isFinalizeDialogOpen, setIsFinalizeDialogOpen] = useState(false);
     const [checklistLoading, setChecklistLoading] = useState(false);
     const [checklistSaving, setChecklistSaving] = useState(false);
@@ -427,11 +430,26 @@ export default function AuditoriaEjecucion() {
             <div className="max-w-7xl mx-auto space-y-6">
 
                 {/* Header de Navegación */}
-                <div className="flex items-center gap-4 mb-4">
-                    <Button variant="ghost" onClick={() => navigate(-1)} className="rounded-full h-10 w-10 p-0">
-                        <ArrowLeft className="h-6 w-6 text-gray-500" />
+                <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-6">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                    <Button variant="outline" onClick={() => navigate(-1)} className="rounded-xl h-10 w-10 p-0">
+                        <ArrowLeft className="h-5 w-5 text-[#1E3A8A]" />
                     </Button>
                     <h1 className="text-2xl font-bold text-[#1E3A8A]">Ejecución de Auditoría</h1>
+                    </div>
+                    <Button
+                        variant="outline"
+                        className="rounded-xl"
+                        onClick={() => {
+                            setHallazgoVista(null);
+                            setShowDocumento(true);
+                        }}
+                    >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Ver documento
+                    </Button>
+                </div>
                 </div>
 
                 {/* Panel Principal de Estado */}
@@ -628,6 +646,17 @@ export default function AuditoriaEjecucion() {
 
                                             {/* Acciones de Integración */}
                                             <div className="flex flex-col gap-2 min-w-[200px] border-l pl-4 border-gray-100">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="rounded-xl"
+                                                    onClick={() => {
+                                                        setHallazgoVista(hallazgo);
+                                                        setShowDocumento(true);
+                                                    }}
+                                                >
+                                                    <Eye className="h-4 w-4 mr-1" /> Ver
+                                                </Button>
                                                 {hallazgo.noConformidadId ? (
                                                     <div className="p-3 bg-green-50 rounded-lg border border-green-100">
                                                         <span className="text-xs font-bold text-green-700 flex items-center gap-1 mb-1">
@@ -761,6 +790,26 @@ export default function AuditoriaEjecucion() {
                 </AlertDialogContent>
             </AlertDialog>
 
+            <VistaDocumentoSGCDialog
+                open={showDocumento}
+                onOpenChange={(open) => {
+                    setShowDocumento(open);
+                    if (!open) setHallazgoVista(null);
+                }}
+                data={
+                    hallazgoVista
+                        ? datosSGCDesdeHallazgo(hallazgoVista, auditoria)
+                        : datosSGCDesdeAuditoria(auditoria, hallazgos)
+                }
+                title={hallazgoVista ? "Hallazgo de auditoría" : "Ejecución de auditoría"}
+                description={
+                    hallazgoVista
+                        ? "Documento controlado con el hallazgo y su evidencia objetiva."
+                        : "Documento controlado con el estado de ejecución, checklist y hallazgos."
+                }
+            />
+
+        </div>
         </div>
     );
 }

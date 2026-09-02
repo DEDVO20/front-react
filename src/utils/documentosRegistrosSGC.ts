@@ -1,5 +1,5 @@
 import type { AccionCorrectiva } from "@/services/accionCorrectiva.service";
-import type { Auditoria, HallazgoAuditoria } from "@/services/auditoria.service";
+import type { Auditoria, HallazgoAuditoria, ProgramaAuditoria } from "@/services/auditoria.service";
 import type {
   AsistenciaCapacitacion,
   Capacitacion,
@@ -13,6 +13,8 @@ import type { ObjetivoCalidad, SeguimientoObjetivo } from "@/services/objetivoCa
 import type { Proceso } from "@/services/proceso.service";
 import type { Riesgo } from "@/services/riesgo.service";
 import type { Usuario } from "@/services/usuario.service";
+import type { Ticket } from "@/services/ticket.service";
+import type { CampoFormulario, FormularioDinamico } from "@/services/formulario-dinamico.service";
 import {
   formatearFechaSGC,
   nombreUsuarioSGC,
@@ -1372,6 +1374,278 @@ export function datosSGCDesdeIndicador(
     estado: indicador.estado || "borrador",
     contenidoHtml,
     fechaCreacion: indicador.creado_en,
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
+  };
+}
+
+function etiquetaCategoriaTicketSGC(categoria?: string): string {
+  const mapa: Record<string, string> = {
+    soporte: "Soporte técnico",
+    consulta: "Consulta",
+    mejora: "Solicitud de mejora",
+    solicitud_documento: "Solicitud de documento",
+  };
+  return mapa[(categoria || "").toLowerCase()] || categoria || "—";
+}
+
+function etiquetaPrioridadTicketSGC(prioridad?: string): string {
+  const mapa: Record<string, string> = {
+    baja: "Baja",
+    media: "Media",
+    alta: "Alta",
+    critica: "Crítica",
+  };
+  return mapa[(prioridad || "").toLowerCase()] || prioridad || "—";
+}
+
+function etiquetaEstadoTicketSGC(estado?: string): string {
+  const mapa: Record<string, string> = {
+    abierto: "Abierto",
+    en_progreso: "En progreso",
+    resuelto: "Resuelto",
+    cerrado: "Cerrado",
+    aprobado: "Aprobado",
+    declinado: "Declinado",
+  };
+  return mapa[(estado || "").toLowerCase()] || (estado || "—").replace(/_/g, " ");
+}
+
+export function datosSGCDesdeTicket(ticket: Ticket, areaNombre?: string): DocumentoSGCData {
+  const solicitante = nombreUsuarioSGC(ticket.solicitante, "Solicitante");
+  const asignado = nombreUsuarioSGC(ticket.asignado, "Pendiente");
+  const estado = (ticket.estado || "abierto").toLowerCase();
+  const resuelto = ["resuelto", "cerrado", "aprobado"].includes(estado);
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Registro",
+      cumplido: true,
+      responsable: solicitante,
+      fecha: ticket.creado_en,
+    },
+    {
+      etapa: "Atención",
+      cumplido: estado === "en_progreso" || resuelto,
+      enCurso: estado === "en_progreso",
+      responsable: asignado,
+      fecha: ticket.actualizado_en,
+    },
+    {
+      etapa: "Cierre",
+      cumplido: resuelto,
+      responsable: resuelto ? asignado : "Pendiente",
+      fecha: ticket.fecha_resolucion,
+    },
+  ];
+
+  const contenidoHtml = [
+    seccionSGC(
+      "Datos del ticket",
+      tablaCamposSGC([
+        ["Título", ticket.titulo || "—"],
+        ["Categoría", etiquetaCategoriaTicketSGC(ticket.categoria)],
+        ["Prioridad", etiquetaPrioridadTicketSGC(ticket.prioridad)],
+        ["Estado", etiquetaEstadoTicketSGC(ticket.estado)],
+        ["Área destino", areaNombre || "Sin área"],
+        ["Enviado por", solicitante],
+        ["Asignado a", ticket.asignado ? asignado : "Sin asignar"],
+        ["Fecha de registro", formatearFechaSGC(ticket.creado_en)],
+        ["Última actualización", formatearFechaSGC(ticket.actualizado_en)],
+      ]),
+    ),
+    seccionSGC("Descripción", textoAHtmlSGC(ticket.descripcion, "Sin descripción.")),
+    ...(ticket.archivo_adjunto_url
+      ? [
+          seccionSGC(
+            "Archivo adjunto",
+            `<p><a href="${ticket.archivo_adjunto_url}" target="_blank" rel="noopener noreferrer">Ver archivo cargado</a></p>`,
+          ),
+        ]
+      : []),
+    ...(ticket.solucion
+      ? [
+          seccionSGC("Solución", textoAHtmlSGC(ticket.solucion)),
+          seccionSGC(
+            "Fecha de resolución",
+            textoAHtmlSGC(formatearFechaSGC(ticket.fecha_resolucion), "Sin fecha de resolución."),
+          ),
+        ]
+      : []),
+    seccionTrazabilidadSGC(pasos),
+  ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
+
+  return {
+    nombre: ticket.titulo || "Ticket de mesa de ayuda",
+    codigo: `TK-${(ticket.id || "").slice(0, 8).toUpperCase() || "S/C"}`,
+    version: "1.0",
+    tipoDocumento: "ticket",
+    estado: ticket.estado || "abierto",
+    contenidoHtml,
+    fechaCreacion: ticket.creado_en,
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
+  };
+}
+
+function etiquetaEstadoProgramaSGC(estado?: string): string {
+  const mapa: Record<string, string> = {
+    borrador: "Borrador",
+    aprobado: "Aprobado",
+    en_ejecucion: "En ejecución",
+    finalizado: "Finalizado",
+    cerrado: "Cerrado",
+  };
+  return mapa[(estado || "").toLowerCase()] || (estado || "—").replace(/_/g, " ");
+}
+
+export function datosSGCDesdeProgramaAuditoria(programa: ProgramaAuditoria): DocumentoSGCData {
+  const estado = (programa.estado || "borrador").toLowerCase();
+  const aprobado = ["aprobado", "en_ejecucion", "finalizado", "cerrado"].includes(estado);
+  const enCurso = estado === "en_ejecucion";
+  const cerrado = ["finalizado", "cerrado"].includes(estado);
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Elaboración",
+      cumplido: true,
+      responsable: "Gestión de calidad",
+      fecha: programa.creadoEn,
+    },
+    {
+      etapa: "Aprobación",
+      cumplido: aprobado,
+      enCurso: estado === "borrador",
+      responsable: aprobado ? "Dirección" : "Pendiente",
+      fecha: programa.fechaAprobacion,
+    },
+    {
+      etapa: "Ejecución",
+      cumplido: cerrado,
+      enCurso,
+      responsable: enCurso || cerrado ? "Equipo auditor" : "Pendiente",
+      fecha: programa.fechaAprobacion,
+    },
+  ];
+
+  const contenidoHtml = [
+    seccionSGC(
+      "Datos del programa anual",
+      tablaCamposSGC([
+        ["Año", String(programa.anio || "—")],
+        ["Estado", etiquetaEstadoProgramaSGC(programa.estado)],
+        ["Fecha de creación", formatearFechaSGC(programa.creadoEn)],
+        ["Fecha de aprobación", formatearFechaSGC(programa.fechaAprobacion)],
+        ["Norma de referencia", "ISO 9001:2015 — 9.2 Auditoría interna"],
+      ]),
+    ),
+    seccionSGC("Objetivo general", textoAHtmlSGC(programa.objetivo, "Sin objetivo definido.")),
+    seccionSGC(
+      "Criterios de riesgo",
+      textoAHtmlSGC(programa.criterioRiesgo, "Sin criterios de riesgo definidos."),
+    ),
+    seccionTrazabilidadSGC(pasos),
+  ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
+
+  return {
+    nombre: `Programa anual de auditorías ${programa.anio || ""}`.trim(),
+    codigo: `PA-${programa.anio || "S/C"}`,
+    version: "1.0",
+    tipoDocumento: "programa_auditoria",
+    estado: programa.estado || "borrador",
+    contenidoHtml,
+    fechaCreacion: programa.creadoEn,
+    fechaAprobacion: programa.fechaAprobacion,
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
+  };
+}
+
+export function datosSGCDesdeFormularioAuditoria(
+  formulario: FormularioDinamico,
+  campos: CampoFormulario[] = [],
+  procesoNombre?: string,
+): DocumentoSGCData {
+  const camposActivos = campos.filter((campo) => campo.activo);
+  const estado = formulario.activo
+    ? formulario.estadoWorkflow || "activo"
+    : formulario.estadoWorkflow || "borrador";
+  const aprobado = (formulario.estadoWorkflow || "").toLowerCase() === "aprobado" || Boolean(formulario.fechaAprobacion);
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Diseño",
+      cumplido: true,
+      responsable: "Gestión de calidad",
+      fecha: formulario.creadoEn,
+    },
+    {
+      etapa: "Campos ISO",
+      cumplido: camposActivos.length > 0,
+      enCurso: camposActivos.length === 0,
+      responsable: "Gestión de calidad",
+      fecha: formulario.actualizadoEn,
+    },
+    {
+      etapa: "Aprobación",
+      cumplido: aprobado || formulario.activo,
+      responsable: aprobado ? "Dirección" : "Pendiente",
+      fecha: formulario.fechaAprobacion,
+    },
+  ];
+
+  const contenidoHtml = [
+    seccionSGC(
+      "Datos del formulario",
+      tablaCamposSGC([
+        ["Código", formulario.codigo || "—"],
+        ["Nombre", formulario.nombre || "—"],
+        ["Módulo", formulario.modulo || "—"],
+        ["Tipo de entidad", formulario.entidadTipo || "—"],
+        ["Proceso", procesoNombre || "General"],
+        ["Versión", String(formulario.version ?? "1")],
+        ["Estado de workflow", formulario.estadoWorkflow || (formulario.activo ? "Activo" : "Borrador")],
+        ["Vigente desde", formatearFechaSGC(formulario.vigenteDesde)],
+        ["Vigente hasta", formatearFechaSGC(formulario.vigenteHasta)],
+        ["Fecha de creación", formatearFechaSGC(formulario.creadoEn)],
+      ]),
+    ),
+    seccionSGC("Descripción", textoAHtmlSGC(formulario.descripcion, "Sin descripción.")),
+    seccionSGC(
+      "Campos del formulario",
+      campos.length
+        ? tablaCamposSGC(
+            campos.map((campo) => [
+              `${campo.orden}. ${campo.etiqueta || campo.nombre}`,
+              [
+                campo.tipoCampo,
+                campo.requerido ? "Obligatorio" : "Opcional",
+                campo.clausulaIso ? `ISO ${campo.clausulaIso}` : null,
+                campo.evidenciaRequerida ? "Requiere evidencia" : null,
+                campo.activo ? "Activo" : "Inactivo",
+              ]
+                .filter(Boolean)
+                .join(" · "),
+            ]),
+          )
+        : textoAHtmlSGC("", "Este formulario no tiene campos registrados."),
+    ),
+    seccionTrazabilidadSGC(pasos),
+  ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
+
+  return {
+    nombre: formulario.nombre || "Formulario de auditoría",
+    codigo: formulario.codigo || "S/C",
+    version: String(formulario.version ?? "1.0"),
+    tipoDocumento: "formulario_auditoria",
+    estado,
+    contenidoHtml,
+    fechaCreacion: formulario.creadoEn,
+    fechaVigencia: formulario.vigenteHasta || formulario.vigenteDesde,
+    fechaAprobacion: formulario.fechaAprobacion,
     ...firmas,
     versiones: versionesDesdePasos(pasos),
   };

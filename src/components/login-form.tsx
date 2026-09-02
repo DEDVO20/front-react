@@ -220,14 +220,14 @@ export function LoginForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden rounded-2xl border border-[#E5E7EB] shadow-sm">
         <CardContent className="grid p-0 lg:grid-cols-2">
           <form className="p-5 sm:p-6 lg:p-8" onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
               <div className="flex flex-col items-center text-center">
-                <h1 className="text-2xl font-bold">Bienvenido</h1>
-                <p className="text-balance text-muted-foreground">
-                  Inicia sesión para acceder a tus recursos.
+                <h1 className="text-2xl font-bold text-[#1E3A8A]">Bienvenido</h1>
+                <p className="text-balance text-[#6B7280]">
+                  Inicia sesión para acceder al Sistema de Gestión de Calidad.
                 </p>
               </div>
 

@@ -315,24 +315,24 @@ export default function EditarUsuario() {
     }
 
     return (
-        <div className="flex-1 space-y-6 p-4 md:p-6 pt-6 max-w-5xl mx-auto">
-            {/* Header */}
+        <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+            <div className="max-w-5xl mx-auto space-y-8">
+            <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-                        <div className="p-2 bg-amber-100 rounded-lg">
-                            <Edit className="h-7 w-7 text-amber-600" />
-                        </div>
+                    <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                        <Edit className="h-9 w-9 text-[#2563EB]" />
                         Editar Usuario
                     </h1>
-                    <p className="text-gray-600 mt-2">
+                    <p className="text-[#6B7280] mt-2">
                         Modifique los datos del usuario en el formulario
                     </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => navigate("/ListaDeUsuarios")}>
+                <Button variant="outline" size="sm" className="rounded-xl" onClick={() => navigate("/ListaDeUsuarios")}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Volver
                 </Button>
+            </div>
             </div>
 
             {/* Formulario */}
@@ -730,6 +730,7 @@ export default function EditarUsuario() {
                     </CardContent>
                 </Card>
             </form>
+        </div>
         </div>
     );
 }

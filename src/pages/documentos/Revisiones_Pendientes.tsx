@@ -187,18 +187,18 @@ export default function RevisionesPendientes() {
             <div className="max-w-7xl mx-auto space-y-8">
 
                 {/* Header Profesional */}
-                <div className="bg-gradient-to-br from-[#FFF7ED] to-[#FFEDD5] rounded-2xl shadow-sm border border-[#FED7AA] p-8">
+                <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                         <div>
-                            <h1 className="text-3xl font-bold text-[#9A3412] flex items-center gap-3">
-                                <FileCheck className="h-9 w-9 text-[#EA580C]" />
+                            <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                                <FileCheck className="h-9 w-9 text-[#2563EB]" />
                                 Revisiones Pendientes
                             </h1>
-                            <p className="text-[#9A3412]/80 mt-2 text-lg">
+                            <p className="text-[#6B7280] mt-2 text-lg">
                                 Revisa documentos antes de enviarlos a aprobación final
                             </p>
                             <div className="flex flex-wrap items-center gap-3 mt-4">
-                                <Badge className="bg-white text-[#EA580C] border border-[#FED7AA]">
+                                <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
                                     {total} pendientes
                                 </Badge>
                                 {urgentes > 0 && (

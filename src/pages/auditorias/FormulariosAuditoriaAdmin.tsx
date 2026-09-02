@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, Save, ShieldCheck, AlertTriangle, CheckCircle2, FileText, ListChecks } from "lucide-react";
+import { Plus, Pencil, Trash2, Save, ShieldCheck, AlertTriangle, CheckCircle2, FileText, ListChecks, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +31,8 @@ import {
 import { procesoService, Proceso } from "@/services/proceso.service";
 import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeFormularioAuditoria } from "@/utils/documentosRegistrosSGC";
 
 type FormularioFormState = {
   codigo: string;
@@ -113,6 +115,7 @@ export default function FormulariosAuditoriaAdmin() {
   const [campos, setCampos] = useState<CampoFormulario[]>([]);
 
   const [showFormularioDialog, setShowFormularioDialog] = useState(false);
+  const [showDocumento, setShowDocumento] = useState(false);
   const [editingFormulario, setEditingFormulario] = useState<FormularioDinamico | null>(null);
   const [formularioForm, setFormularioForm] = useState<FormularioFormState>(initialFormularioState);
   const codigoAutomatico = useCodigoAutomatico("formulario", showFormularioDialog && !editingFormulario);
@@ -438,76 +441,68 @@ export default function FormulariosAuditoriaAdmin() {
   );
 
   return (
-    <div className="space-y-6 pb-6">
-      <Card className="overflow-hidden border-blue-100 bg-gradient-to-r from-blue-50 via-indigo-50 to-cyan-50 shadow-sm">
-        <CardContent className="p-5 md:p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-xl border border-blue-200 bg-white/80 p-2.5 shadow-sm">
-                <ShieldCheck className="h-5 w-5 text-blue-700" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-[#1E3A8A]">
+    <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+                <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                  <FileText className="h-9 w-9 text-[#2563EB]" />
                   Formularios Dinámicos de Auditoría
                 </h1>
-                <p className="text-sm text-blue-900/80">
-                  Administra formularios y campos para checklists sin tocar la base de datos manualmente.
+                <p className="text-[#6B7280] mt-2 text-lg">
+                  Checklists ISO 9001: cláusula, criterio, evidencia, resultado y conclusión.
                 </p>
-                <p className="mt-1 text-xs text-blue-800/80">
-                  Control ISO 9001: incluye cláusula, criterio, evidencia objetiva, resultado y conclusión.
-                </p>
-              </div>
             </div>
-            <Button onClick={openCrearFormulario} className="gap-2 self-start shadow-sm">
-              <Plus className="h-4 w-4" />
+            <Button onClick={openCrearFormulario} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm rounded-xl px-6 py-6 h-auto font-bold gap-2">
+              <Plus className="h-5 w-5" />
               Nuevo formulario
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Card className="border-slate-200 shadow-sm">
+        <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm rounded-2xl">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Formularios</p>
-                <p className="text-2xl font-semibold text-slate-900">{formularios.length}</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#1E3A8A]">Formularios</p>
+                <p className="text-2xl font-bold text-[#1E3A8A]">{formularios.length}</p>
               </div>
-              <FileText className="h-6 w-6 text-slate-400" />
+              <FileText className="h-6 w-6 text-[#2563EB]" />
             </div>
           </CardContent>
         </Card>
-        <Card className="border-slate-200 shadow-sm">
+        <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm rounded-2xl">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Activos</p>
-                <p className="text-2xl font-semibold text-emerald-700">{formulariosActivos}</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#065F46]">Activos</p>
+                <p className="text-2xl font-bold text-[#065F46]">{formulariosActivos}</p>
               </div>
-              <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+              <CheckCircle2 className="h-6 w-6 text-[#10B981]" />
             </div>
           </CardContent>
         </Card>
-        <Card className="border-slate-200 shadow-sm">
+        <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm rounded-2xl">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Campos actuales</p>
-                <p className="text-2xl font-semibold text-slate-900">{campos.length}</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#1E3A8A]">Campos actuales</p>
+                <p className="text-2xl font-bold text-[#1E3A8A]">{campos.length}</p>
               </div>
-              <ListChecks className="h-6 w-6 text-blue-500" />
+              <ListChecks className="h-6 w-6 text-[#2563EB]" />
             </div>
           </CardContent>
         </Card>
-        <Card className="border-slate-200 shadow-sm">
+        <Card className="bg-[#FFF7ED] border border-[#E5E7EB] shadow-sm rounded-2xl">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">ISO pendientes</p>
-                <p className="text-2xl font-semibold text-amber-700">{missingIsoFields.length}</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#9A3412]">ISO pendientes</p>
+                <p className="text-2xl font-bold text-[#9A3412]">{missingIsoFields.length}</p>
               </div>
-              <AlertTriangle className="h-6 w-6 text-amber-500" />
+              <AlertTriangle className="h-6 w-6 text-[#F97316]" />
             </div>
           </CardContent>
         </Card>
@@ -557,6 +552,17 @@ export default function FormulariosAuditoriaAdmin() {
                         </div>
                       </button>
                       <div className="flex gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            setSelectedFormularioId(formulario.id);
+                            setShowDocumento(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Button
                           size="icon"
                           variant="ghost"
@@ -907,6 +913,23 @@ export default function FormulariosAuditoriaAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <VistaDocumentoSGCDialog
+        open={showDocumento}
+        onOpenChange={setShowDocumento}
+        data={
+          selectedFormulario
+            ? datosSGCDesdeFormularioAuditoria(
+                selectedFormulario,
+                selectedFormularioId === selectedFormulario.id ? campos : [],
+                procesos.find((p) => p.id === selectedFormulario.procesoId)?.nombre,
+              )
+            : null
+        }
+        title="Formulario de auditoría"
+        description="Documento controlado con la estructura del checklist ISO 9001."
+      />
+      </div>
     </div>
   );
 }

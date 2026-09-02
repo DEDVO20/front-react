@@ -61,6 +61,8 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { getCurrentUser } from "@/services/auth";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeTicket } from "@/utils/documentosRegistrosSGC";
 
 export default function MesaDeAyuda() {
     const currentUser = getCurrentUser();
@@ -70,8 +72,10 @@ export default function MesaDeAyuda() {
     const [areas, setAreas] = useState<Area[]>([]);
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
-    const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
+    const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+    const [showDocumento, setShowDocumento] = useState(false);
+    const [showResolveDialog, setShowResolveDialog] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [saving, setSaving] = useState(false);
 
@@ -87,7 +91,6 @@ export default function MesaDeAyuda() {
         ticket: null,
     });
 
-    const [showResolveForm, setShowResolveForm] = useState(false);
     const [resolutionText, setResolutionText] = useState("");
     const [resolutionFile, setResolutionFile] = useState<File | null>(null);
 
@@ -164,12 +167,10 @@ export default function MesaDeAyuda() {
     };
 
     const handleView = (ticket: Ticket) => {
-        setDialogMode('view');
         setSelectedTicket(ticket);
-        setShowResolveForm(false);
         setResolutionText("");
         setResolutionFile(null);
-        setOpenDialog(true);
+        setShowDocumento(true);
     };
 
 
@@ -231,8 +232,8 @@ export default function MesaDeAyuda() {
             }
             await ticketService.resolver(selectedTicket.id, { solucion: resolutionText });
             toast.success("Ticket resuelto exitosamente");
-            setOpenDialog(false);
-            setShowResolveForm(false);
+            setShowDocumento(false);
+            setShowResolveDialog(false);
             setResolutionText("");
             setResolutionFile(null);
             fetchTickets();
@@ -623,138 +624,17 @@ export default function MesaDeAyuda() {
                         </div>
                     </div>
 
-                    {/* Dialog Crear/Editar/Ver Ticket */}
+                    {/* Dialog Crear/Editar Ticket */}
                     <Dialog open={openDialog} onOpenChange={setOpenDialog}>
                         <DialogContent className="max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                                 <DialogTitle className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-3">
                                     {dialogMode === 'create' && <><Plus className="h-7 w-7 text-[#2563EB]" /> Crear Nuevo Ticket</>}
                                     {dialogMode === 'edit' && <><Edit className="h-7 w-7 text-[#2563EB]" /> Editar Ticket</>}
-                                    {dialogMode === 'view' && <><Eye className="h-7 w-7 text-[#2563EB]" /> Detalles del Ticket</>}
                                 </DialogTitle>
                             </DialogHeader>
 
-                            {dialogMode === 'view' && selectedTicket ? (
-                                <div className="space-y-6 py-4">
-                                    <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB] space-y-4">
-                                        <div>
-                                            <Label className="text-[#6B7280] uppercase text-xs font-bold">Título</Label>
-                                            <p className="mt-1 text-xl font-bold text-[#111827]">{selectedTicket.titulo}</p>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <Label className="text-[#6B7280] uppercase text-xs font-bold">Categoría</Label>
-                                                <p className="mt-1 font-medium capitalize">{selectedTicket.categoria.replace("_", " ")}</p>
-                                            </div>
-                                            <div>
-                                                <Label className="text-[#6B7280] uppercase text-xs font-bold">Prioridad</Label>
-                                                <div className="mt-1">{getPriorityBadge(selectedTicket.prioridad)}</div>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <Label className="text-[#6B7280] uppercase text-xs font-bold">Estado</Label>
-                                                <div className="mt-1">{getStatusBadge(selectedTicket.estado)}</div>
-                                            </div>
-                                            <div>
-                                                <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha</Label>
-                                                <p className="mt-1">{new Date(selectedTicket.creado_en).toLocaleString('es-CO')}</p>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <Label className="text-[#6B7280] uppercase text-xs font-bold">Enviado por</Label>
-                                            <p className="mt-1 font-medium">{getSolicitanteLabel(selectedTicket)}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                                        <Label className="text-[#6B7280] uppercase text-xs font-bold mb-2 block">Descripción</Label>
-                                        <p className="text-[#111827] leading-relaxed whitespace-pre-wrap">{selectedTicket.descripcion}</p>
-                                    </div>
-                                    {selectedTicket.archivo_adjunto_url && (
-                                        <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                                            <Label className="text-[#6B7280] uppercase text-xs font-bold mb-2 block">Archivo adjunto</Label>
-                                            <a
-                                                href={selectedTicket.archivo_adjunto_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-2 text-[#2563EB] font-medium hover:underline"
-                                            >
-                                                <Paperclip className="h-4 w-4" />
-                                                Ver archivo cargado
-                                            </a>
-                                        </div>
-                                    )}
-                                    {canResolveTicket(selectedTicket) && (
-                                        <div className="space-y-4 pt-4 border-t border-[#E5E7EB]">
-                                            {!showResolveForm ? (
-                                                <Button
-                                                    onClick={() => setShowResolveForm(true)}
-                                                    className="w-full bg-[#10B981] hover:bg-[#059669] text-white rounded-xl font-bold"
-                                                >
-                                                    <CheckCircle className="mr-2 h-5 w-5" />
-                                                    Resolver Ticket
-                                                </Button>
-                                            ) : (
-                                                <div className="space-y-4 bg-[#F0FDF4] p-4 rounded-xl border border-[#BBF7D0]">
-                                                    <div className="space-y-2">
-                                                        <Label className="font-bold text-[#166534]">Solución Técnica</Label>
-                                                        <Textarea
-                                                            value={resolutionText}
-                                                            onChange={(e) => setResolutionText(e.target.value)}
-                                                            placeholder="Describe cómo se solucionó el problema..."
-                                                            className="bg-white"
-                                                            rows={4}
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label className="font-bold text-[#166534]">Documento de solución (opcional)</Label>
-                                                        <Input
-                                                            type="file"
-                                                            onChange={(e) => setResolutionFile(e.target.files?.[0] || null)}
-                                                            className="bg-white"
-                                                        />
-                                                    </div>
-                                                    <div className="flex justify-end gap-2">
-                                                        <Button
-                                                            variant="ghost"
-                                                            onClick={() => {
-                                                                setShowResolveForm(false);
-                                                                setResolutionFile(null);
-                                                            }}
-                                                            className="text-[#6B7280]"
-                                                        >
-                                                            Cancelar
-                                                        </Button>
-                                                        <Button
-                                                            onClick={handleResolve}
-                                                            disabled={saving || !resolutionText.trim()}
-                                                            className="bg-[#10B981] hover:bg-[#059669] text-white"
-                                                        >
-                                                            {saving ? "Guardando..." : "Confirmar Solución"}
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {(selectedTicket.estado === 'resuelto' || selectedTicket.estado === 'cerrado') && selectedTicket.solucion && (
-                                        <div className="mt-4 bg-[#F0FDF4] rounded-xl p-6 border border-[#BBF7D0]">
-                                            <Label className="text-[#166534] uppercase text-xs font-bold mb-2 block flex items-center gap-2">
-                                                <CheckCircle className="h-4 w-4" /> Solución
-                                            </Label>
-                                            <p className="text-[#14532D] leading-relaxed whitespace-pre-wrap">{selectedTicket.solucion}</p>
-                                            {selectedTicket.fecha_resolucion && (
-                                                <p className="text-xs text-[#166534] mt-2 opacity-80">
-                                                    Resuelto el {new Date(selectedTicket.fecha_resolucion).toLocaleString('es-CO')}
-                                                </p>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="space-y-6 py-4">
+                            <div className="space-y-6 py-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
                                             <Label className="font-bold">
@@ -854,14 +734,12 @@ export default function MesaDeAyuda() {
                                         )}
                                     </div>
                                 </div>
-                            )}
 
                             <DialogFooter className="gap-4">
                                 <Button variant="outline" onClick={() => setOpenDialog(false)} className="rounded-xl">
-                                    {dialogMode === 'view' ? 'Cerrar' : 'Cancelar'}
+                                    Cancelar
                                 </Button>
-                                {dialogMode !== 'view' && (
-                                    <Button onClick={handleSave} disabled={saving} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-bold">
+                                <Button onClick={handleSave} disabled={saving} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-bold">
                                         {saving ? (
                                             <>
                                                 <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
@@ -874,7 +752,97 @@ export default function MesaDeAyuda() {
                                             </>
                                         )}
                                     </Button>
-                                )}
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    <VistaDocumentoSGCDialog
+                        open={showDocumento}
+                        onOpenChange={(open) => {
+                            setShowDocumento(open);
+                            if (!open) setShowResolveDialog(false);
+                        }}
+                        data={
+                            selectedTicket
+                                ? datosSGCDesdeTicket(
+                                    selectedTicket,
+                                    selectedTicket.area_destino_id
+                                        ? areas.find((a) => a.id === selectedTicket.area_destino_id)?.nombre
+                                        : undefined,
+                                )
+                                : null
+                        }
+                        title="Ticket de mesa de ayuda"
+                        description="Documento controlado con la solicitud, asignación y solución del ticket."
+                        extraActions={
+                            selectedTicket ? (
+                                <>
+                                    {canEditTicket(selectedTicket) && (
+                                        <Button
+                                            variant="outline"
+                                            className="rounded-xl"
+                                            onClick={() => {
+                                                setShowDocumento(false);
+                                                handleEdit(selectedTicket);
+                                            }}
+                                        >
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Editar
+                                        </Button>
+                                    )}
+                                    {canResolveTicket(selectedTicket) && (
+                                        <Button
+                                            className="rounded-xl bg-[#10B981] hover:bg-[#059669] text-white"
+                                            onClick={() => setShowResolveDialog(true)}
+                                        >
+                                            <CheckCircle className="h-4 w-4 mr-2" />
+                                            Resolver
+                                        </Button>
+                                    )}
+                                </>
+                            ) : null
+                        }
+                    />
+
+                    <Dialog open={showResolveDialog} onOpenChange={setShowResolveDialog}>
+                        <DialogContent className="max-w-lg rounded-2xl">
+                            <DialogHeader>
+                                <DialogTitle className="text-xl font-bold text-[#1E3A8A] flex items-center gap-2">
+                                    <CheckCircle className="h-6 w-6 text-[#10B981]" />
+                                    Resolver ticket
+                                </DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="font-bold text-[#166534]">Solución técnica</Label>
+                                    <Textarea
+                                        value={resolutionText}
+                                        onChange={(e) => setResolutionText(e.target.value)}
+                                        placeholder="Describe cómo se solucionó el problema..."
+                                        className="rounded-xl"
+                                        rows={4}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="font-bold text-[#166534]">Documento de solución (opcional)</Label>
+                                    <Input
+                                        type="file"
+                                        onChange={(e) => setResolutionFile(e.target.files?.[0] || null)}
+                                        className="rounded-xl"
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" className="rounded-xl" onClick={() => setShowResolveDialog(false)}>
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={handleResolve}
+                                    disabled={saving || !resolutionText.trim()}
+                                    className="rounded-xl bg-[#10B981] hover:bg-[#059669] text-white"
+                                >
+                                    {saving ? "Guardando..." : "Confirmar solución"}
+                                </Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>

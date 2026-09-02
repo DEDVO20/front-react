@@ -152,14 +152,13 @@ export default function AuditLogPage() {
     <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center shadow-lg">
-              <Database className="h-6 w-6 text-white" />
-            </div>
+            <Database className="h-9 w-9 text-[#2563EB]" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Audit Log</h1>
-              <p className="text-sm text-gray-500">
+              <h1 className="text-3xl font-bold text-[#1E3A8A]">Audit Log</h1>
+              <p className="text-[#6B7280]">
                 Registro de trazabilidad — ISO 9001:2015
               </p>
             </div>
@@ -184,6 +183,7 @@ export default function AuditLogPage() {
               Actualizar
             </Button>
           </div>
+        </div>
         </div>
 
         {/* Stats cards */}

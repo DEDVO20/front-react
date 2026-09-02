@@ -12,6 +12,10 @@ import { accionCorrectivaService, AccionCorrectiva } from "@/services/accionCorr
 import ComentariosAccion from "@/components/calidad/ComentariosAccion";
 import GestorEvidencias from "@/components/calidad/GestorEvidencias";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { DocumentoSGCPaper } from "@/components/documents/DocumentoSGCPaper";
+import { BotonesImpresionDocumentoSGC } from "@/components/documents/BotonesImpresionDocumentoSGC";
+import { datosSGCDesdeAccionCorrectiva } from "@/utils/documentosRegistrosSGC";
+import { cargarMarcaSGC, exportarDocumentoSGC, type MarcaSGC } from "@/utils/documentoSGC";
 
 export default function SolucionarAccionCorrectiva() {
     const { id } = useParams<{ id: string }>();
@@ -20,6 +24,12 @@ export default function SolucionarAccionCorrectiva() {
     const [accion, setAccion] = useState<AccionCorrectiva | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [exporting, setExporting] = useState(false);
+    const [marca, setMarca] = useState<MarcaSGC>({
+        logoUrl: null,
+        titulo: "Universitaria de Colombia",
+        subtitulo: "Sistema de Gestión de Calidad",
+    });
 
     // Campos del formulario
     const [fechaImplementacion, setFechaImplementacion] = useState("");
@@ -30,6 +40,7 @@ export default function SolucionarAccionCorrectiva() {
         if (id) {
             fetchAccion();
         }
+        cargarMarcaSGC().then(setMarca);
     }, [id]);
 
     const fetchAccion = async () => {
@@ -202,6 +213,28 @@ export default function SolucionarAccionCorrectiva() {
                             <Badge variant="outline" className="capitalize">
                                 {getTipoBadge(accion.tipo)}
                             </Badge>
+                            <BotonesImpresionDocumentoSGC
+                                onImprimir={async () => {
+                                    try {
+                                        setExporting(true);
+                                        await exportarDocumentoSGC(datosSGCDesdeAccionCorrectiva(accion), marca);
+                                        toast.success("Seleccione Imprimir o Guardar como PDF en el cuadro de impresión");
+                                    } catch {
+                                        toast.error("No se pudo abrir la impresión");
+                                    } finally {
+                                        setExporting(false);
+                                    }
+                                }}
+                                loading={exporting}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
+                    <div className="p-3 sm:p-6 bg-[#F8FAFC] overflow-x-auto">
+                        <div className="mx-auto w-full max-w-[816px] border border-[#E5E7EB] shadow-sm">
+                            <DocumentoSGCPaper data={datosSGCDesdeAccionCorrectiva(accion)} marca={marca} />
                         </div>
                     </div>
                 </div>

@@ -118,22 +118,24 @@ export default function MigracionesDB() {
     }
 
     return (
-        <div className="p-6 space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
+        <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
+            <div className="max-w-7xl mx-auto space-y-8">
+            <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
+            <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold flex items-center gap-2">
-                        <Database className="h-8 w-8" />
+                    <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                        <Database className="h-9 w-9 text-[#2563EB]" />
                         Migraciones de Base de Datos
                     </h1>
-                    <p className="text-gray-500 mt-1">
+                    <p className="text-[#6B7280] mt-2">
                         Gestiona las migraciones de Alembic para el control de versiones de la base de datos
                     </p>
                 </div>
-                <Button onClick={cargarMigraciones} variant="outline" disabled={operando}>
+                <Button onClick={cargarMigraciones} variant="outline" disabled={operando} className="rounded-xl">
                     <RefreshCw className={`h-4 w-4 mr-2 ${operando ? 'animate-spin' : ''}`} />
                     Actualizar
                 </Button>
+            </div>
             </div>
 
             {/* Estado Actual */}
@@ -361,6 +363,7 @@ export default function MigracionesDB() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+        </div>
         </div>
     );
 }
