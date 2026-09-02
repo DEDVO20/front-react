@@ -130,6 +130,24 @@ export function datosSGCDesdeRiesgo(riesgo: Riesgo): DocumentoSGCData {
   };
 }
 
+function evidenciasNoConformidadAHtml(evidencias?: string | null): string {
+  if (!evidencias?.trim()) return textoAHtmlSGC("", "Sin evidencias registradas.");
+  try {
+    const parsed = JSON.parse(evidencias);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return tablaCamposSGC(
+        parsed.map((item: { nombreArchivo?: string; descripcion?: string; url?: string }, index: number) => [
+          item.nombreArchivo || item.descripcion || `Evidencia ${index + 1}`,
+          item.url || item.descripcion || "—",
+        ]),
+      );
+    }
+  } catch {
+    // Texto plano legado
+  }
+  return textoAHtmlSGC(evidencias, "Sin evidencias registradas.");
+}
+
 export function datosSGCDesdeNoConformidad(nc: NoConformidad): DocumentoSGCData {
   const contenidoHtml = [
     seccionSGC(
@@ -150,6 +168,7 @@ export function datosSGCDesdeNoConformidad(nc: NoConformidad): DocumentoSGCData 
     seccionSGC("Descripción", textoAHtmlSGC(nc.descripcion, "Sin descripción.")),
     seccionSGC("Análisis de causa", textoAHtmlSGC(nc.analisis_causa)),
     seccionSGC("Plan de acción", textoAHtmlSGC(nc.plan_accion)),
+    seccionSGC("Evidencias", evidenciasNoConformidadAHtml(nc.evidencias)),
   ].join("");
 
   return {

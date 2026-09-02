@@ -81,7 +81,7 @@ export function VistaDocumentoSGCDialog({
           )}
         </div>
 
-        <DialogFooter className="px-6 py-4 border-t border-[#E5E7EB] bg-white gap-2">
+        <DialogFooter className="px-6 py-4 border-t border-[#E5E7EB] bg-white gap-2 flex-wrap sm:justify-end">
           <Button variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>
             Cerrar
           </Button>

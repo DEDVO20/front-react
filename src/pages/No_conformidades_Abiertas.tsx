@@ -21,6 +21,7 @@ import {
 import { NuevaNoConformidadForm } from "@/components/calidad/NuevaNoConformidadForm";
 import { VerNoConformidad } from "@/components/calidad/VerNoConformidad";
 import { toast } from "sonner";
+import { Pencil, Play } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -216,6 +217,33 @@ export default function NoConformidadesAbiertas() {
               noConformidad={selectedNoConformidad}
               open={isViewDialogOpen}
               onClose={() => setIsViewDialogOpen(false)}
+              extraActions={
+                selectedNoConformidad && canGestionar ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="rounded-xl"
+                      onClick={() => {
+                        setIsViewDialogOpen(false);
+                        void handleEditar(selectedNoConformidad.id);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Editar
+                    </Button>
+                    <Button
+                      className="rounded-xl bg-[#10B981] hover:bg-[#059669] text-white"
+                      onClick={async () => {
+                        setIsViewDialogOpen(false);
+                        await handleIniciarTratamiento(selectedNoConformidad.id);
+                      }}
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      Iniciar tratamiento
+                    </Button>
+                  </>
+                ) : null
+              }
             />
           </div>
         </div>

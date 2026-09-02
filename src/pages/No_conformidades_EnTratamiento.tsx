@@ -21,6 +21,7 @@ import {
 import { NuevaNoConformidadForm } from "@/components/calidad/NuevaNoConformidadForm";
 import { VerNoConformidad } from "@/components/calidad/VerNoConformidad";
 import { toast } from "sonner";
+import { Pencil, Paperclip, CheckCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -222,6 +223,63 @@ export default function NoConformidadesEnTratamiento() {
               noConformidad={selectedNoConformidad}
               open={isViewDialogOpen}
               onClose={() => setIsViewDialogOpen(false)}
+              extraActions={
+                selectedNoConformidad ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="rounded-xl"
+                      onClick={() => {
+                        setIsViewDialogOpen(false);
+                        void handleEditar(selectedNoConformidad.id);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="rounded-xl"
+                      onClick={() => {
+                        setIsViewDialogOpen(false);
+                        void handleAgregarEvidencias(selectedNoConformidad.id);
+                      }}
+                    >
+                      <Paperclip className="h-4 w-4 mr-2" />
+                      Agregar evidencia
+                    </Button>
+                    <Button
+                      className="rounded-xl bg-[#10B981] hover:bg-[#059669] text-white"
+                      onClick={() => {
+                        if (!selectedNoConformidad.plan_accion) {
+                          toast.error("Debe registrar un Plan de Acción antes de finalizar el tratamiento.", {
+                            description: "Utilice la opción 'Editar' para agregar el análisis y plan de acción.",
+                          });
+                          return;
+                        }
+                        setIsViewDialogOpen(false);
+                        setNcToFinalize({
+                          id: selectedNoConformidad.id,
+                          codigo: selectedNoConformidad.codigo,
+                          tipo: selectedNoConformidad.tipo || "No Conformidad",
+                          descripcion: selectedNoConformidad.descripcion,
+                          estado: "En Tratamiento",
+                          gravedad: selectedNoConformidad.gravedad || "N/A",
+                          fechaDeteccion: selectedNoConformidad.fecha_deteccion || "N/A",
+                          responsable: selectedNoConformidad.responsable
+                            ? `${selectedNoConformidad.responsable.nombre} ${selectedNoConformidad.responsable.primerApellido}`
+                            : "Sin asignar",
+                          plan_accion: selectedNoConformidad.plan_accion || "",
+                        });
+                        setIsFinalizeDialogOpen(true);
+                      }}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Cerrar tratamiento
+                    </Button>
+                  </>
+                ) : null
+              }
             />
           </div>
         </div>
