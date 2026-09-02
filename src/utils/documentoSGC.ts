@@ -63,6 +63,10 @@ const TIPOS: Record<string, string> = {
   asistencia_capacitacion: "ASISTENCIA A CAPACITACIÓN",
   hallazgo: "HALLAZGO DE AUDITORÍA",
   competencia: "COMPETENCIA",
+  area: "ÁREA",
+  asignacion_responsable: "ASIGNACIÓN DE RESPONSABLE",
+  usuario: "USUARIO",
+  rol: "ROL Y PERMISOS",
 };
 
 export function etiquetaTipoDocumento(tipo?: string): string {
@@ -103,6 +107,7 @@ const ESTADOS: Record<string, string> = {
   reforzada: "reforzada",
   desarrollada: "desarrollada",
   "en desarrollo": "en desarrollo",
+  asignado: "asignado",
 };
 
 export function etiquetaEstadoDocumento(estado?: string): string {

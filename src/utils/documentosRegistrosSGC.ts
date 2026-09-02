@@ -5,11 +5,13 @@ import type {
   Capacitacion,
   ResumenAsistenciaCapacitacion,
 } from "@/services/capacitacion.service";
+import type { Area } from "@/services/area.service";
 import type { EvaluacionCompetencia } from "@/services/competencia.service";
 import type { NoConformidad } from "@/services/noConformidad.service";
 import type { ObjetivoCalidad, SeguimientoObjetivo } from "@/services/objetivoCalidad.service";
 import type { Proceso } from "@/services/proceso.service";
 import type { Riesgo } from "@/services/riesgo.service";
+import type { Usuario } from "@/services/usuario.service";
 import {
   formatearFechaSGC,
   nombreUsuarioSGC,
@@ -974,6 +976,283 @@ export function datosSGCDesdeCompetencia(evaluacion: EvaluacionCompetencia): Doc
     contenidoHtml,
     fechaCreacion: evaluacion.fechaEvaluacion,
     fechaVigencia: evaluacion.fechaEvaluacion,
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
+  };
+}
+
+export function datosSGCDesdeArea(area: Area): DocumentoSGCData {
+  const responsablePrincipal = area.asignaciones?.find((asignacion) => asignacion.es_principal)?.usuario;
+  const responsableNombre = nombreUsuarioSGC(responsablePrincipal, "Sin asignar");
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Registro",
+      cumplido: true,
+      responsable: responsableNombre,
+      fecha: area.creado_en,
+    },
+    {
+      etapa: "Asignación de responsable",
+      cumplido: Boolean(area.asignaciones?.length),
+      enCurso: !area.asignaciones?.length,
+      responsable: responsableNombre,
+      fecha: area.actualizado_en,
+    },
+    {
+      etapa: "Vigencia",
+      cumplido: Boolean(area.asignaciones?.some((asignacion) => asignacion.es_principal)),
+      responsable: responsableNombre,
+      fecha: area.actualizado_en,
+    },
+  ];
+
+  const responsables =
+    area.asignaciones && area.asignaciones.length > 0
+      ? tablaCamposSGC(
+          area.asignaciones.map((asignacion) => [
+            asignacion.es_principal ? "Principal" : "Apoyo",
+            nombreUsuarioSGC(asignacion.usuario, "Sin asignar"),
+          ]),
+        )
+      : textoAHtmlSGC("", "Sin responsables asignados.");
+
+  const contenidoHtml = [
+    seccionSGC(
+      "Datos del área",
+      tablaCamposSGC([
+        ["Código", area.codigo || "—"],
+        ["Nombre", area.nombre || "—"],
+        ["Responsables", area.asignaciones?.length ? String(area.asignaciones.length) : "0"],
+        ["Fecha de creación", formatearFechaSGC(area.creado_en)],
+        ["Última actualización", formatearFechaSGC(area.actualizado_en)],
+      ]),
+    ),
+    seccionSGC("Descripción", textoAHtmlSGC(area.descripcion, "Sin descripción.")),
+    seccionSGC("Responsables del área", responsables),
+    seccionTrazabilidadSGC(pasos),
+  ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
+
+  return {
+    nombre: area.nombre || `Área ${area.codigo || ""}`.trim(),
+    codigo: area.codigo || "S/C",
+    version: "1.0",
+    tipoDocumento: "area",
+    estado: area.asignaciones?.length ? "activo" : "borrador",
+    contenidoHtml,
+    fechaCreacion: area.creado_en,
+    fechaVigencia: area.actualizado_en || area.creado_en,
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
+  };
+}
+
+export function datosSGCDesdeAsignacionResponsable(asignacion: {
+  id: string;
+  es_principal?: boolean;
+  creado_en?: string;
+  area?: { codigo?: string; nombre?: string; descripcion?: string };
+  usuario?: {
+    nombre?: string;
+    segundo_nombre?: string;
+    primer_apellido?: string;
+    segundo_apellido?: string;
+    correo_electronico?: string;
+    rol?: string;
+  };
+}): DocumentoSGCData {
+  const responsable = nombreUsuarioSGC(asignacion.usuario, "Sin asignar");
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Asignación",
+      cumplido: true,
+      responsable,
+      fecha: asignacion.creado_en,
+    },
+    {
+      etapa: "Rol en el área",
+      cumplido: true,
+      responsable,
+      fecha: asignacion.creado_en,
+    },
+    {
+      etapa: "Responsable principal",
+      cumplido: Boolean(asignacion.es_principal),
+      responsable,
+      fecha: asignacion.creado_en,
+    },
+  ];
+
+  const contenidoHtml = [
+    seccionSGC(
+      "Datos de la asignación",
+      tablaCamposSGC([
+        ["Área", asignacion.area?.nombre || "—"],
+        ["Código del área", asignacion.area?.codigo || "—"],
+        ["Responsable", responsable],
+        ["Correo", asignacion.usuario?.correo_electronico || "—"],
+        ["Rol del usuario", asignacion.usuario?.rol || "—"],
+        ["Tipo", asignacion.es_principal ? "Responsable principal" : "Responsable de apoyo"],
+        ["Fecha de asignación", formatearFechaSGC(asignacion.creado_en)],
+      ]),
+    ),
+    seccionSGC("Descripción del área", textoAHtmlSGC(asignacion.area?.descripcion, "Sin descripción.")),
+    seccionTrazabilidadSGC(pasos),
+  ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
+
+  return {
+    nombre: `${responsable} · ${asignacion.area?.nombre || "Área"}`,
+    codigo: asignacion.area?.codigo || asignacion.id || "S/C",
+    version: "1.0",
+    tipoDocumento: "asignacion_responsable",
+    estado: asignacion.es_principal ? "activo" : "asignado",
+    contenidoHtml,
+    fechaCreacion: asignacion.creado_en,
+    fechaVigencia: asignacion.creado_en,
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
+  };
+}
+
+export function datosSGCDesdeUsuario(usuario: Usuario): DocumentoSGCData {
+  const nombre = nombreUsuarioSGC(usuario, usuario.nombre_usuario || "Usuario");
+  const roles = (usuario.roles || [])
+    .map((asignacion) => asignacion.rol?.nombre)
+    .filter((nombreRol): nombreRol is string => Boolean(nombreRol));
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Registro",
+      cumplido: true,
+      responsable: nombre,
+      fecha: usuario.creado_en,
+    },
+    {
+      etapa: "Asignación de rol",
+      cumplido: roles.length > 0,
+      enCurso: roles.length === 0,
+      responsable: nombre,
+      fecha: usuario.actualizado_en,
+    },
+    {
+      etapa: "Habilitación",
+      cumplido: Boolean(usuario.activo),
+      responsable: nombre,
+      fecha: usuario.actualizado_en,
+    },
+  ];
+
+  const contenidoHtml = [
+    seccionSGC(
+      "Datos del usuario",
+      tablaCamposSGC([
+        ["Nombre completo", nombre],
+        ["Usuario", usuario.nombre_usuario || "—"],
+        ["Documento", usuario.documento != null ? String(usuario.documento) : "—"],
+        ["Correo electrónico", usuario.correo_electronico || "—"],
+        ["Área", usuario.area ? `${usuario.area.nombre} [${usuario.area.codigo}]` : "Sin área asignada"],
+        ["Roles", roles.length ? roles.join(", ") : "Sin roles asignados"],
+        ["Estado", usuario.activo ? "Activo" : "Inactivo"],
+        ["Fecha de registro", formatearFechaSGC(usuario.creado_en)],
+        ["Última actualización", formatearFechaSGC(usuario.actualizado_en)],
+      ]),
+    ),
+    seccionTrazabilidadSGC(pasos),
+  ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
+
+  return {
+    nombre,
+    codigo: usuario.nombre_usuario || String(usuario.documento || usuario.id),
+    version: "1.0",
+    tipoDocumento: "usuario",
+    estado: usuario.activo ? "activo" : "inactivo",
+    contenidoHtml,
+    fechaCreacion: usuario.creado_en,
+    fechaVigencia: usuario.actualizado_en || usuario.creado_en,
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
+  };
+}
+
+export function datosSGCDesdeRol(rol: {
+  id: string;
+  nombre: string;
+  clave: string;
+  descripcion?: string;
+  creado_en?: string;
+  permisos?: Array<{
+    permiso_id?: string;
+    permiso?: { id?: string; nombre?: string; codigo?: string; descripcion?: string };
+    nombre?: string;
+    codigo?: string;
+    descripcion?: string;
+  }>;
+}): DocumentoSGCData {
+  const permisos = (rol.permisos || [])
+    .map((item) => item.permiso || item)
+    .filter((permiso) => permiso?.nombre || permiso?.codigo);
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Creación del rol",
+      cumplido: true,
+      responsable: "Sistema",
+      fecha: rol.creado_en,
+    },
+    {
+      etapa: "Asignación de permisos",
+      cumplido: permisos.length > 0,
+      enCurso: permisos.length === 0,
+      responsable: "Sistema",
+      fecha: rol.creado_en,
+    },
+    {
+      etapa: "Rol habilitado",
+      cumplido: permisos.length > 0,
+      responsable: "Sistema",
+      fecha: rol.creado_en,
+    },
+  ];
+
+  const contenidoHtml = [
+    seccionSGC(
+      "Datos del rol",
+      tablaCamposSGC([
+        ["Nombre", rol.nombre || "—"],
+        ["Clave", rol.clave || "—"],
+        ["Permisos asignados", String(permisos.length)],
+        ["Fecha de creación", formatearFechaSGC(rol.creado_en)],
+      ]),
+    ),
+    seccionSGC("Descripción", textoAHtmlSGC(rol.descripcion, "Sin descripción.")),
+    seccionSGC(
+      "Permisos del rol",
+      permisos.length
+        ? tablaCamposSGC(
+            permisos.map((permiso) => [
+              permiso.codigo || "—",
+              [permiso.nombre, permiso.descripcion].filter(Boolean).join(" — ") || "—",
+            ]),
+          )
+        : textoAHtmlSGC("", "Este rol no tiene permisos asignados."),
+    ),
+    seccionTrazabilidadSGC(pasos),
+  ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
+
+  return {
+    nombre: rol.nombre || "Rol del SGC",
+    codigo: rol.clave || rol.id || "S/C",
+    version: "1.0",
+    tipoDocumento: "rol",
+    estado: permisos.length > 0 ? "activo" : "borrador",
+    contenidoHtml,
+    fechaCreacion: rol.creado_en,
+    fechaVigencia: rol.creado_en,
     ...firmas,
     versiones: versionesDesdePasos(pasos),
   };

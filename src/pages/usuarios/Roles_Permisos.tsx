@@ -50,6 +50,8 @@ import {
 import { apiClient } from "@/lib/api";
 import { hasAnyPermission, asId, sameId } from "@/lib/permissions";
 import { refreshCurrentUserSession } from "@/services/auth";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeRol } from "@/utils/documentosRegistrosSGC";
 
 const ROLES_CANONICOS = new Set(["admin", "lider_proceso", "auditor", "colaborador", "invitado"]);
 
@@ -97,6 +99,8 @@ export default function GestionRolesPermisos() {
   const [permisosSeleccionados, setPermisosSeleccionados] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showDocumento, setShowDocumento] = useState(false);
+  const [rolVista, setRolVista] = useState<RolConPermisos | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -149,6 +153,23 @@ export default function GestionRolesPermisos() {
   };
 
   const openDialog = async (type: "ver" | "eliminar" | "crear" | "editar" | "permisos", rol: RolConPermisos | null = null) => {
+    if (type === "ver" && rol) {
+      setRolVista(rol);
+      setShowDocumento(true);
+      try {
+        const response = await apiClient.get(`/roles/${rol.id}`);
+        const data = response.data;
+        setRolVista({
+          ...rol,
+          ...data,
+          permisos: data.permisos || rol.permisos || [],
+        });
+      } catch (error) {
+        console.error("Error al cargar el rol:", error);
+      }
+      return;
+    }
+
     setDialogState({ open: true, type, rol });
 
     if (rol) {
@@ -620,6 +641,32 @@ export default function GestionRolesPermisos() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <VistaDocumentoSGCDialog
+            open={showDocumento}
+            onOpenChange={(open) => {
+              setShowDocumento(open);
+              if (!open) setRolVista(null);
+            }}
+            data={rolVista ? datosSGCDesdeRol(rolVista) : null}
+            title="Rol y permisos"
+            description="Documento controlado con la definición del rol y sus permisos en el SGC."
+            extraActions={
+              rolVista && canGestionUsuarios ? (
+                <Button
+                  className="rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
+                  onClick={() => {
+                    const rol = rolVista;
+                    setShowDocumento(false);
+                    setTimeout(() => openDialog("permisos", rol), 100);
+                  }}
+                >
+                  <Lock className="mr-2 h-4 w-4" />
+                  Gestionar Permisos
+                </Button>
+              ) : null
+            }
+          />
 
           {/* Dialog Ver Detalles */}
           <Dialog open={dialogState.open && dialogState.type === "ver"} onOpenChange={closeDialog}>

@@ -97,6 +97,8 @@ interface Asignacion {
 
 import { apiClient } from "@/lib/api";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeAsignacionResponsable } from "@/utils/documentosRegistrosSGC";
 
 // ... previous interfaces
 
@@ -107,6 +109,7 @@ export default function AsignarResponsables() {
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<"create" | "view">("create");
+  const [showDocumento, setShowDocumento] = useState(false);
   const [selectedAsignacion, setSelectedAsignacion] = useState<Asignacion | null>(null);
   const [formData, setFormData] = useState({
     area_id: "",
@@ -154,9 +157,8 @@ export default function AsignarResponsables() {
   };
 
   const handleView = (asignacion: Asignacion) => {
-    setDialogMode("view");
     setSelectedAsignacion(asignacion);
-    setShowDialog(true);
+    setShowDocumento(true);
   };
 
   const handleSave = async () => {
@@ -481,6 +483,17 @@ export default function AsignarResponsables() {
               </Table>
             </div>
           </div>
+
+          <VistaDocumentoSGCDialog
+            open={showDocumento}
+            onOpenChange={(open) => {
+              setShowDocumento(open);
+              if (!open) setSelectedAsignacion(null);
+            }}
+            data={selectedAsignacion ? datosSGCDesdeAsignacionResponsable(selectedAsignacion) : null}
+            title="Asignación de responsable"
+            description="Documento controlado con el responsable asignado al área."
+          />
 
           {/* Diálogo de Crear/Ver */}
           <Dialog open={showDialog} onOpenChange={setShowDialog}>

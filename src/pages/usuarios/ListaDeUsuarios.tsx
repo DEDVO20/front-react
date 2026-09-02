@@ -42,14 +42,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -60,6 +52,8 @@ import { usuarioService, Usuario } from "@/services/usuario.service";
 import { getCurrentUser } from "@/services/auth";
 import { hasAnyPermission } from "@/lib/permissions";
 import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeUsuario } from "@/utils/documentosRegistrosSGC";
 
 function getRolNombres(usuario: Usuario): string[] {
   if (!Array.isArray(usuario.roles)) return [];
@@ -538,101 +532,31 @@ export default function ListaUsuarios() {
             </CardContent>
           </Card>
 
-          {/* Dialog Ver Detalles */}
-          <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-2xl text-[#1E3A8A] flex items-center gap-3">
-                  <Eye className="h-7 w-7 text-[#2563EB]" />
-                  Detalles del Usuario
-                </DialogTitle>
-              </DialogHeader>
-              {selectedUsuario && (
-                <div className="space-y-6 py-4">
-                  <div className="flex items-center gap-5">
-                    <div className="h-20 w-20 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-3xl font-bold">
-                      {selectedUsuario.nombre.charAt(0).toUpperCase()}
-                      {selectedUsuario.primer_apellido?.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-bold text-gray-900">{getNombreCompleto(selectedUsuario)}</h3>
-                      <p className="text-lg text-[#6B7280]">@{selectedUsuario.nombre_usuario}</p>
-                    </div>
-                    <Badge className={`text-base px-4 py-2 ${selectedUsuario.activo ? "bg-[#ECFDF5] text-[#22C55E]" : "bg-gray-100 text-gray-600"}`}>
-                      {selectedUsuario.activo ? "Activo" : "Inactivo"}
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                    <div>
-                      <p className="text-sm text-[#6B7280] mb-1">Documento</p>
-                      <p className="text-xl font-mono font-semibold">{selectedUsuario.documento.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-[#6B7280] mb-1">Correo Electrónico</p>
-                      <p className="text-xl font-medium">{selectedUsuario.correo_electronico}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-[#6B7280] mb-1">Área Asignada</p>
-                      <p className="text-xl font-medium">
-                        {selectedUsuario.area ? (
-                          <span>{selectedUsuario.area.nombre} <Badge variant="outline">[{selectedUsuario.area.codigo}]</Badge></span>
-                        ) : (
-                          <span className="italic text-[#6B7280]">Sin área asignada</span>
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-[#6B7280] mb-1">Roles</p>
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {getRolNombres(selectedUsuario).length > 0 ? (
-                          getRolNombres(selectedUsuario).map((nombre) => (
-                            <Badge key={nombre} className="bg-[#E0EDFF] text-[#2563EB] text-sm px-3 py-1">
-                              {nombre}
-                            </Badge>
-                          ))
-                        ) : (
-                          <span className="italic text-[#6B7280]">Sin roles asignados</span>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-sm text-[#6B7280] mb-1">Fecha de Registro</p>
-                      <p className="text-lg font-medium">
-                        {new Date(selectedUsuario.creado_en).toLocaleDateString("es-CO", {
-                          weekday: "long",
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-[#F1F5F9] rounded-xl p-5 border border-[#E5E7EB]">
-                    <p className="text-sm text-[#6B7280] mb-1">Última Actualización</p>
-                    <p className="text-lg font-medium">
-                      {new Date(selectedUsuario.actualizado_en).toLocaleString("es-CO", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  </div>
-                </div>
-              )}
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
-                  Cerrar
+          <VistaDocumentoSGCDialog
+            open={viewDialogOpen}
+            onOpenChange={(open) => {
+              setViewDialogOpen(open);
+              if (!open) setSelectedUsuario(null);
+            }}
+            data={selectedUsuario ? datosSGCDesdeUsuario(selectedUsuario) : null}
+            title="Usuario del SGC"
+            description="Documento controlado con los datos, área y roles del usuario."
+            extraActions={
+              selectedUsuario && canEditUser ? (
+                <Button
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => {
+                    setViewDialogOpen(false);
+                    navigate(`/usuarios/${selectedUsuario.id}/editar`);
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-
+              ) : null
+            }
+          />
 
           {/* Dialog Eliminar */}
           <AlertDialog open={deleteDialog.open && canDeleteUser} onOpenChange={(open) => { if (!open) closeDeleteDialog(); }}>

@@ -50,6 +50,8 @@ import {
 } from "@/components/ui/table";
 import { apiClient } from "@/lib/api";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeArea } from "@/utils/documentosRegistrosSGC";
 
 interface Usuario {
   id: string;
@@ -79,6 +81,7 @@ export default function AreasResponsables() {
   const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
+  const [showDocumento, setShowDocumento] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [selectedArea, setSelectedArea] = useState<Area | null>(null);
   const [formData, setFormData] = useState({
@@ -128,9 +131,8 @@ export default function AreasResponsables() {
   };
 
   const handleView = (area: Area) => {
-    setDialogMode('view');
     setSelectedArea(area);
-    setShowDialog(true);
+    setShowDocumento(true);
   };
 
   const handleSave = async () => {
@@ -463,6 +465,31 @@ export default function AreasResponsables() {
               </Table>
             </div>
           </div>
+
+          <VistaDocumentoSGCDialog
+            open={showDocumento}
+            onOpenChange={(open) => {
+              setShowDocumento(open);
+            }}
+            data={selectedArea ? datosSGCDesdeArea(selectedArea) : null}
+            title="Área del SGC"
+            description="Documento controlado con la caracterización del área y sus responsables."
+            extraActions={
+              selectedArea ? (
+                <Button
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => {
+                    setShowDocumento(false);
+                    handleEdit(selectedArea);
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </Button>
+              ) : null
+            }
+          />
 
           {/* Dialog de Crear/Editar/Ver */}
           <Dialog open={showDialog} onOpenChange={setShowDialog}>
