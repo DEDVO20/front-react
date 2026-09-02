@@ -1,29 +1,17 @@
 import apiClient from "@/lib/api";
 
-export interface Indicador {
+export type TipoIndicador = "eficacia" | "eficiencia" | "cumplimiento";
+export type EstadoIndicador = "borrador" | "pendiente_aprobacion" | "aprobado" | "rechazado" | string;
+
+export interface UsuarioIndicador {
   id: string;
-  proceso_id: string;
-  codigo: string;
   nombre: string;
-  descripcion?: string;
-  formula?: string;
-  unidad_medida?: string;
-  meta?: number;
-  frecuencia_medicion: string;
-  responsable_medicion_id?: string;
-  activo: boolean;
-  creado_en: string;
-  actualizado_en: string;
-  // Relaciones opcionales
-  proceso?: {
-    id: string;
-    nombre: string;
-  };
-  responsable?: {
-    id: string;
-    nombre: string;
-    primer_apellido: string;
-  };
+  segundoNombre?: string;
+  segundo_nombre?: string;
+  primerApellido?: string;
+  primer_apellido?: string;
+  segundoApellido?: string;
+  segundo_apellido?: string;
 }
 
 export interface MedicionIndicador {
@@ -37,6 +25,41 @@ export interface MedicionIndicador {
   registrado_por?: string | null;
   creado_en: string;
   actualizado_en: string;
+  registrador?: UsuarioIndicador | null;
+}
+
+export interface Indicador {
+  id: string;
+  proceso_id: string;
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  formula?: string;
+  unidad_medida?: string;
+  meta?: number;
+  frecuencia_medicion: string;
+  responsable_medicion_id?: string;
+  tipo_indicador?: TipoIndicador | string;
+  estado?: EstadoIndicador;
+  activo: boolean;
+  creado_por?: string;
+  revisado_por?: string | null;
+  fecha_revision?: string | null;
+  aprobado_por?: string | null;
+  fecha_aprobacion?: string | null;
+  observacion_aprobacion?: string | null;
+  creado_en: string;
+  actualizado_en: string;
+  proceso?: {
+    id: string;
+    codigo?: string;
+    nombre: string;
+  };
+  responsable?: UsuarioIndicador | null;
+  creador?: UsuarioIndicador | null;
+  revisador?: UsuarioIndicador | null;
+  aprobador?: UsuarioIndicador | null;
+  ultima_medicion?: MedicionIndicador | null;
 }
 
 export interface TendenciaIndicador {
@@ -49,46 +72,40 @@ export interface TendenciaIndicador {
 }
 
 export const indicadorService = {
-  // Obtener todos los indicadores
-  async getAll(filters?: { proceso_id?: string; activo?: boolean }): Promise<Indicador[]> {
-    const response = await apiClient.get('/indicadores', {
+  async getAll(filters?: {
+    proceso_id?: string;
+    activo?: boolean;
+    tipo_indicador?: TipoIndicador | string;
+  }): Promise<Indicador[]> {
+    const response = await apiClient.get("/indicadores", {
       params: {
         proceso_id: filters?.proceso_id,
-        activo: filters?.activo
-      }
+        activo: filters?.activo,
+        tipo_indicador: filters?.tipo_indicador,
+      },
     });
     return response.data;
   },
 
-  // Obtener indicadores activos
   async getActivos(): Promise<Indicador[]> {
     return this.getAll({ activo: true });
   },
 
-  // Obtener un indicador por ID
   async getById(id: string): Promise<Indicador> {
     const response = await apiClient.get(`/indicadores/${id}`);
     return response.data;
   },
 
-  // Crear nuevo indicador
   async create(data: Partial<Indicador>): Promise<Indicador> {
-    // Ensure payload is snake_case if needed. 
-    // Usually we might need a mapper, but let's assume for now user data is mostly compatible or handled elsewhere.
-    // Ideally, we should map camelCase to snake_case here if the form sends camelCase.
-    // Given previous tasks, we often did this mapping in the REACT COMPONENT handleSubmit.
-    // So we will just pass data through.
-    const response = await apiClient.post('/indicadores', data);
+    const response = await apiClient.post("/indicadores", data);
     return response.data;
   },
 
-  // Actualizar indicador
   async update(id: string, data: Partial<Indicador>): Promise<Indicador> {
     const response = await apiClient.put(`/indicadores/${id}`, data);
     return response.data;
   },
 
-  // Eliminar indicador
   async delete(id: string): Promise<void> {
     await apiClient.delete(`/indicadores/${id}`);
   },
@@ -110,6 +127,21 @@ export const indicadorService = {
 
   async getTendencia(id: string): Promise<TendenciaIndicador> {
     const response = await apiClient.get(`/indicadores/${id}/tendencia`);
+    return response.data;
+  },
+
+  async solicitarAprobacion(id: string): Promise<Indicador> {
+    const response = await apiClient.post(`/indicadores/${id}/solicitar-aprobacion`);
+    return response.data;
+  },
+
+  async aprobar(id: string, observacion?: string): Promise<Indicador> {
+    const response = await apiClient.post(`/indicadores/${id}/aprobar`, { observacion: observacion || null });
+    return response.data;
+  },
+
+  async rechazar(id: string, observacion: string): Promise<Indicador> {
+    const response = await apiClient.post(`/indicadores/${id}/rechazar`, { observacion });
     return response.data;
   },
 };

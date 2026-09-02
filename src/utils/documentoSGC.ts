@@ -68,6 +68,10 @@ const TIPOS: Record<string, string> = {
   asignacion_responsable: "ASIGNACIÓN DE RESPONSABLE",
   usuario: "USUARIO",
   rol: "ROL Y PERMISOS",
+  indicador: "INDICADOR",
+  indicador_eficacia: "INDICADOR DE EFICACIA",
+  indicador_eficiencia: "INDICADOR DE EFICIENCIA",
+  indicador_cumplimiento: "INDICADOR DE CUMPLIMIENTO",
 };
 
 export function etiquetaTipoDocumento(tipo?: string): string {
@@ -109,6 +113,7 @@ const ESTADOS: Record<string, string> = {
   desarrollada: "desarrollada",
   "en desarrollo": "en desarrollo",
   asignado: "asignado",
+  rechazado: "rechazado",
 };
 
 export function etiquetaEstadoDocumento(estado?: string): string {

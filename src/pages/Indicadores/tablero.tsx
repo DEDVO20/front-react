@@ -8,14 +8,15 @@ import {
   CheckCircle,
   AlertCircle,
   AlertTriangle,
-  Calendar,
   Plus,
   Edit,
   Trash2,
   Activity,
   CheckCircle2,
   XCircle,
+  Eye,
 } from "lucide-react";
+import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import {
   Card,
@@ -26,9 +27,13 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { indicadorService, Indicador, TendenciaIndicador } from "@/services/indicador.service";
+import { indicadorService, Indicador, TendenciaIndicador, MedicionIndicador } from "@/services/indicador.service";
 import { procesoService, Proceso } from "@/services/proceso.service";
 import { usuarioService, Usuario } from "@/services/usuario.service";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeIndicador } from "@/utils/documentosRegistrosSGC";
+import { nombreUsuarioSGC } from "@/utils/documentoSGC";
+import { getCurrentUser } from "@/services/auth";
 import DashboardPHVA from "@/components/dashboard/DashboardPHVA";
 import { dashboardPhvaService, DashboardPHVAMetrics } from "@/services/dashboardPhva.service";
 import { analyticsService, HumanRiskMetrics } from "@/services/analytics";
@@ -83,6 +88,10 @@ export default function TableroIndicadores() {
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [selected, setSelected] = useState<Indicador | null>(null);
   const [form, setForm] = useState<Partial<Indicador>>({});
+  const [showDocumento, setShowDocumento] = useState(false);
+  const [showMedicion, setShowMedicion] = useState(false);
+  const [medicionesMap, setMedicionesMap] = useState<Record<string, MedicionIndicador[]>>({});
+  const [medicionForm, setMedicionForm] = useState({ periodo: "", valor: "", observaciones: "" });
 
   // Tendencias + PHVA
   const [tendencias, setTendencias] = useState<Record<string, TendenciaIndicador>>({});
@@ -170,7 +179,7 @@ export default function TableroIndicadores() {
 
   const handleOpenCreate = () => {
     setDialogMode('create');
-    setForm({});
+    setForm({ frecuencia_medicion: 'mensual', tipo_indicador: 'eficacia', activo: true });
     setSelected(null);
     setShowDialog(true);
   };
@@ -188,6 +197,7 @@ export default function TableroIndicadores() {
       unidad_medida: ind.unidad_medida,
       frecuencia_medicion: ind.frecuencia_medicion,
       responsable_medicion_id: ind.responsable_medicion_id,
+      tipo_indicador: ind.tipo_indicador || 'eficacia',
       activo: ind.activo,
     });
     setShowDialog(true);
@@ -210,6 +220,7 @@ export default function TableroIndicadores() {
         meta: form.meta !== undefined && form.meta !== null && (form.meta as any) !== '' ? Number(form.meta) : null,
         frecuencia_medicion: form.frecuencia_medicion || 'mensual',
         responsable_medicion_id: form.responsable_medicion_id || null,
+        tipo_indicador: form.tipo_indicador || 'eficacia',
         activo: form.activo !== undefined ? form.activo : true
       };
 
@@ -234,6 +245,76 @@ export default function TableroIndicadores() {
       await fetchIndicadores();
     } catch (err) {
       setError((err as Error).message);
+    }
+  };
+
+  const abrirDocumento = async (indicador: Indicador) => {
+    setSelected(indicador);
+    setShowDocumento(true);
+    if (!medicionesMap[indicador.id]) {
+      try {
+        const historial = await indicadorService.getMediciones(indicador.id);
+        setMedicionesMap((prev) => ({ ...prev, [indicador.id]: historial }));
+      } catch {
+        setMedicionesMap((prev) => ({ ...prev, [indicador.id]: indicador.ultima_medicion ? [indicador.ultima_medicion] : [] }));
+      }
+    }
+  };
+
+  const abrirMedicion = (indicador: Indicador) => {
+    const now = new Date();
+    setSelected(indicador);
+    setMedicionForm({
+      periodo: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
+      valor: "",
+      observaciones: "",
+    });
+    setShowMedicion(true);
+  };
+
+  const guardarMedicion = async () => {
+    if (!selected) return;
+    if (!medicionForm.periodo || medicionForm.valor === "") {
+      toast.error("Periodo y valor son obligatorios");
+      return;
+    }
+    try {
+      await indicadorService.registrarMedicion(selected.id, {
+        periodo: medicionForm.periodo,
+        valor: Number(medicionForm.valor),
+        observaciones: medicionForm.observaciones || undefined,
+      });
+      toast.success("Medición registrada");
+      setShowMedicion(false);
+      await fetchIndicadores();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || err.message);
+    }
+  };
+
+  const aprobarIndicador = async (indicador: Indicador) => {
+    const me = getCurrentUser()?.id;
+    if (me && indicador.creado_por && me === indicador.creado_por) {
+      toast.error("Quien elabora el indicador no puede aprobarlo");
+      return;
+    }
+    if (!confirm(`¿Aprobar el indicador ${indicador.codigo}?`)) return;
+    try {
+      await indicadorService.aprobar(indicador.id);
+      toast.success("Indicador aprobado");
+      await fetchIndicadores();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || err.message);
+    }
+  };
+
+  const solicitarAprobacion = async (indicador: Indicador) => {
+    try {
+      await indicadorService.solicitarAprobacion(indicador.id);
+      toast.success("Solicitud de aprobación enviada");
+      await fetchIndicadores();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || err.message);
     }
   };
 
@@ -412,16 +493,17 @@ export default function TableroIndicadores() {
                         <tr>
                           <th className="text-left p-3 font-semibold text-gray-600">Código</th>
                           <th className="text-left p-3 font-semibold text-gray-600">Nombre</th>
+                          <th className="text-left p-3 font-semibold text-gray-600">Tipo</th>
                           <th className="text-left p-3 font-semibold text-gray-600 w-28">Meta</th>
-                          <th className="text-left p-3 font-semibold text-gray-600 w-28">Desempeño</th>
-                          <th className="text-left p-3 font-semibold text-gray-600 w-32">Frecuencia</th>
-                          <th className="text-right p-3 font-semibold text-gray-600 w-40">Acciones</th>
+                          <th className="text-left p-3 font-semibold text-gray-600 w-28">Último valor</th>
+                          <th className="text-left p-3 font-semibold text-gray-600">Aprobación</th>
+                          <th className="text-right p-3 font-semibold text-gray-600 w-56">Acciones</th>
                         </tr>
                       </thead>
                       <tbody>
                         {indicadores.length === 0 ? (
                           <tr>
-                            <td colSpan={6} className="text-center p-12 text-gray-400">
+                            <td colSpan={7} className="text-center p-12 text-gray-400">
                               <BarChart3 className="h-10 w-10 mx-auto mb-3 text-gray-300" />
                               <p className="font-medium">Sin indicadores registrados</p>
                               <button
@@ -433,29 +515,69 @@ export default function TableroIndicadores() {
                             </td>
                           </tr>
                         ) : (
-                          indicadores.map((indicador) => (
+                          indicadores.map((indicador) => {
+                            const estado = (indicador.estado || "borrador").toLowerCase();
+                            const ultimo = indicador.ultima_medicion?.valor;
+                            return (
                             <tr key={indicador.id} className="border-b hover:bg-gray-50 transition-colors">
                               <td className="p-3 font-mono text-xs text-indigo-600 font-medium">{indicador.codigo}</td>
                               <td className="p-3 font-medium text-gray-900">{indicador.nombre}</td>
+                              <td className="p-3 text-sm capitalize text-gray-600">{indicador.tipo_indicador || "—"}</td>
                               <td className="p-3">
                                 <span className="text-lg font-bold tabular-nums">
-                                  {indicador.meta !== null && indicador.meta !== undefined ? `${Number(indicador.meta).toFixed(1)}%` : "N/A"}
+                                  {indicador.meta !== null && indicador.meta !== undefined ? Number(indicador.meta).toFixed(1) : "N/A"}
                                 </span>
                               </td>
                               <td className="p-3">
-                                {indicador.meta !== null && indicador.meta !== undefined
-                                  ? getValorBadge(Number(indicador.meta))
-                                  : <Badge variant="outline">Sin dato</Badge>
+                                {ultimo != null
+                                  ? getValorBadge(Number(indicador.meta != null && Number(indicador.meta) > 0 ? (Number(ultimo) / Number(indicador.meta)) * 100 : ultimo))
+                                  : <Badge variant="outline">Sin medición</Badge>
                                 }
                               </td>
-                              <td className="p-3 text-gray-600">
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {indicador.frecuencia_medicion}
-                                </div>
+                              <td className="p-3">
+                                {estado === "aprobado" ? (
+                                  <div>
+                                    <Badge className="bg-emerald-600">Aprobado</Badge>
+                                    <div className="text-xs text-gray-500 mt-1">{nombreUsuarioSGC(indicador.aprobador, "Sin registro")}</div>
+                                  </div>
+                                ) : estado === "pendiente_aprobacion" ? (
+                                  <Badge className="bg-amber-500">Pendiente</Badge>
+                                ) : estado === "rechazado" ? (
+                                  <Badge className="bg-red-600">Rechazado</Badge>
+                                ) : (
+                                  <Badge className="bg-gray-500">Sin aprobar</Badge>
+                                )}
                               </td>
                               <td className="p-3 text-right">
-                                <div className="flex justify-end gap-2">
+                                <div className="flex justify-end flex-wrap gap-2">
+                                  <button
+                                    onClick={() => abrirDocumento(indicador)}
+                                    className="text-sm bg-white border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                                  >
+                                    <Eye className="h-3.5 w-3.5 inline mr-1" /> Ver
+                                  </button>
+                                  <button
+                                    onClick={() => abrirMedicion(indicador)}
+                                    className="text-sm bg-white border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                                  >
+                                    Medir
+                                  </button>
+                                  {estado !== "aprobado" && estado !== "pendiente_aprobacion" && (
+                                    <button
+                                      onClick={() => solicitarAprobacion(indicador)}
+                                      className="text-sm bg-white border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                                    >
+                                      Solicitar
+                                    </button>
+                                  )}
+                                  {estado !== "aprobado" && (
+                                    <button
+                                      onClick={() => aprobarIndicador(indicador)}
+                                      className="text-sm bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors"
+                                    >
+                                      Aprobar
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => handleOpenEdit(indicador)}
                                     className="text-sm bg-white border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
@@ -471,7 +593,8 @@ export default function TableroIndicadores() {
                                 </div>
                               </td>
                             </tr>
-                          ))
+                            );
+                          })
                         )}
                       </tbody>
                     </table>
@@ -660,7 +783,20 @@ export default function TableroIndicadores() {
                 />
               </div>
 
-              <div className="md:col-span-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de indicador</label>
+                <select
+                  value={form?.tipo_indicador || 'eficacia'}
+                  onChange={(e) => setForm({ ...form, tipo_indicador: e.target.value })}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="eficacia">Eficacia</option>
+                  <option value="eficiencia">Eficiencia</option>
+                  <option value="cumplimiento">Cumplimiento</option>
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Frecuencia de medición</label>
                 <select
                   value={form?.frecuencia_medicion || 'mensual'}
@@ -710,6 +846,63 @@ export default function TableroIndicadores() {
               >
                 Guardar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <VistaDocumentoSGCDialog
+        open={showDocumento}
+        onOpenChange={(open) => {
+          setShowDocumento(open);
+          if (!open) setSelected(null);
+        }}
+        data={
+          selected
+            ? datosSGCDesdeIndicador(selected, medicionesMap[selected.id] || [])
+            : null
+        }
+        title="Indicador del SGC"
+        description="Documento controlado con elaboración, medición y aprobación del indicador."
+      />
+
+      {showMedicion && selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6">
+            <h3 className="text-lg font-bold text-[#1E3A8A] mb-1">Registrar medición</h3>
+            <p className="text-sm text-gray-500 mb-4">{selected.codigo} · {selected.nombre}</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Periodo</label>
+                <input
+                  value={medicionForm.periodo}
+                  onChange={(e) => setMedicionForm({ ...medicionForm, periodo: e.target.value })}
+                  className="w-full p-3 border rounded-lg"
+                  placeholder="2026-09"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Valor</label>
+                <input
+                  type="number"
+                  value={medicionForm.valor}
+                  onChange={(e) => setMedicionForm({ ...medicionForm, valor: e.target.value })}
+                  className="w-full p-3 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
+                <textarea
+                  value={medicionForm.observaciones}
+                  onChange={(e) => setMedicionForm({ ...medicionForm, observaciones: e.target.value })}
+                  className="w-full p-3 border rounded-lg"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setShowMedicion(false)} className="px-4 py-2 border rounded-lg">Cancelar</button>
+              <button onClick={guardarMedicion} className="px-6 py-2 bg-[#2563EB] text-white rounded-lg">Registrar</button>
             </div>
           </div>
         </div>

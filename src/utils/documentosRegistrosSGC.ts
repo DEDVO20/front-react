@@ -7,6 +7,7 @@ import type {
 } from "@/services/capacitacion.service";
 import type { Area } from "@/services/area.service";
 import type { EvaluacionCompetencia } from "@/services/competencia.service";
+import type { Indicador, MedicionIndicador } from "@/services/indicador.service";
 import type { NoConformidad } from "@/services/noConformidad.service";
 import type { ObjetivoCalidad, SeguimientoObjetivo } from "@/services/objetivoCalidad.service";
 import type { Proceso } from "@/services/proceso.service";
@@ -1247,6 +1248,130 @@ export function datosSGCDesdeRol(rol: {
     contenidoHtml,
     fechaCreacion: rol.creado_en,
     fechaVigencia: rol.creado_en,
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
+  };
+}
+
+function etiquetaTipoIndicadorSGC(tipo?: string): string {
+  const mapa: Record<string, string> = {
+    eficacia: "Eficacia",
+    eficiencia: "Eficiencia",
+    cumplimiento: "Cumplimiento",
+  };
+  return mapa[(tipo || "").toLowerCase()] || tipo || "—";
+}
+
+function etiquetaEstadoIndicadorSGC(estado?: string): string {
+  const mapa: Record<string, string> = {
+    borrador: "Borrador",
+    pendiente_aprobacion: "Pendiente de aprobación",
+    aprobado: "Aprobado",
+    rechazado: "Rechazado",
+  };
+  return mapa[(estado || "").toLowerCase()] || (estado || "—").replace(/_/g, " ");
+}
+
+function medicionesIndicadorAHtml(mediciones: MedicionIndicador[] = []): string {
+  if (!mediciones.length) return textoAHtmlSGC("", "Sin mediciones registradas.");
+  return tablaCamposSGC(
+    mediciones.map((medicion) => [
+      medicion.periodo || formatearFechaSGC(medicion.creado_en),
+      [
+        medicion.valor != null ? `Valor: ${medicion.valor}` : null,
+        medicion.meta != null ? `Meta: ${medicion.meta}` : null,
+        medicion.cumple_meta === true ? "Cumple meta" : medicion.cumple_meta === false ? "No cumple meta" : null,
+        nombreUsuarioSGC(medicion.registrador, "") ? `Registró: ${nombreUsuarioSGC(medicion.registrador)}` : null,
+        medicion.observaciones || null,
+      ]
+        .filter(Boolean)
+        .join(" · ") || "—",
+    ]),
+  );
+}
+
+export function datosSGCDesdeIndicador(
+  indicador: Indicador,
+  mediciones: MedicionIndicador[] = [],
+): DocumentoSGCData {
+  const estado = (indicador.estado || "borrador").toLowerCase();
+  const historial = mediciones.length ? mediciones : indicador.ultima_medicion ? [indicador.ultima_medicion] : [];
+  const ultima = historial[historial.length - 1];
+  const elaborador = nombreUsuarioSGC(indicador.creador, "Sistema");
+  const medidor = nombreUsuarioSGC(
+    ultima?.registrador || indicador.revisador || indicador.responsable,
+    elaborador,
+  );
+  const aprobador = nombreUsuarioSGC(indicador.aprobador, "Pendiente");
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Elaboración",
+      cumplido: true,
+      responsable: elaborador,
+      fecha: indicador.creado_en,
+    },
+    {
+      etapa: "Medición",
+      cumplido: historial.length > 0,
+      enCurso: estado === "pendiente_aprobacion" && historial.length > 0,
+      responsable: medidor,
+      fecha: ultima?.creado_en || indicador.fecha_revision,
+    },
+    {
+      etapa: "Aprobación",
+      cumplido: estado === "aprobado",
+      enCurso: estado === "pendiente_aprobacion",
+      responsable: estado === "aprobado" ? aprobador : "Pendiente",
+      fecha: indicador.fecha_aprobacion,
+    },
+  ];
+  const tipoDoc =
+    indicador.tipo_indicador === "eficiencia"
+      ? "indicador_eficiencia"
+      : indicador.tipo_indicador === "cumplimiento"
+        ? "indicador_cumplimiento"
+        : indicador.tipo_indicador === "eficacia"
+          ? "indicador_eficacia"
+          : "indicador";
+
+  const contenidoHtml = [
+    seccionSGC(
+      "Datos del indicador",
+      tablaCamposSGC([
+        ["Código", indicador.codigo || "—"],
+        ["Nombre", indicador.nombre || "—"],
+        ["Tipo", etiquetaTipoIndicadorSGC(indicador.tipo_indicador)],
+        ["Estado documental", etiquetaEstadoIndicadorSGC(indicador.estado)],
+        ["Proceso", indicador.proceso?.nombre || "—"],
+        ["Fórmula", indicador.formula || "—"],
+        ["Unidad de medida", indicador.unidad_medida || "—"],
+        ["Meta", indicador.meta != null ? String(indicador.meta) : "—"],
+        ["Frecuencia", indicador.frecuencia_medicion || "—"],
+        ["Responsable de medición", nombreUsuarioSGC(indicador.responsable, "Sin asignar")],
+        ["Elaborado por", elaborador],
+        ["Revisado / medido por", historial.length ? medidor : "Pendiente"],
+        ["Aprobado por", estado === "aprobado" ? aprobador : "Pendiente"],
+        ["Fecha de aprobación", estado === "aprobado" ? formatearFechaSGC(indicador.fecha_aprobacion) : "Pendiente"],
+      ]),
+    ),
+    seccionSGC("Descripción", textoAHtmlSGC(indicador.descripcion, "Sin descripción.")),
+    seccionSGC("Historial de mediciones", medicionesIndicadorAHtml(historial)),
+    ...(indicador.observacion_aprobacion
+      ? [seccionSGC("Observación de aprobación / rechazo", textoAHtmlSGC(indicador.observacion_aprobacion))]
+      : []),
+    seccionTrazabilidadSGC(pasos),
+  ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
+
+  return {
+    nombre: indicador.nombre || `Indicador ${indicador.codigo || ""}`.trim(),
+    codigo: indicador.codigo || "S/C",
+    version: "1.0",
+    tipoDocumento: tipoDoc,
+    estado: indicador.estado || "borrador",
+    contenidoHtml,
+    fechaCreacion: indicador.creado_en,
     ...firmas,
     versiones: versionesDesdePasos(pasos),
   };
