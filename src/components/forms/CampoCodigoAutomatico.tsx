@@ -13,14 +13,9 @@ export function useCodigoAutomatico(
   useEffect(() => {
     if (!enabled) return;
     let cancelado = false;
-    codigoService
-      .siguiente(entidad, extras)
-      .then((valor) => {
-        if (!cancelado) setCodigo(valor);
-      })
-      .catch(() => {
-        if (!cancelado) setCodigo("");
-      });
+    codigoService.siguiente(entidad, extras).then((valor) => {
+      if (!cancelado) setCodigo(valor);
+    });
     return () => {
       cancelado = true;
     };
