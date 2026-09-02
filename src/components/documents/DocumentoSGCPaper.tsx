@@ -134,6 +134,7 @@ export function DocumentoSGCPaper({ data, marca, className = "" }: DocumentoSGCP
         controlada.
       </p>
 
+      {!data.ocultarFirmas && (
       <div className="mt-10 grid grid-cols-3 gap-4 text-center text-[11px]">
         <div>
           <div className="mx-auto mb-2 w-[85%] border-t border-black pt-2 font-semibold">
@@ -169,6 +170,7 @@ export function DocumentoSGCPaper({ data, marca, className = "" }: DocumentoSGCP
           <div className="text-[10px] font-bold uppercase tracking-wider">Aprobó</div>
         </div>
       </div>
+      )}
     </div>
   );
 }

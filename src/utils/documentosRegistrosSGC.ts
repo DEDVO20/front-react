@@ -1032,8 +1032,6 @@ export function datosSGCDesdeArea(area: Area): DocumentoSGCData {
     seccionTrazabilidadSGC(pasos),
   ].join("");
 
-  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
-
   return {
     nombre: area.nombre || `Área ${area.codigo || ""}`.trim(),
     codigo: area.codigo || "S/C",
@@ -1043,7 +1041,7 @@ export function datosSGCDesdeArea(area: Area): DocumentoSGCData {
     contenidoHtml,
     fechaCreacion: area.creado_en,
     fechaVigencia: area.actualizado_en || area.creado_en,
-    ...firmas,
+    ocultarFirmas: true,
     versiones: versionesDesdePasos(pasos),
   };
 }
@@ -1101,8 +1099,6 @@ export function datosSGCDesdeAsignacionResponsable(asignacion: {
     seccionTrazabilidadSGC(pasos),
   ].join("");
 
-  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
-
   return {
     nombre: `${responsable} · ${asignacion.area?.nombre || "Área"}`,
     codigo: asignacion.area?.codigo || asignacion.id || "S/C",
@@ -1112,7 +1108,7 @@ export function datosSGCDesdeAsignacionResponsable(asignacion: {
     contenidoHtml,
     fechaCreacion: asignacion.creado_en,
     fechaVigencia: asignacion.creado_en,
-    ...firmas,
+    ocultarFirmas: true,
     versiones: versionesDesdePasos(pasos),
   };
 }
@@ -1162,8 +1158,6 @@ export function datosSGCDesdeUsuario(usuario: Usuario): DocumentoSGCData {
     seccionTrazabilidadSGC(pasos),
   ].join("");
 
-  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
-
   return {
     nombre,
     codigo: usuario.nombre_usuario || String(usuario.documento || usuario.id),
@@ -1173,7 +1167,7 @@ export function datosSGCDesdeUsuario(usuario: Usuario): DocumentoSGCData {
     contenidoHtml,
     fechaCreacion: usuario.creado_en,
     fechaVigencia: usuario.actualizado_en || usuario.creado_en,
-    ...firmas,
+    ocultarFirmas: true,
     versiones: versionesDesdePasos(pasos),
   };
 }

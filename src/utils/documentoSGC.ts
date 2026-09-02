@@ -38,6 +38,7 @@ export interface DocumentoSGCData {
   revisadoPor?: string;
   aprobadoPor?: string;
   versiones?: VersionSGC[];
+  ocultarFirmas?: boolean;
 }
 
 const TIPOS: Record<string, string> = {
@@ -410,8 +411,13 @@ export function parrafoIntroSGC(data: DocumentoSGCData, marca: MarcaSGC): string
   );
   const tipo = etiquetaTipoDocumento(data.tipoDocumento).toLowerCase();
   const estado = etiquetaEstadoDocumento(data.estado);
+  const encabezado = `La <strong>${escapeHtml(marca.titulo)}</strong>, ${escapeHtml(marca.subtitulo)}, hace constar que el presente ${escapeHtml(tipo)} denominado <strong>${escapeHtml(data.nombre || "Documento sin título")}</strong>, identificado con código <strong>${escapeHtml(data.codigo || "S/C")}</strong> versión <strong>${escapeHtml(data.version || "1.0")}</strong>, se encuentra en estado <strong>${escapeHtml(estado)}</strong>`;
 
-  return `La <strong>${escapeHtml(marca.titulo)}</strong>, ${escapeHtml(marca.subtitulo)}, hace constar que el presente ${escapeHtml(tipo)} denominado <strong>${escapeHtml(data.nombre || "Documento sin título")}</strong>, identificado con código <strong>${escapeHtml(data.codigo || "S/C")}</strong> versión <strong>${escapeHtml(data.version || "1.0")}</strong>, se encuentra en estado <strong>${escapeHtml(estado)}</strong>. Fue elaborado por <strong>${escapeHtml(data.elaboradoPor || "Pendiente")}</strong>, revisado por <strong>${escapeHtml(data.revisadoPor || "Pendiente")}</strong> y aprobado por <strong>${escapeHtml(data.aprobadoPor || "Pendiente")}</strong>, con vigencia a partir del <strong>${escapeHtml(vigencia)}</strong>.`;
+  if (data.ocultarFirmas) {
+    return `${encabezado}, con vigencia a partir del <strong>${escapeHtml(vigencia)}</strong>.`;
+  }
+
+  return `${encabezado}. Fue elaborado por <strong>${escapeHtml(data.elaboradoPor || "Pendiente")}</strong>, revisado por <strong>${escapeHtml(data.revisadoPor || "Pendiente")}</strong> y aprobado por <strong>${escapeHtml(data.aprobadoPor || "Pendiente")}</strong>, con vigencia a partir del <strong>${escapeHtml(vigencia)}</strong>.`;
 }
 
 function encabezadoHtml(data: DocumentoSGCData, marca: MarcaSGC): string {
@@ -453,6 +459,17 @@ function identificacionHtml(data: DocumentoSGCData): string {
 }
 
 function pieHtml(data: DocumentoSGCData): string {
+  const nota = `
+    <p class="sgc-note">
+      El presente documento se emite sin enmendaduras ni tachones. La versión vigente es la publicada
+      en el Sistema de Gestión de Calidad. Cualquier copia impresa se considera no controlada.
+    </p>
+  `;
+
+  if (data.ocultarFirmas) {
+    return nota;
+  }
+
   const firma = (nombre: string | undefined, rol: string, fecha?: string) => {
     const etiqueta = nombre || "Pendiente";
     const fechaHtml =
@@ -469,10 +486,7 @@ function pieHtml(data: DocumentoSGCData): string {
   };
 
   return `
-    <p class="sgc-note">
-      El presente documento se emite sin enmendaduras ni tachones. La versión vigente es la publicada
-      en el Sistema de Gestión de Calidad. Cualquier copia impresa se considera no controlada.
-    </p>
+    ${nota}
     <table class="sgc-signs">
       <tr>
         ${firma(data.elaboradoPor, "Elaboró", data.fechaElaboracion || data.fechaCreacion)}
