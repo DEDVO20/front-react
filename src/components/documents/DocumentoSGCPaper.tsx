@@ -139,18 +139,33 @@ export function DocumentoSGCPaper({ data, marca, className = "" }: DocumentoSGCP
           <div className="mx-auto mb-2 w-[85%] border-t border-black pt-2 font-semibold">
             {data.elaboradoPor || "Pendiente"}
           </div>
+          {data.elaboradoPor && data.elaboradoPor !== "Pendiente" && (data.fechaElaboracion || data.fechaCreacion) && (
+            <div className="mb-1 text-[9px] text-neutral-600">
+              {formatearFechaSGC(data.fechaElaboracion || data.fechaCreacion)}
+            </div>
+          )}
           <div className="text-[10px] font-bold uppercase tracking-wider">Elaboró</div>
         </div>
         <div>
           <div className="mx-auto mb-2 w-[85%] border-t border-black pt-2 font-semibold">
             {data.revisadoPor || "Pendiente"}
           </div>
+          {data.revisadoPor && data.revisadoPor !== "Pendiente" && data.fechaRevision && (
+            <div className="mb-1 text-[9px] text-neutral-600">
+              {formatearFechaSGC(data.fechaRevision)}
+            </div>
+          )}
           <div className="text-[10px] font-bold uppercase tracking-wider">Revisó</div>
         </div>
         <div>
           <div className="mx-auto mb-2 w-[85%] border-t border-black pt-2 font-semibold">
             {data.aprobadoPor || "Pendiente"}
           </div>
+          {data.aprobadoPor && data.aprobadoPor !== "Pendiente" && data.fechaAprobacion && (
+            <div className="mb-1 text-[9px] text-neutral-600">
+              {formatearFechaSGC(data.fechaAprobacion)}
+            </div>
+          )}
           <div className="text-[10px] font-bold uppercase tracking-wider">Aprobó</div>
         </div>
       </div>

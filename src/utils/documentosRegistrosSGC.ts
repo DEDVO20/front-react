@@ -15,6 +15,7 @@ import {
   tablaCamposSGC,
   textoAHtmlSGC,
   type DocumentoSGCData,
+  type VersionSGC,
 } from "@/utils/documentoSGC";
 
 function tipoAccionSGC(tipo?: string): string {
@@ -44,7 +45,90 @@ function tituloAccion(tipo?: string): string {
   return mapa[(tipo || "").toLowerCase()] || "Acción correctiva";
 }
 
+interface PasoTrazabilidad {
+  etapa: string;
+  cumplido: boolean;
+  enCurso?: boolean;
+  responsable: string;
+  fecha?: string | null;
+}
+
+function estadoPaso(paso: PasoTrazabilidad): string {
+  if (paso.cumplido) return "Completada";
+  if (paso.enCurso) return "En curso";
+  return "Pendiente";
+}
+
+function firmasDesdePasos(elaboracion: PasoTrazabilidad, revision: PasoTrazabilidad, aprobacion: PasoTrazabilidad) {
+  const nombreSiAvanzo = (paso: PasoTrazabilidad, soloCumplido = false) => {
+    if (soloCumplido) return paso.cumplido ? paso.responsable : "Pendiente";
+    return paso.cumplido || paso.enCurso ? paso.responsable : "Pendiente";
+  };
+  return {
+    elaboradoPor: nombreSiAvanzo(elaboracion),
+    revisadoPor: nombreSiAvanzo(revision),
+    aprobadoPor: nombreSiAvanzo(aprobacion, true),
+    fechaElaboracion: elaboracion.cumplido || elaboracion.enCurso ? elaboracion.fecha || undefined : undefined,
+    fechaRevision: revision.cumplido || revision.enCurso ? revision.fecha || undefined : undefined,
+    fechaAprobacion: aprobacion.cumplido ? aprobacion.fecha || undefined : undefined,
+  };
+}
+
+function seccionTrazabilidadSGC(pasos: PasoTrazabilidad[]): string {
+  return seccionSGC(
+    "Trazabilidad del proceso",
+    tablaCamposSGC(
+      pasos.map((paso) => [
+        paso.etapa,
+        [
+          estadoPaso(paso),
+          paso.cumplido || paso.enCurso ? paso.responsable : "Pendiente",
+          paso.cumplido || paso.enCurso ? formatearFechaSGC(paso.fecha) : null,
+        ]
+          .filter((parte) => parte && parte !== "—")
+          .join(" · "),
+      ]),
+    ),
+  );
+}
+
+function versionesDesdePasos(pasos: PasoTrazabilidad[]): VersionSGC[] {
+  return pasos
+    .filter((paso) => paso.cumplido || paso.enCurso)
+    .map((paso, index) => ({
+      version: `${index + 1}.0`,
+      descripcion_cambios: `${paso.etapa}: ${estadoPaso(paso)} por ${paso.responsable}`,
+      creado_en: paso.fecha || undefined,
+    }));
+}
+
 export function datosSGCDesdeAccionCorrectiva(accion: AccionCorrectiva): DocumentoSGCData {
+  const estado = (accion.estado || "").toLowerCase();
+  const responsable = nombreUsuarioSGC(accion.responsable, "Sistema");
+  const implementador = nombreUsuarioSGC(accion.implementador, responsable);
+  const verificador = nombreUsuarioSGC(accion.verificador, implementador);
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Elaboración",
+      cumplido: true,
+      responsable,
+      fecha: accion.creadoEn || accion.creado_en,
+    },
+    {
+      etapa: "Implementación",
+      cumplido: ["implementada", "verificada", "cerrada"].includes(estado),
+      enCurso: ["en_proceso", "en_ejecucion"].includes(estado),
+      responsable: implementador,
+      fecha: accion.fechaImplementacion || accion.actualizadoEn || accion.actualizado_en,
+    },
+    {
+      etapa: "Verificación / cierre",
+      cumplido: ["verificada", "cerrada"].includes(estado),
+      responsable: verificador,
+      fecha: accion.fechaVerificacion || accion.actualizadoEn || accion.actualizado_en,
+    },
+  ];
+
   const contenidoHtml = [
     seccionSGC(
       "Datos de la acción",
@@ -79,7 +163,10 @@ export function datosSGCDesdeAccionCorrectiva(accion: AccionCorrectiva): Documen
           ),
         ]
       : []),
+    seccionTrazabilidadSGC(pasos),
   ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
 
   return {
     nombre: `${tituloAccion(accion.tipo)} ${accion.codigo || ""}`.trim(),
@@ -90,13 +177,36 @@ export function datosSGCDesdeAccionCorrectiva(accion: AccionCorrectiva): Documen
     contenidoHtml,
     fechaCreacion: accion.creadoEn || accion.creado_en,
     fechaVigencia: accion.fechaCompromiso,
-    elaboradoPor: nombreUsuarioSGC(accion.responsable, "Sistema"),
-    revisadoPor: nombreUsuarioSGC(accion.verificador, "Pendiente"),
-    aprobadoPor: nombreUsuarioSGC(accion.implementador, "Pendiente"),
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
   };
 }
 
 export function datosSGCDesdeRiesgo(riesgo: Riesgo): DocumentoSGCData {
+  const estado = (riesgo.estado || "identificado").toLowerCase();
+  const responsable = nombreUsuarioSGC(riesgo.responsable, "Sistema");
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Identificación",
+      cumplido: true,
+      responsable,
+      fecha: riesgo.fecha_identificacion || riesgo.creado_en,
+    },
+    {
+      etapa: "Tratamiento",
+      cumplido: ["en_tratamiento", "mitigado", "aceptado"].includes(estado),
+      enCurso: Boolean(riesgo.tratamiento?.trim()) && estado === "identificado",
+      responsable,
+      fecha: riesgo.actualizado_en || riesgo.fecha_revision,
+    },
+    {
+      etapa: estado === "aceptado" ? "Aceptación" : "Mitigación",
+      cumplido: ["mitigado", "aceptado"].includes(estado),
+      responsable,
+      fecha: riesgo.actualizado_en || riesgo.fecha_revision,
+    },
+  ];
+
   const contenidoHtml = [
     seccionSGC(
       "Identificación del riesgo",
@@ -120,7 +230,10 @@ export function datosSGCDesdeRiesgo(riesgo: Riesgo): DocumentoSGCData {
     seccionSGC("Causas", textoAHtmlSGC(riesgo.causas)),
     seccionSGC("Consecuencias", textoAHtmlSGC(riesgo.consecuencias)),
     seccionSGC("Plan de tratamiento", textoAHtmlSGC(riesgo.tratamiento, "No se ha definido un plan de tratamiento.")),
+    seccionTrazabilidadSGC(pasos),
   ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
 
   return {
     nombre: riesgo.nombre || `Tratamiento de riesgo ${riesgo.codigo || ""}`.trim(),
@@ -131,9 +244,8 @@ export function datosSGCDesdeRiesgo(riesgo: Riesgo): DocumentoSGCData {
     contenidoHtml,
     fechaCreacion: riesgo.creado_en,
     fechaVigencia: riesgo.fecha_revision || riesgo.fecha_identificacion,
-    elaboradoPor: nombreUsuarioSGC(riesgo.responsable, "Sistema"),
-    revisadoPor: "Pendiente",
-    aprobadoPor: "Pendiente",
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
   };
 }
 
@@ -156,6 +268,31 @@ function evidenciasNoConformidadAHtml(evidencias?: string | null): string {
 }
 
 export function datosSGCDesdeNoConformidad(nc: NoConformidad): DocumentoSGCData {
+  const estado = (nc.estado || "").toLowerCase();
+  const detector = nombreUsuarioSGC(nc.detector, nc.detectado_por || "Sistema");
+  const responsable = nombreUsuarioSGC(nc.responsable, detector);
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Detección",
+      cumplido: true,
+      responsable: detector,
+      fecha: nc.fecha_deteccion || nc.creado_en,
+    },
+    {
+      etapa: "Tratamiento",
+      cumplido: ["en_tratamiento", "cerrada"].includes(estado),
+      enCurso: Boolean(nc.plan_accion?.trim()) && estado === "abierta",
+      responsable,
+      fecha: nc.actualizado_en,
+    },
+    {
+      etapa: "Cierre",
+      cumplido: estado === "cerrada",
+      responsable,
+      fecha: nc.actualizado_en,
+    },
+  ];
+
   const contenidoHtml = [
     seccionSGC(
       "Datos de la no conformidad",
@@ -176,7 +313,10 @@ export function datosSGCDesdeNoConformidad(nc: NoConformidad): DocumentoSGCData 
     seccionSGC("Análisis de causa", textoAHtmlSGC(nc.analisis_causa)),
     seccionSGC("Plan de acción", textoAHtmlSGC(nc.plan_accion)),
     seccionSGC("Evidencias", evidenciasNoConformidadAHtml(nc.evidencias)),
+    seccionTrazabilidadSGC(pasos),
   ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
 
   return {
     nombre: `No conformidad ${nc.codigo || ""}`.trim(),
@@ -187,9 +327,8 @@ export function datosSGCDesdeNoConformidad(nc: NoConformidad): DocumentoSGCData 
     contenidoHtml,
     fechaCreacion: nc.creado_en || nc.fecha_deteccion,
     fechaVigencia: nc.fecha_deteccion,
-    elaboradoPor: nombreUsuarioSGC(nc.detector, "Sistema"),
-    revisadoPor: nombreUsuarioSGC(nc.responsable, "Pendiente"),
-    aprobadoPor: "Pendiente",
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
   };
 }
 
@@ -243,6 +382,31 @@ export function datosSGCDesdeAuditoria(
   auditoria: Auditoria,
   hallazgos: HallazgoAuditoria[] = [],
 ): DocumentoSGCData {
+  const estado = (auditoria.estado || "").toLowerCase();
+  const auditor = nombreUsuarioSGC(auditoria.auditorLider, "Sistema");
+  const registrador = nombreUsuarioSGC(auditoria.creadoPorUsuario, auditor);
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Planificación",
+      cumplido: true,
+      responsable: registrador,
+      fecha: auditoria.creadoEn || auditoria.fechaPlanificada,
+    },
+    {
+      etapa: "Ejecución",
+      cumplido: ["en_curso", "completada", "cerrada"].includes(estado),
+      enCurso: estado === "en_curso",
+      responsable: auditor,
+      fecha: auditoria.fechaInicio || auditoria.actualizadoEn,
+    },
+    {
+      etapa: "Cierre",
+      cumplido: ["completada", "cerrada"].includes(estado),
+      responsable: auditor,
+      fecha: auditoria.fechaFin || auditoria.actualizadoEn,
+    },
+  ];
+
   const areas =
     auditoria.areasAuditadas?.filter(Boolean).join(", ") || "—";
   const contenidoHtml = [
@@ -266,7 +430,10 @@ export function datosSGCDesdeAuditoria(
     seccionSGC("Alcance", textoAHtmlSGC(auditoria.alcance, "Sin alcance.")),
     seccionSGC("Informe final", textoAHtmlSGC(auditoria.informeFinal, "Sin informe final registrado.")),
     seccionSGC("Hallazgos", hallazgosAuditoriaAHtml(hallazgos)),
+    seccionTrazabilidadSGC(pasos),
   ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
 
   return {
     nombre: auditoria.nombre || `Auditoría ${auditoria.codigo || ""}`.trim(),
@@ -277,9 +444,8 @@ export function datosSGCDesdeAuditoria(
     contenidoHtml,
     fechaCreacion: auditoria.creadoEn,
     fechaVigencia: auditoria.fechaFin || auditoria.fechaPlanificada,
-    elaboradoPor: nombreUsuarioSGC(auditoria.auditorLider, "Sistema"),
-    revisadoPor: nombreUsuarioSGC(auditoria.creadoPorUsuario, "Pendiente"),
-    aprobadoPor: "Pendiente",
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
   };
 }
 
@@ -294,6 +460,29 @@ export function datosSGCDesdeHallazgo(
   };
   const tipo = raw.tipo || raw.tipo_hallazgo;
   const clausula = raw.clausulaIso || raw.clausula_norma;
+  const estado = (raw.estado || "abierto").toLowerCase();
+  const responsable = nombreUsuarioSGC(raw.responsable, "Sistema");
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Registro",
+      cumplido: true,
+      responsable,
+      fecha: raw.creadoEn,
+    },
+    {
+      etapa: "Seguimiento",
+      cumplido: ["en_tratamiento", "verificado", "cerrado", "cerrada"].includes(estado) || Boolean(raw.evidencia?.trim()),
+      enCurso: estado === "abierto" && Boolean(raw.evidencia?.trim()),
+      responsable,
+      fecha: raw.fechaVerificacion,
+    },
+    {
+      etapa: "Verificación / cierre",
+      cumplido: ["verificado", "cerrado", "cerrada"].includes(estado),
+      responsable,
+      fecha: raw.fechaVerificacion,
+    },
+  ];
   const contenidoHtml = [
     seccionSGC(
       "Datos del hallazgo",
@@ -312,7 +501,10 @@ export function datosSGCDesdeHallazgo(
     ),
     seccionSGC("Descripción", textoAHtmlSGC(raw.descripcion, "Sin descripción.")),
     seccionSGC("Evidencia", textoAHtmlSGC(raw.evidencia, "Sin evidencia registrada.")),
+    seccionTrazabilidadSGC(pasos),
   ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
 
   return {
     nombre: `Hallazgo ${raw.codigo || ""}`.trim() || "Hallazgo de auditoría",
@@ -322,9 +514,8 @@ export function datosSGCDesdeHallazgo(
     estado: raw.estado,
     contenidoHtml,
     fechaCreacion: raw.creadoEn,
-    elaboradoPor: nombreUsuarioSGC(raw.responsable, "Sistema"),
-    revisadoPor: "Pendiente",
-    aprobadoPor: "Pendiente",
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
   };
 }
 
@@ -341,8 +532,32 @@ export interface ControlRiesgoSGC {
 
 export function datosSGCDesdeControlRiesgo(
   control: ControlRiesgoSGC,
-  riesgo?: { codigo?: string; nombre?: string; descripcion?: string } | null,
+  riesgo?: { codigo?: string; nombre?: string; descripcion?: string; responsable?: { nombre?: string; primerApellido?: string } } | null,
 ): DocumentoSGCData {
+  const responsable = nombreUsuarioSGC(riesgo?.responsable, "Sistema");
+  const activo = control.activo !== false;
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Diseño del control",
+      cumplido: true,
+      responsable,
+      fecha: control.creado_en,
+    },
+    {
+      etapa: "Implementación",
+      cumplido: activo,
+      responsable,
+      fecha: control.creado_en,
+    },
+    {
+      etapa: "Evaluación de efectividad",
+      cumplido: activo && (control.efectividad || "").toLowerCase() === "alta",
+      enCurso: activo && ["media", "baja"].includes((control.efectividad || "").toLowerCase()),
+      responsable,
+      fecha: control.creado_en,
+    },
+  ];
+
   const contenidoHtml = [
     seccionSGC(
       "Datos del control",
@@ -358,7 +573,10 @@ export function datosSGCDesdeControlRiesgo(
     ),
     seccionSGC("Descripción del control", textoAHtmlSGC(control.descripcion, "Sin descripción.")),
     seccionSGC("Descripción del riesgo", textoAHtmlSGC(riesgo?.descripcion, "Sin descripción del riesgo.")),
+    seccionTrazabilidadSGC(pasos),
   ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
 
   return {
     nombre: control.descripcion?.slice(0, 80) || `Control ${riesgo?.codigo || ""}`.trim(),
@@ -368,9 +586,8 @@ export function datosSGCDesdeControlRiesgo(
     estado: control.activo === false ? "inactivo" : "activo",
     contenidoHtml,
     fechaCreacion: control.creado_en,
-    elaboradoPor: "Sistema",
-    revisadoPor: "Pendiente",
-    aprobadoPor: "Pendiente",
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
   };
 }
 
@@ -410,6 +627,31 @@ export function datosSGCDesdeObjetivoCalidad(
   objetivo: ObjetivoCalidad,
   seguimientos: SeguimientoObjetivo[] = [],
 ): DocumentoSGCData {
+  const estado = (objetivo.estado || "planificado").toLowerCase();
+  const responsable = nombreUsuarioSGC(objetivo.responsable, "Sistema");
+  const ultimoSeguimiento = seguimientos[seguimientos.length - 1];
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Formulación",
+      cumplido: true,
+      responsable,
+      fecha: objetivo.creadoEn || objetivo.periodoInicio,
+    },
+    {
+      etapa: "Seguimiento",
+      cumplido: ["en_curso", "cumplido", "no_cumplido", "cancelado"].includes(estado) || seguimientos.length > 0,
+      enCurso: estado === "en_curso" || (estado === "planificado" && seguimientos.length > 0),
+      responsable,
+      fecha: ultimoSeguimiento?.creadoEn || ultimoSeguimiento?.periodo || objetivo.actualizadoEn,
+    },
+    {
+      etapa: "Cierre",
+      cumplido: ["cumplido", "no_cumplido", "cancelado"].includes(estado),
+      responsable,
+      fecha: objetivo.actualizadoEn || objetivo.periodoFin,
+    },
+  ];
+
   const contenidoHtml = [
     seccionSGC(
       "Datos del objetivo",
@@ -428,7 +670,10 @@ export function datosSGCDesdeObjetivoCalidad(
     seccionSGC("Descripción", textoAHtmlSGC(objetivo.descripcion, "Sin descripción.")),
     seccionSGC("Meta", textoAHtmlSGC(objetivo.meta, "Sin meta definida.")),
     seccionSGC("Seguimientos", seguimientosObjetivoAHtml(seguimientos, objetivo.valorMeta)),
+    seccionTrazabilidadSGC(pasos),
   ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
 
   return {
     nombre: `Objetivo de calidad ${objetivo.codigo || ""}`.trim(),
@@ -439,9 +684,8 @@ export function datosSGCDesdeObjetivoCalidad(
     contenidoHtml,
     fechaCreacion: objetivo.creadoEn,
     fechaVigencia: objetivo.periodoFin,
-    elaboradoPor: nombreUsuarioSGC(objetivo.responsable, "Sistema"),
-    revisadoPor: "Pendiente",
-    aprobadoPor: "Pendiente",
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
   };
 }
 
@@ -481,6 +725,30 @@ export function datosSGCDesdeCapacitacion(
 ): DocumentoSGCData {
   const resumen = extras?.resumen;
   const asistencias = extras?.asistencias || [];
+  const estado = (capacitacion.estado || "programada").toLowerCase();
+  const responsable = nombreUsuarioSGC(capacitacion.responsable, capacitacion.instructor || "Sistema");
+  const instructor = capacitacion.instructor || responsable;
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Programación",
+      cumplido: true,
+      responsable: instructor,
+      fecha: capacitacion.creadoEn || capacitacion.fechaProgramada,
+    },
+    {
+      etapa: "Ejecución",
+      cumplido: ["en_curso", "completada"].includes(estado),
+      enCurso: estado === "en_curso",
+      responsable,
+      fecha: capacitacion.fechaInicio || capacitacion.actualizadoEn,
+    },
+    {
+      etapa: "Cierre / asistencia",
+      cumplido: estado === "completada",
+      responsable,
+      fecha: capacitacion.fechaFin || capacitacion.fechaCierreAsistencia || capacitacion.actualizadoEn,
+    },
+  ];
   const contenidoHtml = [
     seccionSGC(
       "Datos de la capacitación",
@@ -520,7 +788,10 @@ export function datosSGCDesdeCapacitacion(
         ]
       : []),
     seccionSGC("Registro de asistencia", asistenciasCapacitacionAHtml(asistencias)),
+    seccionTrazabilidadSGC(pasos),
   ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
 
   return {
     nombre: capacitacion.nombre || `Capacitación ${capacitacion.codigo || ""}`.trim(),
@@ -531,8 +802,7 @@ export function datosSGCDesdeCapacitacion(
     contenidoHtml,
     fechaCreacion: capacitacion.creadoEn,
     fechaVigencia: capacitacion.fechaProgramada || capacitacion.fechaFin,
-    elaboradoPor: capacitacion.instructor || nombreUsuarioSGC(capacitacion.responsable, "Sistema"),
-    revisadoPor: "Pendiente",
-    aprobadoPor: "Pendiente",
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
   };
 }

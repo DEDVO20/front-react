@@ -32,6 +32,8 @@ export interface DocumentoSGCData {
   fechaVigencia?: string;
   fechaAprobacion?: string;
   fechaCreacion?: string;
+  fechaElaboracion?: string;
+  fechaRevision?: string;
   elaboradoPor?: string;
   revisadoPor?: string;
   aprobadoPor?: string;
@@ -371,6 +373,11 @@ export function estilosDocumentoSGC(): string {
       letter-spacing: 0.6px;
       text-transform: uppercase;
     }
+    .sgc-signs .date {
+      font-size: 9px;
+      color: #555;
+      margin: 2px 0 4px;
+    }
     .sgc-empty { color: #666; font-style: italic; text-align: left; }
     @media print {
       thead { display: table-header-group; }
@@ -435,6 +442,21 @@ function identificacionHtml(data: DocumentoSGCData): string {
 }
 
 function pieHtml(data: DocumentoSGCData): string {
+  const firma = (nombre: string | undefined, rol: string, fecha?: string) => {
+    const etiqueta = nombre || "Pendiente";
+    const fechaHtml =
+      etiqueta !== "Pendiente" && fecha
+        ? `<div class="date">${escapeHtml(formatearFechaSGC(fecha))}</div>`
+        : "";
+    return `
+        <td>
+          <span class="line"></span>
+          <strong>${escapeHtml(etiqueta)}</strong>
+          ${fechaHtml}
+          <div class="role">${rol}</div>
+        </td>`;
+  };
+
   return `
     <p class="sgc-note">
       El presente documento se emite sin enmendaduras ni tachones. La versión vigente es la publicada
@@ -442,21 +464,9 @@ function pieHtml(data: DocumentoSGCData): string {
     </p>
     <table class="sgc-signs">
       <tr>
-        <td>
-          <span class="line"></span>
-          <strong>${escapeHtml(data.elaboradoPor || "Pendiente")}</strong>
-          <div class="role">Elaboró</div>
-        </td>
-        <td>
-          <span class="line"></span>
-          <strong>${escapeHtml(data.revisadoPor || "Pendiente")}</strong>
-          <div class="role">Revisó</div>
-        </td>
-        <td>
-          <span class="line"></span>
-          <strong>${escapeHtml(data.aprobadoPor || "Pendiente")}</strong>
-          <div class="role">Aprobó</div>
-        </td>
+        ${firma(data.elaboradoPor, "Elaboró", data.fechaElaboracion || data.fechaCreacion)}
+        ${firma(data.revisadoPor, "Revisó", data.fechaRevision)}
+        ${firma(data.aprobadoPor, "Aprobó", data.fechaAprobacion)}
       </tr>
     </table>
   `;

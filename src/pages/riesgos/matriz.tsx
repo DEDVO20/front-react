@@ -48,6 +48,11 @@ interface Riesgo {
   fecha_revision?: string;
   creado_en: string;
   actualizado_en?: string;
+  responsable?: {
+    id?: string;
+    nombre?: string;
+    primerApellido?: string;
+  };
 }
 
 interface Proceso {

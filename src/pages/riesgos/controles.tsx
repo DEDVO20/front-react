@@ -48,6 +48,11 @@ interface Riesgo {
   codigo: string;
   nombre?: string;
   descripcion?: string;
+  responsable?: {
+    id?: string;
+    nombre?: string;
+    primerApellido?: string;
+  };
 }
 
 const ControlesRiesgos: React.FC = () => {
