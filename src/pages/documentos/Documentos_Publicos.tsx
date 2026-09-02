@@ -1,10 +1,32 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Search, Download, Printer, Eye, Filter, Send, CheckCircle2, XCircle } from "lucide-react";
+import {
+  FileText,
+  Search,
+  Download,
+  Printer,
+  Eye,
+  Filter,
+  Send,
+  CheckCircle2,
+  XCircle,
+  History,
+  Clock,
+  UserCheck,
+  ClipboardList,
+  Paperclip,
+} from "lucide-react";
 import { toast } from "sonner";
 import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +37,9 @@ import {
 } from "@/components/ui/dialog";
 
 import { documentoService, type DocumentoResponse } from "@/services/documento.service";
-import { datosSGCDesdeDocumento, esContenidoHtml, exportarDocumentoSGC } from "@/utils/documentoSGC";
+import { esContenidoHtml, exportarDocumentoSGC, formatearFechaSGC, nombreUsuarioSGC } from "@/utils/documentoSGC";
+import { datosSGCDesdeDocumentoPublico, datosSGCDesdeTicket } from "@/utils/documentosRegistrosSGC";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
 import { areaService, type Area } from "@/services/area.service";
 import ticketService, { type Ticket } from "@/services/ticket.service";
 import { uploadService } from "@/services/upload.service";
@@ -31,9 +55,11 @@ type SolicitudForm = {
 
 type DecisionAction = "aprobar" | "declinar";
 
-function nombreUsuario(u?: { nombre?: string; segundo_nombre?: string; primer_apellido?: string; segundo_apellido?: string } | null) {
-  if (!u) return "—";
-  return `${u.nombre || ""} ${u.segundo_nombre || ""} ${u.primer_apellido || ""} ${u.segundo_apellido || ""}`.replace(/\s+/g, " ").trim() || "—";
+function formatearFechaHora(fecha?: string | null) {
+  if (!fecha) return "—";
+  const parsed = new Date(fecha);
+  if (Number.isNaN(parsed.getTime())) return fecha;
+  return parsed.toLocaleString("es-CO");
 }
 
 function etiquetaEstadoSolicitud(estado: string) {
@@ -46,6 +72,89 @@ function etiquetaEstadoSolicitud(estado: string) {
     declinado: "Declinada",
   };
   return map[estado] || estado;
+}
+
+function claseEstadoSolicitud(estado: string) {
+  const map: Record<string, string> = {
+    abierto: "bg-[#E0EDFF] text-[#1E3A8A] border-[#2563EB]/30",
+    en_progreso: "bg-[#FFF7ED] text-[#9A3412] border-[#F97316]/30",
+    aprobado: "bg-[#ECFDF5] text-[#065F46] border-[#10B981]/30",
+    resuelto: "bg-[#ECFDF5] text-[#065F46] border-[#10B981]/30",
+    cerrado: "bg-[#F8FAFC] text-[#374151] border-[#E5E7EB]",
+    declinado: "bg-[#FEF2F2] text-[#991B1B] border-[#DC2626]/30",
+  };
+  return map[estado] || "bg-[#F8FAFC] text-[#6B7280] border-[#E5E7EB]";
+}
+
+function solicitudesDeDocumento(doc: DocumentoResponse, tickets: Ticket[]) {
+  return tickets.filter((ticket) => {
+    if (ticket.categoria !== "solicitud_documento") return false;
+    if (ticket.documento_publico_id && sameId(ticket.documento_publico_id, doc.id)) return true;
+    return Boolean(doc.codigo && ticket.titulo?.toLowerCase().includes(doc.codigo.toLowerCase()));
+  });
+}
+
+function documentoDeTicket(ticket: Ticket, documentos: DocumentoResponse[]) {
+  if (ticket.documento_publico_id) {
+    const porId = documentos.find((doc) => sameId(doc.id, ticket.documento_publico_id));
+    if (porId) return porId;
+  }
+  return documentos.find((doc) => doc.codigo && ticket.titulo?.toLowerCase().includes(doc.codigo.toLowerCase()));
+}
+
+function TimelineSolicitud({ ticket }: { ticket: Ticket }) {
+  const estado = (ticket.estado || "abierto").toLowerCase();
+  const cerrado = ["aprobado", "declinado", "resuelto", "cerrado"].includes(estado);
+  const declinado = estado === "declinado";
+  const pasos = [
+    {
+      label: "Enviada",
+      done: true,
+      current: false,
+      date: ticket.creado_en,
+      person: nombreUsuarioSGC(ticket.solicitante, "Solicitante"),
+    },
+    {
+      label: "En revisión",
+      done: estado === "en_progreso" || cerrado,
+      current: estado === "abierto" || estado === "en_progreso",
+      date: estado === "abierto" ? null : ticket.actualizado_en,
+      person: nombreUsuarioSGC(ticket.asignado, "Pendiente de área"),
+    },
+    {
+      label: declinado ? "Declinada" : cerrado ? "Aprobada" : "Resolución",
+      done: cerrado,
+      current: false,
+      negative: declinado,
+      date: ticket.fecha_resolucion,
+      person: cerrado ? nombreUsuarioSGC(ticket.asignado, "Responsable") : "Pendiente",
+    },
+  ];
+
+  return (
+    <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+      {pasos.map((paso, index) => (
+        <div
+          key={paso.label}
+          className={`rounded-xl border px-3 py-2 ${
+            paso.negative
+              ? "bg-[#FEF2F2] border-[#FECACA]"
+              : paso.done
+                ? "bg-[#ECFDF5] border-[#A7F3D0]"
+                : paso.current
+                  ? "bg-[#E0EDFF] border-[#BFDBFE]"
+                  : "bg-[#F8FAFC] border-[#E5E7EB]"
+          }`}
+        >
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[#6B7280]">
+            {index + 1}. {paso.label}
+          </p>
+          <p className="text-sm font-semibold text-[#111827] truncate">{paso.person}</p>
+          <p className="text-xs text-[#6B7280]">{paso.date ? formatearFechaHora(paso.date) : "Pendiente"}</p>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function DocumentosPublicos() {
@@ -61,6 +170,10 @@ export default function DocumentosPublicos() {
   const [sending, setSending] = useState(false);
   const [resolviendoDecision, setResolviendoDecision] = useState(false);
   const [selectedDocumento, setSelectedDocumento] = useState<DocumentoResponse | null>(null);
+  const [documentoVista, setDocumentoVista] = useState<DocumentoResponse | null>(null);
+  const [ticketVista, setTicketVista] = useState<Ticket | null>(null);
+  const [showDocumento, setShowDocumento] = useState(false);
+  const [showTicket, setShowTicket] = useState(false);
   const [decisionTicketId, setDecisionTicketId] = useState<string | null>(null);
   const [decisionAccion, setDecisionAccion] = useState<DecisionAction>("aprobar");
   const [decisionComentario, setDecisionComentario] = useState("");
@@ -117,22 +230,32 @@ export default function DocumentosPublicos() {
     });
   }, [documentos, search, tipo]);
 
+  const solicitudesDocumento = useMemo(
+    () => tickets.filter((t) => t.categoria === "solicitud_documento"),
+    [tickets],
+  );
+
   const misSolicitudes = useMemo(() => {
     if (!currentUser?.id) return [];
-    return tickets.filter(
-      (t) => t.categoria === "solicitud_documento" && sameId(t.solicitante_id, currentUser.id),
-    );
-  }, [tickets, currentUser]);
+    return solicitudesDocumento.filter((t) => sameId(t.solicitante_id, currentUser.id));
+  }, [solicitudesDocumento, currentUser]);
 
   const pendientesPorAprobar = useMemo(() => {
     if (!currentUser?.id) return [];
-    return tickets.filter(
-      (t) =>
-        t.categoria === "solicitud_documento" &&
-        t.estado === "abierto" &&
-        sameId(t.asignado_a, currentUser.id),
+    return solicitudesDocumento.filter(
+      (t) => t.estado === "abierto" && sameId(t.asignado_a, currentUser.id),
     );
-  }, [tickets, currentUser]);
+  }, [solicitudesDocumento, currentUser]);
+
+  const solicitudesAbiertas = useMemo(
+    () => solicitudesDocumento.filter((t) => t.estado === "abierto" || t.estado === "en_progreso").length,
+    [solicitudesDocumento],
+  );
+
+  const solicitudesAprobadas = useMemo(
+    () => solicitudesDocumento.filter((t) => t.estado === "aprobado").length,
+    [solicitudesDocumento],
+  );
 
   const areasConResponsable = useMemo(() => {
     return areas.filter((a) => Array.isArray(a.asignaciones) && a.asignaciones.length > 0);
@@ -142,9 +265,81 @@ export default function DocumentosPublicos() {
     return new Map(areas.map((a) => [a.id, a.nombre]));
   }, [areas]);
 
+  const datosDocumentoVista = useMemo(() => {
+    if (!documentoVista) return null;
+    return datosSGCDesdeDocumentoPublico(
+      documentoVista,
+      solicitudesDeDocumento(documentoVista, tickets),
+      areaNombrePorId,
+    );
+  }, [documentoVista, tickets, areaNombrePorId]);
+
+  const documentoTicketVista = useMemo(() => {
+    if (!ticketVista) return null;
+    return documentoDeTicket(ticketVista, documentos);
+  }, [ticketVista, documentos]);
+
+  const datosTicketVista = useMemo(() => {
+    if (!ticketVista) return null;
+    return datosSGCDesdeTicket(
+      ticketVista,
+      ticketVista.area_destino_id ? areaNombrePorId.get(ticketVista.area_destino_id) : undefined,
+      documentoTicketVista
+        ? {
+            codigo: documentoTicketVista.codigo,
+            nombre: documentoTicketVista.nombre,
+            version: documentoTicketVista.version_actual,
+          }
+        : null,
+    );
+  }, [ticketVista, areaNombrePorId, documentoTicketVista]);
+
+  const puedeDecidirTicketVista = Boolean(
+    ticketVista &&
+      ticketVista.estado === "abierto" &&
+      currentUser?.id &&
+      sameId(ticketVista.asignado_a, currentUser.id),
+  );
+
+  const handleVerDocumento = async (doc: DocumentoResponse) => {
+    const toastId = toast.loading("Abriendo documento controlado...");
+    try {
+      const [completo, versiones] = await Promise.all([
+        documentoService.getById(doc.id).catch(() => doc),
+        documentoService.getVersiones(doc.id).catch(() => []),
+      ]);
+      setDocumentoVista({
+        ...completo,
+        versiones: versiones?.length ? versiones : completo.versiones || doc.versiones,
+      });
+      setShowDocumento(true);
+    } catch (error) {
+      console.error("Error al abrir documento:", error);
+      setDocumentoVista(doc);
+      setShowDocumento(true);
+    } finally {
+      toast.dismiss(toastId);
+    }
+  };
+
   const handleImprimir = async (doc: DocumentoResponse) => {
     try {
-      await exportarDocumentoSGC(datosSGCDesdeDocumento(doc));
+      let completo = doc;
+      try {
+        const [detalle, versiones] = await Promise.all([
+          documentoService.getById(doc.id),
+          documentoService.getVersiones(doc.id).catch(() => []),
+        ]);
+        completo = {
+          ...detalle,
+          versiones: versiones?.length ? versiones : detalle.versiones || doc.versiones,
+        };
+      } catch {
+        completo = doc;
+      }
+      await exportarDocumentoSGC(
+        datosSGCDesdeDocumentoPublico(completo, solicitudesDeDocumento(completo, tickets), areaNombrePorId),
+      );
       toast.success("Seleccione Imprimir o Guardar como PDF en el cuadro de impresión");
     } catch (error) {
       console.error("Error al imprimir documento:", error);
@@ -248,6 +443,8 @@ export default function DocumentosPublicos() {
       }
       await cargarDatos();
       cerrarDecisionModal();
+      setShowTicket(false);
+      setTicketVista(null);
     } catch (error) {
       console.error("Error al resolver solicitud:", error);
       toast.error("No se pudo actualizar la solicitud");
@@ -264,68 +461,136 @@ export default function DocumentosPublicos() {
   return (
     <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-6 shadow-sm">
+        <div className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-black text-[#1E3A8A] flex items-center gap-2">
-                <FileText className="w-8 h-8 text-[#2563EB]" />
-                Documentos Publicos
+              <h1 className="text-3xl font-bold text-[#1E3A8A] flex items-center gap-3">
+                <FileText className="h-9 w-9 text-[#2563EB]" />
+                Documentos públicos
               </h1>
-              <p className="text-[#6B7280] mt-1">
-                Descarga formatos y envia solicitudes al area encargada para aprobacion.
+              <p className="text-[#6B7280] mt-2 text-lg">
+                Formatos vigentes con ciclo de vida, firmas y solicitudes trazables al área responsable.
               </p>
-            </div>
-            <div className="text-sm font-semibold text-[#1E3A8A] bg-[#E0EDFF] px-4 py-2 rounded-full w-fit">
-              {documentos.length} documentos publicados
+              <div className="flex flex-wrap items-center gap-3 mt-4">
+                <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB]">
+                  {documentos.length} publicados
+                </Badge>
+                <Badge className="bg-white text-[#1E3A8A] border border-[#E5E7EB]">
+                  {solicitudesDocumento.length} solicitudes
+                </Badge>
+                {pendientesPorAprobar.length > 0 && (
+                  <Badge className="bg-[#FFF7ED] text-[#F97316] border border-[#F97316]/30">
+                    {pendientesPorAprobar.length} por aprobar
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-bold text-[#1E3A8A]">Publicados</CardDescription>
+                <FileText className="h-7 w-7 text-[#2563EB]" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{documentos.length}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card className="bg-[#FFF7ED] border border-[#E5E7EB] shadow-sm rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-bold text-[#9A3412]">En trámite</CardDescription>
+                <Clock className="h-7 w-7 text-[#F97316]" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#9A3412]">{solicitudesAbiertas}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card className="bg-[#ECFDF5] border border-[#E5E7EB] shadow-sm rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-bold text-[#065F46]">Aprobadas</CardDescription>
+                <CheckCircle2 className="h-7 w-7 text-[#10B981]" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#065F46]">{solicitudesAprobadas}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card className="bg-[#E0EDFF] border border-[#E5E7EB] shadow-sm rounded-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="font-bold text-[#1E3A8A]">Por aprobar</CardDescription>
+                <UserCheck className="h-7 w-7 text-[#2563EB]" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-[#1E3A8A]">{pendientesPorAprobar.length}</CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+
         {pendientesPorAprobar.length > 0 && (
           <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 md:p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-[#1E3A8A] mb-3">Solicitudes pendientes por aprobar</h2>
+            <h2 className="text-lg font-bold text-[#1E3A8A] mb-3 flex items-center gap-2">
+              <ClipboardList className="w-5 h-5" />
+              Solicitudes pendientes por aprobar
+            </h2>
             <div className="space-y-3">
-              {pendientesPorAprobar.map((t) => (
-                <div key={t.id} className="border border-[#E5E7EB] rounded-xl p-4">
-                  <p className="font-semibold text-[#111827]">{t.titulo}</p>
-                  <p className="text-sm text-[#6B7280] mt-1">{t.descripcion}</p>
-                  <p className="text-xs text-[#6B7280] mt-2">
-                    Solicitante: <span className="font-semibold">{nombreUsuario(t.solicitante)}</span>
-                    {t.solicitante?.correo_electronico ? ` · ${t.solicitante.correo_electronico}` : ""}
-                    {t.solicitante?.documento ? ` · CC ${t.solicitante.documento}` : ""}
-                  </p>
-                  <p className="text-xs text-[#6B7280] mt-1">
-                    Área: {t.area_destino_id ? areaNombrePorId.get(t.area_destino_id) || "Sin área" : "Sin área"}
-                    {" · "}
-                    Creada: {new Date(t.creado_en).toLocaleString("es-CO")}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {t.archivo_adjunto_url && (
+              {pendientesPorAprobar.map((t) => {
+                const doc = documentoDeTicket(t, documentos);
+                return (
+                  <div key={t.id} className="border border-[#E5E7EB] rounded-xl p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="font-semibold text-[#111827]">{t.titulo}</p>
+                        {doc && (
+                          <p className="text-xs text-[#6B7280] mt-1">
+                            Formato {doc.codigo} · {doc.tipo_documento} · v{doc.version_actual}
+                          </p>
+                        )}
+                      </div>
+                      <Badge className={`border ${claseEstadoSolicitud(t.estado)}`}>
+                        {etiquetaEstadoSolicitud(t.estado)}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-[#6B7280] mt-1">{t.descripcion}</p>
+                    <TimelineSolicitud ticket={t} />
+                    <div className="flex flex-wrap gap-2 mt-3">
                       <button
-                        onClick={() => window.open(t.archivo_adjunto_url, "_blank", "noopener,noreferrer")}
+                        onClick={() => {
+                          setTicketVista(t);
+                          setShowTicket(true);
+                        }}
                         className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm font-medium hover:bg-[#F9FAFB]"
                       >
-                        <Download className="w-4 h-4" />
-                        Ver archivo
+                        <Eye className="w-4 h-4" />
+                        Ver trazabilidad
                       </button>
-                    )}
-                    <button
-                      onClick={() => abrirDecisionModal(t.id, "aprobar")}
-                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#16A34A] text-white text-sm font-medium hover:bg-[#15803D]"
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                      Aprobar
-                    </button>
-                    <button
-                      onClick={() => abrirDecisionModal(t.id, "declinar")}
-                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#DC2626] text-white text-sm font-medium hover:bg-[#B91C1C]"
-                    >
-                      <XCircle className="w-4 h-4" />
-                      Declinar
-                    </button>
+                      {t.archivo_adjunto_url && (
+                        <button
+                          onClick={() => window.open(t.archivo_adjunto_url, "_blank", "noopener,noreferrer")}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm font-medium hover:bg-[#F9FAFB]"
+                        >
+                          <Download className="w-4 h-4" />
+                          Ver archivo
+                        </button>
+                      )}
+                      <button
+                        onClick={() => abrirDecisionModal(t.id, "aprobar")}
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#16A34A] text-white text-sm font-medium hover:bg-[#15803D]"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        Aprobar
+                      </button>
+                      <button
+                        onClick={() => abrirDecisionModal(t.id, "declinar")}
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#DC2626] text-white text-sm font-medium hover:bg-[#B91C1C]"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Declinar
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -363,58 +628,127 @@ export default function DocumentosPublicos() {
 
         <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 md:p-6 shadow-sm">
           {loading ? (
-            <LoadingSpinner message="Cargando documentos publicos" />
+            <LoadingSpinner message="Cargando documentos públicos" />
           ) : documentosFiltrados.length === 0 ? (
-            <p className="text-sm text-[#6B7280]">No hay documentos publicos con esos filtros.</p>
+            <p className="text-sm text-[#6B7280]">No hay documentos públicos con esos filtros.</p>
           ) : (
-            <div className="space-y-3">
-              {documentosFiltrados.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="border border-[#E5E7EB] rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-                >
-                  <div className="min-w-0">
-                    <p className="font-semibold text-[#111827] truncate">{doc.nombre}</p>
-                    <p className="text-sm text-[#6B7280]">
-                      {doc.codigo} | {doc.tipo_documento} | v{doc.version_actual}
-                    </p>
-                    <p className="text-xs text-[#6B7280] mt-1">
-                      Actualizado: {new Date(doc.actualizado_en).toLocaleDateString("es-ES")}
-                    </p>
-                  </div>
+            <div className="space-y-4">
+              {documentosFiltrados.map((doc) => {
+                const relacionadas = solicitudesDeDocumento(doc, tickets);
+                const abiertas = relacionadas.filter((t) => t.estado === "abierto" || t.estado === "en_progreso").length;
+                const aprobadas = relacionadas.filter((t) => t.estado === "aprobado").length;
+                return (
+                  <div key={doc.id} className="border border-[#E5E7EB] rounded-2xl p-4 md:p-5 space-y-4">
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                      <div className="min-w-0 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge className="bg-[#E0EDFF] text-[#1E3A8A] border border-[#2563EB]/20">
+                            {doc.codigo}
+                          </Badge>
+                          <Badge className="bg-white text-[#374151] border border-[#E5E7EB]">
+                            {doc.tipo_documento}
+                          </Badge>
+                          <Badge className="bg-[#ECFDF5] text-[#065F46] border border-[#10B981]/30">
+                            v{doc.version_actual}
+                          </Badge>
+                          <Badge className="bg-[#ECFDF5] text-[#065F46] border border-[#10B981]/30">
+                            Vigente
+                          </Badge>
+                        </div>
+                        <p className="font-semibold text-[#111827] text-lg">{doc.nombre}</p>
+                        <p className="text-xs text-[#6B7280]">
+                          Creado: {formatearFechaSGC(doc.creado_en)}
+                          {" · Actualizado: "}
+                          {formatearFechaSGC(doc.actualizado_en)}
+                          {" · Aprobado: "}
+                          {formatearFechaSGC(doc.fecha_aprobacion || doc.actualizado_en)}
+                          {doc.fecha_vigencia ? ` · Vigencia: ${formatearFechaSGC(doc.fecha_vigencia)}` : ""}
+                        </p>
+                      </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      onClick={() => navigate(`/documentos/${doc.id}`)}
-                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm font-medium hover:bg-[#F9FAFB]"
-                    >
-                      <Eye className="w-4 h-4" />
-                      Ver
-                    </button>
-                    <button
-                      onClick={() => handleImprimir(doc)}
-                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm font-medium hover:bg-[#F9FAFB]"
-                    >
-                      <Printer className="w-4 h-4" />
-                      Imprimir
-                    </button>
-                    <button
-                      onClick={() => handleDescargar(doc)}
-                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-[#1D4ED8]"
-                    >
-                      <Download className="w-4 h-4" />
-                      Descargar
-                    </button>
-                    <button
-                      onClick={() => abrirSolicitud(doc)}
-                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#0E7490] text-white text-sm font-medium hover:bg-[#155E75]"
-                    >
-                      <Send className="w-4 h-4" />
-                      Enviar Solicitud
-                    </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={() => void handleVerDocumento(doc)}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm font-medium hover:bg-[#F9FAFB]"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Ver
+                        </button>
+                        <button
+                          onClick={() => void handleImprimir(doc)}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm font-medium hover:bg-[#F9FAFB]"
+                        >
+                          <Printer className="w-4 h-4" />
+                          Imprimir
+                        </button>
+                        <button
+                          onClick={() => void handleDescargar(doc)}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-[#1D4ED8]"
+                        >
+                          <Download className="w-4 h-4" />
+                          Descargar
+                        </button>
+                        <button
+                          onClick={() => abrirSolicitud(doc)}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#0E7490] text-white text-sm font-medium hover:bg-[#155E75]"
+                        >
+                          <Send className="w-4 h-4" />
+                          Enviar Solicitud
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div className="rounded-xl bg-[#F8FAFC] border border-[#E5E7EB] px-3 py-2">
+                        <p className="text-[11px] uppercase font-bold text-[#6B7280]">Elaboró</p>
+                        <p className="text-sm font-semibold text-[#111827] truncate">
+                          {nombreUsuarioSGC(doc.creador, "Sistema")}
+                        </p>
+                        <p className="text-xs text-[#6B7280]">{formatearFechaSGC(doc.creado_en)}</p>
+                      </div>
+                      <div className="rounded-xl bg-[#F8FAFC] border border-[#E5E7EB] px-3 py-2">
+                        <p className="text-[11px] uppercase font-bold text-[#6B7280]">Revisó</p>
+                        <p className="text-sm font-semibold text-[#111827] truncate">
+                          {nombreUsuarioSGC(doc.revisor, "Pendiente")}
+                        </p>
+                        <p className="text-xs text-[#6B7280]">
+                          {doc.revisor ? formatearFechaSGC(doc.actualizado_en) : "Sin revisión registrada"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-[#ECFDF5] border border-[#A7F3D0] px-3 py-2">
+                        <p className="text-[11px] uppercase font-bold text-[#065F46]">Aprobó</p>
+                        <p className="text-sm font-semibold text-[#111827] truncate">
+                          {nombreUsuarioSGC(doc.aprobador, "Pendiente")}
+                        </p>
+                        <p className="text-xs text-[#6B7280]">
+                          {formatearFechaSGC(doc.fecha_aprobacion || doc.actualizado_en)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-[#6B7280]">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#F8FAFC] border border-[#E5E7EB] px-3 py-1">
+                        <History className="w-3.5 h-3.5" />
+                        {doc.versiones?.length || 1} versión{(doc.versiones?.length || 1) === 1 ? "" : "es"}
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#E0EDFF] border border-[#BFDBFE] px-3 py-1 text-[#1E3A8A]">
+                        <ClipboardList className="w-3.5 h-3.5" />
+                        {relacionadas.length} solicitud{relacionadas.length === 1 ? "" : "es"}
+                      </span>
+                      {abiertas > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[#FFF7ED] border border-[#FED7AA] px-3 py-1 text-[#9A3412]">
+                          {abiertas} en trámite
+                        </span>
+                      )}
+                      {aprobadas > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-3 py-1 text-[#065F46]">
+                          {aprobadas} aprobada{aprobadas === 1 ? "" : "s"}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -422,35 +756,112 @@ export default function DocumentosPublicos() {
         {misSolicitudes.length > 0 && (
           <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 md:p-6 shadow-sm">
             <h2 className="text-lg font-bold text-[#1E3A8A] mb-3">Mis solicitudes</h2>
-            <div className="space-y-2">
-              {misSolicitudes.map((t) => (
-                <div key={t.id} className="border border-[#E5E7EB] rounded-xl p-3">
-                  <p className="font-medium text-[#111827]">{t.titulo}</p>
-                  <p className="text-xs text-[#6B7280] mt-1">
-                    Estado: <span className="font-semibold">{etiquetaEstadoSolicitud(t.estado)}</span>
-                    {" · Área: "}
-                    {t.area_destino_id ? areaNombrePorId.get(t.area_destino_id) || "Sin área" : "Sin área"}
-                  </p>
-                  <p className="text-xs text-[#6B7280] mt-1">
-                    Solicitante: {nombreUsuario(t.solicitante)}
-                    {" · Responsable: "}
-                    {nombreUsuario(t.asignado)}
-                  </p>
-                  <p className="text-xs text-[#6B7280] mt-1">
-                    Enviada: {new Date(t.creado_en).toLocaleString("es-CO")}
-                    {t.fecha_resolucion ? ` · Resolución: ${new Date(t.fecha_resolucion).toLocaleString("es-CO")}` : ""}
-                  </p>
-                  {t.solucion && (
-                    <p className="text-sm text-[#374151] mt-2 bg-[#F8FAFC] rounded-lg p-2">
-                      Comentario: {t.solucion}
+            <div className="space-y-3">
+              {misSolicitudes.map((t) => {
+                const doc = documentoDeTicket(t, documentos);
+                return (
+                  <div key={t.id} className="border border-[#E5E7EB] rounded-xl p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="font-medium text-[#111827]">{t.titulo}</p>
+                        {doc && (
+                          <p className="text-xs text-[#6B7280] mt-1">
+                            Formato {doc.codigo} · {doc.nombre} · v{doc.version_actual}
+                          </p>
+                        )}
+                      </div>
+                      <Badge className={`border ${claseEstadoSolicitud(t.estado)}`}>
+                        {etiquetaEstadoSolicitud(t.estado)}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-[#6B7280] mt-2">
+                      Área: {t.area_destino_id ? areaNombrePorId.get(t.area_destino_id) || "Sin área" : "Sin área"}
+                      {" · Solicitante: "}
+                      {nombreUsuarioSGC(t.solicitante, "—")}
+                      {" · Responsable: "}
+                      {nombreUsuarioSGC(t.asignado, "Sin asignar")}
                     </p>
-                  )}
-                </div>
-              ))}
+                    <TimelineSolicitud ticket={t} />
+                    {t.solucion && (
+                      <p className="text-sm text-[#374151] mt-3 bg-[#F8FAFC] rounded-lg p-2">
+                        Comentario: {t.solucion}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <button
+                        onClick={() => {
+                          setTicketVista(t);
+                          setShowTicket(true);
+                        }}
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm font-medium hover:bg-[#F9FAFB]"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Ver trazabilidad
+                      </button>
+                      {t.archivo_adjunto_url && (
+                        <button
+                          onClick={() => window.open(t.archivo_adjunto_url, "_blank", "noopener,noreferrer")}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm font-medium hover:bg-[#F9FAFB]"
+                        >
+                          <Paperclip className="w-4 h-4" />
+                          Ver adjunto
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
       </div>
+
+      <VistaDocumentoSGCDialog
+        open={showDocumento}
+        onOpenChange={setShowDocumento}
+        data={datosDocumentoVista}
+        title="Documento público controlado"
+        description="Formato vigente con firmas, versiones y solicitudes asociadas."
+        extraActions={
+          documentoVista ? (
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => navigate(`/documentos/${documentoVista.id}`)}
+            >
+              Abrir ficha completa
+            </Button>
+          ) : null
+        }
+      />
+
+      <VistaDocumentoSGCDialog
+        open={showTicket}
+        onOpenChange={setShowTicket}
+        data={datosTicketVista}
+        title="Solicitud de documento"
+        description="Registro controlado con envío, revisión y resolución de la solicitud."
+        extraActions={
+          ticketVista && puedeDecidirTicketVista ? (
+            <>
+              <Button
+                className="rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white"
+                onClick={() => abrirDecisionModal(ticketVista.id, "aprobar")}
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Aprobar
+              </Button>
+              <Button
+                className="rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white"
+                onClick={() => abrirDecisionModal(ticketVista.id, "declinar")}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Declinar
+              </Button>
+            </>
+          ) : null
+        }
+      />
 
       <Dialog
         open={Boolean(decisionTicketId)}
@@ -523,7 +934,11 @@ export default function DocumentosPublicos() {
           <div className="bg-white rounded-2xl shadow-xl border border-[#E5E7EB] w-full max-w-2xl p-6">
             <h3 className="text-xl font-bold text-[#1E3A8A]">Enviar Solicitud</h3>
             <p className="text-sm text-[#6B7280] mt-1">
-              Documento: {selectedDocumento.codigo} - {selectedDocumento.nombre}
+              Documento: {selectedDocumento.codigo} - {selectedDocumento.nombre} · v{selectedDocumento.version_actual}
+            </p>
+            <p className="text-xs text-[#6B7280] mt-1">
+              Elaboró {nombreUsuarioSGC(selectedDocumento.creador, "Sistema")} · Aprobó{" "}
+              {nombreUsuarioSGC(selectedDocumento.aprobador, "Pendiente")}
             </p>
 
             <div className="space-y-4 mt-4">

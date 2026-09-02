@@ -16,6 +16,7 @@ import type { Usuario } from "@/services/usuario.service";
 import type { Ticket } from "@/services/ticket.service";
 import type { CampoFormulario, FormularioDinamico } from "@/services/formulario-dinamico.service";
 import {
+  datosSGCDesdeDocumento,
   formatearFechaSGC,
   nombreUsuarioSGC,
   seccionSGC,
@@ -1411,36 +1412,65 @@ function etiquetaEstadoTicketSGC(estado?: string): string {
   return mapa[(estado || "").toLowerCase()] || (estado || "—").replace(/_/g, " ");
 }
 
-export function datosSGCDesdeTicket(ticket: Ticket, areaNombre?: string): DocumentoSGCData {
+export function datosSGCDesdeTicket(
+  ticket: Ticket,
+  areaNombre?: string,
+  documentoVinculado?: { codigo?: string; nombre?: string; version?: string } | null,
+): DocumentoSGCData {
   const solicitante = nombreUsuarioSGC(ticket.solicitante, "Solicitante");
   const asignado = nombreUsuarioSGC(ticket.asignado, "Pendiente");
   const estado = (ticket.estado || "abierto").toLowerCase();
-  const resuelto = ["resuelto", "cerrado", "aprobado"].includes(estado);
-  const pasos: PasoTrazabilidad[] = [
-    {
-      etapa: "Registro",
-      cumplido: true,
-      responsable: solicitante,
-      fecha: ticket.creado_en,
-    },
-    {
-      etapa: "Atención",
-      cumplido: estado === "en_progreso" || resuelto,
-      enCurso: estado === "en_progreso",
-      responsable: asignado,
-      fecha: ticket.actualizado_en,
-    },
-    {
-      etapa: "Cierre",
-      cumplido: resuelto,
-      responsable: resuelto ? asignado : "Pendiente",
-      fecha: ticket.fecha_resolucion,
-    },
-  ];
+  const esSolicitudDoc = ticket.categoria === "solicitud_documento";
+  const declinado = estado === "declinado";
+  const cerrado = ["resuelto", "cerrado", "aprobado", "declinado"].includes(estado);
+  const enAtencion = estado === "en_progreso" || estado === "abierto";
+  const pasos: PasoTrazabilidad[] = esSolicitudDoc
+    ? [
+        {
+          etapa: "Envío",
+          cumplido: true,
+          responsable: solicitante,
+          fecha: ticket.creado_en,
+        },
+        {
+          etapa: "Revisión",
+          cumplido: estado === "en_progreso" || cerrado,
+          enCurso: enAtencion && !cerrado,
+          responsable: asignado,
+          fecha: ticket.actualizado_en,
+        },
+        {
+          etapa: declinado ? "Declinación" : "Aprobación",
+          cumplido: cerrado,
+          responsable: cerrado ? asignado : "Pendiente",
+          fecha: ticket.fecha_resolucion,
+        },
+      ]
+    : [
+        {
+          etapa: "Registro",
+          cumplido: true,
+          responsable: solicitante,
+          fecha: ticket.creado_en,
+        },
+        {
+          etapa: "Atención",
+          cumplido: estado === "en_progreso" || cerrado,
+          enCurso: estado === "en_progreso",
+          responsable: asignado,
+          fecha: ticket.actualizado_en,
+        },
+        {
+          etapa: declinado ? "Declinación" : "Cierre",
+          cumplido: cerrado,
+          responsable: cerrado ? asignado : "Pendiente",
+          fecha: ticket.fecha_resolucion,
+        },
+      ];
 
   const contenidoHtml = [
     seccionSGC(
-      "Datos del ticket",
+      esSolicitudDoc ? "Datos de la solicitud" : "Datos del ticket",
       tablaCamposSGC([
         ["Título", ticket.titulo || "—"],
         ["Categoría", etiquetaCategoriaTicketSGC(ticket.categoria)],
@@ -1451,6 +1481,13 @@ export function datosSGCDesdeTicket(ticket: Ticket, areaNombre?: string): Docume
         ["Asignado a", ticket.asignado ? asignado : "Sin asignar"],
         ["Fecha de registro", formatearFechaSGC(ticket.creado_en)],
         ["Última actualización", formatearFechaSGC(ticket.actualizado_en)],
+        ...(documentoVinculado?.codigo || documentoVinculado?.nombre
+          ? ([
+              ["Documento vinculado", documentoVinculado.nombre || "—"],
+              ["Código del formato", documentoVinculado.codigo || "—"],
+              ["Versión consultada", documentoVinculado.version || "—"],
+            ] as Array<[string, string]>)
+          : []),
       ]),
     ),
     seccionSGC("Descripción", textoAHtmlSGC(ticket.descripcion, "Sin descripción.")),
@@ -1464,7 +1501,10 @@ export function datosSGCDesdeTicket(ticket: Ticket, areaNombre?: string): Docume
       : []),
     ...(ticket.solucion
       ? [
-          seccionSGC("Solución", textoAHtmlSGC(ticket.solucion)),
+          seccionSGC(
+            declinado ? "Motivo de declinación" : esSolicitudDoc ? "Comentario de resolución" : "Solución",
+            textoAHtmlSGC(ticket.solucion),
+          ),
           seccionSGC(
             "Fecha de resolución",
             textoAHtmlSGC(formatearFechaSGC(ticket.fecha_resolucion), "Sin fecha de resolución."),
@@ -1479,13 +1519,47 @@ export function datosSGCDesdeTicket(ticket: Ticket, areaNombre?: string): Docume
   return {
     nombre: ticket.titulo || "Ticket de mesa de ayuda",
     codigo: `TK-${(ticket.id || "").slice(0, 8).toUpperCase() || "S/C"}`,
-    version: "1.0",
-    tipoDocumento: "ticket",
+    version: documentoVinculado?.version || "1.0",
+    tipoDocumento: esSolicitudDoc ? "solicitud_documento" : "ticket",
     estado: ticket.estado || "abierto",
     contenidoHtml,
     fechaCreacion: ticket.creado_en,
     ...firmas,
     versiones: versionesDesdePasos(pasos),
+  };
+}
+
+export function datosSGCDesdeDocumentoPublico(
+  doc: Parameters<typeof datosSGCDesdeDocumento>[0],
+  solicitudes: Ticket[] = [],
+  areaNombrePorId?: Map<string, string>,
+): DocumentoSGCData {
+  const base = datosSGCDesdeDocumento(doc);
+  const filas: Array<[string, string]> = solicitudes.length
+    ? solicitudes.map((ticket) => [
+        ticket.titulo || `Solicitud ${(ticket.id || "").slice(0, 8).toUpperCase()}`,
+        [
+          etiquetaEstadoTicketSGC(ticket.estado),
+          ticket.area_destino_id && areaNombrePorId
+            ? areaNombrePorId.get(ticket.area_destino_id) || "Sin área"
+            : null,
+          `Solicitante: ${nombreUsuarioSGC(ticket.solicitante, "—")}`,
+          `Responsable: ${nombreUsuarioSGC(ticket.asignado, "Sin asignar")}`,
+          `Enviada ${formatearFechaSGC(ticket.creado_en)}`,
+          ticket.fecha_resolucion ? `Resolución ${formatearFechaSGC(ticket.fecha_resolucion)}` : "Sin resolución",
+          ticket.solucion ? `Comentario: ${ticket.solucion}` : null,
+        ]
+          .filter((parte) => parte && parte !== "—")
+          .join(" · "),
+      ])
+    : [["Solicitudes", "Aún no hay solicitudes registradas sobre este formato."]];
+
+  return {
+    ...base,
+    contenidoHtml: `${base.contenidoHtml || ""}${seccionSGC(
+      "Trazabilidad de solicitudes",
+      tablaCamposSGC(filas),
+    )}`,
   };
 }
 

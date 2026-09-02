@@ -72,6 +72,8 @@ const TIPOS: Record<string, string> = {
   indicador_eficacia: "INDICADOR DE EFICACIA",
   indicador_eficiencia: "INDICADOR DE EFICIENCIA",
   indicador_cumplimiento: "INDICADOR DE CUMPLIMIENTO",
+  ticket: "TICKET",
+  solicitud_documento: "SOLICITUD DE DOCUMENTO",
 };
 
 export function etiquetaTipoDocumento(tipo?: string): string {
@@ -114,6 +116,11 @@ const ESTADOS: Record<string, string> = {
   "en desarrollo": "en desarrollo",
   asignado: "asignado",
   rechazado: "rechazado",
+  abierto: "abierto",
+  en_progreso: "en progreso",
+  resuelto: "resuelto",
+  cerrado: "cerrado",
+  declinado: "declinado",
 };
 
 export function etiquetaEstadoDocumento(estado?: string): string {
