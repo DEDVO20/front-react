@@ -15,10 +15,12 @@ import {
   Clock,
   AlertCircle,
   XCircle,
+  Download,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { hasAnyPermission } from "@/lib/permissions";
+import { datosSGCDesdeDocumento, exportarDocumentoSGC } from "@/utils/documentoSGC";
 
 interface Documento {
   id: string;
@@ -40,7 +42,7 @@ export default function Documentos() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTipo, setFilterTipo] = useState("");
-  const [filterEstado, setFilterEstado] = useState("");
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDocumentos();
@@ -127,6 +129,20 @@ export default function Documentos() {
 
   const handleView = (id: string) => {
     navigate(`/documentos/${id}`);
+  };
+
+  const handleDescargarPDF = async (id: string) => {
+    try {
+      setExportingId(id);
+      const completo = await documentoService.getById(id);
+      await exportarDocumentoSGC(datosSGCDesdeDocumento(completo));
+      toast.success("Seleccione 'Guardar como PDF' en el cuadro de impresión");
+    } catch (error) {
+      console.error("Error al exportar PDF:", error);
+      toast.error(error instanceof Error ? error.message : "No se pudo generar el PDF");
+    } finally {
+      setExportingId(null);
+    }
   };
 
   const handleEdit = (id: string) => {
@@ -403,6 +419,14 @@ export default function Documentos() {
                   >
                     <Eye className="w-4 h-4" />
                     Ver
+                  </button>
+                  <button
+                    onClick={() => handleDescargarPDF(documento.id)}
+                    disabled={exportingId === documento.id}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white text-[#1E3A8A] border border-[#E5E7EB] rounded-xl hover:bg-[#F8FAFC] font-semibold text-sm transition-colors disabled:opacity-50"
+                  >
+                    <Download className="w-4 h-4" />
+                    {exportingId === documento.id ? "PDF..." : "PDF"}
                   </button>
                   {canEdit && (
                     <button

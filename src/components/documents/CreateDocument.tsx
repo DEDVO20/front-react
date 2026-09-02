@@ -17,10 +17,11 @@ export default function CreateDocument() {
       setError(null);
 
       // Convert FormData to JSON object with backend field names
+      const contenidoHtml = (formData.get("contenidoHtml") as string) || "";
       const documentData: any = {
         codigo: formData.get("codigoDocumento") as string,
         nombre: formData.get("nombreArchivo") as string,
-        descripcion: `Documento ${formData.get("nombreArchivo")}`,
+        descripcion: contenidoHtml || (formData.get("descripcion") as string) || `Documento ${formData.get("nombreArchivo")}`,
         tipo_documento: formData.get("tipo_documento") as string,
         version_actual: formData.get("version_actual") as string || "1.0",
         estado: formData.get("estado") as string || "borrador",

@@ -298,24 +298,23 @@ export default function VerDocumento() {
               </p>
             </div>
 
-            <div className="flex gap-2">
+              <button
+                onClick={handleExportPDF}
+                disabled={exporting}
+                className="flex items-center gap-2 px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all disabled:opacity-50"
+              >
+                <Download className="w-4 h-4" />
+                {exporting ? "Generando PDF..." : "Exportar PDF"}
+              </button>
               {canEdit && (
                 <button
                   onClick={() => navigate(`/documentos/${documento.id}/editar`)}
-                  className="flex items-center gap-2 px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all"
+                  className="flex items-center gap-2 px-6 py-3 bg-white text-[#6B7280] border border-[#E5E7EB] rounded-xl hover:bg-[#F8FAFC] font-semibold transition-all"
                 >
                   <Edit className="w-4 h-4" />
                   Editar
                 </button>
               )}
-              <button
-                onClick={handleExportPDF}
-                disabled={exporting}
-                className="flex items-center gap-2 px-6 py-3 bg-white text-[#6B7280] border border-[#E5E7EB] rounded-xl hover:bg-[#F8FAFC] font-semibold transition-all disabled:opacity-50"
-              >
-                <Download className="w-4 h-4" />
-                {exporting ? "Generando PDF..." : "Exportar PDF"}
-              </button>
               {canDelete && (
                 <button
                   onClick={handleDelete}
@@ -325,6 +324,37 @@ export default function VerDocumento() {
                   Eliminar
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Documento en formato oficial SGC */}
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-[#E5E7EB] bg-[#F1F5F9] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <FileText className="w-6 h-6 text-[#2563EB]" />
+                <h2 className="text-xl font-semibold text-[#1E3A8A]">Documento controlado</h2>
+              </div>
+              <p className="text-sm text-[#6B7280] mt-1">
+                Este es el formato que se descarga en PDF. Use Exportar PDF y elija Guardar como PDF.
+              </p>
+            </div>
+            <button
+              onClick={handleExportPDF}
+              disabled={exporting}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all disabled:opacity-50"
+            >
+              <Download className="w-4 h-4" />
+              {exporting ? "Generando PDF..." : "Descargar PDF"}
+            </button>
+          </div>
+          <div className="p-3 sm:p-6 bg-[#F8FAFC] overflow-x-auto">
+            <div className="min-w-[640px] max-w-[816px] mx-auto border border-[#E5E7EB] shadow-sm">
+              {(() => {
+                const datos = construirDatosSGC();
+                return datos ? <DocumentoSGCPaper data={datos} marca={marca} /> : null;
+              })()}
             </div>
           </div>
         </div>
@@ -437,27 +467,6 @@ export default function VerDocumento() {
               {getNombreCompleto(documento.aprobador)}
             </p>
             <p className="text-xs text-gray-500 mt-1">Encargado de aprobación final</p>
-          </div>
-        </div>
-
-        {/* Documento en formato oficial SGC */}
-        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-[#E5E7EB] bg-[#F1F5F9]">
-            <div className="flex items-center gap-2">
-              <FileText className="w-6 h-6 text-[#2563EB]" />
-              <h2 className="text-xl font-semibold text-[#1E3A8A]">Documento controlado</h2>
-            </div>
-            <p className="text-sm text-[#6B7280] mt-1">
-              Vista previa del formato oficial para descarga PDF
-            </p>
-          </div>
-          <div className="p-3 sm:p-6 bg-[#F8FAFC] overflow-x-auto">
-            <div className="min-w-[640px] max-w-[816px] mx-auto shadow-sm">
-              {(() => {
-                const datos = construirDatosSGC();
-                return datos ? <DocumentoSGCPaper data={datos} marca={marca} /> : null;
-              })()}
-            </div>
           </div>
         </div>
       </div>

@@ -184,7 +184,7 @@ export const DocumentFormWithTipTap = ({
       // Mapear campos requeridos por el backend
       data.append("codigo", formData.codigoDocumento);
       data.append("nombre", formData.nombreArchivo);
-      data.append("descripcion", `Documento ${formData.nombreArchivo}`); // Descripción por defecto
+      data.append("descripcion", documentMode === "editor" ? content : `Documento ${formData.nombreArchivo}`);
 
       data.append("nombreArchivo", formData.nombreArchivo);
       data.append("tipo_documento", formData.tipoDocumento);

@@ -112,23 +112,17 @@ export default function DocumentosPublicos() {
   }, [areas]);
 
   const handleDescargar = async (doc: DocumentoResponse) => {
-    if (esContenidoHtml(doc.descripcion)) {
-      try {
+    try {
+      if (esContenidoHtml(doc.descripcion) || !doc.ruta_archivo) {
         await exportarDocumentoSGC(datosSGCDesdeDocumento(doc));
         toast.success("Seleccione 'Guardar como PDF' en el cuadro de impresión");
         return;
-      } catch (error) {
-        console.error("Error al exportar PDF:", error);
-        toast.error("No se pudo generar el PDF del documento");
-        return;
       }
+      window.open(doc.ruta_archivo, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      console.error("Error al exportar PDF:", error);
+      toast.error("No se pudo generar el PDF del documento");
     }
-
-    if (!doc.ruta_archivo) {
-      toast.info(`"${doc.nombre}" no tiene archivo descargable.`);
-      return;
-    }
-    window.open(doc.ruta_archivo, "_blank", "noopener,noreferrer");
   };
 
   const abrirSolicitud = (doc: DocumentoResponse) => {
