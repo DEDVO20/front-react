@@ -19,7 +19,7 @@ export default function CreateDocument() {
       // Convert FormData to JSON object with backend field names
       const contenidoHtml = (formData.get("contenidoHtml") as string) || "";
       const documentData: any = {
-        codigo: formData.get("codigoDocumento") as string,
+        codigo: (formData.get("codigoDocumento") as string) || undefined,
         nombre: formData.get("nombreArchivo") as string,
         descripcion: contenidoHtml || (formData.get("descripcion") as string) || `Documento ${formData.get("nombreArchivo")}`,
         tipo_documento: formData.get("tipo_documento") as string,

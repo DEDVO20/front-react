@@ -12,6 +12,7 @@ import {
   nombreUsuarioSGC,
   type MarcaSGC,
 } from "@/utils/documentoSGC";
+import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 
 interface InitialData {
   nombreArchivo?: string;
@@ -73,6 +74,17 @@ export const DocumentFormWithTipTap = ({
   });
 
   const [content, setContent] = useState(initialData?.contenidoHtml || "");
+  const codigoAutomatico = useCodigoAutomatico(
+    "documento",
+    mode === "create",
+    { tipo: formData.tipoDocumento },
+  );
+
+  useEffect(() => {
+    if (mode === "create" && codigoAutomatico) {
+      setFormData((prev) => ({ ...prev, codigoDocumento: codigoAutomatico }));
+    }
+  }, [codigoAutomatico, mode]);
 
   // Update form data when initialData changes (for edit mode)
   useEffect(() => {
@@ -133,7 +145,7 @@ export const DocumentFormWithTipTap = ({
     if (!formData.nombreArchivo.trim()) {
       newErrors.nombreArchivo = "El nombre del archivo es requerido";
     }
-    if (!formData.codigoDocumento.trim()) {
+    if (mode !== "create" && !formData.codigoDocumento.trim()) {
       newErrors.codigoDocumento = "El código del documento es requerido";
     }
     if (!formData.version.trim()) {
@@ -299,26 +311,11 @@ export const DocumentFormWithTipTap = ({
           </div>
 
           {/* Código del Documento */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Código del Documento *
-            </label>
-            <input
-              type="text"
-              name="codigoDocumento"
-              value={formData.codigoDocumento}
-              onChange={handleInputChange}
-              disabled={!canEditMetadata}
-              className={`w-full px-3 py-2 border rounded-md bg-background ${errors.codigoDocumento ? "border-destructive" : "border-input"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              placeholder="Ej: FO-GC-001"
-            />
-            {errors.codigoDocumento && (
-              <p className="text-destructive text-sm mt-1">
-                {errors.codigoDocumento}
-              </p>
-            )}
-          </div>
+          <CampoCodigoAutomatico
+            native
+            label="Código del Documento"
+            value={formData.codigoDocumento}
+          />
 
           {/* Versión */}
           <div>

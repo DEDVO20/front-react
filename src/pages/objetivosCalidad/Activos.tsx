@@ -17,6 +17,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer,
 import { SeguimientoObjetivo } from '@/services/objetivoCalidad.service';
 import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
 import { datosSGCDesdeObjetivoCalidad } from "@/utils/documentosRegistrosSGC";
+import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 
 const ObjetivosActivos: React.FC = () => {
   const [objetivos, setObjetivos] = useState<ObjetivoCalidad[]>([]);
@@ -27,6 +28,13 @@ const ObjetivosActivos: React.FC = () => {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [modalTipo, setModalTipo] = useState<'crear' | 'editar' | 'ver'>('crear');
   const [objetivoSeleccionado, setObjetivoSeleccionado] = useState<ObjetivoCalidad | null>(null);
+  const codigoAutomatico = useCodigoAutomatico("objetivo", modalAbierto && modalTipo === "crear");
+
+  useEffect(() => {
+    if (modalTipo === "crear" && codigoAutomatico) {
+      setFormData((prev) => ({ ...prev, codigo: codigoAutomatico }));
+    }
+  }, [codigoAutomatico, modalTipo]);
   const [showDocumento, setShowDocumento] = useState(false);
 
   const [areas, setAreas] = useState<Area[]>([]);
@@ -180,10 +188,6 @@ const ObjetivosActivos: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.codigo.trim()) {
-      toast.error('El código es obligatorio');
-      return;
-    }
     if (!formData.descripcion || formData.descripcion.trim().length < 10) {
       toast.error('La descripción debe tener al menos 10 caracteres');
       return;
@@ -667,18 +671,7 @@ const ObjetivosActivos: React.FC = () => {
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Código *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.codigo}
-                        onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="OBJ-2024-001"
-                        required
-                        disabled={modalTipo === 'ver'}
-                      />
+                      <CampoCodigoAutomatico native value={formData.codigo} />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">

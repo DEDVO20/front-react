@@ -150,7 +150,7 @@ export const formularioDinamicoService = {
   },
 
   async crearFormulario(data: {
-    codigo: string;
+    codigo?: string;
     nombre: string;
     descripcion?: string;
     modulo: string;

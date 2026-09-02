@@ -15,6 +15,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
 import { datosSGCDesdeAuditoria } from "@/utils/documentosRegistrosSGC";
 import type { Auditoria as AuditoriaSGC } from "@/services/auditoria.service";
+import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 
 // Tipos TypeScript
 interface Auditoria {
@@ -230,6 +231,13 @@ const AuditoriasPlanificacion = () => {
     programaId: '',
     creadoPor: ''
   });
+  const codigoAutomatico = useCodigoAutomatico("auditoria", mostrarModal && !auditoriaEditando);
+
+  useEffect(() => {
+    if (!auditoriaEditando && codigoAutomatico) {
+      setFormData((prev) => ({ ...prev, codigo: codigoAutomatico }));
+    }
+  }, [codigoAutomatico, auditoriaEditando]);
 
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
 
@@ -306,14 +314,11 @@ const AuditoriasPlanificacion = () => {
   const abrirModalCrear = () => {
     setAuditoriaEditando(null);
 
-    // Generar código automático
     const year = new Date().getFullYear();
-    const nextNumber = auditorias.length + 1;
-    const codigo = `AUD-${year}-${String(nextNumber).padStart(3, '0')}`;
     const programaDefault = programas.find((p) => p.anio === year)?.id || programas[0]?.id || '';
 
     setFormData({
-      codigo,
+      codigo: '',
       nombre: '',
       tipo: 'interna',
       objetivo: '',
@@ -796,17 +801,7 @@ const AuditoriasPlanificacion = () => {
             <form onSubmit={guardarAuditoria} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Código <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.codigo}
-                    onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="AUD-2025-001"
-                  />
+                  <CampoCodigoAutomatico native value={formData.codigo} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

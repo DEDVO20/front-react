@@ -16,6 +16,7 @@ import { noConformidadService, NoConformidad } from "@/services/noConformidad.se
 import { default as procesoService, Proceso } from "@/services/proceso.service";
 import { apiClient } from "@/lib/api";
 import { uploadService } from "@/services/upload.service";
+import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 
 interface NuevaNoConformidadFormProps {
     onSuccess: () => void;
@@ -37,6 +38,14 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
     const [error, setError] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+    const esCreacion = !initialData;
+    const codigoAutomatico = useCodigoAutomatico("no_conformidad", esCreacion);
+
+    useEffect(() => {
+        if (esCreacion && codigoAutomatico) {
+            setFormData((prev) => ({ ...prev, codigo: codigoAutomatico }));
+        }
+    }, [codigoAutomatico, esCreacion]);
 
     const [formData, setFormData] = useState({
         codigo: "",
@@ -135,7 +144,7 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.codigo || !formData.tipo || !formData.descripcion || !formData.fuente || !formData.gravedad) {
+        if (!formData.tipo || !formData.descripcion || !formData.fuente || !formData.gravedad) {
             setError("Por favor completa los campos obligatorios");
             return;
         }
@@ -208,16 +217,7 @@ export function NuevaNoConformidadForm({ onSuccess, onCancel, initialData }: Nue
             )}
 
             <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
-                    <Label htmlFor="codigo">Código *</Label>
-                    <Input
-                        id="codigo"
-                        placeholder="Ej: NC-2024-001"
-                        value={formData.codigo}
-                        onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-                        required
-                    />
-                </div>
+                <CampoCodigoAutomatico value={formData.codigo} />
 
                 <div className="grid gap-2">
                     <Label htmlFor="tipo">Tipo *</Label>

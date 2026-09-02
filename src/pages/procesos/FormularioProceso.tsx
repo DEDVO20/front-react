@@ -24,6 +24,7 @@ import procesoService, {
 import { areaService, Area } from "@/services/area.service";
 import { usuarioService, Usuario } from "@/services/usuario.service";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 
 export default function FormularioProceso() {
     const navigate = useNavigate();
@@ -53,6 +54,17 @@ export default function FormularioProceso() {
         area_id: undefined,
         responsable_id: undefined,
     });
+    const areaSeleccionada = areas.find((area) => area.id === formData.area_id);
+    const codigoAutomatico = useCodigoAutomatico("proceso", !isEditing, {
+        tipo: formData.tipo_proceso,
+        areaCodigo: areaSeleccionada?.codigo,
+    });
+
+    useEffect(() => {
+        if (!isEditing && codigoAutomatico) {
+            setFormData((prev) => ({ ...prev, codigo: codigoAutomatico }));
+        }
+    }, [codigoAutomatico, isEditing]);
 
     useEffect(() => {
         cargarDatosIniciales();
@@ -114,8 +126,8 @@ export default function FormularioProceso() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!formData.codigo || !formData.nombre) {
-            toast.error("El código y nombre son obligatorios");
+        if (!formData.nombre) {
+            toast.error("El nombre es obligatorio");
             return;
         }
 
@@ -180,17 +192,7 @@ export default function FormularioProceso() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="codigo">Código *</Label>
-                                    <Input
-                                        id="codigo"
-                                        value={formData.codigo}
-                                        onChange={(e) => handleChange("codigo", e.target.value.toUpperCase())}
-                                        placeholder="PE-DIR-001"
-                                        className="rounded-xl"
-                                        required
-                                    />
-                                </div>
+                                <CampoCodigoAutomatico value={formData.codigo} />
 
                                 <div className="space-y-2">
                                     <Label htmlFor="version">Versión</Label>

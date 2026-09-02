@@ -34,6 +34,7 @@ import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSG
 import { datosSGCDesdeIndicador } from "@/utils/documentosRegistrosSGC";
 import { nombreUsuarioSGC } from "@/utils/documentoSGC";
 import { getCurrentUser } from "@/services/auth";
+import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 import DashboardPHVA from "@/components/dashboard/DashboardPHVA";
 import { dashboardPhvaService, DashboardPHVAMetrics } from "@/services/dashboardPhva.service";
 import { analyticsService, HumanRiskMetrics } from "@/services/analytics";
@@ -88,6 +89,17 @@ export default function TableroIndicadores() {
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [selected, setSelected] = useState<Indicador | null>(null);
   const [form, setForm] = useState<Partial<Indicador>>({});
+  const codigoAutomatico = useCodigoAutomatico(
+    "indicador",
+    showDialog && dialogMode === "create",
+    { tipo: form.tipo_indicador || "eficacia" },
+  );
+
+  useEffect(() => {
+    if (dialogMode === "create" && codigoAutomatico) {
+      setForm((prev) => ({ ...prev, codigo: codigoAutomatico }));
+    }
+  }, [codigoAutomatico, dialogMode]);
   const [showDocumento, setShowDocumento] = useState(false);
   const [showMedicion, setShowMedicion] = useState(false);
   const [medicionesMap, setMedicionesMap] = useState<Record<string, MedicionIndicador[]>>({});
@@ -205,8 +217,8 @@ export default function TableroIndicadores() {
 
   const handleSave = async () => {
     try {
-      if (!form.codigo || !form.nombre || !form.proceso_id) {
-        setError('Los campos Código, Nombre y Proceso son obligatorios');
+      if (!form.nombre || !form.proceso_id) {
+        setError('Los campos Nombre y Proceso son obligatorios');
         return;
       }
 
@@ -692,15 +704,7 @@ export default function TableroIndicadores() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Código <span className="text-red-500">*</span>
-                </label>
-                <input
-                  placeholder="Ej: IND-001"
-                  value={form?.codigo || ''}
-                  onChange={(e) => setForm({ ...form, codigo: e.target.value })}
-                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <CampoCodigoAutomatico native value={form?.codigo || ""} />
               </div>
 
               <div className="md:col-span-2">
@@ -842,7 +846,7 @@ export default function TableroIndicadores() {
               <button
                 onClick={handleSave}
                 className="px-6 py-2 bg-[#2563EB] text-white rounded-lg hover:bg-[#1D4ED8] disabled:opacity-50 font-medium transition-colors"
-                disabled={!form?.codigo || !form?.nombre || !form?.proceso_id}
+                disabled={!form?.nombre || !form?.proceso_id}
               >
                 Guardar
               </button>

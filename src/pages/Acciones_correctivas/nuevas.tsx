@@ -23,6 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { accionCorrectivaService } from "@/services/accionCorrectiva.service";
 import { noConformidadService } from "@/services/noConformidad.service";
+import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 
 interface NoConformidad {
   id: string;
@@ -61,6 +62,13 @@ export default function NuevasAccionesCorrectivas({ onSuccess, embedded = false 
     estado: "pendiente",
     observacion: "",
   });
+  const codigoAutomatico = useCodigoAutomatico("accion_correctiva", true);
+
+  useEffect(() => {
+    if (codigoAutomatico) {
+      setFormData((prev) => ({ ...prev, codigo: codigoAutomatico }));
+    }
+  }, [codigoAutomatico]);
 
   useEffect(() => {
     fetchData();
@@ -96,7 +104,7 @@ export default function NuevasAccionesCorrectivas({ onSuccess, embedded = false 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.noConformidadId || !formData.codigo || !formData.tipo) {
+    if (!formData.noConformidadId || !formData.tipo) {
       setError("Por favor completa los campos obligatorios");
       return;
     }
@@ -108,7 +116,7 @@ export default function NuevasAccionesCorrectivas({ onSuccess, embedded = false 
       // Mapear a snake_case para el backend
       const payload = {
         no_conformidad_id: formData.noConformidadId,
-        codigo: formData.codigo,
+        codigo: formData.codigo || undefined,
         tipo: formData.tipo,
         descripcion: formData.descripcion,
         analisis_causa_raiz: formData.analisisCausaRaiz,
@@ -293,19 +301,7 @@ export default function NuevasAccionesCorrectivas({ onSuccess, embedded = false 
                   </Select>
                 </div>
 
-                {/* Código */}
-                <div className="space-y-2">
-                  <Label className="font-bold">
-                    Código <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    placeholder="Ej: AC-2024-001"
-                    value={formData.codigo}
-                    onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-                    className="rounded-xl"
-                    required
-                  />
-                </div>
+                <CampoCodigoAutomatico value={formData.codigo} />
 
                 {/* Tipo */}
                 <div className="space-y-2">

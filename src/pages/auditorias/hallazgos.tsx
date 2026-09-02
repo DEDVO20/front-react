@@ -26,6 +26,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
 import { datosSGCDesdeAuditoria, datosSGCDesdeHallazgo } from "@/utils/documentosRegistrosSGC";
 import type { Auditoria as AuditoriaSGC, HallazgoAuditoria } from "@/services/auditoria.service";
+import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 
 
 
@@ -51,6 +52,7 @@ interface Auditoria {
 
 interface Hallazgo {
   id: string;
+  codigo?: string;
   auditoriaId: string;
   tipo?: string;
   descripcion?: string;
@@ -133,6 +135,14 @@ const AuditoriasHallazgosView: React.FC = () => {
     evidencia: '',
     responsableId: ''
   });
+  const codigoAuditoriaAuto = useCodigoAutomatico("auditoria", showModal && modalMode === "create");
+  const codigoHallazgoAuto = useCodigoAutomatico("hallazgo", showHallazgoModal && modalMode === "create");
+
+  useEffect(() => {
+    if (modalMode === "create" && codigoAuditoriaAuto) {
+      setFormData((prev) => ({ ...prev, codigo: codigoAuditoriaAuto }));
+    }
+  }, [codigoAuditoriaAuto, modalMode]);
 
 
 
@@ -200,7 +210,7 @@ const AuditoriasHallazgosView: React.FC = () => {
   const handleCreateAuditoria = () => {
     setModalMode('create');
     setFormData({
-      codigo: `AUD-${new Date().getFullYear()}-${String(auditorias.length + 1).padStart(3, '0')}`,
+      codigo: '',
       nombre: '',
       tipo: 'interna',
       objetivo: '',
@@ -332,7 +342,7 @@ const AuditoriasHallazgosView: React.FC = () => {
           ...hallazgoFormData,
           auditoria_id: hallazgoFormData.auditoriaId, // Compatibilidad con Render (snake_case)
           auditoriaId: hallazgoFormData.auditoriaId,
-          codigo: `HALL-${Date.now().toString().slice(-6)}`, // Generar código único
+          codigo: codigoHallazgoAuto || undefined,
         };
 
         // Limpiar campos opcionales vacíos
@@ -963,10 +973,7 @@ const AuditoriasHallazgosView: React.FC = () => {
                 ) : (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#6B7280] uppercase">Código</label>
-                        <Input value={formData.codigo} readOnly className="bg-[#F8FAFC] font-bold" />
-                      </div>
+                      <CampoCodigoAutomatico value={formData.codigo} />
                       <div className="space-y-2">
                         <label className="text-xs font-bold text-[#6B7280] uppercase">Tipo</label>
                         <select value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })} className="w-full min-w-0 px-3 sm:px-5 py-3 border border-[#E5E7EB] rounded-2xl bg-white text-[#1E3A8A] font-bold outline-none">
@@ -1049,6 +1056,9 @@ const AuditoriasHallazgosView: React.FC = () => {
                 </button>
               </div>
               <form onSubmit={handleSubmitHallazgo} className="p-4 sm:p-8 space-y-6">
+                <CampoCodigoAutomatico
+                  value={modalMode === "create" ? codigoHallazgoAuto : (selectedHallazgo?.codigo || "")}
+                />
                 <div className="space-y-4">
                   {/* Selector de Auditoría si no viene preseleccionada */}
                   <div className="space-y-2">

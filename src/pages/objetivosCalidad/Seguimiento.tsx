@@ -29,6 +29,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
 import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 import { datosSGCDesdeObjetivoCalidad } from "@/utils/documentosRegistrosSGC";
 
 interface Seguimiento extends SeguimientoObjetivo { }
@@ -45,6 +46,13 @@ const ObjetivosCalidad: React.FC = () => {
   const [objetivoDialogMode, setObjetivoDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [selectedObjetivo, setSelectedObjetivo] = useState<ObjetivoCalidad | null>(null);
   const [showDocumento, setShowDocumento] = useState(false);
+  const codigoAutomatico = useCodigoAutomatico("objetivo", showObjetivoDialog && objetivoDialogMode === "create");
+
+  useEffect(() => {
+    if (objetivoDialogMode === "create" && codigoAutomatico) {
+      setObjetivoForm((prev) => ({ ...prev, codigo: codigoAutomatico }));
+    }
+  }, [codigoAutomatico, objetivoDialogMode]);
 
   const [showSeguimientoDialog, setShowSeguimientoDialog] = useState(false);
 
@@ -147,10 +155,6 @@ const ObjetivosCalidad: React.FC = () => {
   };
 
   const handleSaveObjetivo = async () => {
-    if (!objetivoForm.codigo.trim()) {
-      toast.error("El código es obligatorio");
-      return;
-    }
     if (!objetivoForm.descripcion || objetivoForm.descripcion.trim().length < 10) {
       toast.error('La descripción debe tener al menos 10 caracteres');
       return;
@@ -761,15 +765,7 @@ const ObjetivosCalidad: React.FC = () => {
                 // Formulario create/edit
                 <div className="space-y-6 py-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label className="font-bold">Código <span className="text-red-500">*</span></Label>
-                      <Input
-                        value={objetivoForm.codigo}
-                        onChange={(e) => setObjetivoForm({ ...objetivoForm, codigo: e.target.value.toUpperCase() })}
-                        placeholder="OBJ-2025-001"
-                        className="rounded-xl"
-                      />
-                    </div>
+                    <CampoCodigoAutomatico value={objetivoForm.codigo} />
                     <div className="space-y-2">
                       <Label className="font-bold">Estado</Label>
                       <select

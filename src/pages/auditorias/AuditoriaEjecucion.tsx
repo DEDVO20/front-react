@@ -31,6 +31,7 @@ import {
 // Importar componentes de formulario si es necesario o simplificar
 import { Input } from "@/components/ui/input";
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 
 export default function AuditoriaEjecucion() {
     const { id } = useParams<{ id: string }>();
@@ -55,6 +56,7 @@ export default function AuditoriaEjecucion() {
         evidencia: '',
         etapaProcesoId: undefined
     });
+    const codigoHallazgoAuto = useCodigoAutomatico("hallazgo", showHallazgoModal);
 
     useEffect(() => {
         if (id) {
@@ -135,10 +137,10 @@ export default function AuditoriaEjecucion() {
             // Construir payload compatible con backend (snake_case y alias)
             const payload = {
                 ...hallazgoForm,
-                auditoria_id: id, // Enviar como snake_case para compatibilidad
-                auditoriaId: id,   // Enviar también como camelCase por si acaso
+                auditoria_id: id,
+                auditoriaId: id,
                 proceso_id: auditoria.procesoId,
-                codigo: `HALL-${hallazgos.length + 1}`
+                codigo: codigoHallazgoAuto || undefined,
             };
 
             await auditoriaService.createHallazgo(payload);
@@ -668,6 +670,7 @@ export default function AuditoriaEjecucion() {
                         <DialogTitle>Registrar Nuevo Hallazgo</DialogTitle>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
+                        <CampoCodigoAutomatico native value={codigoHallazgoAuto} />
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="text-sm font-medium mb-1 block">Tipo de Hallazgo</label>

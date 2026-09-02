@@ -29,6 +29,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
 import { datosSGCDesdeRiesgo } from "@/utils/documentosRegistrosSGC";
 import type { Riesgo as RiesgoSGC } from "@/services/riesgo.service";
+import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 
 interface Riesgo {
   id: string;
@@ -86,6 +87,13 @@ const MatrizRiesgos: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCell, setSelectedCell] = useState<{ prob: number, imp: number } | null>(null);
+  const codigoAutomatico = useCodigoAutomatico("riesgo", showCreateDialog);
+
+  useEffect(() => {
+    if (showCreateDialog && codigoAutomatico) {
+      setFormData((prev) => ({ ...prev, codigo: codigoAutomatico }));
+    }
+  }, [codigoAutomatico, showCreateDialog]);
 
   useEffect(() => {
     fetchProcesos();
@@ -114,8 +122,8 @@ const MatrizRiesgos: React.FC = () => {
   };
 
   const handleCreateRiesgo = async () => {
-    if (!formData.procesoId || !formData.codigo.trim() || !formData.probabilidad || !formData.impacto) {
-      toast.error("Proceso, código, probabilidad e impacto son obligatorios");
+    if (!formData.procesoId || !formData.probabilidad || !formData.impacto) {
+      toast.error("Proceso, probabilidad e impacto son obligatorios");
       return;
     }
 
@@ -132,7 +140,7 @@ const MatrizRiesgos: React.FC = () => {
 
       const payload = {
         proceso_id: formData.procesoId,
-        codigo: formData.codigo.toUpperCase(),
+        codigo: formData.codigo.trim() ? formData.codigo.toUpperCase() : undefined,
         nombre: formData.nombre.trim() || null,
         descripcion: formData.descripcion,
         tipo_riesgo: formData.tipo || "operacional",
@@ -649,15 +657,7 @@ const MatrizRiesgos: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="font-bold">Código <span className="text-red-500">*</span></Label>
-                    <Input
-                      value={formData.codigo}
-                      onChange={(e) => setFormData({ ...formData, codigo: e.target.value.toUpperCase() })}
-                      placeholder="R-001"
-                      className="rounded-xl"
-                    />
-                  </div>
+                  <CampoCodigoAutomatico value={formData.codigo} />
                 </div>
 
                 <div className="space-y-2">

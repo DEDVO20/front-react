@@ -52,6 +52,7 @@ import { apiClient } from "@/lib/api";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
 import { datosSGCDesdeArea } from "@/utils/documentosRegistrosSGC";
+import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 
 interface Usuario {
   id: string;
@@ -90,6 +91,13 @@ export default function AreasResponsables() {
     descripcion: ''
   });
   const [saving, setSaving] = useState(false);
+  const codigoAutomatico = useCodigoAutomatico("area", showDialog && dialogMode === "create");
+
+  useEffect(() => {
+    if (dialogMode === "create" && codigoAutomatico) {
+      setFormData((prev) => ({ ...prev, codigo: codigoAutomatico }));
+    }
+  }, [codigoAutomatico, dialogMode]);
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; area: Area | null }>({
     open: false,
@@ -138,8 +146,8 @@ export default function AreasResponsables() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      if (!formData.codigo.trim() || !formData.nombre.trim()) {
-        toast.error("Código y nombre son obligatorios");
+      if (!formData.nombre.trim()) {
+        toast.error("El nombre es obligatorio");
         return;
       }
 
@@ -545,17 +553,7 @@ export default function AreasResponsables() {
                 ) : (
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="font-bold">
-                          Código <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          value={formData.codigo}
-                          onChange={(e) => setFormData({ ...formData, codigo: e.target.value.toUpperCase() })}
-                          placeholder="EJ: CAL, RRHH"
-                          className="rounded-xl"
-                        />
-                      </div>
+                      <CampoCodigoAutomatico value={formData.codigo} />
                       <div className="space-y-2">
                         <Label className="font-bold">
                           Nombre <span className="text-red-500">*</span>

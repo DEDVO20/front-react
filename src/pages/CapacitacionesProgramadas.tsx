@@ -72,6 +72,7 @@ import { areaService, Area } from "@/services/area.service";
 import { usuarioService, Usuario } from "@/services/usuario.service";
 import { getCurrentUser } from "@/services/auth";
 import { hasAnyPermission } from "@/lib/permissions";
+import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 
 type FormDataState = {
   nombre: string;
@@ -112,6 +113,13 @@ export default function CapacitacionesProgramadas() {
     aplicaTodasAreas: false,
   });
   const [saving, setSaving] = useState(false);
+  const codigoAutomatico = useCodigoAutomatico("capacitacion", dialogMode === "create" && showDialog);
+
+  useEffect(() => {
+    if (dialogMode === "create" && codigoAutomatico) {
+      setFormData((prev) => ({ ...prev, codigo: codigoAutomatico }));
+    }
+  }, [codigoAutomatico, dialogMode]);
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; cap: Capacitacion | null }>({
     open: false,
@@ -290,11 +298,6 @@ export default function CapacitacionesProgramadas() {
 
     if (!formData.nombre.trim()) {
       toast.error("El nombre es obligatorio");
-      return;
-    }
-
-    if (!formData.codigo.trim()) {
-      toast.error("El código es obligatorio");
       return;
     }
 
@@ -840,16 +843,7 @@ export default function CapacitacionesProgramadas() {
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="font-bold">Código <span className="text-red-500">*</span></Label>
-                        <Input
-                          value={formData.codigo}
-                          onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-                          placeholder="Ej: CAP-2024-001"
-                          className="rounded-xl"
-                          disabled={dialogMode === 'edit'}
-                        />
-                      </div>
+                      <CampoCodigoAutomatico value={formData.codigo} />
 
                       <div className="space-y-2">
                         <Label className="font-bold">Tipo de capacitación</Label>

@@ -34,6 +34,7 @@ import {
 import { procesoService, type Proceso } from "@/services/proceso.service";
 import { usuarioService, type Usuario } from "@/services/usuario.service";
 import { getCurrentUser } from "@/services/auth";
+import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 
 function mensajeError(err: unknown): string {
   const anyErr = err as { response?: { data?: { detail?: unknown } }; message?: string };
@@ -150,6 +151,13 @@ export default function IndicadoresTipoPage({ tipo }: { tipo: TipoIndicador }) {
   const [showRechazo, setShowRechazo] = useState(false);
   const [motivoRechazo, setMotivoRechazo] = useState("");
   const [saving, setSaving] = useState(false);
+  const codigoAutomatico = useCodigoAutomatico("indicador", showForm && formMode === "create", { tipo });
+
+  useEffect(() => {
+    if (formMode === "create" && codigoAutomatico) {
+      setForm((prev) => ({ ...prev, codigo: codigoAutomatico }));
+    }
+  }, [codigoAutomatico, formMode]);
 
   const cargar = async () => {
     try {
@@ -215,8 +223,8 @@ export default function IndicadoresTipoPage({ tipo }: { tipo: TipoIndicador }) {
   };
 
   const guardarIndicador = async () => {
-    if (!form.codigo || !form.nombre || !form.proceso_id) {
-      toast.error("Código, nombre y proceso son obligatorios");
+    if (!form.nombre || !form.proceso_id) {
+      toast.error("Nombre y proceso son obligatorios");
       return;
     }
     try {
@@ -630,13 +638,7 @@ export default function IndicadoresTipoPage({ tipo }: { tipo: TipoIndicador }) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Código *</label>
-                <input
-                  value={form.codigo || ""}
-                  onChange={(e) => setForm({ ...form, codigo: e.target.value })}
-                  className="w-full p-3 border rounded-lg"
-                  placeholder="Ej: IND-EFC-001"
-                />
+                <CampoCodigoAutomatico native value={form.codigo || ""} />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>

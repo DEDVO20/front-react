@@ -29,6 +29,7 @@ import {
   formularioDinamicoService,
 } from "@/services/formulario-dinamico.service";
 import { procesoService, Proceso } from "@/services/proceso.service";
+import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 type FormularioFormState = {
@@ -114,6 +115,13 @@ export default function FormulariosAuditoriaAdmin() {
   const [showFormularioDialog, setShowFormularioDialog] = useState(false);
   const [editingFormulario, setEditingFormulario] = useState<FormularioDinamico | null>(null);
   const [formularioForm, setFormularioForm] = useState<FormularioFormState>(initialFormularioState);
+  const codigoAutomatico = useCodigoAutomatico("formulario", showFormularioDialog && !editingFormulario);
+
+  useEffect(() => {
+    if (!editingFormulario && codigoAutomatico) {
+      setFormularioForm((prev) => ({ ...prev, codigo: codigoAutomatico }));
+    }
+  }, [codigoAutomatico, editingFormulario]);
 
   const [showCampoDialog, setShowCampoDialog] = useState(false);
   const [editingCampo, setEditingCampo] = useState<CampoFormulario | null>(null);
@@ -201,8 +209,8 @@ export default function FormulariosAuditoriaAdmin() {
   };
 
   const guardarFormulario = async () => {
-    if (!formularioForm.codigo.trim() || !formularioForm.nombre.trim()) {
-      toast.error("Código y nombre son obligatorios");
+    if (!formularioForm.nombre.trim()) {
+      toast.error("El nombre es obligatorio");
       return;
     }
 
@@ -220,7 +228,7 @@ export default function FormulariosAuditoriaAdmin() {
         toast.success("Formulario actualizado");
       } else {
         const created = await formularioDinamicoService.crearFormulario({
-          codigo: formularioForm.codigo.trim(),
+          codigo: formularioForm.codigo.trim() || undefined,
           nombre: formularioForm.nombre.trim(),
           descripcion: formularioForm.descripcion.trim() || undefined,
           modulo: "auditorias",
@@ -691,13 +699,7 @@ export default function FormulariosAuditoriaAdmin() {
 
           <div className="grid gap-4 py-2">
             <div className="space-y-1.5">
-              <Label>Código</Label>
-              <Input
-                value={formularioForm.codigo}
-                disabled={Boolean(editingFormulario)}
-                onChange={(e) => setFormularioForm((prev) => ({ ...prev, codigo: e.target.value }))}
-                placeholder="CHK-AUD-ISO9001"
-              />
+              <CampoCodigoAutomatico value={formularioForm.codigo} />
             </div>
             <div className="space-y-1.5">
               <Label>Nombre</Label>
