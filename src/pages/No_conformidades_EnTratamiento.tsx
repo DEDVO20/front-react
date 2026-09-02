@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
-import { PlusIcon, Clock, Activity, AlertTriangle } from "lucide-react";
+import { PlusIcon, Clock, Activity, AlertTriangle, Pencil, Paperclip, CheckCircle, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -21,7 +21,6 @@ import {
 import { NuevaNoConformidadForm } from "@/components/calidad/NuevaNoConformidadForm";
 import { VerNoConformidad } from "@/components/calidad/VerNoConformidad";
 import { toast } from "sonner";
-import { Pencil, Paperclip, CheckCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -416,6 +415,7 @@ export default function NoConformidadesEnTratamiento() {
             <div className="rounded-xl border border-[#E5E7EB] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.05)]">
               <DataTable
                 data={noConformidades}
+                actionsTriggerIcon={<Eye className="h-4 w-4 text-[#2563EB]" />}
                 actions={[
                   {
                     label: "Ver Detalles",

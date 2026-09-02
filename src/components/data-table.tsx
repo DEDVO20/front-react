@@ -127,7 +127,10 @@ function DragHandle({ id }: { id: string | number }) {
   )
 }
 
-function createColumns(actions?: DataTableAction[]): ColumnDef<z.infer<typeof schema>>[] {
+function createColumns(
+  actions?: DataTableAction[],
+  actionsTriggerIcon?: React.ReactNode,
+): ColumnDef<z.infer<typeof schema>>[] {
   return [
   {
     id: "drag",
@@ -284,7 +287,7 @@ function createColumns(actions?: DataTableAction[]): ColumnDef<z.infer<typeof sc
               className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
               size="icon"
             >
-              <MoreVerticalIcon />
+              {actionsTriggerIcon ?? <MoreVerticalIcon />}
               <span className="sr-only">Open menu</span>
             </Button>
           </DropdownMenuTrigger>
@@ -342,9 +345,11 @@ export interface DataTableAction {
 export function DataTable({
   data: initialData,
   actions,
+  actionsTriggerIcon,
 }: {
   data: z.infer<typeof schema>[]
   actions?: DataTableAction[]
+  actionsTriggerIcon?: React.ReactNode
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
@@ -375,7 +380,10 @@ export function DataTable({
     [data]
   )
 
-  const columns = React.useMemo(() => createColumns(actions), [actions])
+  const columns = React.useMemo(
+    () => createColumns(actions, actionsTriggerIcon),
+    [actions, actionsTriggerIcon],
+  )
 
   const table = useReactTable({
     data,
