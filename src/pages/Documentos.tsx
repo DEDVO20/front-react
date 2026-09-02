@@ -42,6 +42,7 @@ export default function Documentos() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTipo, setFilterTipo] = useState("");
+  const [filterEstado, setFilterEstado] = useState("");
   const [exportingId, setExportingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,7 +53,7 @@ export default function Documentos() {
     try {
       setLoading(true);
       const data = await documentoService.getAll();
-      setDocumentos(data || []);
+      setDocumentos(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error al cargar documentos:", error);
       toast.error("Error al cargar documentos");
@@ -407,7 +408,9 @@ export default function Documentos() {
                   <div>
                     <p className="text-[10px] text-[#6B7280] uppercase font-bold tracking-tight">Actualizado</p>
                     <p className="text-sm font-semibold text-[#1E3A8A]">
-                      {new Date(documento.actualizado_en).toLocaleDateString("es-ES")}
+                      {documento.actualizado_en
+                        ? new Date(documento.actualizado_en).toLocaleDateString("es-ES")
+                        : "—"}
                     </p>
                   </div>
                 </div>
