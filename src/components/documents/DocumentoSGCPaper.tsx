@@ -85,7 +85,7 @@ export function DocumentoSGCPaper({ data, marca, className = "" }: DocumentoSGCP
 
       {data.contenidoHtml?.trim() ? (
         <div
-          className="prose prose-sm max-w-none text-justify text-[12px] leading-relaxed text-black prose-headings:text-black prose-th:bg-[#6B6B6B] prose-th:text-white prose-td:border-black prose-th:border-black"
+          className="prose prose-sm max-w-none text-justify text-[12px] leading-relaxed text-black prose-headings:text-black prose-h2:text-[13px] prose-h2:uppercase prose-h2:tracking-wide prose-h2:mt-5 prose-h2:mb-2 [&_table]:w-full [&_table]:border-collapse [&_table]:mb-4 [&_th]:border [&_th]:border-black [&_th]:bg-[#6B6B6B] [&_th]:px-2 [&_th]:py-1.5 [&_th]:text-left [&_th]:text-[10px] [&_th]:font-bold [&_th]:uppercase [&_th]:text-white [&_td]:border [&_td]:border-black [&_td]:px-2 [&_td]:py-1.5 [&_td]:text-[11px]"
           dangerouslySetInnerHTML={{ __html: data.contenidoHtml }}
         />
       ) : (

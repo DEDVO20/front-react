@@ -11,16 +11,10 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeAccionCorrectiva } from "@/utils/documentosRegistrosSGC";
 import {
   Table,
   TableBody,
@@ -348,111 +342,24 @@ export default function EnProcesoAccionesCorrectivas() {
           </div>
         </div>
 
-        {/* Dialog de Detalles */}
-        <Dialog open={showDialog} onOpenChange={setShowDialog}>
-          <DialogContent className="max-w-4xl rounded-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-[#1E3A8A]">
-                Detalles de Acción Correctiva
-              </DialogTitle>
-              <DialogDescription>
-                Información completa y seguimiento
-              </DialogDescription>
-            </DialogHeader>
-
-            {selectedAccion && (
-              <div className="space-y-6 py-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Código</Label>
-                    <p className="text-xl font-bold text-[#1E3A8A] mt-1">{selectedAccion.codigo}</p>
-                  </div>
-                  <div className="flex items-end justify-start md:justify-end gap-3">
-                    {getEstadoBadge(selectedAccion.estado)}
-                    <Badge variant="outline" className="capitalize">
-                      {getTipoBadge(selectedAccion.tipo)}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha Compromiso</Label>
-                    <p className="text-lg font-medium mt-1">
-                      {selectedAccion.fechaCompromiso || (selectedAccion as any).fecha_compromiso
-                        ? new Date(selectedAccion.fechaCompromiso || (selectedAccion as any).fecha_compromiso).toLocaleDateString("es-CO")
-                        : "No definida"}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha Implementación</Label>
-                    <p className="text-lg font-medium mt-1">
-                      {selectedAccion.fechaImplementacion || (selectedAccion as any).fecha_implementacion
-                        ? new Date(selectedAccion.fechaImplementacion || (selectedAccion as any).fecha_implementacion).toLocaleDateString("es-CO")
-                        : "No definida"}
-                    </p>
-                  </div>
-                </div>
-
-                {selectedAccion.descripcion && (
-                  <div>
-                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Descripción</Label>
-                    <p className="mt-2 text-[#111827] leading-relaxed">{selectedAccion.descripcion}</p>
-                  </div>
-                )}
-
-                {selectedAccion.analisisCausaRaiz && (
-                  <div>
-                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Análisis de Causa Raíz</Label>
-                    <div className="mt-2 p-4 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB]">
-                      <p className="text-[#111827] leading-relaxed">{selectedAccion.analisisCausaRaiz}</p>
-                    </div>
-                  </div>
-                )}
-
-                {selectedAccion.planAccion && (
-                  <div>
-                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Plan de Acción</Label>
-                    <div className="mt-2 p-4 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB]">
-                      <p className="text-[#111827] leading-relaxed">{selectedAccion.planAccion}</p>
-                    </div>
-                  </div>
-                )}
-
-                {selectedAccion.observacion && (
-                  <div>
-                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Observaciones</Label>
-                    <p className="mt-2 text-[#111827] leading-relaxed">{selectedAccion.observacion}</p>
-                  </div>
-                )}
-
-                <div className="pt-4 border-t border-[#E5E7EB] text-sm text-[#6B7280]">
-                  <div className="flex justify-between">
-                    <span>Creada el:</span>
-                    <span>
-                      {selectedAccion.creadoEn || (selectedAccion as any).creado_en
-                        ? new Date(selectedAccion.creadoEn || (selectedAccion as any).creado_en).toLocaleString("es-CO")
-                        : "Sin fecha"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-2">
-                  <Button variant="outline" className="rounded-xl" onClick={() => setShowDialog(false)}>
-                    Cerrar
-                  </Button>
-                  <Button
-                    className="rounded-xl bg-[#10B981] hover:bg-[#059669] text-white"
-                    onClick={() => navigate(`/acciones-correctivas/${selectedAccion.id}/solucionar`)}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Dar Solución
-                  </Button>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+        <VistaDocumentoSGCDialog
+          open={showDialog}
+          onOpenChange={setShowDialog}
+          data={selectedAccion ? datosSGCDesdeAccionCorrectiva(selectedAccion) : null}
+          title="Acción correctiva"
+          description="Documento controlado con la información de seguimiento de la acción."
+          extraActions={
+            selectedAccion ? (
+              <Button
+                className="rounded-xl bg-[#10B981] hover:bg-[#059669] text-white"
+                onClick={() => navigate(`/acciones-correctivas/${selectedAccion.id}/solucionar`)}
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Dar Solución
+              </Button>
+            ) : null
+          }
+        />
       </div>
     </div>
   );

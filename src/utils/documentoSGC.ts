@@ -49,6 +49,11 @@ const TIPOS: Record<string, string> = {
   plan: "PLAN",
   caracterizacion: "CARACTERIZACIÓN",
   guia: "GUÍA",
+  accion_correctiva: "ACCIÓN CORRECTIVA",
+  accion_preventiva: "ACCIÓN PREVENTIVA",
+  accion_mejora: "ACCIÓN DE MEJORA",
+  tratamiento_riesgo: "TRATAMIENTO DE RIESGO",
+  no_conformidad: "NO CONFORMIDAD",
 };
 
 export function etiquetaTipoDocumento(tipo?: string): string {
@@ -62,6 +67,17 @@ const ESTADOS: Record<string, string> = {
   pendiente_aprobacion: "pendiente de aprobación",
   aprobado: "aprobado",
   obsoleto: "obsoleto",
+  pendiente: "pendiente",
+  en_proceso: "en proceso",
+  en_ejecucion: "en ejecución",
+  implementada: "implementada",
+  verificada: "verificada",
+  cerrada: "cerrada",
+  abierta: "abierta",
+  en_tratamiento: "en tratamiento",
+  identificado: "identificado",
+  mitigado: "mitigado",
+  aceptado: "aceptado",
 };
 
 export function etiquetaEstadoDocumento(estado?: string): string {
@@ -112,6 +128,33 @@ function escapeHtml(texto: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+export function textoAHtmlSGC(texto?: string | null, vacio = "No registrado."): string {
+  if (!texto?.trim()) return `<p class="sgc-empty">${escapeHtml(vacio)}</p>`;
+  if (esContenidoHtml(texto)) return texto;
+  return texto
+    .split(/\n{2,}/)
+    .map((parrafo) => `<p>${escapeHtml(parrafo.trim()).replace(/\n/g, "<br/>")}</p>`)
+    .join("");
+}
+
+export function tablaCamposSGC(filas: Array<[string, string]>): string {
+  const cuerpo = filas
+    .map(
+      ([etiqueta, valor]) => `
+        <tr>
+          <th style="width:34%;text-align:left">${escapeHtml(etiqueta)}</th>
+          <td>${escapeHtml(valor || "—")}</td>
+        </tr>`,
+    )
+    .join("");
+
+  return `<table class="sgc-grid"><tbody>${cuerpo}</tbody></table>`;
+}
+
+export function seccionSGC(titulo: string, html: string): string {
+  return `<h2>${escapeHtml(titulo)}</h2>${html}`;
 }
 
 export function datosSGCDesdeDocumento(doc: {
