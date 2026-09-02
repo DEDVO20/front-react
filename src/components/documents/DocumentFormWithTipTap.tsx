@@ -5,7 +5,8 @@ import { FileUpload } from "./FileUpload";
 import { DocumentoSGCPaper } from "./DocumentoSGCPaper";
 import { usuarioService, Usuario } from "@/services/usuario.service";
 import { toast } from "sonner";
-import { Save, Eye, Download, FileText, Upload as UploadIcon, Edit, AlertCircle } from "lucide-react";
+import { Save, Eye, FileText, Upload as UploadIcon, Edit, AlertCircle } from "lucide-react";
+import { BotonesImpresionDocumentoSGC } from "@/components/documents/BotonesImpresionDocumentoSGC";
 import {
   cargarMarcaSGC,
   exportarDocumentoSGC,
@@ -258,7 +259,7 @@ export const DocumentFormWithTipTap = ({
         },
         marca,
       );
-      toast.success("Seleccione 'Guardar como PDF' en el cuadro de impresión");
+      toast.success("Seleccione Imprimir o Guardar como PDF en el cuadro de impresión");
     } catch (error) {
       console.error("Error al exportar PDF:", error);
       toast.error(
@@ -603,15 +604,10 @@ export const DocumentFormWithTipTap = ({
                   <Eye className="w-4 h-4" />
                   {preview ? "Editar" : "Vista Previa"}
                 </button>
-                <button
-                  type="button"
-                  onClick={handleExportPDF}
-                  disabled={exporting}
-                  className="flex items-center gap-2 px-3 py-2 border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
-                >
-                  <Download className="w-4 h-4" />
-                  {exporting ? "Generando PDF..." : "Exportar PDF"}
-                </button>
+                <BotonesImpresionDocumentoSGC
+                  onImprimir={handleExportPDF}
+                  loading={exporting}
+                />
               </div>
             </div>
 

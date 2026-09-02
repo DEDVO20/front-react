@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { BotonesImpresionDocumentoSGC } from "@/components/documents/BotonesImpresionDocumentoSGC";
 import {
   Dialog,
   DialogContent,
@@ -52,7 +52,7 @@ export function VistaDocumentoSGCDialog({
     try {
       setExporting(true);
       await exportarDocumentoSGC(data, marca);
-      toast.success("Seleccione 'Guardar como PDF' en el cuadro de impresión");
+      toast.success("Seleccione Imprimir o Guardar como PDF en el cuadro de impresión");
     } catch (error) {
       console.error("Error al exportar PDF:", error);
       toast.error(
@@ -81,18 +81,15 @@ export function VistaDocumentoSGCDialog({
           )}
         </div>
 
-        <DialogFooter className="shrink-0 flex-col-reverse gap-2 border-t border-[#E5E7EB] bg-white px-4 py-3 sm:flex-row sm:justify-end sm:px-6 sm:py-4 [&_button]:w-full sm:[&_button]:w-auto">
+        <DialogFooter className="shrink-0 flex-col-reverse gap-2 border-t border-[#E5E7EB] bg-white px-4 py-3 sm:flex-row sm:flex-wrap sm:justify-end sm:px-6 sm:py-4 [&_button]:w-full sm:[&_button]:w-auto">
           <Button variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>
             Cerrar
           </Button>
-          <Button
-            className="rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
-            onClick={handleExportPDF}
-            disabled={!data || exporting}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {exporting ? "Generando PDF..." : "Exportar PDF"}
-          </Button>
+          <BotonesImpresionDocumentoSGC
+            onImprimir={handleExportPDF}
+            loading={exporting}
+            disabled={!data}
+          />
           {extraActions}
         </DialogFooter>
       </DialogContent>

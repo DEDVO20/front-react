@@ -7,7 +7,6 @@ import {
   FileText,
   ArrowLeft,
   Edit,
-  Download,
   Clock,
   CheckCircle,
   Calendar,
@@ -21,6 +20,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { BotonesImpresionDocumentoSGC } from "@/components/documents/BotonesImpresionDocumentoSGC";
 import { hasAnyPermission } from "@/lib/permissions";
 import {
   cargarMarcaSGC,
@@ -130,7 +130,7 @@ export default function VerDocumento() {
     try {
       setExporting(true);
       await exportarDocumentoSGC(datos, marca);
-      toast.success("Seleccione 'Guardar como PDF' en el cuadro de impresión");
+      toast.success("Seleccione Imprimir o Guardar como PDF en el cuadro de impresión");
     } catch (error) {
       console.error("Error al exportar PDF:", error);
       toast.error(
@@ -299,14 +299,11 @@ export default function VerDocumento() {
             </div>
 
             <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full md:w-auto">
-              <button
-                onClick={handleExportPDF}
-                disabled={exporting}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all disabled:opacity-50 w-full sm:w-auto"
-              >
-                <Download className="w-4 h-4" />
-                {exporting ? "Generando PDF..." : "Exportar PDF"}
-              </button>
+              <BotonesImpresionDocumentoSGC
+                native
+                onImprimir={handleExportPDF}
+                loading={exporting}
+              />
               {canEdit && (
                 <button
                   onClick={() => navigate(`/documentos/${documento.id}/editar`)}
@@ -338,17 +335,16 @@ export default function VerDocumento() {
                 <h2 className="text-xl font-semibold text-[#1E3A8A]">Documento controlado</h2>
               </div>
               <p className="text-sm text-[#6B7280] mt-1">
-                Este es el formato que se descarga en PDF. Use Exportar PDF y elija Guardar como PDF.
+                Use Imprimir para enviar el documento a la impresora, o Exportar PDF para guardarlo como archivo.
               </p>
             </div>
-            <button
-              onClick={handleExportPDF}
-              disabled={exporting}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold shadow-sm transition-all disabled:opacity-50 w-full sm:w-auto"
-            >
-              <Download className="w-4 h-4" />
-              {exporting ? "Generando PDF..." : "Descargar PDF"}
-            </button>
+            <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+              <BotonesImpresionDocumentoSGC
+                native
+                onImprimir={handleExportPDF}
+                loading={exporting}
+              />
+            </div>
           </div>
           <div className="p-3 sm:p-6 bg-[#F8FAFC] overflow-x-auto">
             <div className="mx-auto w-full max-w-[816px] border border-[#E5E7EB] shadow-sm">

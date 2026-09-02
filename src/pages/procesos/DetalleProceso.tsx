@@ -19,8 +19,7 @@ import {
     Network,
     ShieldAlert,
     Gauge,
-    FolderOpen,
-    Download
+    FolderOpen
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,6 +46,7 @@ import { riesgoService, Riesgo } from "@/services/riesgo.service";
 import { documentoService, DocumentoResponse } from "@/services/documento.service";
 import { hasAnyPermission } from "@/lib/permissions";
 import { DocumentoSGCPaper } from "@/components/documents/DocumentoSGCPaper";
+import { BotonesImpresionDocumentoSGC } from "@/components/documents/BotonesImpresionDocumentoSGC";
 import {
     cargarMarcaSGC,
     exportarDocumentoSGC,
@@ -164,7 +164,7 @@ export default function DetalleProceso() {
         try {
             setExporting(true);
             await exportarDocumentoSGC(datosSGCDesdeProceso(proceso), marca);
-            toast.success("Seleccione 'Guardar como PDF' en el cuadro de impresión");
+            toast.success("Seleccione Imprimir o Guardar como PDF en el cuadro de impresión");
         } catch (error) {
             console.error("Error al exportar PDF:", error);
             toast.error(
@@ -274,15 +274,10 @@ export default function DetalleProceso() {
                         </div>
                     </div>
                     <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={handleExportPDF}
-                            disabled={exporting}
-                            className="rounded-xl w-full sm:w-auto"
-                        >
-                            <Download className="h-4 w-4 mr-2" />
-                            {exporting ? "Generando PDF..." : "Exportar PDF"}
-                        </Button>
+                        <BotonesImpresionDocumentoSGC
+                            onImprimir={handleExportPDF}
+                            loading={exporting}
+                        />
                         {canManageProcesos && (
                             <>
                                 <Button

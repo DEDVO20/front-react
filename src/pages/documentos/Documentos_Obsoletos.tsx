@@ -29,6 +29,7 @@ import {
   Eye,
   Trash2,
   Download,
+  Printer,
   History,
   XCircle,
   Activity,
@@ -155,12 +156,23 @@ export default function DocumentosObsoletos() {
     window.location.href = `/documentos/${documento.id}`;
   };
 
+  const handleImprimir = async (documento: Documento) => {
+    try {
+      const completo = await documentoService.getById(documento.id);
+      await exportarDocumentoSGC(datosSGCDesdeDocumento(completo));
+      toast.success("Seleccione Imprimir o Guardar como PDF en el cuadro de impresión");
+    } catch (error) {
+      console.error("Error al imprimir documento:", error);
+      toast.error("No se pudo abrir la impresión del documento");
+    }
+  };
+
   const handleDescargar = async (documento: Documento) => {
     try {
       const completo = await documentoService.getById(documento.id);
       if (esContenidoHtml(completo.descripcion)) {
         await exportarDocumentoSGC(datosSGCDesdeDocumento(completo));
-        toast.success("Seleccione 'Guardar como PDF' en el cuadro de impresión");
+        toast.success("Seleccione Imprimir o Guardar como PDF en el cuadro de impresión");
         return;
       }
       if (completo.ruta_archivo || documento.ruta_archivo) {
@@ -474,6 +486,9 @@ export default function DocumentosObsoletos() {
                         <div className="flex justify-end gap-2">
                           <Button size="sm" variant="outline" onClick={() => handleVer(doc)} disabled={actionLoading === doc.id} className="rounded-xl">
                             <Eye className="h-4 w-4 mr-1" /> Ver
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleImprimir(doc)} disabled={actionLoading === doc.id} className="rounded-xl">
+                            <Printer className="h-4 w-4 mr-1" /> Imprimir
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => handleDescargar(doc)} disabled={actionLoading === doc.id} className="rounded-xl">
                             <Download className="h-4 w-4 mr-1" /> Descargar

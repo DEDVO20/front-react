@@ -15,7 +15,7 @@ import {
   Clock,
   AlertCircle,
   XCircle,
-  Download,
+  Printer,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -137,7 +137,7 @@ export default function Documentos() {
       setExportingId(id);
       const completo = await documentoService.getById(id);
       await exportarDocumentoSGC(datosSGCDesdeDocumento(completo));
-      toast.success("Seleccione 'Guardar como PDF' en el cuadro de impresión");
+      toast.success("Seleccione Imprimir o Guardar como PDF en el cuadro de impresión");
     } catch (error) {
       console.error("Error al exportar PDF:", error);
       toast.error(error instanceof Error ? error.message : "No se pudo generar el PDF");
@@ -427,9 +427,10 @@ export default function Documentos() {
                     onClick={() => handleDescargarPDF(documento.id)}
                     disabled={exportingId === documento.id}
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white text-[#1E3A8A] border border-[#E5E7EB] rounded-xl hover:bg-[#F8FAFC] font-semibold text-sm transition-colors disabled:opacity-50"
+                    title="Imprimir o guardar como PDF"
                   >
-                    <Download className="w-4 h-4" />
-                    {exportingId === documento.id ? "PDF..." : "PDF"}
+                    <Printer className="w-4 h-4" />
+                    {exportingId === documento.id ? "..." : "Imprimir"}
                   </button>
                   {canEdit && (
                     <button

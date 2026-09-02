@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Search, Download, Eye, Filter, Send, CheckCircle2, XCircle } from "lucide-react";
+import { FileText, Search, Download, Printer, Eye, Filter, Send, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Button } from "@/components/ui/button";
@@ -111,11 +111,20 @@ export default function DocumentosPublicos() {
     return new Map(areas.map((a) => [a.id, a.nombre]));
   }, [areas]);
 
+  const handleImprimir = async (doc: DocumentoResponse) => {
+    try {
+      await exportarDocumentoSGC(datosSGCDesdeDocumento(doc));
+      toast.success("Seleccione Imprimir o Guardar como PDF en el cuadro de impresión");
+    } catch (error) {
+      console.error("Error al imprimir documento:", error);
+      toast.error("No se pudo abrir la impresión del documento");
+    }
+  };
+
   const handleDescargar = async (doc: DocumentoResponse) => {
     try {
       if (esContenidoHtml(doc.descripcion) || !doc.ruta_archivo) {
-        await exportarDocumentoSGC(datosSGCDesdeDocumento(doc));
-        toast.success("Seleccione 'Guardar como PDF' en el cuadro de impresión");
+        await handleImprimir(doc);
         return;
       }
       window.open(doc.ruta_archivo, "_blank", "noopener,noreferrer");
@@ -339,6 +348,13 @@ export default function DocumentosPublicos() {
                     >
                       <Eye className="w-4 h-4" />
                       Ver
+                    </button>
+                    <button
+                      onClick={() => handleImprimir(doc)}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm font-medium hover:bg-[#F9FAFB]"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Imprimir
                     </button>
                     <button
                       onClick={() => handleDescargar(doc)}
