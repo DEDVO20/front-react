@@ -14,24 +14,22 @@ import {
   Search,
   AlertTriangle,
   ShieldCheck,
+  Eye,
 } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   capacitacionService,
   Capacitacion,
   ReporteCapacitacionAuditoria,
 } from "@/services/capacitacion.service";
 import { toast } from "sonner";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeCapacitacion } from "@/utils/documentosRegistrosSGC";
 
 const CapacitacionesHistorial = () => {
   const navigate = useNavigate();
@@ -40,6 +38,8 @@ const CapacitacionesHistorial = () => {
   const [usuariosPendientes, setUsuariosPendientes] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showDocumento, setShowDocumento] = useState(false);
+  const [selectedCap, setSelectedCap] = useState<Capacitacion | null>(null);
 
   useEffect(() => {
     cargarHistorial();
@@ -299,6 +299,18 @@ const CapacitacionesHistorial = () => {
                               <CheckCircle className="w-5 h-5 mr-2" />
                               Completada
                             </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="rounded-xl"
+                              onClick={() => {
+                                setSelectedCap(cap);
+                                setShowDocumento(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Ver
+                            </Button>
                           </div>
                         </div>
                       </CardContent>
@@ -310,6 +322,17 @@ const CapacitacionesHistorial = () => {
           </div>
         </div>
       </TooltipProvider>
+
+      <VistaDocumentoSGCDialog
+        open={showDocumento}
+        onOpenChange={(open) => {
+          setShowDocumento(open);
+          if (!open) setSelectedCap(null);
+        }}
+        data={selectedCap ? datosSGCDesdeCapacitacion(selectedCap) : null}
+        title="Capacitación realizada"
+        description="Documento controlado con el historial de la capacitación completada."
+      />
     </div>
   );
 };

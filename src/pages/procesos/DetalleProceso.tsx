@@ -19,7 +19,8 @@ import {
     Network,
     ShieldAlert,
     Gauge,
-    FolderOpen
+    FolderOpen,
+    Download
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,13 @@ import { indicadorService, Indicador } from "@/services/indicador.service";
 import { riesgoService, Riesgo } from "@/services/riesgo.service";
 import { documentoService, DocumentoResponse } from "@/services/documento.service";
 import { hasAnyPermission } from "@/lib/permissions";
+import { DocumentoSGCPaper } from "@/components/documents/DocumentoSGCPaper";
+import {
+    cargarMarcaSGC,
+    exportarDocumentoSGC,
+    type MarcaSGC,
+} from "@/utils/documentoSGC";
+import { datosSGCDesdeProceso } from "@/utils/documentosRegistrosSGC";
 
 export default function DetalleProceso() {
     const navigate = useNavigate();
@@ -61,12 +69,22 @@ export default function DetalleProceso() {
     const [todosDocumentos, setTodosDocumentos] = useState<DocumentoResponse[]>([]);
     const [documentoSeleccionado, setDocumentoSeleccionado] = useState<string>("");
     const [asociandoDocumento, setAsociandoDocumento] = useState(false);
+    const [exporting, setExporting] = useState(false);
+    const [marca, setMarca] = useState<MarcaSGC>({
+        logoUrl: null,
+        titulo: "Universitaria de Colombia",
+        subtitulo: "Sistema de Gestión de Calidad",
+    });
 
     useEffect(() => {
         if (id) {
             cargarProceso();
         }
     }, [id]);
+
+    useEffect(() => {
+        cargarMarcaSGC().then(setMarca);
+    }, []);
 
     const cargarProceso = async () => {
         if (!id) return;
@@ -138,6 +156,22 @@ export default function DetalleProceso() {
             toast.error(error.response?.data?.detail || "Error al eliminar el proceso");
         } finally {
             setDeleteDialogOpen(false);
+        }
+    };
+
+    const handleExportPDF = async () => {
+        if (!proceso) return;
+        try {
+            setExporting(true);
+            await exportarDocumentoSGC(datosSGCDesdeProceso(proceso), marca);
+            toast.success("Seleccione 'Guardar como PDF' en el cuadro de impresión");
+        } catch (error) {
+            console.error("Error al exportar PDF:", error);
+            toast.error(
+                error instanceof Error ? error.message : "No se pudo generar el PDF del proceso",
+            );
+        } finally {
+            setExporting(false);
         }
     };
 
@@ -239,26 +273,43 @@ export default function DetalleProceso() {
                             <p className="text-gray-500 mt-1 text-sm sm:text-base">Información completa del proceso</p>
                         </div>
                     </div>
-                    {canManageProcesos && (
-                        <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => navigate(`/procesos/${id}/editar`)}
-                                className="rounded-xl w-full sm:w-auto"
-                            >
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                            </Button>
-                            <Button
-                                variant="destructive"
-                                onClick={() => setDeleteDialogOpen(true)}
-                                className="rounded-xl w-full sm:w-auto"
-                            >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Eliminar
-                            </Button>
-                        </div>
-                    )}
+                    <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={handleExportPDF}
+                            disabled={exporting}
+                            className="rounded-xl w-full sm:w-auto"
+                        >
+                            <Download className="h-4 w-4 mr-2" />
+                            {exporting ? "Generando PDF..." : "Exportar PDF"}
+                        </Button>
+                        {canManageProcesos && (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => navigate(`/procesos/${id}/editar`)}
+                                    className="rounded-xl w-full sm:w-auto"
+                                >
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Editar
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => setDeleteDialogOpen(true)}
+                                    className="rounded-xl w-full sm:w-auto"
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Eliminar
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto rounded-2xl border border-[#E5E7EB] bg-white shadow-sm">
+                    <div className="min-w-[640px] max-w-[816px] mx-auto">
+                        <DocumentoSGCPaper data={datosSGCDesdeProceso(proceso)} marca={marca} />
+                    </div>
                 </div>
 
                 {/* Información Principal */}

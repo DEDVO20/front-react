@@ -12,6 +12,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeAuditoria } from "@/utils/documentosRegistrosSGC";
+import type { Auditoria as AuditoriaSGC } from "@/services/auditoria.service";
 
 // Tipos TypeScript
 interface Auditoria {
@@ -208,6 +211,8 @@ const AuditoriasPlanificacion = () => {
 
   const [mostrarModal, setMostrarModal] = useState(false);
   const [auditoriaEditando, setAuditoriaEditando] = useState<Auditoria | null>(null);
+  const [showDocumento, setShowDocumento] = useState(false);
+  const [selectedAuditoria, setSelectedAuditoria] = useState<Auditoria | null>(null);
   const [equipoAuditorIds, setEquipoAuditorIds] = useState<string[]>([]);
   const [formData, setFormData] = useState<AuditoriaFormData>({
     codigo: '',
@@ -465,6 +470,30 @@ const AuditoriasPlanificacion = () => {
     return `${usuario.nombre} ${apellido}`.trim();
   };
 
+  const toAuditoriaSGC = (auditoria: Auditoria): AuditoriaSGC => ({
+    id: auditoria.id,
+    codigo: auditoria.codigo,
+    nombre: auditoria.nombre,
+    tipo: auditoria.tipo,
+    objetivo: auditoria.objetivo,
+    alcance: auditoria.alcance,
+    normaReferencia: auditoria.normaReferencia,
+    auditorLiderId: auditoria.auditorLiderId,
+    procesoId: auditoria.procesoId,
+    fechaPlanificada: auditoria.fechaPlanificada,
+    fechaInicio: auditoria.fechaInicio,
+    fechaFin: auditoria.fechaFin,
+    estado: auditoria.estado,
+    programaId: auditoria.programaId,
+    creadoPor: auditoria.creadoPor,
+    auditorLider: auditoria.auditorLiderId
+      ? {
+          id: auditoria.auditorLiderId,
+          nombre: getNombreUsuario(auditoria.auditorLiderId),
+        }
+      : undefined,
+  });
+
   const stats = {
     total: auditorias.length,
     planificadas: auditorias.filter(a => a.estado === 'planificada').length,
@@ -702,6 +731,18 @@ const AuditoriasPlanificacion = () => {
                       </TableCell>
                       <TableCell className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedAuditoria(auditoria);
+                              setShowDocumento(true);
+                            }}
+                            className="rounded-xl"
+                            title="Ver documento"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           <Button size="sm" variant="outline" onClick={() => abrirModalEditar(auditoria)} className="rounded-xl">
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -717,6 +758,32 @@ const AuditoriasPlanificacion = () => {
             </Table>
           </div>
         </div>
+
+        <VistaDocumentoSGCDialog
+          open={showDocumento}
+          onOpenChange={(open) => {
+            setShowDocumento(open);
+            if (!open) setSelectedAuditoria(null);
+          }}
+          data={selectedAuditoria ? datosSGCDesdeAuditoria(toAuditoriaSGC(selectedAuditoria)) : null}
+          title="Auditoría planificada"
+          description="Documento controlado con la planificación de la auditoría."
+          extraActions={
+            selectedAuditoria ? (
+              <Button
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => {
+                  setShowDocumento(false);
+                  abrirModalEditar(selectedAuditoria);
+                }}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
+            ) : null
+          }
+        />
 
         {/* Modal de crear/editar */}
         <Dialog open={mostrarModal} onOpenChange={setMostrarModal}>

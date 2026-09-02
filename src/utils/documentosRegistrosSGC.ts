@@ -5,8 +5,10 @@ import type {
   Capacitacion,
   ResumenAsistenciaCapacitacion,
 } from "@/services/capacitacion.service";
+import type { EvaluacionCompetencia } from "@/services/competencia.service";
 import type { NoConformidad } from "@/services/noConformidad.service";
 import type { ObjetivoCalidad, SeguimientoObjetivo } from "@/services/objetivoCalidad.service";
+import type { Proceso } from "@/services/proceso.service";
 import type { Riesgo } from "@/services/riesgo.service";
 import {
   formatearFechaSGC,
@@ -43,6 +45,28 @@ function tituloAccion(tipo?: string): string {
     mejora: "Acción de mejora",
   };
   return mapa[(tipo || "").toLowerCase()] || "Acción correctiva";
+}
+
+function evidenciasHtmlSGC(evidencias?: string | null): string {
+  if (!evidencias?.trim()) return textoAHtmlSGC(null, "Sin evidencias registradas.");
+  try {
+    const parsed = typeof evidencias === "string" ? JSON.parse(evidencias) : evidencias;
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return textoAHtmlSGC(null, "Sin evidencias registradas.");
+    }
+    const items = parsed
+      .map((ev: { name?: string; nombre?: string; url?: string }) => {
+        const name = ev.name || ev.nombre || "Evidencia";
+        if (ev.url) {
+          return `<li><a href="${ev.url}" target="_blank" rel="noopener noreferrer">${name}</a></li>`;
+        }
+        return `<li>${name}</li>`;
+      })
+      .join("");
+    return `<ul>${items}</ul>`;
+  } catch {
+    return textoAHtmlSGC(evidencias);
+  }
 }
 
 interface PasoTrazabilidad {
@@ -312,6 +336,7 @@ export function datosSGCDesdeNoConformidad(nc: NoConformidad): DocumentoSGCData 
     seccionSGC("Descripción", textoAHtmlSGC(nc.descripcion, "Sin descripción.")),
     seccionSGC("Análisis de causa", textoAHtmlSGC(nc.analisis_causa)),
     seccionSGC("Plan de acción", textoAHtmlSGC(nc.plan_accion)),
+    seccionSGC("Evidencias", evidenciasHtmlSGC(nc.evidencias)),
     seccionSGC("Evidencias", evidenciasNoConformidadAHtml(nc.evidencias)),
     seccionTrazabilidadSGC(pasos),
   ].join("");
@@ -802,6 +827,153 @@ export function datosSGCDesdeCapacitacion(
     contenidoHtml,
     fechaCreacion: capacitacion.creadoEn,
     fechaVigencia: capacitacion.fechaProgramada || capacitacion.fechaFin,
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
+  };
+}
+
+function etiquetaTipoProceso(tipo?: string): string {
+  const mapa: Record<string, string> = {
+    estrategico: "Estratégico",
+    operativo: "Operativo",
+    apoyo: "Apoyo",
+    medicion: "Medición y mejora",
+  };
+  return mapa[(tipo || "").toLowerCase()] || tipo || "—";
+}
+
+function etiquetaEtapaPHVA(etapa?: string): string {
+  const mapa: Record<string, string> = {
+    planear: "Planear",
+    hacer: "Hacer",
+    verificar: "Verificar",
+    actuar: "Actuar",
+  };
+  return mapa[(etapa || "").toLowerCase()] || etapa || "—";
+}
+
+export function datosSGCDesdeProceso(proceso: Proceso): DocumentoSGCData {
+  const estado = (proceso.estado || "borrador").toLowerCase();
+  const responsable = proceso.responsable_nombre || "Sistema";
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Elaboración",
+      cumplido: true,
+      responsable,
+      fecha: proceso.creado_en,
+    },
+    {
+      etapa: "Revisión",
+      cumplido: ["revision", "activo", "suspendido", "obsoleto"].includes(estado),
+      enCurso: estado === "revision",
+      responsable,
+      fecha: proceso.actualizado_en,
+    },
+    {
+      etapa: "Aprobación",
+      cumplido: ["activo", "obsoleto"].includes(estado) || Boolean(proceso.fecha_aprobacion),
+      responsable,
+      fecha: proceso.fecha_aprobacion || proceso.actualizado_en,
+    },
+  ];
+
+  const contenidoHtml = [
+    seccionSGC(
+      "Caracterización del proceso",
+      tablaCamposSGC([
+        ["Código", proceso.codigo || "—"],
+        ["Nombre", proceso.nombre || "—"],
+        ["Tipo", etiquetaTipoProceso(proceso.tipo_proceso)],
+        ["Etapa PHVA", etiquetaEtapaPHVA(proceso.etapa_phva)],
+        ["Estado", (proceso.estado || "—").replace(/_/g, " ")],
+        ["Versión", proceso.version || "1.0"],
+        ["Área", proceso.area_nombre || "Sin asignar"],
+        ["Responsable", responsable],
+        ["Fecha de aprobación", formatearFechaSGC(proceso.fecha_aprobacion)],
+        ["Próxima revisión", formatearFechaSGC(proceso.proxima_revision)],
+        ["Etapas", proceso.total_etapas != null ? String(proceso.total_etapas) : "—"],
+        ["Indicadores", proceso.total_indicadores != null ? String(proceso.total_indicadores) : "—"],
+        ["Riesgos asociados", proceso.total_riesgos != null ? String(proceso.total_riesgos) : "—"],
+      ]),
+    ),
+    seccionSGC("Objetivo", textoAHtmlSGC(proceso.objetivo, "Sin objetivo.")),
+    seccionSGC("Alcance", textoAHtmlSGC(proceso.alcance, "Sin alcance.")),
+    seccionSGC("Entradas", textoAHtmlSGC(proceso.entradas)),
+    seccionSGC("Salidas", textoAHtmlSGC(proceso.salidas)),
+    seccionSGC("Recursos necesarios", textoAHtmlSGC(proceso.recursos_necesarios)),
+    seccionSGC("Criterios de desempeño", textoAHtmlSGC(proceso.criterios_desempeno)),
+    seccionSGC("Riesgos y oportunidades", textoAHtmlSGC(proceso.riesgos_oportunidades)),
+    seccionTrazabilidadSGC(pasos),
+  ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
+
+  return {
+    nombre: proceso.nombre || `Proceso ${proceso.codigo || ""}`.trim(),
+    codigo: proceso.codigo || "S/C",
+    version: proceso.version || "1.0",
+    tipoDocumento: "proceso",
+    estado: proceso.estado,
+    contenidoHtml,
+    fechaCreacion: proceso.creado_en,
+    fechaVigencia: proceso.proxima_revision || proceso.fecha_aprobacion,
+    ...firmas,
+    versiones: versionesDesdePasos(pasos),
+  };
+}
+
+export function datosSGCDesdeCompetencia(evaluacion: EvaluacionCompetencia): DocumentoSGCData {
+  const estado = (evaluacion.estado || "Pendiente").toLowerCase();
+  const evaluado = nombreUsuarioSGC(evaluacion.usuario, "Sin asignar");
+  const pasos: PasoTrazabilidad[] = [
+    {
+      etapa: "Registro de evaluación",
+      cumplido: true,
+      responsable: evaluado,
+      fecha: evaluacion.fechaEvaluacion,
+    },
+    {
+      etapa: "Desarrollo",
+      cumplido: ["en desarrollo", "reforzada", "desarrollada"].includes(estado),
+      enCurso: estado === "en desarrollo",
+      responsable: evaluado,
+      fecha: evaluacion.fechaEvaluacion,
+    },
+    {
+      etapa: "Competencia alcanzada",
+      cumplido: ["reforzada", "desarrollada"].includes(estado),
+      responsable: evaluado,
+      fecha: evaluacion.fechaEvaluacion,
+    },
+  ];
+
+  const contenidoHtml = [
+    seccionSGC(
+      "Datos de la evaluación",
+      tablaCamposSGC([
+        ["Competencia", evaluacion.competencia?.nombre || "—"],
+        ["Persona evaluada", evaluado],
+        ["Nivel", evaluacion.nivel || "—"],
+        ["Estado", evaluacion.estado || "—"],
+        ["Fecha de evaluación", formatearFechaSGC(evaluacion.fechaEvaluacion)],
+      ]),
+    ),
+    seccionSGC("Descripción de la competencia", textoAHtmlSGC(evaluacion.competencia?.descripcion, "Sin descripción.")),
+    seccionSGC("Observaciones / evidencia", textoAHtmlSGC(evaluacion.observaciones, "Sin observaciones.")),
+    seccionTrazabilidadSGC(pasos),
+  ].join("");
+
+  const firmas = firmasDesdePasos(pasos[0], pasos[1], pasos[2]);
+
+  return {
+    nombre: evaluacion.competencia?.nombre || "Evaluación de competencia",
+    codigo: evaluacion.competenciaId || "S/C",
+    version: "1.0",
+    tipoDocumento: "competencia",
+    estado: evaluacion.estado,
+    contenidoHtml,
+    fechaCreacion: evaluacion.fechaEvaluacion,
+    fechaVigencia: evaluacion.fechaEvaluacion,
     ...firmas,
     versiones: versionesDesdePasos(pasos),
   };

@@ -43,6 +43,8 @@ import { toast } from "sonner";
 import procesoService, { Proceso, TipoProceso, EstadoProceso } from "@/services/proceso.service";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { hasAnyPermission } from "@/lib/permissions";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeProceso } from "@/utils/documentosRegistrosSGC";
 
 export default function MapaProcesos() {
     const navigate = useNavigate();
@@ -52,6 +54,8 @@ export default function MapaProcesos() {
     const [busqueda, setBusqueda] = useState("");
     const [filtroTipo, setFiltroTipo] = useState<string>("todos");
     const [filtroEstado, setFiltroEstado] = useState<string>("todos");
+    const [showDocumento, setShowDocumento] = useState(false);
+    const [selectedProceso, setSelectedProceso] = useState<Proceso | null>(null);
 
     // Estado para el diálogo de eliminación
     const [deleteDialog, setDeleteDialog] = useState<{
@@ -232,7 +236,10 @@ export default function MapaProcesos() {
                         size="sm"
                         variant="outline"
                         className="flex-1"
-                        onClick={() => navigate(`/procesos/${proceso.id}`)}
+                        onClick={() => {
+                            setSelectedProceso(proceso);
+                            setShowDocumento(true);
+                        }}
                     >
                         <Eye className="h-4 w-4 mr-1" />
                         Ver
@@ -443,6 +450,31 @@ export default function MapaProcesos() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <VistaDocumentoSGCDialog
+                open={showDocumento}
+                onOpenChange={(open) => {
+                    setShowDocumento(open);
+                    if (!open) setSelectedProceso(null);
+                }}
+                data={selectedProceso ? datosSGCDesdeProceso(selectedProceso) : null}
+                title="Proceso del SGC"
+                description="Caracterización controlada del proceso según ISO 9001."
+                extraActions={
+                    selectedProceso ? (
+                        <Button
+                            variant="outline"
+                            className="rounded-xl"
+                            onClick={() => {
+                                setShowDocumento(false);
+                                navigate(`/procesos/${selectedProceso.id}`);
+                            }}
+                        >
+                            Ficha completa
+                        </Button>
+                    ) : null
+                }
+            />
         </div>
     );
 }

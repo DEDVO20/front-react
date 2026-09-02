@@ -30,6 +30,8 @@ import { Search, Eye, Filter, FileText, Layers, Clock, RefreshCw, Activity } fro
 import { toast } from "sonner";
 import { documentoService, type DocumentoResponse } from "@/services/documento.service";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeDocumento } from "@/utils/documentoSGC";
 
 type Version = {
   id: string;
@@ -67,6 +69,9 @@ export default function ControlVersiones() {
   const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showDocumento, setShowDocumento] = useState(false);
+  const [documentoSGC, setDocumentoSGC] = useState<DocumentoResponse | null>(null);
+  const [versionesSGC, setVersionesSGC] = useState<Version[]>([]);
 
   useEffect(() => {
     cargarDocumentos();
@@ -138,6 +143,21 @@ export default function ControlVersiones() {
 
   const verVersion = (v: Version) => {
     setSelectedVersion(v);
+  };
+
+  const handleVerSGC = async (doc: Documento) => {
+    try {
+      const completo = await documentoService.getById(doc.id);
+      const versiones = doc.versiones?.length
+        ? doc.versiones
+        : await documentoService.getVersiones(doc.id).catch(() => []);
+      setDocumentoSGC(completo);
+      setVersionesSGC(Array.isArray(versiones) ? versiones : []);
+      setShowDocumento(true);
+    } catch (error) {
+      console.error("Error al abrir documento SGC:", error);
+      toast.error("No se pudo abrir el documento controlado");
+    }
   };
 
   const formatearEstado = (estado: string): string => {
@@ -408,6 +428,15 @@ export default function ControlVersiones() {
                         </Badge>
                       </TableCell>
                       <TableCell className="px-8 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleVerSGC(doc)}
+                            className="rounded-xl"
+                          >
+                            <Eye className="h-4 w-4 mr-2" /> Ver
+                          </Button>
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
@@ -566,6 +595,7 @@ export default function ControlVersiones() {
                             </div>
                           </DialogContent>
                         </Dialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -575,6 +605,27 @@ export default function ControlVersiones() {
           </div>
         </div>
       </div>
+
+      <VistaDocumentoSGCDialog
+        open={showDocumento}
+        onOpenChange={(open) => {
+          setShowDocumento(open);
+          if (!open) {
+            setDocumentoSGC(null);
+            setVersionesSGC([]);
+          }
+        }}
+        data={
+          documentoSGC
+            ? datosSGCDesdeDocumento({
+                ...documentoSGC,
+                versiones: versionesSGC,
+              })
+            : null
+        }
+        title="Documento controlado"
+        description="Formato oficial del Sistema de Gestión de Calidad."
+      />
     </div>
   );
 }

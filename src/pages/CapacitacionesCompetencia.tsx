@@ -26,6 +26,8 @@ import { competenciaService, EvaluacionCompetencia, Competencia } from "@/servic
 import { usuarioService, Usuario } from "@/services/usuario.service";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeCompetencia } from "@/utils/documentosRegistrosSGC";
 
 const EMPTY_FORM = {
   usuarioId: "",
@@ -308,79 +310,16 @@ const CapacitacionesCompetencias: React.FC = () => {
           </div>
 
           {/* Modal Detalle */}
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent className="max-w-3xl rounded-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                  <Brain className="h-7 w-7 text-[#2563EB]" />
-                  Detalles de Competencia
-                </DialogTitle>
-                <DialogDescription className="text-[#6B7280] mt-2">
-                  Resultados de la evaluación
-                </DialogDescription>
-              </DialogHeader>
-
-              {selectedEvaluacion && (
-                <div className="space-y-8 py-4">
-                  <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                    <h3 className="text-2xl font-bold text-[#111827] mb-6">{selectedEvaluacion.competencia?.nombre}</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <Label className="text-[#6B7280] uppercase text-xs font-bold">Usuario Evaluado</Label>
-                        <p className="mt-2 text-lg font-medium">
-                          {selectedEvaluacion.usuario ? nombreUsuarioEvaluado(selectedEvaluacion.usuario) : 'N/A'}
-                        </p>
-                      </div>
-                      <div>
-                        <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha Evaluación</Label>
-                        <p className="mt-2 text-lg font-medium">
-                          {new Date(selectedEvaluacion.fechaEvaluacion).toLocaleDateString('es-CO', { dateStyle: 'long' })}
-                        </p>
-                      </div>
-                      <div>
-                        <Label className="text-[#6B7280] uppercase text-xs font-bold">Nivel Alcanzado</Label>
-                        <Badge className="mt-2 text-lg px-6 py-3 bg-[#2563EB]/10 text-[#2563EB] font-bold">
-                          {selectedEvaluacion.nivel}
-                        </Badge>
-                      </div>
-                      <div>
-                        <Label className="text-[#6B7280] uppercase text-xs font-bold">Estado Actual</Label>
-                        <Badge
-                          className={`mt-2 px-4 py-2 text-lg font-bold ${selectedEvaluacion.estado === "Reforzada" || selectedEvaluacion.estado === "Desarrollada"
-                            ? "bg-[#ECFDF5] text-[#065F46]"
-                            : "bg-[#FFF7ED] text-[#9A3412]"
-                            }`}
-                        >
-                          {selectedEvaluacion.estado}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-
-                  {selectedEvaluacion.observaciones && (
-                    <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold mb-3 block">Observaciones / Evidencia</Label>
-                      <p className="text-[#111827] leading-relaxed italic">"{selectedEvaluacion.observaciones}"</p>
-                    </div>
-                  )}
-
-                  {selectedEvaluacion.competencia?.descripcion && (
-                    <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold mb-3 block">Sobre la Competencia</Label>
-                      <p className="text-[#111827] leading-relaxed">{selectedEvaluacion.competencia.descripcion}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <DialogFooter className="gap-4">
-                <Button variant="outline" onClick={() => setOpen(false)} className="rounded-xl">
-                  Cerrar
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
+          <VistaDocumentoSGCDialog
+            open={open}
+            onOpenChange={(isOpen) => {
+              setOpen(isOpen);
+              if (!isOpen) setSelectedEvaluacion(null);
+            }}
+            data={selectedEvaluacion ? datosSGCDesdeCompetencia(selectedEvaluacion) : null}
+            title="Evaluación de competencia"
+            description="Documento controlado con el nivel, estado y evidencia de la competencia."
+          />
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogContent className="max-w-lg rounded-2xl">
               <DialogHeader>

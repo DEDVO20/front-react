@@ -15,6 +15,7 @@ import {
   Activity
 } from "lucide-react";
 import { auditoriaService } from "@/services/auditoria.service";
+import type { Auditoria as AuditoriaSGC, HallazgoAuditoria } from "@/services/auditoria.service";
 import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeAuditoria } from "@/utils/documentosRegistrosSGC";
 
 interface Auditoria {
   id: string;
@@ -53,9 +56,13 @@ interface Auditoria {
 export default function AuditoriasEnCurso() {
   const navigate = useNavigate();
   const [auditorias, setAuditorias] = useState<Auditoria[]>([]);
+  const [auditoriasOriginales, setAuditoriasOriginales] = useState<AuditoriaSGC[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTipo, setFilterTipo] = useState("todas");
+  const [showDocumento, setShowDocumento] = useState(false);
+  const [selectedAuditoria, setSelectedAuditoria] = useState<AuditoriaSGC | null>(null);
+  const [hallazgosVista, setHallazgosVista] = useState<HallazgoAuditoria[]>([]);
 
   useEffect(() => {
     fetchAuditorias();
@@ -122,9 +129,11 @@ export default function AuditoriasEnCurso() {
       });
 
       setAuditorias(auditoriasMapeadas);
+      setAuditoriasOriginales(data);
     } catch (error) {
       console.error("Error al cargar auditorías:", error);
       setAuditorias([]);
+      setAuditoriasOriginales([]);
       toast.error("No se pudieron cargar las auditorías en curso");
     } finally {
       setLoading(false);
@@ -152,6 +161,22 @@ export default function AuditoriasEnCurso() {
     const fin = new Date(fechaFin);
     const diff = Math.ceil((fin.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
     return diff > 0 ? diff : 0;
+  };
+
+  const handleVer = async (auditoria: Auditoria) => {
+    const original = auditoriasOriginales.find((item) => item.id === auditoria.id);
+    if (!original) {
+      toast.error("No se pudo abrir el documento de la auditoría");
+      return;
+    }
+    setSelectedAuditoria(original);
+    setShowDocumento(true);
+    try {
+      const hallazgos = await auditoriaService.getHallazgos(auditoria.id);
+      setHallazgosVista(Array.isArray(hallazgos) ? hallazgos : []);
+    } catch {
+      setHallazgosVista([]);
+    }
   };
 
   if (loading) {
@@ -337,9 +362,9 @@ export default function AuditoriasEnCurso() {
                       <div className="flex gap-2">
                         <Button
                           variant="ghost"
-                          onClick={() => navigate(`/auditorias/ejecucion/${auditoria.id}`)}
+                          onClick={() => handleVer(auditoria)}
                           className="p-3 bg-[#F8FAFC] hover:bg-[#E0EDFF] text-[#2563EB] rounded-xl transition-all border border-[#E5E7EB]"
-                          title="Ver detalles"
+                          title="Ver documento"
                         >
                           <Eye className="w-5 h-5" />
                         </Button>
@@ -423,6 +448,33 @@ export default function AuditoriasEnCurso() {
             })
           )}
         </div>
+
+        <VistaDocumentoSGCDialog
+          open={showDocumento}
+          onOpenChange={(open) => {
+            setShowDocumento(open);
+            if (!open) {
+              setSelectedAuditoria(null);
+              setHallazgosVista([]);
+            }
+          }}
+          data={selectedAuditoria ? datosSGCDesdeAuditoria(selectedAuditoria, hallazgosVista) : null}
+          title="Auditoría en curso"
+          description="Documento controlado con la planificación, ejecución y hallazgos de la auditoría."
+          extraActions={
+            selectedAuditoria ? (
+              <Button
+                className="rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
+                onClick={() => {
+                  setShowDocumento(false);
+                  navigate(`/auditorias/ejecucion/${selectedAuditoria.id}`);
+                }}
+              >
+                Ir a ejecución
+              </Button>
+            ) : null
+          }
+        />
       </div>
     </div>
   );

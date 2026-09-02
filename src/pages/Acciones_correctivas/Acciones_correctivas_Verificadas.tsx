@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DataTable, DataTableAction } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
-import { PlusIcon, CheckCircle2, RefreshCw } from "lucide-react";
+import { PlusIcon, CheckCircle2, RefreshCw, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -20,6 +21,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import NuevasAccionesCorrectivas from "./nuevas";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeAccionCorrectiva } from "@/utils/documentosRegistrosSGC";
 import { accionCorrectivaService, AccionCorrectiva as IAccionCorrectiva } from "@/services/accionCorrectiva.service";
 
 interface AccionCorrectivaUI {
@@ -36,24 +39,46 @@ interface AccionCorrectivaUI {
 export default function AccionesCorrectivasVerificadas() {
   const navigate = useNavigate();
   const [accionesCorrectivas, setAccionesCorrectivas] = useState<AccionCorrectivaUI[]>([]);
+  const [accionesOriginales, setAccionesOriginales] = useState<IAccionCorrectiva[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showDocumento, setShowDocumento] = useState(false);
+  const [selectedAccion, setSelectedAccion] = useState<IAccionCorrectiva | null>(null);
 
   useEffect(() => {
     fetchAccionesCorrectivasVerificadas();
   }, []);
 
+  const handleVer = async (row: AccionCorrectivaUI) => {
+    try {
+      const local = accionesOriginales.find((accion) => String(accion.id) === String(row.id));
+      const completa = await accionCorrectivaService.getById(String(row.id)).catch(() => local);
+      if (!completa) {
+        toast.error("No se pudo cargar la acción correctiva");
+        return;
+      }
+      setSelectedAccion(completa);
+      setShowDocumento(true);
+    } catch (error) {
+      console.error("Error al abrir acción verificada:", error);
+      toast.error("No se pudo abrir el documento de la acción");
+    }
+  };
+
   const actions: DataTableAction[] = [
     {
-      label: "Ver Detalle / Evidencias",
-      onClick: (row) => navigate(`/acciones-correctivas/${row.id}/solucionar`),
-    }
+      label: "Ver",
+      onClick: (row) => {
+        void handleVer(row as AccionCorrectivaUI);
+      },
+    },
   ];
 
   const fetchAccionesCorrectivasVerificadas = async () => {
     try {
       const accionesVerificadas = await accionCorrectivaService.getVerificadas();
+      setAccionesOriginales(accionesVerificadas);
 
       const transformedData = accionesVerificadas.map((ac: IAccionCorrectiva) => {
         let fechaFormateada = "Sin fecha";
@@ -300,6 +325,28 @@ export default function AccionesCorrectivasVerificadas() {
             <DataTable data={accionesCorrectivas} actions={actions} />
           </div>
         </div>
+
+        <VistaDocumentoSGCDialog
+          open={showDocumento}
+          onOpenChange={(open) => {
+            setShowDocumento(open);
+            if (!open) setSelectedAccion(null);
+          }}
+          data={selectedAccion ? datosSGCDesdeAccionCorrectiva(selectedAccion) : null}
+          title="Acción correctiva verificada"
+          description="Documento controlado con la verificación de eficacia y evidencias de la acción."
+          extraActions={
+            selectedAccion ? (
+              <Button
+                className="rounded-xl bg-[#10B981] hover:bg-[#059669] text-white"
+                onClick={() => navigate(`/acciones-correctivas/${selectedAccion.id}/solucionar`)}
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Ver evidencias
+              </Button>
+            ) : null
+          }
+        />
       </div>
     </div>
   );

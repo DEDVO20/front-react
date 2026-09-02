@@ -30,6 +30,8 @@ import { toast } from "sonner";
 import procesoService, { Proceso, TipoProceso, EstadoProceso, EtapaPHVA } from "@/services/proceso.service";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { hasAnyPermission } from "@/lib/permissions";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeProceso } from "@/utils/documentosRegistrosSGC";
 
 export default function ListadoProcesos() {
   const navigate = useNavigate();
@@ -37,6 +39,8 @@ export default function ListadoProcesos() {
   const [procesos, setProcesos] = useState<Proceso[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showDocumento, setShowDocumento] = useState(false);
+  const [selectedProceso, setSelectedProceso] = useState<Proceso | null>(null);
 
   useEffect(() => {
     fetchProcesos();
@@ -374,7 +378,10 @@ export default function ListadoProcesos() {
                     <TableRow
                       key={proceso.id}
                       className="hover:bg-[#F8FAFC] transition-colors cursor-pointer"
-                      onClick={() => navigate(`/procesos/${proceso.id}`)}
+                      onClick={() => {
+                        setSelectedProceso(proceso);
+                        setShowDocumento(true);
+                      }}
                     >
                       <TableCell className="px-6 py-4">
                         <span className="font-mono text-sm font-semibold text-[#1E3A8A]">
@@ -412,7 +419,8 @@ export default function ListadoProcesos() {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/procesos/${proceso.id}`);
+                              setSelectedProceso(proceso);
+                              setShowDocumento(true);
                             }}
                             className="rounded-lg"
                           >
@@ -442,6 +450,31 @@ export default function ListadoProcesos() {
             </Table>
           </div>
         </div>
+
+        <VistaDocumentoSGCDialog
+          open={showDocumento}
+          onOpenChange={(open) => {
+            setShowDocumento(open);
+            if (!open) setSelectedProceso(null);
+          }}
+          data={selectedProceso ? datosSGCDesdeProceso(selectedProceso) : null}
+          title="Proceso del SGC"
+          description="Caracterización controlada del proceso según ISO 9001."
+          extraActions={
+            selectedProceso ? (
+              <Button
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => {
+                  setShowDocumento(false);
+                  navigate(`/procesos/${selectedProceso.id}`);
+                }}
+              >
+                Ficha completa
+              </Button>
+            ) : null
+          }
+        />
       </div>
     </div>
   );
