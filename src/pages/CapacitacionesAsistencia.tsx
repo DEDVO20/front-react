@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { CheckCircle, Users, Laptop, MapPin, Download, GraduationCap, Eye, RefreshCw, Search, Save } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
@@ -36,6 +35,8 @@ import { usuarioService, Usuario } from "@/services/usuario.service";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import jsPDF from "jspdf";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeCapacitacion } from "@/utils/documentosRegistrosSGC";
 
 type RegistroAsistenciaUI = {
   selected: boolean;
@@ -48,6 +49,7 @@ const CapacitacionesAsistencia: React.FC = () => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [selectedCapacitacion, setSelectedCapacitacion] = useState<Capacitacion | null>(null);
+  const [asistenciasVista, setAsistenciasVista] = useState<AsistenciaCapacitacion[]>([]);
   const [asistencias, setAsistencias] = useState<Capacitacion[]>([]);
   const [resumenesPorCapacitacion, setResumenesPorCapacitacion] = useState<Record<string, ResumenAsistenciaCapacitacion>>({});
   const [capacitacionesDisponibles, setCapacitacionesDisponibles] = useState<Capacitacion[]>([]);
@@ -108,9 +110,15 @@ const CapacitacionesAsistencia: React.FC = () => {
     }
   };
 
-  const openDialog = (capacitacion: Capacitacion) => {
+  const openDialog = async (capacitacion: Capacitacion) => {
     setSelectedCapacitacion(capacitacion);
     setOpen(true);
+    try {
+      const lista = await capacitacionService.getAsistencias(capacitacion.id);
+      setAsistenciasVista(Array.isArray(lista) ? lista : []);
+    } catch {
+      setAsistenciasVista([]);
+    }
   };
 
   const construirMapaRegistro = (
@@ -794,89 +802,33 @@ const CapacitacionesAsistencia: React.FC = () => {
             </div>
           </div>
 
-          {/* Modal flotante */}
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent className="max-w-4xl rounded-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                  <CheckCircle className="h-7 w-7 text-[#2563EB]" />
-                  Certificado de Asistencia
-                </DialogTitle>
-                <DialogDescription className="text-[#6B7280] mt-2">
-                  🎓 Has completado la capacitación <strong>{selectedCapacitacion?.nombre}</strong>
-                </DialogDescription>
-              </DialogHeader>
+          <VistaDocumentoSGCDialog
+            open={open}
+            onOpenChange={(nextOpen) => {
+              setOpen(nextOpen);
+              if (!nextOpen) setAsistenciasVista([]);
+            }}
+            data={
+              selectedCapacitacion
+                ? datosSGCDesdeCapacitacion(selectedCapacitacion, {
+                    resumen: selectedResumen,
+                    asistencias: asistenciasVista,
+                  })
+                : null
+            }
+            title="Asistencia a capacitación"
+            description="Documento controlado con el registro de asistencia, evaluación y cobertura de la capacitación."
+            extraActions={
+              <Button
+                className="rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
+                onClick={handleDescargarCertificado}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Descargar certificados
+              </Button>
+            }
+          />
 
-              <div className="space-y-8 py-4">
-                <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha</Label>
-                      <p className="mt-2 text-lg font-medium">
-                        {selectedCapacitacion?.fechaProgramada ? new Date(selectedCapacitacion.fechaProgramada).toLocaleDateString('es-CO', { dateStyle: 'long' }) : 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Instructor</Label>
-                      <p className="mt-2 text-lg font-medium">{selectedCapacitacion?.instructor || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Duración</Label>
-                      <p className="mt-2 text-lg font-medium">
-                        {selectedCapacitacion?.duracionHoras ? `${selectedCapacitacion.duracionHoras} horas` : 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Modalidad</Label>
-                      <p className="mt-2 text-lg font-medium">{selectedCapacitacion?.modalidad}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {selectedResumen && (
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card className="border-[#E5E7EB]">
-                      <CardContent className="p-4">
-                        <p className="text-xs text-[#6B7280]">Participantes</p>
-                        <p className="text-2xl font-bold text-[#1E3A8A]">{selectedResumen.total_participantes}</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-[#E5E7EB]">
-                      <CardContent className="p-4">
-                        <p className="text-xs text-[#6B7280]">Asistencia</p>
-                        <p className="text-2xl font-bold text-[#065F46]">{selectedResumen.porcentaje_asistencia.toFixed(1)}%</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-[#E5E7EB]">
-                      <CardContent className="p-4">
-                        <p className="text-xs text-[#6B7280]">Aprobados</p>
-                        <p className="text-2xl font-bold text-[#9A3412]">{selectedResumen.evaluacion_aprobada}</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-[#E5E7EB]">
-                      <CardContent className="p-4">
-                        <p className="text-xs text-[#6B7280]">% Aprobación</p>
-                        <p className="text-2xl font-bold text-[#7C3AED]">{selectedResumen.porcentaje_aprobacion.toFixed(1)}%</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-              </div>
-
-              <DialogFooter className="gap-4">
-                <Button variant="outline" onClick={() => setOpen(false)} className="rounded-xl">
-                  Cerrar
-                </Button>
-                <Button
-                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-bold"
-                  onClick={handleDescargarCertificado}
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Descargar Certificados
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </div>
       </TooltipProvider>
     </div>

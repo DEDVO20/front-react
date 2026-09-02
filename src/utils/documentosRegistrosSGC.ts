@@ -1,6 +1,12 @@
 import type { AccionCorrectiva } from "@/services/accionCorrectiva.service";
 import type { Auditoria, HallazgoAuditoria } from "@/services/auditoria.service";
+import type {
+  AsistenciaCapacitacion,
+  Capacitacion,
+  ResumenAsistenciaCapacitacion,
+} from "@/services/capacitacion.service";
 import type { NoConformidad } from "@/services/noConformidad.service";
+import type { ObjetivoCalidad, SeguimientoObjetivo } from "@/services/objetivoCalidad.service";
 import type { Riesgo } from "@/services/riesgo.service";
 import {
   formatearFechaSGC,
@@ -273,6 +279,215 @@ export function datosSGCDesdeAuditoria(
     fechaVigencia: auditoria.fechaFin || auditoria.fechaPlanificada,
     elaboradoPor: nombreUsuarioSGC(auditoria.auditorLider, "Sistema"),
     revisadoPor: nombreUsuarioSGC(auditoria.creadoPorUsuario, "Pendiente"),
+    aprobadoPor: "Pendiente",
+  };
+}
+
+export interface ControlRiesgoSGC {
+  id: string;
+  riesgo_id: string;
+  descripcion?: string;
+  tipo_control?: string;
+  frecuencia?: string;
+  efectividad?: string;
+  activo?: boolean;
+  creado_en: string;
+}
+
+export function datosSGCDesdeControlRiesgo(
+  control: ControlRiesgoSGC,
+  riesgo?: { codigo?: string; nombre?: string; descripcion?: string } | null,
+): DocumentoSGCData {
+  const contenidoHtml = [
+    seccionSGC(
+      "Datos del control",
+      tablaCamposSGC([
+        ["Riesgo asociado", riesgo?.codigo || "—"],
+        ["Nombre del riesgo", riesgo?.nombre || "Sin nombre"],
+        ["Tipo de control", control.tipo_control || "—"],
+        ["Frecuencia", control.frecuencia || "—"],
+        ["Efectividad", control.efectividad || "—"],
+        ["Estado", control.activo === false ? "Inactivo" : "Activo"],
+        ["Fecha de registro", formatearFechaSGC(control.creado_en)],
+      ]),
+    ),
+    seccionSGC("Descripción del control", textoAHtmlSGC(control.descripcion, "Sin descripción.")),
+    seccionSGC("Descripción del riesgo", textoAHtmlSGC(riesgo?.descripcion, "Sin descripción del riesgo.")),
+  ].join("");
+
+  return {
+    nombre: control.descripcion?.slice(0, 80) || `Control ${riesgo?.codigo || ""}`.trim(),
+    codigo: riesgo?.codigo || "S/C",
+    version: "1.0",
+    tipoDocumento: "control_riesgo",
+    estado: control.activo === false ? "inactivo" : "activo",
+    contenidoHtml,
+    fechaCreacion: control.creado_en,
+    elaboradoPor: "Sistema",
+    revisadoPor: "Pendiente",
+    aprobadoPor: "Pendiente",
+  };
+}
+
+function seguimientosObjetivoAHtml(seguimientos: SeguimientoObjetivo[] = [], valorMeta?: number): string {
+  if (!seguimientos.length) return textoAHtmlSGC("", "Sin seguimientos registrados.");
+  return tablaCamposSGC(
+    seguimientos.map((seg, index) => {
+      const raw = seg as SeguimientoObjetivo & {
+        valor_actual?: number;
+        fecha_seguimiento?: string;
+        porcentaje_cumplimiento?: number;
+      };
+      const valorActual = raw.valorActual ?? raw.valor_actual;
+      const porcentaje =
+        typeof raw.porcentajeCumplimiento === "number"
+          ? raw.porcentajeCumplimiento
+          : typeof raw.porcentaje_cumplimiento === "number"
+            ? raw.porcentaje_cumplimiento
+            : valorMeta && valorActual != null
+              ? (Number(valorActual) / Number(valorMeta)) * 100
+              : null;
+      return [
+        `Seguimiento ${index + 1} — ${formatearFechaSGC(raw.creadoEn || raw.fecha_seguimiento || raw.periodo)}`,
+        [
+          valorActual != null ? `Valor: ${valorActual}` : null,
+          porcentaje != null && Number.isFinite(porcentaje) ? `Cumplimiento: ${porcentaje.toFixed(1)}%` : null,
+          raw.observaciones || null,
+        ]
+          .filter(Boolean)
+          .join(" · ") || "—",
+      ];
+    }),
+  );
+}
+
+export function datosSGCDesdeObjetivoCalidad(
+  objetivo: ObjetivoCalidad,
+  seguimientos: SeguimientoObjetivo[] = [],
+): DocumentoSGCData {
+  const contenidoHtml = [
+    seccionSGC(
+      "Datos del objetivo",
+      tablaCamposSGC([
+        ["Código", objetivo.codigo || "—"],
+        ["Estado", (objetivo.estado || "—").replace(/_/g, " ")],
+        ["Área", objetivo.area?.nombre || "Sin área asignada"],
+        ["Proceso", objetivo.proceso?.nombre || "—"],
+        ["Responsable", nombreUsuarioSGC(objetivo.responsable, "Sin asignar")],
+        ["Indicador", objetivo.indicador?.nombre || objetivo.indicadorId || "—"],
+        ["Valor meta", objetivo.valorMeta != null ? String(objetivo.valorMeta) : "—"],
+        ["Periodo de inicio", formatearFechaSGC(objetivo.periodoInicio)],
+        ["Periodo de fin", formatearFechaSGC(objetivo.periodoFin)],
+      ]),
+    ),
+    seccionSGC("Descripción", textoAHtmlSGC(objetivo.descripcion, "Sin descripción.")),
+    seccionSGC("Meta", textoAHtmlSGC(objetivo.meta, "Sin meta definida.")),
+    seccionSGC("Seguimientos", seguimientosObjetivoAHtml(seguimientos, objetivo.valorMeta)),
+  ].join("");
+
+  return {
+    nombre: `Objetivo de calidad ${objetivo.codigo || ""}`.trim(),
+    codigo: objetivo.codigo || "S/C",
+    version: "1.0",
+    tipoDocumento: "objetivo_calidad",
+    estado: objetivo.estado,
+    contenidoHtml,
+    fechaCreacion: objetivo.creadoEn,
+    fechaVigencia: objetivo.periodoFin,
+    elaboradoPor: nombreUsuarioSGC(objetivo.responsable, "Sistema"),
+    revisadoPor: "Pendiente",
+    aprobadoPor: "Pendiente",
+  };
+}
+
+function etiquetaEstadoCapacitacion(estado?: string): string {
+  const mapa: Record<string, string> = {
+    programada: "Programada",
+    en_curso: "En curso",
+    completada: "Completada",
+    cancelada: "Cancelada",
+  };
+  return mapa[(estado || "").toLowerCase()] || (estado || "—").replace(/_/g, " ");
+}
+
+function asistenciasCapacitacionAHtml(asistencias: AsistenciaCapacitacion[] = []): string {
+  if (!asistencias.length) return textoAHtmlSGC("", "Sin registros de asistencia.");
+  return tablaCamposSGC(
+    asistencias.map((asistencia) => [
+      nombreUsuarioSGC(asistencia.usuario, "Participante"),
+      [
+        asistencia.asistio ? "Asistió" : "No asistió",
+        asistencia.evaluacionAprobada ? "Evaluación aprobada" : "Evaluación pendiente",
+        asistencia.calificacion != null ? `Calificación: ${asistencia.calificacion}` : null,
+        asistencia.observaciones || null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    ]),
+  );
+}
+
+export function datosSGCDesdeCapacitacion(
+  capacitacion: Capacitacion,
+  extras?: {
+    resumen?: ResumenAsistenciaCapacitacion | null;
+    asistencias?: AsistenciaCapacitacion[];
+  },
+): DocumentoSGCData {
+  const resumen = extras?.resumen;
+  const asistencias = extras?.asistencias || [];
+  const contenidoHtml = [
+    seccionSGC(
+      "Datos de la capacitación",
+      tablaCamposSGC([
+        ["Código", capacitacion.codigo || "—"],
+        ["Nombre", capacitacion.nombre || "—"],
+        ["Tipo", capacitacion.tipoCapacitacion || "—"],
+        ["Modalidad", capacitacion.modalidad || "—"],
+        ["Estado", etiquetaEstadoCapacitacion(capacitacion.estado)],
+        ["Fecha programada", formatearFechaSGC(capacitacion.fechaProgramada)],
+        ["Fecha de inicio", formatearFechaSGC(capacitacion.fechaInicio)],
+        ["Fecha de fin", formatearFechaSGC(capacitacion.fechaFin)],
+        ["Duración", capacitacion.duracionHoras != null ? `${capacitacion.duracionHoras} horas` : "—"],
+        ["Lugar / plataforma", capacitacion.lugar || "—"],
+        ["Instructor", capacitacion.instructor || "—"],
+        ["Cobertura", capacitacion.aplicaTodasAreas ? "Todas las áreas" : "Área específica"],
+        ["Responsable", nombreUsuarioSGC(capacitacion.responsable, "Sin asignar")],
+      ]),
+    ),
+    seccionSGC("Objetivo", textoAHtmlSGC(capacitacion.objetivo, "Sin objetivo.")),
+    seccionSGC("Descripción", textoAHtmlSGC(capacitacion.descripcion, "Sin descripción.")),
+    seccionSGC("Contenido", textoAHtmlSGC(capacitacion.contenido)),
+    ...(resumen
+      ? [
+          seccionSGC(
+            "Resumen de asistencia",
+            tablaCamposSGC([
+              ["Participantes", String(resumen.total_participantes ?? 0)],
+              ["Asistieron", String(resumen.asistieron ?? 0)],
+              ["No asistieron", String(resumen.no_asistieron ?? 0)],
+              ["Porcentaje de asistencia", `${Number(resumen.porcentaje_asistencia || 0).toFixed(1)}%`],
+              ["Evaluados", String(resumen.evaluados ?? 0)],
+              ["Evaluación aprobada", String(resumen.evaluacion_aprobada ?? 0)],
+              ["Porcentaje de aprobación", `${Number(resumen.porcentaje_aprobacion || 0).toFixed(1)}%`],
+            ]),
+          ),
+        ]
+      : []),
+    seccionSGC("Registro de asistencia", asistenciasCapacitacionAHtml(asistencias)),
+  ].join("");
+
+  return {
+    nombre: capacitacion.nombre || `Capacitación ${capacitacion.codigo || ""}`.trim(),
+    codigo: capacitacion.codigo || "S/C",
+    version: "1.0",
+    tipoDocumento: extras?.resumen ? "asistencia_capacitacion" : "capacitacion",
+    estado: capacitacion.estado,
+    contenidoHtml,
+    fechaCreacion: capacitacion.creadoEn,
+    fechaVigencia: capacitacion.fechaProgramada || capacitacion.fechaFin,
+    elaboradoPor: capacitacion.instructor || nombreUsuarioSGC(capacitacion.responsable, "Sistema"),
+    revisadoPor: "Pendiente",
     aprobadoPor: "Pendiente",
   };
 }

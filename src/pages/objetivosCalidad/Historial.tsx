@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  Target, Search, Eye, RefreshCw, CheckCircle, AlertCircle, X, BarChart3, Calendar, Save
+  Target, Search, Eye, RefreshCw, CheckCircle, AlertCircle, X
 } from 'lucide-react';
 import { objetivoCalidadService, ObjetivoCalidad, SeguimientoObjetivo } from '@/services/objetivoCalidad.service';
 import {
@@ -11,16 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle
-} from "@/components/ui/dialog";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger
 } from "@/components/ui/tooltip";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeObjetivoCalidad } from "@/utils/documentosRegistrosSGC";
 
 interface Seguimiento extends SeguimientoObjetivo {}
 
@@ -366,166 +364,20 @@ const HistorialObjetivos: React.FC = () => {
             </div>
           </div>
 
-          {/* Diálogo de Vista Detallada */}
-          <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-            <DialogContent className="max-w-5xl rounded-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                  <BarChart3 className="h-7 w-7 text-[#2563EB]" />
-                  Detalle del Objetivo Histórico
-                </DialogTitle>
-              </DialogHeader>
-
-              {selectedObjetivo && (
-                <div className="space-y-8 py-4">
-                  {/* Información principal */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                    <div>
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Código</Label>
-                      <Badge className="mt-2 text-lg px-6 py-3 bg-[#2563EB]/10 text-[#2563EB] font-bold">
-                        {selectedObjetivo.codigo}
-                      </Badge>
-                    </div>
-                    <div>
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Estado Final</Label>
-                      <Badge className={`mt-2 text-lg px-6 py-3 ${getEstadoBadge(selectedObjetivo.estado || '')}`}>
-                        {selectedObjetivo.estado?.replace('_', ' ')}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {selectedObjetivo.descripcion && (
-                    <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold mb-3 block">Descripción</Label>
-                      <p className="text-[#111827] leading-relaxed">{selectedObjetivo.descripcion}</p>
-                    </div>
-                  )}
-
-                  {selectedObjetivo.meta && (
-                    <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold mb-3 block">Meta</Label>
-                      <p className="text-[#111827] leading-relaxed">{selectedObjetivo.meta}</p>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Área</Label>
-                      <p className="mt-2 text-lg font-medium">{selectedObjetivo.area?.nombre || 'Sin área asignada'}</p>
-                    </div>
-                    <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Valor Meta</Label>
-                      <p className="mt-2 text-lg font-medium">{selectedObjetivo.valorMeta ? `${selectedObjetivo.valorMeta}%` : '-'}</p>
-                    </div>
-                    <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Periodo</Label>
-                      <p className="mt-2 text-lg font-medium flex items-center gap-2">
-                        <Calendar className="h-5 w-5 text-[#6B7280]" />
-                        {selectedObjetivo.periodoInicio ? new Date(selectedObjetivo.periodoInicio).toLocaleDateString('es-CO') : '-'}
-                        {' → '}
-                        {selectedObjetivo.periodoFin ? new Date(selectedObjetivo.periodoFin).toLocaleDateString('es-CO') : '-'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Estadísticas de seguimiento */}
-                  {(() => {
-                    const segs = getSeguimientosObjetivo(selectedObjetivo.id);
-                    if (segs.length === 0) return null;
-                    const valores = segs.map(s => s.porcentajeCumplimiento || 0).filter(v => v > 0);
-                    const promedio = valores.length > 0 ? valores.reduce((a, b) => a + b, 0) / valores.length : 0;
-                    const maximo = valores.length > 0 ? Math.max(...valores) : 0;
-                    const minimo = valores.length > 0 ? Math.min(...valores) : 0;
-
-                    return (
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-[#ECFDF5] p-4 rounded-lg text-center border border-[#D1FAE5]">
-                          <p className="text-2xl font-bold text-[#065F46]">{promedio.toFixed(1)}%</p>
-                          <p className="text-sm text-[#6B7280]">Promedio</p>
-                        </div>
-                        <div className="bg-[#EFF6FF] p-4 rounded-lg text-center border border-[#DBEAFE]">
-                          <p className="text-2xl font-bold text-[#2563EB]">{maximo.toFixed(1)}%</p>
-                          <p className="text-sm text-[#6B7280]">Máximo</p>
-                        </div>
-                        <div className="bg-[#FFF7ED] p-4 rounded-lg text-center border border-[#FBBF24]/20">
-                          <p className="text-2xl font-bold text-[#F97316]">{minimo.toFixed(1)}%</p>
-                          <p className="text-sm text-[#6B7280]">Mínimo</p>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Historial de seguimientos */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-[#1E3A8A] mb-4">
-                      Historial de Seguimientos ({getSeguimientosObjetivo(selectedObjetivo.id).length})
-                    </h3>
-                    {getSeguimientosObjetivo(selectedObjetivo.id).length === 0 ? (
-                      <p className="text-[#6B7280] text-center py-8">No hay seguimientos registrados.</p>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Fecha</TableHead>
-                            <TableHead>Valor Alcanzado</TableHead>
-                            <TableHead>Cumplimiento</TableHead>
-                            <TableHead>Observaciones</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {getSeguimientosObjetivo(selectedObjetivo.id)
-                            .sort((a, b) => {
-                              const da = new Date((a as any).creadoEn || (a as any).fecha_seguimiento || '').getTime();
-                              const db = new Date((b as any).creadoEn || (b as any).fecha_seguimiento || '').getTime();
-                              return da - db;
-                            })
-                            .map((seg) => {
-                              const valorActual = (seg as any).valorActual ?? (seg as any).valor_actual ?? null;
-                              const valorMeta = selectedObjetivo?.valorMeta ?? (selectedObjetivo as any)?.valor_meta ?? null;
-                              const porcentaje = typeof (seg as any).porcentajeCumplimiento === 'number'
-                                ? (seg as any).porcentajeCumplimiento
-                                : (valorMeta && valorActual != null && isFinite(Number(valorActual)))
-                                  ? (Number(valorActual) / Number(valorMeta)) * 100
-                                  : 0;
-                              const porcentajeDisplay = isFinite(Number(porcentaje)) ? Number(porcentaje) : 0;
-
-                              return (
-                                <TableRow key={seg.id}>
-                                  <TableCell>{new Date((seg as any).creadoEn || (seg as any).fecha_seguimiento || '').toLocaleDateString('es-CO')}</TableCell>
-                                  <TableCell>{valorActual ?? '-'}</TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-3">
-                                      <span className={`font-bold ${getCumplimientoColor(porcentajeDisplay)}`}>
-                                        {porcentajeDisplay.toFixed(1)}%
-                                      </span>
-                                      <div className="w-24 bg-[#E5E7EB] rounded-full h-2">
-                                        <div
-                                          className={`h-2 rounded-full transition-all ${porcentajeDisplay >= 90 ? 'bg-[#10B981]' : porcentajeDisplay >= 70 ? 'bg-[#F97316]' : 'bg-[#EF4444]'}`}
-                                          style={{ width: `${Math.min(porcentajeDisplay, 100)}%` }}
-                                        />
-                                      </div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-[#6B7280] max-w-xs">
-                                    {seg.observaciones || <span className="italic">Sin observaciones</span>}
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                        </TableBody>
-                      </Table>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowViewDialog(false)} className="rounded-xl">
-                  Cerrar
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <VistaDocumentoSGCDialog
+            open={showViewDialog}
+            onOpenChange={setShowViewDialog}
+            data={
+              selectedObjetivo
+                ? datosSGCDesdeObjetivoCalidad(
+                    selectedObjetivo,
+                    getSeguimientosObjetivo(selectedObjetivo.id),
+                  )
+                : null
+            }
+            title="Historial de objetivo de calidad"
+            description="Documento controlado con el resultado final y los seguimientos del objetivo."
+          />
 
         </div>
       </TooltipProvider>

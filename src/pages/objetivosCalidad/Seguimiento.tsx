@@ -28,6 +28,8 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeObjetivoCalidad } from "@/utils/documentosRegistrosSGC";
 
 interface Seguimiento extends SeguimientoObjetivo { }
 
@@ -42,6 +44,7 @@ const ObjetivosCalidad: React.FC = () => {
   const [showObjetivoDialog, setShowObjetivoDialog] = useState(false);
   const [objetivoDialogMode, setObjetivoDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [selectedObjetivo, setSelectedObjetivo] = useState<ObjetivoCalidad | null>(null);
+  const [showDocumento, setShowDocumento] = useState(false);
 
   const [showSeguimientoDialog, setShowSeguimientoDialog] = useState(false);
 
@@ -129,9 +132,8 @@ const ObjetivosCalidad: React.FC = () => {
   };
 
   const handleView = (obj: ObjetivoCalidad) => {
-    setObjetivoDialogMode('view');
     setSelectedObjetivo(obj);
-    setShowObjetivoDialog(true);
+    setShowDocumento(true);
   };
 
   const handleAddSeguimiento = (obj: ObjetivoCalidad) => {
@@ -589,6 +591,36 @@ const ObjetivosCalidad: React.FC = () => {
               </Table>
             </div>
           </div>
+
+          <VistaDocumentoSGCDialog
+            open={showDocumento}
+            onOpenChange={setShowDocumento}
+            data={
+              selectedObjetivo
+                ? datosSGCDesdeObjetivoCalidad(
+                    selectedObjetivo,
+                    getSeguimientosObjetivo(selectedObjetivo.id),
+                  )
+                : null
+            }
+            title="Objetivo de calidad"
+            description="Documento controlado con la meta, el periodo y el seguimiento del objetivo."
+            extraActions={
+              selectedObjetivo ? (
+                <Button
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => {
+                    setShowDocumento(false);
+                    handleEdit(selectedObjetivo);
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </Button>
+              ) : null
+            }
+          />
 
           {/* Diálogo Objetivo (create/edit/view) */}
           <Dialog open={showObjetivoDialog} onOpenChange={setShowObjetivoDialog}>

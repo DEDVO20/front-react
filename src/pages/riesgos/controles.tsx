@@ -25,6 +25,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeControlRiesgo } from "@/utils/documentosRegistrosSGC";
 
 import { API_BASE_URL as API_URL } from "@/lib/api";
 
@@ -546,67 +548,17 @@ const ControlesRiesgos: React.FC = () => {
             </DialogContent>
           </Dialog>
 
-          {/* Diálogo Ver Detalles */}
-          <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-            <DialogContent className="max-w-4xl rounded-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                  <Eye className="h-7 w-7 text-[#2563EB]" />
-                  Detalles del Control
-                </DialogTitle>
-              </DialogHeader>
-
-              {selectedControl && (
-                <div className="space-y-8 py-4">
-                  <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Riesgo Asociado</Label>
-                    <div className="mt-2">
-                      <Badge className="text-lg px-6 py-3 bg-[#2563EB]/10 text-[#2563EB] font-bold">
-                        {riesgoMap[selectedControl.riesgo_id]?.codigo || '-'}
-                      </Badge>
-                      <p className="mt-2 text-lg font-semibold text-[#1F2937]">{riesgoMap[selectedControl.riesgo_id]?.nombre || 'Sin nombre'}</p>
-                      <p className="mt-2 text-lg">{riesgoMap[selectedControl.riesgo_id]?.descripcion || 'Sin descripción'}</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                    <Label className="text-[#6B7280] uppercase text-xs font-bold mb-3 block">Descripción del Control</Label>
-                    <p className="text-[#111827] leading-relaxed">{selectedControl.descripcion || 'Sin descripción'}</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Tipo</Label>
-                      <div className="mt-2">{getTipoBadge(selectedControl.tipo_control)}</div>
-                    </div>
-                    <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Frecuencia</Label>
-                      <p className="mt-2 text-lg font-medium">
-                        {selectedControl.frecuencia ? selectedControl.frecuencia.charAt(0).toUpperCase() + selectedControl.frecuencia.slice(1) : 'No definida'}
-                      </p>
-                    </div>
-                    <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Efectividad</Label>
-                      <div className="mt-2">{getEfectividadBadge(selectedControl.efectividad)}</div>
-                    </div>
-                  </div>
-
-                  <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Creado el</Label>
-                    <p className="mt-2 text-lg font-medium">
-                      {new Date(selectedControl.creado_en).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' })}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowViewDialog(false)} className="rounded-xl">
-                  Cerrar
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <VistaDocumentoSGCDialog
+            open={showViewDialog}
+            onOpenChange={setShowViewDialog}
+            data={
+              selectedControl
+                ? datosSGCDesdeControlRiesgo(selectedControl, riesgoMap[selectedControl.riesgo_id])
+                : null
+            }
+            title="Control de riesgo"
+            description="Documento controlado con el detalle del control asociado al riesgo."
+          />
 
         </div>
       </TooltipProvider>

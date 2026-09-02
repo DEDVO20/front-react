@@ -66,6 +66,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { capacitacionService, Capacitacion } from "@/services/capacitacion.service";
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeCapacitacion } from "@/utils/documentosRegistrosSGC";
 import { areaService, Area } from "@/services/area.service";
 import { usuarioService, Usuario } from "@/services/usuario.service";
 import { getCurrentUser } from "@/services/auth";
@@ -96,6 +98,7 @@ export default function CapacitacionesProgramadas() {
   const [showDialog, setShowDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [selectedCap, setSelectedCap] = useState<Capacitacion | null>(null);
+  const [showDocumento, setShowDocumento] = useState(false);
   const [formData, setFormData] = useState<FormDataState>({
     nombre: '',
     codigo: '',
@@ -260,9 +263,8 @@ export default function CapacitacionesProgramadas() {
   };
 
   const handleView = (cap: Capacitacion) => {
-    setDialogMode('view');
     setSelectedCap(cap);
-    setShowDialog(true);
+    setShowDocumento(true);
   };
 
   const usuariosElegibles = usuariosActivos.filter((usuario) => {
@@ -717,6 +719,29 @@ export default function CapacitacionesProgramadas() {
           </div>
 
           {/* Dialog Crear/Editar/Ver */}
+          <VistaDocumentoSGCDialog
+            open={showDocumento}
+            onOpenChange={setShowDocumento}
+            data={selectedCap ? datosSGCDesdeCapacitacion(selectedCap) : null}
+            title="Capacitación programada"
+            description="Documento controlado con la programación, cobertura e instructor de la capacitación."
+            extraActions={
+              selectedCap && canGestionCapacitaciones ? (
+                <Button
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => {
+                    setShowDocumento(false);
+                    handleEdit(selectedCap);
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </Button>
+              ) : null
+            }
+          />
+
           <Dialog open={showDialog} onOpenChange={setShowDialog}>
             <DialogContent className="max-w-4xl rounded-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>

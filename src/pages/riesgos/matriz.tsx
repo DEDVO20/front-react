@@ -26,6 +26,9 @@ import {
 } from "@/components/ui/table";
 import { apiClient } from "@/lib/api";
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeRiesgo } from "@/utils/documentosRegistrosSGC";
+import type { Riesgo as RiesgoSGC } from "@/services/riesgo.service";
 
 interface Riesgo {
   id: string;
@@ -727,89 +730,22 @@ const MatrizRiesgos: React.FC = () => {
             </DialogContent>
           </Dialog>
 
-          {/* Diálogo Ver Detalles */}
-          <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-            <DialogContent className="max-w-4xl rounded-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-3">
-                  <Eye className="h-7 w-7 text-[#2563EB]" />
-                  Detalles del Riesgo
-                </DialogTitle>
-              </DialogHeader>
-
-              {selectedRiesgo && (
-                <div className="space-y-8 py-4">
-                  <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB] flex items-center justify-between">
-                    <div>
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Código</Label>
-                      <Badge className="mt-2 text-2xl px-6 py-3 bg-[#2563EB]/10 text-[#2563EB] font-bold">
-                        {selectedRiesgo.codigo}
-                      </Badge>
-                      <p className="mt-2 text-lg font-semibold text-[#1F2937]">
-                        {selectedRiesgo.nombre || 'Sin nombre'}
-                      </p>
-                    </div>
-                    <Badge className={`text-xl px-6 py-3 ${getNivelColor(selectedRiesgo.nivel_riesgo)}`}>
-                      {getNivelLabel(selectedRiesgo.nivel_riesgo)}
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold mb-3 block">Proceso</Label>
-                      <p className="text-xl font-medium">{selectedRiesgo.proceso_id ? procesoMap[selectedRiesgo.proceso_id]?.nombre || 'Sin proceso' : 'Sin proceso'}</p>
-                    </div>
-                    <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold mb-3 block">Tipo</Label>
-                      <p className="text-xl font-medium capitalize">{selectedRiesgo.tipo_riesgo || 'No definido'}</p>
-                    </div>
-                  </div>
-
-                  {selectedRiesgo.descripcion && (
-                    <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold mb-3 block">Descripción</Label>
-                      <p className="text-[#111827] leading-relaxed">{selectedRiesgo.descripcion}</p>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-3 gap-6">
-                    <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Probabilidad</Label>
-                      <p className="mt-2 text-3xl font-bold text-[#1E3A8A]">{selectedRiesgo.probabilidad || '-'}</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Impacto</Label>
-                      <p className="mt-2 text-3xl font-bold text-[#1E3A8A]">{selectedRiesgo.impacto || '-'}</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold">Nivel de Riesgo</Label>
-                      <p className="mt-2 text-3xl font-bold text-[#1E3A8A]">{selectedRiesgo.nivel_riesgo || '-'}</p>
-                    </div>
-                  </div>
-
-                  {selectedRiesgo.tratamiento && (
-                    <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                      <Label className="text-[#6B7280] uppercase text-xs font-bold mb-3 block">Tratamiento / Mitigación</Label>
-                      <p className="text-[#111827] leading-relaxed">{selectedRiesgo.tratamiento}</p>
-                    </div>
-                  )}
-
-                  <div className="bg-[#F8FAFC] rounded-xl p-6 border border-[#E5E7EB]">
-                    <Label className="text-[#6B7280] uppercase text-xs font-bold">Fecha de Identificación</Label>
-                    <p className="mt-2 text-lg font-medium">
-                      {selectedRiesgo.fecha_identificacion ? new Date(selectedRiesgo.fecha_identificacion).toLocaleDateString('es-CO') : 'No registrada'}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowViewDialog(false)} className="rounded-xl">
-                  Cerrar
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <VistaDocumentoSGCDialog
+            open={showViewDialog}
+            onOpenChange={setShowViewDialog}
+            data={
+              selectedRiesgo
+                ? datosSGCDesdeRiesgo({
+                    ...selectedRiesgo,
+                    proceso: selectedRiesgo.proceso_id
+                      ? procesoMap[selectedRiesgo.proceso_id]
+                      : undefined,
+                  } as RiesgoSGC)
+                : null
+            }
+            title="Riesgo"
+            description="Documento controlado con la identificación, valoración y tratamiento del riesgo."
+          />
 
         </div>
       </TooltipProvider>

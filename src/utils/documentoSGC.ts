@@ -55,6 +55,10 @@ const TIPOS: Record<string, string> = {
   tratamiento_riesgo: "TRATAMIENTO DE RIESGO",
   no_conformidad: "NO CONFORMIDAD",
   auditoria: "AUDITORÍA",
+  control_riesgo: "CONTROL DE RIESGO",
+  objetivo_calidad: "OBJETIVO DE CALIDAD",
+  capacitacion: "CAPACITACIÓN",
+  asistencia_capacitacion: "ASISTENCIA A CAPACITACIÓN",
 };
 
 export function etiquetaTipoDocumento(tipo?: string): string {
@@ -82,6 +86,14 @@ const ESTADOS: Record<string, string> = {
   planificada: "planificada",
   en_curso: "en curso",
   completada: "completada",
+  cancelada: "cancelada",
+  programada: "programada",
+  cumplido: "cumplido",
+  no_cumplido: "no cumplido",
+  cancelado: "cancelado",
+  planificado: "planificado",
+  activo: "activo",
+  inactivo: "inactivo",
 };
 
 export function etiquetaEstadoDocumento(estado?: string): string {

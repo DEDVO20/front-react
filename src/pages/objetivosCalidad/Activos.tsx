@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer, Legend } from 'recharts';
 import { SeguimientoObjetivo } from '@/services/objetivoCalidad.service';
+import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
+import { datosSGCDesdeObjetivoCalidad } from "@/utils/documentosRegistrosSGC";
 
 const ObjetivosActivos: React.FC = () => {
   const [objetivos, setObjetivos] = useState<ObjetivoCalidad[]>([]);
@@ -25,6 +27,7 @@ const ObjetivosActivos: React.FC = () => {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [modalTipo, setModalTipo] = useState<'crear' | 'editar' | 'ver'>('crear');
   const [objetivoSeleccionado, setObjetivoSeleccionado] = useState<ObjetivoCalidad | null>(null);
+  const [showDocumento, setShowDocumento] = useState(false);
 
   const [areas, setAreas] = useState<Area[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -118,6 +121,11 @@ const ObjetivosActivos: React.FC = () => {
 
   // Handlers
   const abrirModal = (tipo: 'crear' | 'editar' | 'ver', objetivo?: ObjetivoCalidad) => {
+    if (tipo === 'ver' && objetivo) {
+      setObjetivoSeleccionado(objetivo);
+      setShowDocumento(true);
+      return;
+    }
     setModalTipo(tipo);
     // Helper: convert datetime string to YYYY-MM-DD for date inputs
     const toDateInput = (val?: string) => {
@@ -607,6 +615,36 @@ const ObjetivosActivos: React.FC = () => {
               })
             )}
           </div>
+
+          <VistaDocumentoSGCDialog
+            open={showDocumento}
+            onOpenChange={setShowDocumento}
+            data={
+              objetivoSeleccionado
+                ? datosSGCDesdeObjetivoCalidad(
+                    objetivoSeleccionado,
+                    seguimientosMap[objetivoSeleccionado.id] || [],
+                  )
+                : null
+            }
+            title="Objetivo de calidad"
+            description="Documento controlado con la meta, el periodo y el seguimiento del objetivo."
+            extraActions={
+              objetivoSeleccionado ? (
+                <Button
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => {
+                    setShowDocumento(false);
+                    abrirModal("editar", objetivoSeleccionado);
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </Button>
+              ) : null
+            }
+          />
 
           {/* Modal */}
           {modalAbierto && (
