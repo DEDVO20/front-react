@@ -11,10 +11,11 @@ import {
   Clock,
   XCircle,
   AlertCircle,
+  List,
   Layers,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { matchesTextSearch, SEARCH_ANY_PLACEHOLDER } from "@/utils/textSearch";
+import { matchesTextSearch } from "@/utils/textSearch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -246,6 +247,15 @@ export default function ListadoProcesos() {
                 )}
               </div>
             </div>
+            <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              className="rounded-xl bg-white"
+              onClick={() => navigate("/procesos")}
+            >
+              <List className="h-4 w-4 mr-2" />
+              Ver mapa
+            </Button>
             {canManageProcesos && (
             <Button
               onClick={() => navigate("/procesos/nuevo")}
@@ -255,6 +265,7 @@ export default function ListadoProcesos() {
               Nuevo Proceso
             </Button>
             )}
+            </div>
           </div>
         </div>
 
@@ -322,11 +333,11 @@ export default function ListadoProcesos() {
         </div>
 
         {/* Buscador */}
-        <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
-          <div className="relative max-w-md">
+        <div className="bg-white p-4 md:p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
             <Input
-              placeholder={SEARCH_ANY_PLACEHOLDER}
+              placeholder="Buscar por código, nombre, área o responsable"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 py-6 rounded-xl border-[#E5E7EB]"
@@ -356,6 +367,7 @@ export default function ListadoProcesos() {
                   <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Código</TableHead>
                   <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Nombre del Proceso</TableHead>
                   <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Tipo</TableHead>
+                  <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">PHVA</TableHead>
                   <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Área Responsable</TableHead>
                   <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Líder del Proceso</TableHead>
                   <TableHead className="px-6 py-4 font-bold text-[#1E3A8A]">Estado</TableHead>
@@ -365,7 +377,7 @@ export default function ListadoProcesos() {
               <TableBody>
                 {filteredProcesos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-20 text-[#6B7280]">
+                    <TableCell colSpan={8} className="text-center py-20 text-[#6B7280]">
                       <div className="flex flex-col items-center gap-3">
                         <Layers className="h-12 w-12 text-[#D1D5DB]" />
                         <p className="font-medium">No se encontraron procesos</p>
@@ -398,6 +410,9 @@ export default function ListadoProcesos() {
                       </TableCell>
                       <TableCell className="px-6 py-4">
                         {getTipoBadge(proceso.tipo_proceso)}
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
+                        {getEtapaPHVABadge(proceso.etapa_phva)}
                       </TableCell>
                       <TableCell className="px-6 py-4">
                         <span className="text-[#374151]">
