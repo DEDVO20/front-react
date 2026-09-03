@@ -31,12 +31,16 @@ export function DocumentoSGCPaper({ data, marca, className = "" }: DocumentoSGCP
 
   return (
     <div className={`w-full max-w-full break-words bg-white px-3 py-4 text-black sm:px-8 sm:py-8 ${className}`}>
-      <div className="mb-5 sm:mb-7">
+      <div className="mb-5 flex items-center justify-between gap-4 border-b-2 border-[#1E3A8A] pb-3 sm:mb-7">
         <img
           src={logoUrl}
           alt={marca.titulo}
           className="max-h-[56px] max-w-[min(100%,160px)] object-contain object-left sm:max-h-[78px] sm:max-w-[220px]"
         />
+        <div className="hidden text-right sm:block">
+          <div className="text-[13px] font-bold uppercase tracking-wide text-[#1E3A8A]">{marca.titulo}</div>
+          <div className="text-[10px] text-[#4B5563]">{marca.subtitulo}</div>
+        </div>
       </div>
 
       <h1 className="mb-4 break-words text-center text-base font-bold uppercase tracking-[1px] text-black sm:mb-6 sm:text-[22px] sm:tracking-[1.5px]">

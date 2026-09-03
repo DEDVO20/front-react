@@ -164,7 +164,7 @@ export default function DetalleProceso() {
         try {
             setExporting(true);
             await exportarDocumentoSGC(datosSGCDesdeProceso(proceso), marca);
-            toast.success("Seleccione Imprimir o Guardar como PDF en el cuadro de impresión");
+            toast.success("Documento PDF descargado");
         } catch (error) {
             console.error("Error al exportar PDF:", error);
             toast.error(

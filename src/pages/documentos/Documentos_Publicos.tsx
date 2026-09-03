@@ -340,7 +340,7 @@ export default function DocumentosPublicos() {
       await exportarDocumentoSGC(
         datosSGCDesdeDocumentoPublico(completo, solicitudesDeDocumento(completo, tickets), areaNombrePorId),
       );
-      toast.success("Seleccione Imprimir o Guardar como PDF en el cuadro de impresión");
+      toast.success("Documento PDF descargado");
     } catch (error) {
       console.error("Error al imprimir documento:", error);
       toast.error("No se pudo abrir la impresión del documento");

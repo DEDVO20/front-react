@@ -1,3 +1,4 @@
+import { jsPDF } from "jspdf";
 import { configuracionService } from "@/services/configuracion.service";
 
 export interface MarcaSGC {
@@ -173,12 +174,49 @@ function escapeHtml(texto: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function limpiarVineta(linea: string): string {
+  return linea.replace(/^\s*(?:[-•●▪◦*]|\d+[.)])\s+/, "").trim();
+}
+
+function esEtiquetaSeccion(linea: string): boolean {
+  return /^.{2,48}:$/.test(linea.trim());
+}
+
+function listaOParrafoHtml(lineas: string[]): string {
+  if (lineas.length === 1) return `<p>${escapeHtml(lineas[0])}</p>`;
+  return `<ul>${lineas.map((linea) => `<li>${escapeHtml(limpiarVineta(linea))}</li>`).join("")}</ul>`;
+}
+
 export function textoAHtmlSGC(texto?: string | null, vacio = "No registrado."): string {
   if (!texto?.trim()) return `<p class="sgc-empty">${escapeHtml(vacio)}</p>`;
   if (esContenidoHtml(texto)) return texto;
-  return texto
-    .split(/\n{2,}/)
-    .map((parrafo) => `<p>${escapeHtml(parrafo.trim()).replace(/\n/g, "<br/>")}</p>`)
+
+  const bloques = texto.replace(/\r\n/g, "\n").trim().split(/\n{2,}/);
+  return bloques
+    .map((bloque) => {
+      const lineas = bloque.split("\n").map((linea) => linea.trim()).filter(Boolean);
+      if (lineas.length <= 1) {
+        return lineas[0] ? `<p>${escapeHtml(lineas[0])}</p>` : "";
+      }
+
+      const partes: string[] = [];
+      let items: string[] = [];
+      const vaciar = () => {
+        if (items.length) partes.push(listaOParrafoHtml(items));
+        items = [];
+      };
+
+      for (const linea of lineas) {
+        if (esEtiquetaSeccion(linea)) {
+          vaciar();
+          partes.push(`<h3>${escapeHtml(linea.replace(/:$/, ""))}</h3>`);
+        } else {
+          items.push(linea);
+        }
+      }
+      vaciar();
+      return partes.join("");
+    })
     .join("");
 }
 
@@ -253,28 +291,33 @@ export async function cargarMarcaSGC(): Promise<MarcaSGC> {
 
 export function estilosDocumentoSGC(): string {
   return `
-    @page { size: letter; margin: 16mm 18mm 18mm 18mm; }
+    @page { size: letter; margin: 16mm 16mm 18mm 16mm; }
     * { box-sizing: border-box; }
-    body {
+    html, body {
       margin: 0;
       padding: 0;
       font-family: Arial, Helvetica, sans-serif;
       color: #111;
       background: #fff;
     }
-    .sgc-sheet { width: 100%; border-collapse: collapse; }
-    .sgc-sheet > thead > tr > td,
-    .sgc-sheet > tbody > tr > td,
-    .sgc-sheet > tfoot > tr > td {
-      border: none;
-      padding: 0;
-    }
+    .sgc-doc { width: 100%; }
     .sgc-letterhead {
-      display: flex;
-      align-items: flex-start;
-      gap: 16px;
-      margin-bottom: 28px;
+      width: 100%;
+      border-bottom: 2px solid #1E3A8A;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+      border-collapse: collapse;
     }
+    .sgc-letterhead td { border: none; padding: 0; vertical-align: middle; }
+    .sgc-brand { text-align: right; }
+    .sgc-brand-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1E3A8A;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .sgc-brand-sub { font-size: 10px; color: #4B5563; margin-top: 2px; }
     .sgc-logo img {
       max-width: 220px;
       max-height: 78px;
@@ -432,10 +475,9 @@ export function estilosDocumentoSGC(): string {
       margin: 2px 0 4px;
     }
     .sgc-empty { color: #666; font-style: italic; text-align: left; }
-    @media print {
-      thead { display: table-header-group; }
-      tfoot { display: table-footer-group; }
-    }
+    .sgc-grid, .sgc-signs, .sgc-note { break-inside: avoid; page-break-inside: avoid; }
+    .sgc-content h2, .sgc-content h3 { break-after: avoid; page-break-after: avoid; }
+    .sgc-signs { margin-top: 28px; }
   `;
 }
 
@@ -463,9 +505,15 @@ export function parrafoIntroSGC(data: DocumentoSGCData, marca: MarcaSGC): string
 
 function encabezadoHtml(data: DocumentoSGCData, marca: MarcaSGC): string {
   return `
-    <div class="sgc-letterhead">
-      <div class="sgc-logo">${logoHtml(marca)}</div>
-    </div>
+    <table class="sgc-letterhead">
+      <tr>
+        <td class="sgc-logo">${logoHtml(marca)}</td>
+        <td class="sgc-brand">
+          <div class="sgc-brand-title">${escapeHtml(marca.titulo)}</div>
+          <div class="sgc-brand-sub">${escapeHtml(marca.subtitulo)}</div>
+        </td>
+      </tr>
+    </table>
     <h1 class="sgc-title">${escapeHtml(data.nombre || etiquetaTipoDocumento(data.tipoDocumento))}</h1>
   `;
 }
@@ -580,32 +628,49 @@ export function generarHtmlDocumentoSGC(data: DocumentoSGCData, marca: MarcaSGC)
     <style>${estilosDocumentoSGC()}</style>
   </head>
   <body>
-    <table class="sgc-sheet">
-      <thead>
-        <tr>
-          <td>${encabezadoHtml(data, marca)}</td>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>
-            <p class="sgc-intro">${intro}</p>
-            ${identificacionHtml(data)}
-            <div class="sgc-content">
-              ${contenido}
-              ${controlCambiosHtml(data.versiones)}
-            </div>
-          </td>
-        </tr>
-      </tbody>
-      <tfoot>
-        <tr>
-          <td>${pieHtml(data)}</td>
-        </tr>
-      </tfoot>
-    </table>
+    <div class="sgc-doc">
+      ${encabezadoHtml(data, marca)}
+      <p class="sgc-intro">${intro}</p>
+      ${identificacionHtml(data)}
+      <div class="sgc-content">
+        ${contenido}
+        ${controlCambiosHtml(data.versiones)}
+      </div>
+      ${pieHtml(data)}
+    </div>
   </body>
 </html>`;
+}
+
+function esperarImagenes(doc: Document): Promise<void[]> {
+  return Promise.all(
+    Array.from(doc.images).map((img) =>
+      img.complete
+        ? Promise.resolve()
+        : new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          }),
+    ),
+  );
+}
+
+function nombreArchivoSGC(data: DocumentoSGCData): string {
+  const crudo = `${data.codigo || "documento"} — ${data.nombre || "SGC"}`.replace(/[\\/:*?"<>|]/g, "-");
+  return `${crudo}.pdf`;
+}
+
+async function imprimirHtmlSGC(html: string): Promise<void> {
+  const printWindow = window.open("", "_blank", "height=900,width=900");
+  if (!printWindow) {
+    throw new Error("El navegador bloqueó la ventana de impresión");
+  }
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+  await esperarImagenes(printWindow.document);
+  printWindow.focus();
+  printWindow.print();
 }
 
 export async function exportarDocumentoSGC(
@@ -614,30 +679,67 @@ export async function exportarDocumentoSGC(
 ): Promise<void> {
   const branding = marca || (await cargarMarcaSGC());
   const html = generarHtmlDocumentoSGC(data, branding);
-  const printWindow = window.open("", "_blank", "height=900,width=900");
-  if (!printWindow) {
-    throw new Error("El navegador bloqueó la ventana de impresión");
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  Object.assign(iframe.style, {
+    position: "fixed",
+    left: "-10000px",
+    top: "0",
+    width: "816px",
+    height: "1056px",
+    border: "0",
+  });
+  document.body.appendChild(iframe);
+
+  try {
+    const iframeDoc = iframe.contentDocument;
+    if (!iframeDoc) throw new Error("No se pudo preparar el documento");
+    iframeDoc.open();
+    iframeDoc.write(html);
+    iframeDoc.close();
+    await esperarImagenes(iframeDoc);
+    iframe.style.height = `${Math.max(iframeDoc.documentElement.scrollHeight, 1056)}px`;
+    await new Promise((resolve) => window.setTimeout(resolve, 200));
+
+    const pdf = new jsPDF({ unit: "pt", format: "letter", orientation: "portrait", compress: true });
+    await pdf.html(iframeDoc.body, {
+      autoPaging: "text",
+      width: 532,
+      windowWidth: 816,
+      x: 0,
+      y: 0,
+      margin: [28, 36, 48, 36],
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      },
+    });
+
+    const total = pdf.getNumberOfPages();
+    for (let i = 1; i <= total; i += 1) {
+      pdf.setPage(i);
+      const ancho = pdf.internal.pageSize.getWidth();
+      const alto = pdf.internal.pageSize.getHeight();
+      pdf.setDrawColor(180);
+      pdf.line(36, alto - 32, ancho - 36, alto - 32);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8);
+      pdf.setTextColor(90);
+      pdf.text(
+        `${data.codigo || "S/C"}  ·  Ver. ${data.version || "1.0"}  ·  Documento controlado SGC`,
+        36,
+        alto - 18,
+      );
+      pdf.text(`${i} / ${total}`, ancho - 36, alto - 18, { align: "right" });
+    }
+
+    pdf.save(nombreArchivoSGC(data));
+  } catch (error) {
+    console.error("No se pudo generar el PDF institucional, se abre impresión", error);
+    await imprimirHtmlSGC(html);
+  } finally {
+    iframe.remove();
   }
-
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
-
-  const waitForAssets = () => {
-    const images = Array.from(printWindow.document.images);
-    return Promise.all(
-      images.map((img) =>
-        img.complete
-          ? Promise.resolve()
-          : new Promise<void>((resolve) => {
-              img.onload = () => resolve();
-              img.onerror = () => resolve();
-            }),
-      ),
-    );
-  };
-
-  await waitForAssets();
-  printWindow.focus();
-  printWindow.print();
 }

@@ -218,7 +218,7 @@ export default function SolucionarAccionCorrectiva() {
                                     try {
                                         setExporting(true);
                                         await exportarDocumentoSGC(datosSGCDesdeAccionCorrectiva(accion), marca);
-                                        toast.success("Seleccione Imprimir o Guardar como PDF en el cuadro de impresión");
+                                        toast.success("Documento PDF descargado");
                                     } catch {
                                         toast.error("No se pudo abrir la impresión");
                                     } finally {
