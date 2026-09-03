@@ -20,6 +20,16 @@ export function DocumentoSGCPaper({ data, marca, className = "" }: DocumentoSGCP
   );
   const logoUrl = marca.logoUrl || logoSGCPorDefecto();
   const intro = parrafoIntroSGC(data, marca);
+  const versionesControl =
+    data.versiones && data.versiones.length > 0
+      ? data.versiones
+      : [
+          {
+            version: data.version || "1.0",
+            descripcion_cambios: "Versión vigente del documento controlado",
+            creado_en: data.fechaElaboracion || data.fechaCreacion,
+          },
+        ];
 
   const camposIdentificacion: Array<[string, string]> = [
     ["Código", data.codigo || "—"],
@@ -120,8 +130,7 @@ export function DocumentoSGCPaper({ data, marca, className = "" }: DocumentoSGCP
         <p className="italic text-neutral-500">Este documento no tiene contenido.</p>
       )}
 
-      {data.versiones && data.versiones.length > 0 && (
-        <div className="mt-6">
+      <div className="mt-6">
           <h2 className="mb-2 text-[12px] font-bold uppercase tracking-wide">Control de cambios</h2>
           <div className="overflow-x-auto">
           <table className="w-full min-w-[360px] border-collapse text-[10px] sm:min-w-0 sm:text-[11px]">
@@ -139,7 +148,7 @@ export function DocumentoSGCPaper({ data, marca, className = "" }: DocumentoSGCP
               </tr>
             </thead>
             <tbody>
-              {data.versiones.map((version, index) => (
+              {versionesControl.map((version, index) => (
                 <tr key={`${version.version}-${index}`}>
                   <td className="border border-black px-2 py-1.5 text-center">
                     {version.version || "—"}
@@ -156,7 +165,6 @@ export function DocumentoSGCPaper({ data, marca, className = "" }: DocumentoSGCP
           </table>
           </div>
         </div>
-      )}
 
       <p className="mt-6 text-justify text-[11px] leading-relaxed">
         El presente documento se emite sin enmendaduras ni tachones. La versión vigente es la

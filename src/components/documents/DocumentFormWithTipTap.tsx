@@ -9,8 +9,8 @@ import { Save, Eye, FileText, Upload as UploadIcon, Edit, AlertCircle } from "lu
 import { BotonesImpresionDocumentoSGC } from "@/components/documents/BotonesImpresionDocumentoSGC";
 import {
   cargarMarcaSGC,
+  datosSGCDesdeDocumento,
   exportarDocumentoSGC,
-  nombreUsuarioSGC,
   type MarcaSGC,
 } from "@/utils/documentoSGC";
 import { CampoCodigoAutomatico, useCodigoAutomatico } from "@/components/forms/CampoCodigoAutomatico";
@@ -244,31 +244,25 @@ export const DocumentFormWithTipTap = ({
     }
   };
 
-  const nombrePorId = (id?: string, fallback = "Pendiente") => {
-    if (!id) return fallback;
-    const usuario = usuarios.find((item) => item.id === id);
-    return usuario ? nombreUsuarioSGC(usuario, fallback) : fallback;
-  };
+  const datosVistaSGC = () =>
+    datosSGCDesdeDocumento({
+      nombre: formData.nombreArchivo || "Documento sin título",
+      codigo: formData.codigoDocumento,
+      version_actual: formData.version,
+      tipo_documento: formData.tipoDocumento,
+      estado: formData.estado,
+      descripcion: content,
+      creado_en: new Date().toISOString(),
+      fecha_vigencia: formData.proximaRevision || undefined,
+      creador: usuarios.find((item) => item.id === formData.subidoPor),
+      revisor: usuarios.find((item) => item.id === formData.revisadoPor),
+      aprobador: usuarios.find((item) => item.id === formData.aprobadoPor),
+    });
 
   const handleExportPDF = async () => {
     try {
       setExporting(true);
-      await exportarDocumentoSGC(
-        {
-          nombre: formData.nombreArchivo || "Documento sin título",
-          codigo: formData.codigoDocumento,
-          version: formData.version,
-          tipoDocumento: formData.tipoDocumento,
-          estado: formData.estado,
-          contenidoHtml: content,
-          fechaCreacion: new Date().toISOString(),
-          fechaVigencia: formData.proximaRevision || undefined,
-          elaboradoPor: nombrePorId(formData.subidoPor, "Sistema"),
-          revisadoPor: nombrePorId(formData.revisadoPor),
-          aprobadoPor: nombrePorId(formData.aprobadoPor),
-        },
-        marca,
-      );
+      await exportarDocumentoSGC(datosVistaSGC(), marca);
       toast.success("Documento PDF descargado");
     } catch (error) {
       console.error("Error al exportar PDF:", error);
@@ -632,19 +626,7 @@ export const DocumentFormWithTipTap = ({
                 <div className="mx-auto w-full max-w-[816px]">
                   <DocumentoSGCPaper
                     marca={marca}
-                    data={{
-                      nombre: formData.nombreArchivo || "Documento sin título",
-                      codigo: formData.codigoDocumento,
-                      version: formData.version,
-                      tipoDocumento: formData.tipoDocumento,
-                      estado: formData.estado,
-                      contenidoHtml: content,
-                      fechaCreacion: new Date().toISOString(),
-                      fechaVigencia: formData.proximaRevision || undefined,
-                      elaboradoPor: nombrePorId(formData.subidoPor, "Sistema"),
-                      revisadoPor: nombrePorId(formData.revisadoPor),
-                      aprobadoPor: nombrePorId(formData.aprobadoPor),
-                    }}
+                    data={datosVistaSGC()}
                   />
                 </div>
               </div>

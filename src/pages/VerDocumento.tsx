@@ -24,6 +24,7 @@ import { BotonesImpresionDocumentoSGC } from "@/components/documents/BotonesImpr
 import { hasAnyPermission } from "@/lib/permissions";
 import {
   cargarMarcaSGC,
+  datosSGCDesdeDocumento,
   exportarDocumentoSGC,
   type DocumentoSGCData,
   type MarcaSGC,
@@ -107,20 +108,10 @@ export default function VerDocumento() {
 
   const construirDatosSGC = (): DocumentoSGCData | null => {
     if (!documento) return null;
-    return {
-      nombre: documento.nombre,
-      codigo: documento.codigo,
-      version: documento.version_actual,
-      tipoDocumento: documento.tipo_documento,
-      estado: documento.estado,
-      contenidoHtml: documento.descripcion,
-      fechaCreacion: documento.creado_en,
-      fechaAprobacion: documento.estado === "aprobado" ? documento.actualizado_en : undefined,
-      elaboradoPor: getNombreCompleto(documento.creador, "Sistema"),
-      revisadoPor: getNombreCompleto(documento.revisor, "Pendiente"),
-      aprobadoPor: getNombreCompleto(documento.aprobador, "Pendiente"),
+    return datosSGCDesdeDocumento({
+      ...documento,
       versiones,
-    };
+    });
   };
 
   const handleExportPDF = async () => {

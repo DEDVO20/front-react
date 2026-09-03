@@ -106,7 +106,7 @@ function firmasDesdePasos(elaboracion: PasoTrazabilidad, revision: PasoTrazabili
 
 function seccionTrazabilidadSGC(pasos: PasoTrazabilidad[]): string {
   return seccionSGC(
-    "Trazabilidad del proceso",
+    "Trazabilidad",
     tablaCamposSGC(
       pasos.map((paso) => [
         paso.etapa,

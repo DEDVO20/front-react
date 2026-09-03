@@ -238,6 +238,10 @@ export function seccionSGC(titulo: string, html: string): string {
   return `<h2>${escapeHtml(titulo)}</h2>${html}`;
 }
 
+export function htmlTrazabilidadSGC(filas: Array<[string, string]>): string {
+  return seccionSGC("Trazabilidad", tablaCamposSGC(filas));
+}
+
 export function datosSGCDesdeDocumento(doc: {
   nombre: string;
   codigo: string;
@@ -254,19 +258,49 @@ export function datosSGCDesdeDocumento(doc: {
   aprobador?: UsuarioSGC | null;
   versiones?: VersionSGC[];
 }): DocumentoSGCData {
+  const elaboradoPor = nombreUsuarioSGC(doc.creador, "Sistema");
+  const revisadoPor = nombreUsuarioSGC(doc.revisor, "Pendiente");
+  const aprobadoPor = nombreUsuarioSGC(doc.aprobador, "Pendiente");
+  const estado = (doc.estado || "borrador").toLowerCase();
+  const revisado = Boolean(doc.revisor);
+  const aprobado = Boolean(doc.aprobador) || estado === "aprobado";
+
+  const trazabilidad = htmlTrazabilidadSGC([
+    [
+      "Elaboración",
+      ["Completada", elaboradoPor, formatearFechaSGC(doc.creado_en)].filter((parte) => parte && parte !== "—").join(" · "),
+    ],
+    [
+      "Revisión",
+      revisado
+        ? ["Completada", revisadoPor, formatearFechaSGC(doc.actualizado_en)].filter((parte) => parte && parte !== "—").join(" · ")
+        : "Pendiente",
+    ],
+    [
+      "Aprobación",
+      aprobado
+        ? ["Completada", aprobadoPor, formatearFechaSGC(doc.fecha_aprobacion || doc.actualizado_en)]
+            .filter((parte) => parte && parte !== "—")
+            .join(" · ")
+        : "Pendiente",
+    ],
+  ]);
+
   return {
     nombre: doc.nombre,
     codigo: doc.codigo,
     version: doc.version_actual || "1.0",
     tipoDocumento: doc.tipo_documento,
     estado: doc.estado,
-    contenidoHtml: doc.descripcion,
+    contenidoHtml: `${doc.descripcion || ""}${trazabilidad}`,
     fechaCreacion: doc.creado_en,
-    fechaAprobacion: doc.fecha_aprobacion || (doc.estado === "aprobado" ? doc.actualizado_en : undefined),
+    fechaElaboracion: doc.creado_en,
+    fechaRevision: revisado ? doc.actualizado_en : undefined,
+    fechaAprobacion: doc.fecha_aprobacion || (aprobado ? doc.actualizado_en : undefined),
     fechaVigencia: doc.fecha_vigencia,
-    elaboradoPor: nombreUsuarioSGC(doc.creador, "Sistema"),
-    revisadoPor: nombreUsuarioSGC(doc.revisor, "Pendiente"),
-    aprobadoPor: nombreUsuarioSGC(doc.aprobador, "Pendiente"),
+    elaboradoPor,
+    revisadoPor,
+    aprobadoPor,
     versiones: doc.versiones,
   };
 }
@@ -586,8 +620,17 @@ function pieHtml(data: DocumentoSGCData): string {
   `;
 }
 
-function controlCambiosHtml(versiones?: VersionSGC[]): string {
-  if (!versiones?.length) return "";
+function controlCambiosHtml(data: DocumentoSGCData): string {
+  const versiones =
+    data.versiones && data.versiones.length > 0
+      ? data.versiones
+      : [
+          {
+            version: data.version || "1.0",
+            descripcion_cambios: "Versión vigente del documento controlado",
+            creado_en: data.fechaElaboracion || data.fechaCreacion,
+          },
+        ];
   const filas = versiones
     .map(
       (v) => `
@@ -634,7 +677,7 @@ export function generarHtmlDocumentoSGC(data: DocumentoSGCData, marca: MarcaSGC)
       ${identificacionHtml(data)}
       <div class="sgc-content">
         ${contenido}
-        ${controlCambiosHtml(data.versiones)}
+        ${controlCambiosHtml(data)}
       </div>
       ${pieHtml(data)}
     </div>
