@@ -20,7 +20,6 @@ import {
   ArrowUpRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 import DashboardPHVA from "@/components/dashboard/DashboardPHVA";
@@ -34,9 +33,6 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { GlobalSearch } from "@/components/GlobalSearch";
 
 interface GlobalStats {
   docsPendientes: number;
@@ -396,7 +392,6 @@ export default function Dashboard() {
           </div>
 
         </div>
-      </TooltipProvider>
     </div>
   );
 }
