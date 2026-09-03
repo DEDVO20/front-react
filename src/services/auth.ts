@@ -46,7 +46,9 @@ export async function login(data: LoginData): Promise<LoginResponse> {
       console.info("🔧 Request URL:", (apiClient.defaults.baseURL || API_BASE_URL) + "/auth/login");
     } catch {}
 
-    const response = await apiClient.post<LoginResponse>("/auth/login", data);
+    const response = await apiClient.post<LoginResponse>("/auth/login", data, {
+      timeout: 60000,
+    });
     const result = response.data;
 
     if (result.access_token && !result.requiere_otp) {

@@ -81,6 +81,14 @@ apiClient.interceptors.response.use(
       errorMessage = error.message || "Error desconocido";
     }
 
+    if (
+      error.code === "ECONNABORTED" ||
+      /timeout of \d+ms exceeded/i.test(String(error.message || errorMessage))
+    ) {
+      errorMessage =
+        "El servidor tardó demasiado. Si ya le llegó el código, úselo; si no, espere un momento e inténtelo de nuevo.";
+    }
+
     if (!error.response && /network error|err_network|failed to fetch|networkerror/i.test(String(error.message))) {
       errorMessage = "No se pudo conectar con el servidor. Verifique su conexión e inténtelo de nuevo.";
     }
