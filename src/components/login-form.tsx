@@ -350,11 +350,11 @@ export function LoginForm({
               ) : (
                 <>
               <div className="grid gap-2">
-                <Label htmlFor="nombre_usuario">Usuario, Email o Documento</Label>
+                <Label htmlFor="nombre_usuario">Correo electrónico</Label>
                 <Input
                   id="nombre_usuario"
                   type="text"
-                  placeholder="usuario@gmail.com o documento"
+                  placeholder="correo@gmail.com (el admin puede usar su usuario)"
                   required
                   value={formData.nombre_usuario}
                   onChange={handleChange}
