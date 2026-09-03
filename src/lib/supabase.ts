@@ -9,9 +9,18 @@ const isSupabaseConfigured = supabaseUrl &&
   supabaseUrl !== "your_supabase_url" &&
   supabaseUrl.startsWith("http");
 
-// Cliente de Supabase (solo si está configurado)
+// Cliente de Supabase (solo si está configurado).
+// Se usa para Storage, no para Auth: sin eso el cliente intenta un lock
+// Navigator LockManager (lock:sb-...-auth-token) y falla en el login.
 export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        lock: async (_name, _acquireTimeout, fn) => await fn(),
+      },
+    })
   : null;
 
 /**
