@@ -137,7 +137,7 @@ export default function Documentos() {
       setExportingId(id);
       const completo = await documentoService.getById(id);
       await exportarDocumentoSGC(datosSGCDesdeDocumento(completo));
-      toast.success("Documento PDF descargado");
+      toast.success("Se abrió la vista de impresión. Elija Guardar como PDF y desactive encabezados y pies de página.");
     } catch (error) {
       console.error("Error al exportar PDF:", error);
       toast.error(error instanceof Error ? error.message : "No se pudo generar el PDF");

@@ -218,7 +218,7 @@ export default function SolucionarAccionCorrectiva() {
                                     try {
                                         setExporting(true);
                                         await exportarDocumentoSGC(datosSGCDesdeAccionCorrectiva(accion), marca);
-                                        toast.success("Documento PDF descargado");
+                                        toast.success("Se abrió la vista de impresión. Elija Guardar como PDF y desactive encabezados y pies de página.");
                                     } catch {
                                         toast.error("No se pudo abrir la impresión");
                                     } finally {

@@ -160,7 +160,7 @@ export default function DocumentosObsoletos() {
     try {
       const completo = await documentoService.getById(documento.id);
       await exportarDocumentoSGC(datosSGCDesdeDocumento(completo));
-      toast.success("Documento PDF descargado");
+      toast.success("Se abrió la vista de impresión. Elija Guardar como PDF y desactive encabezados y pies de página.");
     } catch (error) {
       console.error("Error al imprimir documento:", error);
       toast.error("No se pudo abrir la impresión del documento");
@@ -172,7 +172,7 @@ export default function DocumentosObsoletos() {
       const completo = await documentoService.getById(documento.id);
       if (esContenidoHtml(completo.descripcion)) {
         await exportarDocumentoSGC(datosSGCDesdeDocumento(completo));
-        toast.success("Documento PDF descargado");
+        toast.success("Se abrió la vista de impresión. Elija Guardar como PDF y desactive encabezados y pies de página.");
         return;
       }
       if (completo.ruta_archivo || documento.ruta_archivo) {

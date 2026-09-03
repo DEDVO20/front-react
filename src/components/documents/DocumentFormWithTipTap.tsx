@@ -263,7 +263,7 @@ export const DocumentFormWithTipTap = ({
     try {
       setExporting(true);
       await exportarDocumentoSGC(datosVistaSGC(), marca);
-      toast.success("Documento PDF descargado");
+      toast.success("Se abrió la vista de impresión. Elija Guardar como PDF y desactive encabezados y pies de página.");
     } catch (error) {
       console.error("Error al exportar PDF:", error);
       toast.error(

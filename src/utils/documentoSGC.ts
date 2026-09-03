@@ -1,4 +1,3 @@
-import { jsPDF } from "jspdf";
 import { configuracionService } from "@/services/configuracion.service";
 
 export interface MarcaSGC {
@@ -231,7 +230,7 @@ export function tablaCamposSGC(filas: Array<[string, string]>): string {
     )
     .join("");
 
-  return `<table class="sgc-grid"><tbody>${cuerpo}</tbody></table>`;
+  return `<table class="sgc-grid sgc-kv"><tbody>${cuerpo}</tbody></table>`;
 }
 
 export function seccionSGC(titulo: string, html: string): string {
@@ -325,7 +324,7 @@ export async function cargarMarcaSGC(): Promise<MarcaSGC> {
 
 export function estilosDocumentoSGC(): string {
   return `
-    @page { size: letter; margin: 16mm 16mm 18mm 16mm; }
+    @page { size: letter; margin: 12mm 14mm 14mm 14mm; }
     * { box-sizing: border-box; }
     html, body {
       margin: 0;
@@ -334,18 +333,27 @@ export function estilosDocumentoSGC(): string {
       color: #111;
       background: #fff;
     }
+    .sgc-print-hint {
+      margin: 0 0 16px;
+      padding: 10px 12px;
+      border: 1px solid #BFDBFE;
+      background: #EFF6FF;
+      color: #1E3A8A;
+      font-size: 12px;
+      line-height: 1.4;
+    }
     .sgc-doc { width: 100%; }
     .sgc-letterhead {
       width: 100%;
       border-bottom: 2px solid #1E3A8A;
-      padding-bottom: 12px;
-      margin-bottom: 20px;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
       border-collapse: collapse;
     }
     .sgc-letterhead td { border: none; padding: 0; vertical-align: middle; }
     .sgc-brand { text-align: right; }
     .sgc-brand-title {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
       color: #1E3A8A;
       text-transform: uppercase;
@@ -353,38 +361,37 @@ export function estilosDocumentoSGC(): string {
     }
     .sgc-brand-sub { font-size: 10px; color: #4B5563; margin-top: 2px; }
     .sgc-logo img {
-      max-width: 220px;
-      max-height: 78px;
+      max-width: 180px;
+      max-height: 56px;
       object-fit: contain;
       object-position: left center;
     }
     .sgc-logo-fallback {
       font-family: Georgia, "Times New Roman", serif;
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 700;
       line-height: 1.1;
       color: #111;
     }
     .sgc-logo-fallback span { color: #C8102E; }
     .sgc-title {
-      margin: 0 0 22px;
+      margin: 0 0 12px;
       text-align: center;
-      font-size: 22px;
+      font-size: 16px;
       font-weight: 700;
-      letter-spacing: 1.5px;
+      letter-spacing: 1px;
       text-transform: uppercase;
       color: #111;
     }
     .sgc-intro {
-      margin: 0 0 18px;
-      font-size: 12px;
-      line-height: 1.55;
+      margin: 0 0 12px;
+      font-size: 11px;
+      line-height: 1.5;
       text-align: justify;
     }
     .sgc-content {
-      min-height: 240px;
-      font-size: 12px;
-      line-height: 1.7;
+      font-size: 11px;
+      line-height: 1.5;
       text-align: justify;
     }
     .sgc-content > *:first-child { margin-top: 0; }
@@ -398,62 +405,73 @@ export function estilosDocumentoSGC(): string {
       color: #111;
       text-align: left;
       font-weight: 700;
-      line-height: 1.35;
+      line-height: 1.3;
+      break-after: avoid;
+      page-break-after: avoid;
     }
-    .sgc-content h1 { font-size: 16px; margin: 1.4em 0 0.65em; }
-    .sgc-content h2 { font-size: 13px; margin: 1.45em 0 0.55em; }
+    .sgc-content h1 { font-size: 14px; margin: 14px 0 6px; }
+    .sgc-content h2 { font-size: 12px; margin: 14px 0 6px; }
     .sgc-content h3,
-    .sgc-content h4 { font-size: 12px; margin: 1.25em 0 0.45em; }
-    .sgc-content p { display: block; margin: 0 0 0.9em; text-align: justify; }
+    .sgc-content h4 { font-size: 11px; margin: 12px 0 4px; }
+    .sgc-content h2 + *,
+    .sgc-content h3 + * { break-before: avoid; page-break-before: avoid; }
+    .sgc-content p { display: block; margin: 0 0 8px; text-align: justify; }
     .sgc-content p:has(> strong:only-child),
     .sgc-content p:has(> b:only-child) {
-      margin-top: 1.25em;
-      margin-bottom: 0.45em;
-      font-size: 13px;
+      margin-top: 12px;
+      margin-bottom: 4px;
+      font-size: 12px;
       text-align: left;
     }
     .sgc-content ul,
     .sgc-content ol {
       display: block;
-      margin: 0.55em 0 1.1em;
-      padding-left: 1.6em;
+      margin: 4px 0 10px;
+      padding-left: 18px;
       text-align: left;
     }
     .sgc-content ul { list-style-type: disc; list-style-position: outside; }
     .sgc-content ol { list-style-type: decimal; list-style-position: outside; }
     .sgc-content li {
       display: list-item;
-      margin: 0.4em 0;
-      line-height: 1.65;
+      margin: 3px 0;
+      line-height: 1.45;
+      text-align: left;
     }
-    .sgc-content li p { margin: 0 0 0.25em; text-align: left; }
-    .sgc-content br { display: block; content: ""; margin-bottom: 0.45em; }
-    .sgc-content img { max-width: 100%; height: auto; margin: 0.8em 0; }
+    .sgc-content li p { margin: 0; text-align: left; }
+    .sgc-content img { max-width: 100%; height: auto; margin: 8px 0; }
     .sgc-content table,
     .sgc-grid {
       border-collapse: collapse;
       width: 100%;
-      margin: 14px 0 18px;
-      font-size: 11px;
+      margin: 8px 0 12px;
+      font-size: 10px;
     }
     .sgc-content th,
     .sgc-content td,
     .sgc-grid th,
     .sgc-grid td {
       border: 1px solid #111;
-      padding: 6px 8px;
+      padding: 5px 7px;
       text-align: left;
-      vertical-align: middle;
+      vertical-align: top;
     }
     .sgc-content th,
     .sgc-grid th {
       background: #6B6B6B;
       color: #fff;
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 700;
-      letter-spacing: 0.4px;
+      letter-spacing: 0.3px;
       text-transform: uppercase;
-      text-align: center;
+    }
+    .sgc-kv th {
+      background: #F3F4F6;
+      color: #111;
+      text-transform: none;
+      font-size: 10px;
+      width: 32%;
+      white-space: nowrap;
     }
     .sgc-grid td.center,
     .sgc-content td.center { text-align: center; }
@@ -464,54 +482,64 @@ export function estilosDocumentoSGC(): string {
     .sgc-grid .sgc-total td {
       background: #D4D4D4;
       font-weight: 700;
-      font-size: 12px;
+      font-size: 11px;
     }
     .sgc-section {
-      margin-top: 22px;
+      margin-top: 14px;
       font-size: 12px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.4px;
+      break-after: avoid;
+      page-break-after: avoid;
     }
     .sgc-note {
-      margin: 22px 0 0;
-      font-size: 11px;
-      line-height: 1.5;
+      margin: 16px 0 0;
+      font-size: 10px;
+      line-height: 1.45;
       text-align: justify;
     }
     .sgc-signs {
       width: 100%;
-      margin-top: 36px;
+      margin-top: 28px;
       border-collapse: collapse;
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
     .sgc-signs td {
       width: 33.33%;
       text-align: center;
       vertical-align: top;
-      padding: 0 12px;
-      font-size: 11px;
+      padding: 0 10px;
+      font-size: 10px;
+      border: none;
     }
     .sgc-signs .line {
       display: block;
-      margin: 42px auto 8px;
+      margin: 36px auto 6px;
       width: 85%;
       border-top: 1px solid #111;
     }
     .sgc-signs .role {
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 700;
       letter-spacing: 0.6px;
       text-transform: uppercase;
     }
     .sgc-signs .date {
-      font-size: 9px;
+      font-size: 8px;
       color: #555;
       margin: 2px 0 4px;
     }
     .sgc-empty { color: #666; font-style: italic; text-align: left; }
-    .sgc-grid, .sgc-signs, .sgc-note { break-inside: avoid; page-break-inside: avoid; }
-    .sgc-content h2, .sgc-content h3 { break-after: avoid; page-break-after: avoid; }
-    .sgc-signs { margin-top: 28px; }
+    .sgc-grid tr, .sgc-kv tr, .sgc-content li {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    @media print {
+      .sgc-print-hint { display: none !important; }
+      html, body { background: #fff; }
+    }
   `;
 }
 
@@ -671,6 +699,10 @@ export function generarHtmlDocumentoSGC(data: DocumentoSGCData, marca: MarcaSGC)
     <style>${estilosDocumentoSGC()}</style>
   </head>
   <body>
+    <div class="sgc-print-hint">
+      Vista lista para imprimir. En el cuadro elija <strong>Guardar como PDF</strong> y desactive
+      <strong>Encabezados y pies de página</strong> para que no aparezca la URL del sistema.
+    </div>
     <div class="sgc-doc">
       ${encabezadoHtml(data, marca)}
       <p class="sgc-intro">${intro}</p>
@@ -698,13 +730,13 @@ function esperarImagenes(doc: Document): Promise<void[]> {
   );
 }
 
-function nombreArchivoSGC(data: DocumentoSGCData): string {
-  const crudo = `${data.codigo || "documento"} — ${data.nombre || "SGC"}`.replace(/[\\/:*?"<>|]/g, "-");
-  return `${crudo}.pdf`;
-}
-
-async function imprimirHtmlSGC(html: string): Promise<void> {
-  const printWindow = window.open("", "_blank", "height=900,width=900");
+export async function exportarDocumentoSGC(
+  data: DocumentoSGCData,
+  marca?: MarcaSGC,
+): Promise<void> {
+  const branding = marca || (await cargarMarcaSGC());
+  const html = generarHtmlDocumentoSGC(data, branding);
+  const printWindow = window.open("", "_blank", "height=1000,width=920");
   if (!printWindow) {
     throw new Error("El navegador bloqueó la ventana de impresión");
   }
@@ -712,77 +744,7 @@ async function imprimirHtmlSGC(html: string): Promise<void> {
   printWindow.document.write(html);
   printWindow.document.close();
   await esperarImagenes(printWindow.document);
+  await new Promise((resolve) => window.setTimeout(resolve, 250));
   printWindow.focus();
   printWindow.print();
-}
-
-export async function exportarDocumentoSGC(
-  data: DocumentoSGCData,
-  marca?: MarcaSGC,
-): Promise<void> {
-  const branding = marca || (await cargarMarcaSGC());
-  const html = generarHtmlDocumentoSGC(data, branding);
-  const iframe = document.createElement("iframe");
-  iframe.setAttribute("aria-hidden", "true");
-  Object.assign(iframe.style, {
-    position: "fixed",
-    left: "-10000px",
-    top: "0",
-    width: "816px",
-    height: "1056px",
-    border: "0",
-  });
-  document.body.appendChild(iframe);
-
-  try {
-    const iframeDoc = iframe.contentDocument;
-    if (!iframeDoc) throw new Error("No se pudo preparar el documento");
-    iframeDoc.open();
-    iframeDoc.write(html);
-    iframeDoc.close();
-    await esperarImagenes(iframeDoc);
-    iframe.style.height = `${Math.max(iframeDoc.documentElement.scrollHeight, 1056)}px`;
-    await new Promise((resolve) => window.setTimeout(resolve, 200));
-
-    const pdf = new jsPDF({ unit: "pt", format: "letter", orientation: "portrait", compress: true });
-    await pdf.html(iframeDoc.body, {
-      autoPaging: "text",
-      width: 532,
-      windowWidth: 816,
-      x: 0,
-      y: 0,
-      margin: [28, 36, 48, 36],
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-      },
-    });
-
-    const total = pdf.getNumberOfPages();
-    for (let i = 1; i <= total; i += 1) {
-      pdf.setPage(i);
-      const ancho = pdf.internal.pageSize.getWidth();
-      const alto = pdf.internal.pageSize.getHeight();
-      pdf.setDrawColor(180);
-      pdf.line(36, alto - 32, ancho - 36, alto - 32);
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(8);
-      pdf.setTextColor(90);
-      pdf.text(
-        `${data.codigo || "S/C"}  ·  Ver. ${data.version || "1.0"}  ·  Documento controlado SGC`,
-        36,
-        alto - 18,
-      );
-      pdf.text(`${i} / ${total}`, ancho - 36, alto - 18, { align: "right" });
-    }
-
-    pdf.save(nombreArchivoSGC(data));
-  } catch (error) {
-    console.error("No se pudo generar el PDF institucional, se abre impresión", error);
-    await imprimirHtmlSGC(html);
-  } finally {
-    iframe.remove();
-  }
 }
