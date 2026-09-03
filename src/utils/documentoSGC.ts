@@ -307,22 +307,51 @@ export function estilosDocumentoSGC(): string {
     .sgc-content {
       min-height: 240px;
       font-size: 12px;
-      line-height: 1.55;
+      line-height: 1.7;
       text-align: justify;
     }
+    .sgc-content > *:first-child { margin-top: 0; }
     .sgc-content h1,
     .sgc-content h2,
-    .sgc-content h3 {
+    .sgc-content h3,
+    .sgc-content h4,
+    .sgc-content h5,
+    .sgc-content h6 {
+      display: block;
       color: #111;
       text-align: left;
       font-weight: 700;
+      line-height: 1.35;
     }
-    .sgc-content h1 { font-size: 16px; margin: 0 0 12px; }
-    .sgc-content h2 { font-size: 13px; margin: 18px 0 8px; }
-    .sgc-content h3 { font-size: 12px; margin: 14px 0 6px; }
-    .sgc-content p { margin: 0 0 10px; text-align: justify; }
-    .sgc-content ul, .sgc-content ol { margin: 0 0 12px; padding-left: 22px; text-align: left; }
-    .sgc-content img { max-width: 100%; height: auto; }
+    .sgc-content h1 { font-size: 16px; margin: 1.4em 0 0.65em; }
+    .sgc-content h2 { font-size: 13px; margin: 1.45em 0 0.55em; }
+    .sgc-content h3,
+    .sgc-content h4 { font-size: 12px; margin: 1.25em 0 0.45em; }
+    .sgc-content p { display: block; margin: 0 0 0.9em; text-align: justify; }
+    .sgc-content p:has(> strong:only-child),
+    .sgc-content p:has(> b:only-child) {
+      margin-top: 1.25em;
+      margin-bottom: 0.45em;
+      font-size: 13px;
+      text-align: left;
+    }
+    .sgc-content ul,
+    .sgc-content ol {
+      display: block;
+      margin: 0.55em 0 1.1em;
+      padding-left: 1.6em;
+      text-align: left;
+    }
+    .sgc-content ul { list-style-type: disc; list-style-position: outside; }
+    .sgc-content ol { list-style-type: decimal; list-style-position: outside; }
+    .sgc-content li {
+      display: list-item;
+      margin: 0.4em 0;
+      line-height: 1.65;
+    }
+    .sgc-content li p { margin: 0 0 0.25em; text-align: left; }
+    .sgc-content br { display: block; content: ""; margin-bottom: 0.45em; }
+    .sgc-content img { max-width: 100%; height: auto; margin: 0.8em 0; }
     .sgc-content table,
     .sgc-grid {
       border-collapse: collapse;
