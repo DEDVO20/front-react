@@ -188,7 +188,14 @@ export function LoginForm({
       }
 
       if (!formData.nombre_usuario || !formData.password) {
-        setError("Usuario/Email/Documento y contraseña son obligatorios");
+        setError("Correo y contraseña son obligatorios");
+        return;
+      }
+
+      const identificador = formData.nombre_usuario.trim();
+      const esAdminUsuario = identificador.toLowerCase() === "admin";
+      if (!identificador.includes("@") && !esAdminUsuario) {
+        setError("Ingrese su correo electrónico para recibir el código OTP");
         return;
       }
 
