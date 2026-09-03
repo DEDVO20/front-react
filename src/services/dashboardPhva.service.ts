@@ -29,6 +29,16 @@ export interface DashboardPHVAMetrics {
   };
 }
 
+async function cargarLista<T>(promesa: Promise<T[] | T>, etiqueta: string): Promise<T[]> {
+  try {
+    const data = await promesa;
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error(`No se pudieron cargar ${etiqueta} para el tablero PHVA`, error);
+    return [];
+  }
+}
+
 export const dashboardPhvaService = {
   async getMetrics(): Promise<DashboardPHVAMetrics> {
     const [
@@ -41,14 +51,14 @@ export const dashboardPhvaService = {
       hallazgos,
       acciones,
     ] = await Promise.all([
-      procesoService.listar({ limit: 1000 }),
-      riesgoService.getAll(),
-      competenciaService.getAll(),
-      capacitacionService.getAll(),
-      indicadorService.getAll(),
-      auditoriaService.getAll(),
-      auditoriaService.getAllHallazgos(),
-      accionCorrectivaService.getAll({ limit: 1000 }),
+      cargarLista(procesoService.listar({ limit: 1000 }), "procesos"),
+      cargarLista(riesgoService.getAll(), "riesgos"),
+      cargarLista(competenciaService.getAll(), "competencias"),
+      cargarLista(capacitacionService.getAll(), "capacitaciones"),
+      cargarLista(indicadorService.getAll(), "indicadores"),
+      cargarLista(auditoriaService.getAll(), "auditorías"),
+      cargarLista(auditoriaService.getAllHallazgos(), "hallazgos"),
+      cargarLista(accionCorrectivaService.getAll({ limit: 1000 }), "acciones correctivas"),
     ]);
 
     const auditoriasEjecutadas = auditorias.filter((a) => ["en_curso", "completada", "cerrada"].includes(a.estado)).length;

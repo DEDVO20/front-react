@@ -77,26 +77,42 @@ export default function Dashboard() {
         auditoriasRes,
         calidadRes
       ] = await Promise.all([
-        dashboardPhvaService.getMetrics(),
-        accionCorrectivaService.getAll({ limit: 1000 }),
-        documentoService.getAll(),
-        auditoriaService.getAll({ estado: 'planificada' }),
-        analyticsService.getCalidadMetrics().catch(() => ({ noconformidades: {} }))
+        dashboardPhvaService.getMetrics().catch((error) => {
+          console.error("Error cargando métricas PHVA", error);
+          return null;
+        }),
+        accionCorrectivaService.getAll({ limit: 1000 }).catch((error) => {
+          console.error("Error cargando acciones correctivas", error);
+          return [];
+        }),
+        documentoService.getAll().catch((error) => {
+          console.error("Error cargando documentos", error);
+          return [];
+        }),
+        auditoriaService.getAll({ estado: "planificada" }).catch((error) => {
+          console.error("Error cargando auditorías", error);
+          return [];
+        }),
+        analyticsService.getCalidadMetrics().catch(() => ({ noconformidades: {} })),
       ]);
 
+      const documentos = Array.isArray(docsRes) ? docsRes : [];
+      const acciones = Array.isArray(accionesRes) ? accionesRes : [];
+      const auditorias = Array.isArray(auditoriasRes) ? auditoriasRes : [];
+
       setMetrics(metricsRes);
-      setAcciones(accionesRes);
+      setAcciones(acciones);
 
       setGlobalStats({
-        docsPendientes: docsRes.filter(d => d.estado === 'revision' || d.estado === 'aprobacion_pendiente').length,
-        ncAbiertas: Object.values(calidadRes.noconformidades || {}).reduce((a: number, b: any) => a + (Number(b) || 0), 0) as number,
-        auditoriasProximas: auditoriasRes.length,
-        riesgosCriticos: metricsRes.plan.riesgosIdentificados > 0 ? Math.ceil(metricsRes.plan.riesgosIdentificados * 0.15) : 0
+        docsPendientes: documentos.filter((d) => d.estado === "revision" || d.estado === "aprobacion_pendiente").length,
+        ncAbiertas: Object.values(calidadRes?.noconformidades || {}).reduce((a: number, b: unknown) => a + (Number(b) || 0), 0),
+        auditoriasProximas: auditorias.length,
+        riesgosCriticos: metricsRes?.plan?.riesgosIdentificados
+          ? Math.ceil(metricsRes.plan.riesgosIdentificados * 0.15)
+          : 0,
       });
-
-    } catch (error: any) {
-      toast.error("Error al sincronizar datos globales");
-      console.error(error);
+    } catch (error) {
+      console.error("Error al sincronizar datos globales", error);
     } finally {
       setLoading(false);
     }
@@ -157,43 +173,22 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] pb-12">
-      <TooltipProvider>
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-8">
 
           {/* ── Header Area (Premium Style) ── */}
           <header className="bg-gradient-to-br from-[#E0EDFF] to-[#C7D2FE] rounded-2xl shadow-sm border border-[#E5E7EB] p-5 sm:p-8">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-3 mb-2">
-                  <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB] font-bold px-3 py-0.5 rounded-full text-[10px] uppercase">
-                    QMS Intelligence v3.0
-                  </Badge>
-                  <span className="hidden sm:flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="hidden sm:inline text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Sistema Operativo Conectado</span>
-                </div>
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1E3A8A] tracking-tight mb-2">
-                  {greeting} <span className="text-[#2563EB]">Admin</span>
-                </h1>
-                <p className="text-[#6B7280] text-base sm:text-lg font-medium">Control global y cumplimiento de la gestión de calidad.</p>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-3 mb-2">
+                <Badge className="bg-white text-[#2563EB] border border-[#E5E7EB] font-bold px-3 py-0.5 rounded-full text-[10px] uppercase">
+                  QMS Intelligence v3.0
+                </Badge>
+                <span className="hidden sm:flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="hidden sm:inline text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Sistema Operativo Conectado</span>
               </div>
-
-              <div className="flex w-full md:w-auto flex-wrap items-center gap-3">
-                <div className="hidden xl:block">
-                  <GlobalSearch placeholder="Buscar procesos, módulos..." />
-                </div>
-
-                <div className="bg-white rounded-xl border border-[#E5E7EB] shadow-sm">
-                  <NotificationBell />
-                </div>
-
-                <Button
-                  className="flex-1 sm:flex-none bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-lg shadow-[#2563EB]/20 rounded-xl px-4 sm:px-6 h-11 font-bold transition-all hover:-translate-y-0.5"
-                  onClick={() => navigate("/indicadores/tablero")}
-                >
-                  <LayoutDashboard className="w-5 h-5 mr-2" />
-                  Panel Maestro
-                </Button>
-              </div>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1E3A8A] tracking-tight mb-2">
+                {greeting} <span className="text-[#2563EB]">Admin</span>
+              </h1>
+              <p className="text-[#6B7280] text-base sm:text-lg font-medium">Control global y cumplimiento de la gestión de calidad.</p>
             </div>
           </header>
 
