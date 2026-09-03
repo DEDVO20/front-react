@@ -394,7 +394,7 @@ export default function CargaMasivaUsuarios() {
                 segundo_nombre: "Carlos",
                 primer_apellido: "Perez",
                 segundo_apellido: "Garcia",
-                correo_electronico: "juan.perez@iudc.edu.co",
+                correo_electronico: "juan.perez@gmail.com",
                 nombre_usuario: "jperez",
                 contrasena: "Password123",
                 area_codigo: areaEjemplo,
@@ -407,7 +407,7 @@ export default function CargaMasivaUsuarios() {
                 segundo_nombre: "Elena",
                 primer_apellido: "Lopez",
                 segundo_apellido: "Martinez",
-                correo_electronico: "maria.lopez@iudc.edu.co",
+                correo_electronico: "maria.lopez@outlook.com",
                 nombre_usuario: "mlopez",
                 contrasena: "Password123",
                 area_codigo: areaEjemplo,
@@ -627,7 +627,7 @@ export default function CargaMasivaUsuarios() {
                             <li>Tamaño máximo: 5MB</li>
                             <li>Máximo 1000 usuarios por archivo</li>
                             <li>Primera fila debe contener los encabezados</li>
-                            <li>El correo debe ser institucional (@iudc.edu.co). Esos usuarios ingresarán con OTP</li>
+                            <li>Por ahora el correo puede ser Gmail, Outlook o Hotmail. Esos usuarios ingresarán con OTP</li>
                         </ul>
                     </div>
 

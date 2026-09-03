@@ -597,7 +597,7 @@ export default function EditarUsuario() {
                                             id="correoElectronico"
                                             name="correoElectronico"
                                             type="email"
-                                            placeholder="Ej: juan.perez@iudc.edu.co"
+                                            placeholder="Ej: juan.perez@gmail.com"
                                             value={formData.correoElectronico}
                                             onChange={handleInputChange}
                                             className={`pl-10 ${errors.correoElectronico ? "border-red-500" : ""}`}

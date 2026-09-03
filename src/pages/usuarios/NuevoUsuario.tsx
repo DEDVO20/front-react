@@ -268,7 +268,7 @@ export default function FormularioUsuario() {
       } else {
         await usuarioService.create(payload);
         toast.success(
-          `Usuario "${formData.nombreUsuario}" creado. Ingresará con correo institucional y un código OTP.`,
+          `Usuario "${formData.nombreUsuario}" creado. Ingresará con un código OTP enviado a su correo.`,
         );
       }
 
@@ -572,7 +572,7 @@ export default function FormularioUsuario() {
                       type="email"
                       value={formData.correoElectronico}
                       onChange={handleInputChange}
-                      placeholder="usuario@iudc.edu.co"
+                      placeholder="usuario@gmail.com"
                       className={errors.correoElectronico ? "border-red-500" : ""}
                     />
                     {errors.correoElectronico && (
@@ -583,7 +583,7 @@ export default function FormularioUsuario() {
                     )}
                     {(!isEditing || requiereOtp) && !errors.correoElectronico && (
                       <p className="text-xs text-[#6B7280]">
-                        Correo institucional obligatorio. El usuario ingresará con un código OTP enviado a este correo.
+                        Por ahora se aceptan Gmail, Outlook y Hotmail. El usuario ingresará con un código OTP enviado a este correo.
                       </p>
                     )}
                   </div>

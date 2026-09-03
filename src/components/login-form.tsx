@@ -354,7 +354,7 @@ export function LoginForm({
                 <Input
                   id="nombre_usuario"
                   type="text"
-                  placeholder="usuario@iudc.edu.co o documento"
+                  placeholder="usuario@gmail.com o documento"
                   required
                   value={formData.nombre_usuario}
                   onChange={handleChange}

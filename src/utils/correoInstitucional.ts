@@ -1,6 +1,10 @@
 import { apiClient } from "@/lib/api";
 
 export const DOMINIOS_INSTITUCIONALES_DEFAULT = [
+  "gmail.com",
+  "outlook.com",
+  "hotmail.com",
+  "live.com",
   "iudc.edu.co",
   "universitariadecolombia.edu.co",
 ];
@@ -24,7 +28,7 @@ export function mensajeCorreoInstitucional(
   dominios: string[] = dominiosInstitucionales(),
 ): string {
   const lista = dominios.map((item) => `@${item}`).join(", ");
-  return `Debe usar un correo institucional (${lista})`;
+  return `Debe usar un correo permitido (${lista})`;
 }
 
 export async function cargarDominiosInstitucionales(): Promise<string[]> {
