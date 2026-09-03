@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { login } from "@/services/auth";
-import { FileText, ShieldCheck } from "lucide-react";
+import { login, reenviarOtp, verificarOtp } from "@/services/auth";
+import { ArrowLeft, FileText, Mail, ShieldCheck } from "lucide-react";
 
 type LegalDocumentType = "terms" | "privacy";
 
@@ -157,19 +157,41 @@ export function LoginForm({
   const [acceptedPolicies, setAcceptedPolicies] = useState(false);
   const [openLegalDocument, setOpenLegalDocument] =
     useState<LegalDocumentType | null>(null);
+  const [otpPending, setOtpPending] = useState<{
+    otp_token: string;
+    correo: string;
+    mensaje: string;
+  } | null>(null);
+  const [otpCode, setOtpCode] = useState("");
+  const [resendIn, setResendIn] = useState(0);
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const timer = window.setTimeout(() => setResendIn((value) => value - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendIn]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
 
     try {
-      // Validar campos
+      if (otpPending) {
+        if (!/^\d{6}$/.test(otpCode.trim())) {
+          setError("Ingrese el código de 6 dígitos enviado a su correo");
+          return;
+        }
+        setLoading(true);
+        await verificarOtp(otpPending.otp_token, otpCode.trim());
+        navigate("/dashboard");
+        return;
+      }
+
       if (!formData.nombre_usuario || !formData.password) {
         setError("Usuario/Email/Documento y contraseña son obligatorios");
         return;
       }
 
-      // Validar longitud mínima de password
       if (formData.password.length < 6) {
         setError("La contraseña debe tener al menos 6 caracteres");
         return;
@@ -184,19 +206,48 @@ export function LoginForm({
 
       setLoading(true);
 
-      // Llamar al servicio de login
       const result = await login({
         nombre_usuario: formData.nombre_usuario,
         password: formData.password,
       });
 
-      console.log("Login exitoso:", result);
+      if (result.requiere_otp && result.otp_token) {
+        setOtpPending({
+          otp_token: result.otp_token,
+          correo: result.correo_enmascarado || "su correo institucional",
+          mensaje:
+            result.mensaje ||
+            "Enviamos un código de verificación a su correo institucional.",
+        });
+        setOtpCode("");
+        setResendIn(60);
+        return;
+      }
 
-      // Redirigir al dashboard o página principal
       navigate("/dashboard");
     } catch (err) {
       console.error("Error en login:", err);
       setError(err instanceof Error ? err.message : "Error al iniciar sesión");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!otpPending || resendIn > 0 || loading) return;
+    setError("");
+    setLoading(true);
+    try {
+      const result = await reenviarOtp(otpPending.otp_token);
+      setOtpPending({
+        otp_token: result.otp_token || otpPending.otp_token,
+        correo: result.correo_enmascarado || otpPending.correo,
+        mensaje: result.mensaje || "Enviamos un nuevo código a su correo.",
+      });
+      setOtpCode("");
+      setResendIn(60);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo reenviar el código");
     } finally {
       setLoading(false);
     }
@@ -227,7 +278,9 @@ export function LoginForm({
               <div className="flex flex-col items-center text-center">
                 <h1 className="text-2xl font-bold text-[#1E3A8A]">Bienvenido</h1>
                 <p className="text-balance text-[#6B7280]">
-                  Inicia sesión para acceder al Sistema de Gestión de Calidad.
+                  {otpPending
+                    ? "Ingrese el código enviado a su correo institucional."
+                    : "Inicia sesión para acceder al Sistema de Gestión de Calidad."}
                 </p>
               </div>
 
@@ -237,12 +290,71 @@ export function LoginForm({
                 </div>
               )}
 
+              {otpPending ? (
+                <>
+                  <div className="rounded-md border bg-[#E0EDFF] p-3 text-sm text-[#1E3A8A]">
+                    <p className="flex items-start gap-2">
+                      <Mail className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span>
+                        {otpPending.mensaje} Correo:{" "}
+                        <strong>{otpPending.correo}</strong>
+                      </span>
+                    </p>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="otp_code">Código de verificación</Label>
+                    <Input
+                      id="otp_code"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      placeholder="000000"
+                      value={otpCode}
+                      onChange={(event) => {
+                        setOtpCode(event.target.value.replace(/\D/g, "").slice(0, 6));
+                        if (error) setError("");
+                      }}
+                      disabled={loading}
+                      className="text-center text-2xl tracking-[0.4em]"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading || otpCode.length !== 6}>
+                    {loading ? "Verificando..." : "Verificar código"}
+                  </Button>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      disabled={loading || resendIn > 0}
+                      onClick={handleResendOtp}
+                    >
+                      {resendIn > 0 ? `Reenviar en ${resendIn}s` : "Reenviar código"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full"
+                      disabled={loading}
+                      onClick={() => {
+                        setOtpPending(null);
+                        setOtpCode("");
+                        setError("");
+                      }}
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" /> Volver
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
               <div className="grid gap-2">
                 <Label htmlFor="nombre_usuario">Usuario, Email o Documento</Label>
                 <Input
                   id="nombre_usuario"
                   type="text"
-                  placeholder="usuario@example.com o documento"
+                  placeholder="usuario@iudc.edu.co o documento"
                   required
                   value={formData.nombre_usuario}
                   onChange={handleChange}
@@ -306,6 +418,8 @@ export function LoginForm({
               >
                 {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
               </Button>
+                </>
+              )}
             </div>
           </form>
           <div className="relative hidden bg-muted lg:block">

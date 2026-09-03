@@ -26,6 +26,11 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { apiClient } from "@/lib/api";
 import { usuarioService } from "@/services/usuario.service";
+import {
+    cargarDominiosInstitucionales,
+    esCorreoInstitucional,
+    mensajeCorreoInstitucional,
+} from "@/utils/correoInstitucional";
 
 const COLUMNAS_USUARIO = [
     "documento",
@@ -215,6 +220,13 @@ function validarFilaLocal(
             valor: fila.correo_electronico,
             error: "El correo electrónico no es válido",
         });
+    } else if (!esCorreoInstitucional(fila.correo_electronico)) {
+        errores.push({
+            fila: filaNum,
+            campo: "correo_electronico",
+            valor: fila.correo_electronico,
+            error: mensajeCorreoInstitucional(),
+        });
     }
     if (!fila.nombre_usuario) {
         errores.push({ fila: filaNum, campo: "nombre_usuario", error: "El nombre de usuario es obligatorio" });
@@ -341,6 +353,7 @@ export default function CargaMasivaUsuarios() {
     useEffect(() => {
         const cargarCatalogos = async () => {
             try {
+                await cargarDominiosInstitucionales();
                 const [areasRes, rolesRes] = await Promise.all([
                     apiClient.get("/areas?limit=200"),
                     apiClient.get("/roles?limit=200"),
@@ -381,7 +394,7 @@ export default function CargaMasivaUsuarios() {
                 segundo_nombre: "Carlos",
                 primer_apellido: "Perez",
                 segundo_apellido: "Garcia",
-                correo_electronico: "juan.perez@empresa.com",
+                correo_electronico: "juan.perez@iudc.edu.co",
                 nombre_usuario: "jperez",
                 contrasena: "Password123",
                 area_codigo: areaEjemplo,
@@ -394,7 +407,7 @@ export default function CargaMasivaUsuarios() {
                 segundo_nombre: "Elena",
                 primer_apellido: "Lopez",
                 segundo_apellido: "Martinez",
-                correo_electronico: "maria.lopez@empresa.com",
+                correo_electronico: "maria.lopez@iudc.edu.co",
                 nombre_usuario: "mlopez",
                 contrasena: "Password123",
                 area_codigo: areaEjemplo,
@@ -614,6 +627,7 @@ export default function CargaMasivaUsuarios() {
                             <li>Tamaño máximo: 5MB</li>
                             <li>Máximo 1000 usuarios por archivo</li>
                             <li>Primera fila debe contener los encabezados</li>
+                            <li>El correo debe ser institucional (@iudc.edu.co). Esos usuarios ingresarán con OTP</li>
                         </ul>
                     </div>
 

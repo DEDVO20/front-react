@@ -35,6 +35,11 @@ import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { asId, sameId } from "@/lib/permissions";
 import { getCurrentUser, refreshCurrentUserSession } from "@/services/auth";
+import {
+    cargarDominiosInstitucionales,
+    esCorreoInstitucional,
+    mensajeCorreoInstitucional,
+} from "@/utils/correoInstitucional";
 
 interface Area {
     id: string;
@@ -92,6 +97,7 @@ export default function EditarUsuario() {
     const [errors, setErrors] = useState<FormErrors>({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [requiereOtp, setRequiereOtp] = useState(false);
     const [dialogState, setDialogState] = useState<{
         open: boolean;
         type: "success" | "error";
@@ -99,6 +105,7 @@ export default function EditarUsuario() {
     }>({ open: false, type: "success", message: "" });
 
     useEffect(() => {
+        cargarDominiosInstitucionales();
         fetchAreas();
         fetchRoles();
         if (id) {
@@ -125,6 +132,7 @@ export default function EditarUsuario() {
                 areaId: usuario.area_id || "",
                 activo: usuario.activo ?? true,
             });
+            setRequiereOtp(Boolean(usuario.requiere_otp));
 
             // Cargar roles del usuario (rol_id de la asignación, no el id de usuario_roles)
             if (usuario.roles && Array.isArray(usuario.roles)) {
@@ -203,6 +211,8 @@ export default function EditarUsuario() {
             newErrors.correoElectronico = "El correo electrónico es obligatorio";
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correoElectronico)) {
             newErrors.correoElectronico = "El correo electrónico no es válido";
+        } else if (requiereOtp && !esCorreoInstitucional(formData.correoElectronico)) {
+            newErrors.correoElectronico = mensajeCorreoInstitucional();
         }
 
         if (!formData.nombreUsuario.trim()) {
@@ -587,7 +597,7 @@ export default function EditarUsuario() {
                                             id="correoElectronico"
                                             name="correoElectronico"
                                             type="email"
-                                            placeholder="Ej: juan.perez@sgc.com"
+                                            placeholder="Ej: juan.perez@iudc.edu.co"
                                             value={formData.correoElectronico}
                                             onChange={handleInputChange}
                                             className={`pl-10 ${errors.correoElectronico ? "border-red-500" : ""}`}

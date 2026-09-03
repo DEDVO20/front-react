@@ -29,6 +29,7 @@ export interface Usuario {
     };
   }>;
   permisos?: string[];
+  requiere_otp?: boolean;
   creado_en: string;
   actualizado_en: string;
 }

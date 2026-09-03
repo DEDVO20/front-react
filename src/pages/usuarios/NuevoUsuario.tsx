@@ -37,6 +37,11 @@ import { usuarioService } from "@/services/usuario.service";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { asId, sameId } from "@/lib/permissions";
 import { getCurrentUser, refreshCurrentUserSession } from "@/services/auth";
+import {
+  cargarDominiosInstitucionales,
+  esCorreoInstitucional,
+  mensajeCorreoInstitucional,
+} from "@/utils/correoInstitucional";
 
 interface Area {
   id: string;
@@ -95,12 +100,14 @@ export default function FormularioUsuario() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [fetchingData, setFetchingData] = useState(true);
+  const [requiereOtp, setRequiereOtp] = useState(!isEditing);
 
   // Cargar áreas, roles y datos del usuario (si es edición)
   useEffect(() => {
     const fetchInitialData = async () => {
       setFetchingData(true);
       try {
+        await cargarDominiosInstitucionales();
         // Cargar áreas
         const areasResponse = await apiClient.get("/areas");
         const areasData = areasResponse.data;
@@ -130,6 +137,7 @@ export default function FormularioUsuario() {
             areaId: userData.area_id || "",
             activo: userData.activo ?? true,
           });
+          setRequiereOtp(Boolean(userData.requiere_otp));
 
           // Cargar roles del usuario
           if (userData.roles && Array.isArray(userData.roles)) {
@@ -197,6 +205,8 @@ export default function FormularioUsuario() {
     if (!formData.correoElectronico.trim()) newErrors.correoElectronico = "El correo es obligatorio";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correoElectronico))
       newErrors.correoElectronico = "Formato de correo inválido";
+    else if ((!isEditing || requiereOtp) && !esCorreoInstitucional(formData.correoElectronico))
+      newErrors.correoElectronico = mensajeCorreoInstitucional();
 
     if (!formData.nombreUsuario.trim()) newErrors.nombreUsuario = "El nombre de usuario es obligatorio";
     else if (formData.nombreUsuario.length < 3) newErrors.nombreUsuario = "Mínimo 3 caracteres";
@@ -257,7 +267,9 @@ export default function FormularioUsuario() {
         toast.success(`Usuario "${formData.nombreUsuario}" actualizado exitosamente`);
       } else {
         await usuarioService.create(payload);
-        toast.success(`Usuario "${formData.nombreUsuario}" creado exitosamente`);
+        toast.success(
+          `Usuario "${formData.nombreUsuario}" creado. Ingresará con correo institucional y un código OTP.`,
+        );
       }
 
       setTimeout(() => navigate("/ListaDeUsuarios"), 1500);
@@ -560,13 +572,18 @@ export default function FormularioUsuario() {
                       type="email"
                       value={formData.correoElectronico}
                       onChange={handleInputChange}
-                      placeholder="usuario@empresa.com"
+                      placeholder="usuario@iudc.edu.co"
                       className={errors.correoElectronico ? "border-red-500" : ""}
                     />
                     {errors.correoElectronico && (
                       <p className="text-sm text-red-500 flex items-center gap-1">
                         <AlertCircle className="h-4 w-4" />
                         {errors.correoElectronico}
+                      </p>
+                    )}
+                    {(!isEditing || requiereOtp) && !errors.correoElectronico && (
+                      <p className="text-xs text-[#6B7280]">
+                        Correo institucional obligatorio. El usuario ingresará con un código OTP enviado a este correo.
                       </p>
                     )}
                   </div>

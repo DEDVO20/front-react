@@ -57,7 +57,9 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     // Si el error es 401 (no autorizado), limpiar sesión y redirigir a login
-    if (error.response?.status === 401) {
+    const requestUrl = String(error.config?.url || "");
+    const isLoginFlow = /\/auth\/login/.test(requestUrl);
+    if (error.response?.status === 401 && !isLoginFlow) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.location.href = "/login";

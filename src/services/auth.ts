@@ -1,41 +1,56 @@
-import apiClient from "@/lib/api";
+import apiClient, { API_BASE_URL } from "@/lib/api";
 
 export interface LoginData {
-  nombre_usuario: string;  // Cambio de 'usuario' a 'nombre_usuario'
-  password: string;  // Cambio de 'contrasena' a 'password'
+  nombre_usuario: string;
+  password: string;
+}
+
+export interface UsuarioSesion {
+  id: string;
+  nombre_usuario: string;
+  email: string;
+  nombre_completo: string;
+  cargo?: string;
+  activo: boolean;
+  foto_url?: string;
+  permisos: string[];
 }
 
 export interface TokenResponse {
   access_token: string;
   token_type: string;
-  usuario: {
-    id: string;
-    nombre_usuario: string;
-    email: string;
-    nombre_completo: string;
-    cargo?: string;
-    activo: boolean;
-    foto_url?: string;
-    permisos: string[];
-  };
+  usuario: UsuarioSesion;
+  requiere_otp?: boolean;
 }
 
-export async function login(data: LoginData) {
+export interface LoginResponse {
+  access_token?: string | null;
+  token_type?: string;
+  usuario?: UsuarioSesion | null;
+  requiere_otp?: boolean;
+  otp_token?: string | null;
+  mensaje?: string | null;
+  correo_enmascarado?: string | null;
+}
+
+function guardarSesion(result: { access_token?: string | null; usuario?: UsuarioSesion | null }) {
+  if (result.access_token && result.usuario) {
+    localStorage.setItem("token", result.access_token);
+    localStorage.setItem("user", JSON.stringify(result.usuario));
+  }
+}
+
+export async function login(data: LoginData): Promise<LoginResponse> {
   try {
-    // Debug: mostrar URL completa que se va a pedir
     try {
       console.info("🔧 Request URL:", (apiClient.defaults.baseURL || API_BASE_URL) + "/auth/login");
     } catch {}
 
-    const response = await apiClient.post<TokenResponse>("/auth/login", data);
-
+    const response = await apiClient.post<LoginResponse>("/auth/login", data);
     const result = response.data;
-    console.log("Login resultado:", result);
 
-    if (result.access_token) {
-      localStorage.setItem("token", result.access_token);
-      localStorage.setItem("user", JSON.stringify(result.usuario));
-      console.log("Token almacenado:", result.access_token);
+    if (result.access_token && !result.requiere_otp) {
+      guardarSesion(result);
     }
     return result;
   } catch (error) {
@@ -45,6 +60,23 @@ export async function login(data: LoginData) {
     }
     throw new Error("Error desconocido");
   }
+}
+
+export async function verificarOtp(otpToken: string, codigo: string): Promise<TokenResponse> {
+  const response = await apiClient.post<TokenResponse>("/auth/login/verificar-otp", {
+    otp_token: otpToken,
+    codigo,
+  });
+  const result = response.data;
+  guardarSesion(result);
+  return result;
+}
+
+export async function reenviarOtp(otpToken: string): Promise<LoginResponse> {
+  const response = await apiClient.post<LoginResponse>("/auth/login/reenviar-otp", {
+    otp_token: otpToken,
+  });
+  return response.data;
 }
 
 export async function logout() {
@@ -58,7 +90,6 @@ export async function logout() {
   } catch (error) {
     console.error("Error en logout:", error);
 
-    // Limpiar localStorage de todas formas
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
@@ -69,12 +100,10 @@ export async function logout() {
   }
 }
 
-//Funcion para obtener el token del usuario
 export function getToken(): string | null {
   return localStorage.getItem("token");
 }
 
-//Funcion para obtener el usuario actual
 export function getCurrentUser() {
   const userStr = localStorage.getItem("user");
   if (!userStr) return null;
@@ -100,13 +129,11 @@ export async function refreshCurrentUserSession() {
   return merged;
 }
 
-//Funcion para verificar si el usuario esta autenticado
 export function isAuthenticated(): boolean {
   const token = getToken();
   return token !== null && token !== "";
 }
 
-//Funcion para limpiar la sesion del usuario
 export function clearSession() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
