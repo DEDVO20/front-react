@@ -5,8 +5,6 @@ export const DOMINIOS_INSTITUCIONALES_DEFAULT = [
   "outlook.com",
   "hotmail.com",
   "live.com",
-  "iudc.edu.co",
-  "universitariadecolombia.edu.co",
 ];
 
 let dominiosCache: string[] | null = null;
@@ -28,7 +26,7 @@ export function mensajeCorreoInstitucional(
   dominios: string[] = dominiosInstitucionales(),
 ): string {
   const lista = dominios.map((item) => `@${item}`).join(", ");
-  return `Debe usar un correo permitido (${lista})`;
+  return `Debe usar un correo de Gmail o Outlook (${lista})`;
 }
 
 export async function cargarDominiosInstitucionales(): Promise<string[]> {

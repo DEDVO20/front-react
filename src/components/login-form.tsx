@@ -361,7 +361,7 @@ export function LoginForm({
                 <Input
                   id="nombre_usuario"
                   type="text"
-                  placeholder="correo@gmail.com (el admin puede usar su usuario)"
+                  placeholder="correo@gmail.com o Outlook"
                   required
                   value={formData.nombre_usuario}
                   onChange={handleChange}
