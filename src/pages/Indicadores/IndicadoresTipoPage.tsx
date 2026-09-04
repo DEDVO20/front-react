@@ -22,6 +22,16 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { VistaDocumentoSGCDialog } from "@/components/documents/VistaDocumentoSGCDialog";
 import { datosSGCDesdeIndicador } from "@/utils/documentosRegistrosSGC";
 import { nombreUsuarioSGC } from "@/utils/documentoSGC";
@@ -287,28 +297,38 @@ export default function IndicadoresTipoPage({ tipo }: { tipo: TipoIndicador }) {
     }
   };
 
+  const [indicadorAAprobar, setIndicadorAAprobar] = useState<Indicador | null>(null);
+
   const solicitarAprobacion = async (indicador: Indicador) => {
     try {
       await indicadorService.solicitarAprobacion(indicador.id);
-      toast.success("Solicitud de aprobación enviada");
+      toast.success("Solicitud de aprobación enviada exitosamente");
       await cargar();
     } catch (err) {
       toast.error(mensajeError(err));
     }
   };
 
-  const aprobar = async (indicador: Indicador) => {
+  const handleAprobarClick = (indicador: Indicador) => {
     if (currentUserId && indicador.creado_por && currentUserId === indicador.creado_por) {
       toast.error("Quien elabora el indicador no puede aprobarlo");
       return;
     }
-    if (!confirm(`¿Aprobar el indicador ${indicador.codigo}?`)) return;
+    setIndicadorAAprobar(indicador);
+  };
+
+  const confirmarAprobar = async () => {
+    if (!indicadorAAprobar) return;
     try {
-      await indicadorService.aprobar(indicador.id);
-      toast.success("Indicador aprobado");
+      setSaving(true);
+      await indicadorService.aprobar(indicadorAAprobar.id);
+      toast.success(`Indicador ${indicadorAAprobar.codigo} aprobado exitosamente`);
+      setIndicadorAAprobar(null);
       await cargar();
     } catch (err) {
       toast.error(mensajeError(err));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -574,7 +594,7 @@ export default function IndicadoresTipoPage({ tipo }: { tipo: TipoIndicador }) {
                                   </Button>
                                 )}
                                 {estado !== "aprobado" && puedeAprobar && (
-                                  <Button size="sm" className="rounded-lg bg-[#10B981] hover:bg-[#059669] text-white" onClick={() => aprobar(indicador)}>
+                                  <Button size="sm" className="rounded-lg bg-[#10B981] hover:bg-[#059669] text-white" onClick={() => handleAprobarClick(indicador)}>
                                     Aprobar
                                   </Button>
                                 )}
@@ -796,6 +816,30 @@ export default function IndicadoresTipoPage({ tipo }: { tipo: TipoIndicador }) {
           </div>
         </div>
       )}
+      {/* Dialog Confirmar Aprobación */}
+      <AlertDialog open={!!indicadorAAprobar} onOpenChange={(open) => !open && setIndicadorAAprobar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[#1E3A8A]">
+              ¿Aprobar el indicador {indicadorAAprobar?.codigo}?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600">
+              El indicador <strong>"{indicadorAAprobar?.nombre}"</strong> pasará al estado{" "}
+              <span className="text-emerald-700 font-semibold">Aprobado</span> con registro formal de trazabilidad para el Sistema de Gestión de Calidad (ISO 9001).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmarAprobar}
+              disabled={saving}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {saving ? "Aprobando..." : "Aprobar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

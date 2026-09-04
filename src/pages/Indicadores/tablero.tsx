@@ -25,6 +25,16 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { indicadorService, Indicador, TendenciaIndicador, MedicionIndicador } from "@/services/indicador.service";
@@ -105,6 +115,11 @@ export default function TableroIndicadores() {
   const [medicionesMap, setMedicionesMap] = useState<Record<string, MedicionIndicador[]>>({});
   const [medicionForm, setMedicionForm] = useState({ periodo: "", valor: "", observaciones: "" });
 
+  // Dialogs de confirmación
+  const [indicadorAEliminar, setIndicadorAEliminar] = useState<Indicador | null>(null);
+  const [indicadorAAprobar, setIndicadorAAprobar] = useState<Indicador | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
   // Tendencias + PHVA
   const [tendencias, setTendencias] = useState<Record<string, TendenciaIndicador>>({});
   const [phvaMetrics, setPhvaMetrics] = useState<DashboardPHVAMetrics | null>(null);
@@ -159,8 +174,8 @@ export default function TableroIndicadores() {
       setPhvaMetrics(null);
     }
     try {
-      const metrics = await analyticsService.getHumanRiskMetrics();
-      setHumanRiskMetrics(metrics);
+      const human = await analyticsService.getHumanRiskMetrics();
+      setHumanRiskMetrics(human);
     } catch {
       setHumanRiskMetrics(null);
     }
@@ -170,9 +185,10 @@ export default function TableroIndicadores() {
     try {
       setLoadingProcesos(true);
       const data = await procesoService.listar();
-      setProcesos(data);
+      setProcesos(Array.isArray(data) ? data : []);
     } catch (error: any) {
-      console.error("Error cargando procesos:", error);
+      console.error("Error al cargar procesos:", error);
+      setProcesos([]);
     } finally {
       setLoadingProcesos(false);
     }
@@ -182,9 +198,9 @@ export default function TableroIndicadores() {
     try {
       setLoadingUsuarios(true);
       const data = await usuarioService.getAllActive();
-      setUsuariosActivos(data);
-    } catch (error) {
-      console.error("Error cargando usuarios:", error);
+      setUsuariosActivos(Array.isArray(data) ? data : []);
+    } catch (error: any) {
+      console.error("Error al cargar usuarios activos:", error);
       setUsuariosActivos([]);
     } finally {
       setLoadingUsuarios(false);
@@ -193,72 +209,91 @@ export default function TableroIndicadores() {
 
   const handleOpenCreate = () => {
     setDialogMode('create');
-    setForm({ frecuencia_medicion: 'mensual', tipo_indicador: 'eficacia', activo: true });
     setSelected(null);
+    setForm({
+      codigo: '',
+      nombre: '',
+      descripcion: '',
+      formula: '',
+      unidad_medida: '',
+      meta: undefined,
+      frecuencia_medicion: 'mensual',
+      tipo_indicador: 'eficacia',
+      responsable_medicion_id: undefined,
+      proceso_id: procesos[0]?.id || '',
+      activo: true
+    });
     setShowDialog(true);
   };
 
-  const handleOpenEdit = (ind: Indicador) => {
+  const handleOpenEdit = (indicador: Indicador) => {
     setDialogMode('edit');
-    setSelected(ind);
+    setSelected(indicador);
     setForm({
-      proceso_id: ind.proceso_id,
-      codigo: ind.codigo,
-      nombre: ind.nombre,
-      descripcion: ind.descripcion,
-      formula: ind.formula,
-      meta: ind.meta,
-      unidad_medida: ind.unidad_medida,
-      frecuencia_medicion: ind.frecuencia_medicion,
-      responsable_medicion_id: ind.responsable_medicion_id,
-      tipo_indicador: ind.tipo_indicador || 'eficacia',
-      activo: ind.activo,
+      codigo: indicador.codigo,
+      nombre: indicador.nombre,
+      descripcion: indicador.descripcion || '',
+      formula: indicador.formula || '',
+      unidad_medida: indicador.unidad_medida || '',
+      meta: indicador.meta,
+      frecuencia_medicion: indicador.frecuencia_medicion || 'mensual',
+      tipo_indicador: (indicador.tipo_indicador as any) || 'eficacia',
+      responsable_medicion_id: indicador.responsable_medicion_id,
+      proceso_id: indicador.proceso_id,
+      activo: indicador.activo
     });
     setShowDialog(true);
   };
 
   const handleSave = async () => {
     try {
-      if (!form.nombre || !form.proceso_id) {
-        setError('Los campos Nombre y Proceso son obligatorios');
+      if (!form.codigo || !form.nombre || !form.proceso_id) {
+        toast.error("Código, nombre y proceso son obligatorios");
         return;
       }
 
-      const payload: any = {
-        proceso_id: form.proceso_id,
+      const payload: Partial<Indicador> = {
         codigo: form.codigo,
         nombre: form.nombre,
-        descripcion: form.descripcion || null,
-        formula: form.formula || null,
-        unidad_medida: form.unidad_medida || null,
-        meta: form.meta !== undefined && form.meta !== null && (form.meta as any) !== '' ? Number(form.meta) : null,
+        descripcion: form.descripcion || undefined,
+        formula: form.formula || undefined,
+        unidad_medida: form.unidad_medida || undefined,
+        meta: form.meta !== undefined && form.meta !== null && String(form.meta) !== '' ? Number(form.meta) : undefined,
         frecuencia_medicion: form.frecuencia_medicion || 'mensual',
-        responsable_medicion_id: form.responsable_medicion_id || null,
         tipo_indicador: form.tipo_indicador || 'eficacia',
+        responsable_medicion_id: form.responsable_medicion_id || undefined,
+        proceso_id: form.proceso_id,
         activo: form.activo !== undefined ? form.activo : true
       };
 
       if (dialogMode === 'create') {
         await indicadorService.create(payload);
+        toast.success("Indicador creado exitosamente");
       } else if (selected) {
         await indicadorService.update(selected.id, payload);
+        toast.success("Indicador actualizado exitosamente");
       }
       await fetchIndicadores();
       setShowDialog(false);
       setError(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error completo:', err);
-      setError((err as Error).message);
+      toast.error(err?.response?.data?.detail || err.message || "Error al guardar indicador");
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar indicador?')) return;
+  const confirmarEliminar = async () => {
+    if (!indicadorAEliminar) return;
     try {
-      await indicadorService.delete(id);
+      setActionLoading(true);
+      await indicadorService.delete(indicadorAEliminar.id);
+      toast.success(`Indicador ${indicadorAEliminar.codigo} eliminado correctamente`);
+      setIndicadorAEliminar(null);
       await fetchIndicadores();
-    } catch (err) {
-      setError((err as Error).message);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || err.message || "Error al eliminar indicador");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -298,7 +333,7 @@ export default function TableroIndicadores() {
         valor: Number(medicionForm.valor),
         observaciones: medicionForm.observaciones || undefined,
       });
-      toast.success("Medición registrada");
+      toast.success("Medición registrada exitosamente");
       setShowMedicion(false);
       await fetchIndicadores();
     } catch (err: any) {
@@ -306,29 +341,37 @@ export default function TableroIndicadores() {
     }
   };
 
-  const aprobarIndicador = async (indicador: Indicador) => {
+  const handleAprobarClick = (indicador: Indicador) => {
     const me = getCurrentUser()?.id;
     if (me && indicador.creado_por && me === indicador.creado_por) {
       toast.error("Quien elabora el indicador no puede aprobarlo");
       return;
     }
-    if (!confirm(`¿Aprobar el indicador ${indicador.codigo}?`)) return;
+    setIndicadorAAprobar(indicador);
+  };
+
+  const confirmarAprobar = async () => {
+    if (!indicadorAAprobar) return;
     try {
-      await indicadorService.aprobar(indicador.id);
-      toast.success("Indicador aprobado");
+      setActionLoading(true);
+      await indicadorService.aprobar(indicadorAAprobar.id);
+      toast.success(`Indicador ${indicadorAAprobar.codigo} aprobado exitosamente`);
+      setIndicadorAAprobar(null);
       await fetchIndicadores();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || err.message);
+      toast.error(err?.response?.data?.detail || err.message || "Error al aprobar indicador");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const solicitarAprobacion = async (indicador: Indicador) => {
     try {
       await indicadorService.solicitarAprobacion(indicador.id);
-      toast.success("Solicitud de aprobación enviada");
+      toast.success(`Solicitud de aprobación para ${indicador.codigo} enviada`);
       await fetchIndicadores();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || err.message);
+      toast.error(err?.response?.data?.detail || err.message || "Error al solicitar aprobación");
     }
   };
 
@@ -586,7 +629,7 @@ export default function TableroIndicadores() {
                                   )}
                                   {estado !== "aprobado" && (
                                     <button
-                                      onClick={() => aprobarIndicador(indicador)}
+                                      onClick={() => handleAprobarClick(indicador)}
                                       className="text-sm bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors"
                                     >
                                       Aprobar
@@ -599,7 +642,7 @@ export default function TableroIndicadores() {
                                     <Edit className="h-3.5 w-3.5 inline mr-1" /> Editar
                                   </button>
                                   <button
-                                    onClick={() => handleDelete(indicador.id)}
+                                    onClick={() => setIndicadorAEliminar(indicador)}
                                     className="text-sm bg-red-50 border border-red-200 text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors"
                                   >
                                     <Trash2 className="h-3.5 w-3.5 inline mr-1" /> Eliminar
@@ -913,6 +956,55 @@ export default function TableroIndicadores() {
           </div>
         </div>
       )}
+      {/* Dialog Confirmar Eliminación */}
+      <AlertDialog open={!!indicadorAEliminar} onOpenChange={(open) => !open && setIndicadorAEliminar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[#1E3A8A]">
+              ¿Eliminar el indicador {indicadorAEliminar?.codigo}?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600">
+              Esta acción no se puede deshacer. Se eliminará permanentemente el indicador{" "}
+              <strong>"{indicadorAEliminar?.nombre}"</strong> y todo su historial de mediciones asociadas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmarEliminar}
+              disabled={actionLoading}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {actionLoading ? "Eliminando..." : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog Confirmar Aprobación */}
+      <AlertDialog open={!!indicadorAAprobar} onOpenChange={(open) => !open && setIndicadorAAprobar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[#1E3A8A]">
+              ¿Aprobar el indicador {indicadorAAprobar?.codigo}?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600">
+              El indicador <strong>"{indicadorAAprobar?.nombre}"</strong> pasará al estado{" "}
+              <span className="text-emerald-700 font-semibold">Aprobado</span> con registro formal de trazabilidad para el Sistema de Gestión de Calidad (ISO 9001).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmarAprobar}
+              disabled={actionLoading}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {actionLoading ? "Aprobando..." : "Aprobar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
