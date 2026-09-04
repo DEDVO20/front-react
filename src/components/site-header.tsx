@@ -120,7 +120,7 @@ export function SiteHeader() {
                 <TooltipContent>Seguridad</TooltipContent>
               </Tooltip>
 
-              <Tooltip open={notificationOpen ? false : undefined}>
+              <Tooltip delayDuration={notificationOpen ? 100000 : 400}>
                 <TooltipTrigger asChild>
                   <div>
                     <NotificationBell onOpenChange={setNotificationOpen} />
