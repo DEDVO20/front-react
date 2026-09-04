@@ -112,6 +112,7 @@ export default function TableroIndicadores() {
 
   useEffect(() => {
     fetchIndicadores();
+    fetchComplementosTablero();
     fetchProcesos();
     fetchUsuariosActivos();
   }, []);
@@ -123,7 +124,6 @@ export default function TableroIndicadores() {
       const data = await indicadorService.getAll();
       setIndicadores(data);
 
-      // Cargar tendencias en paralelo
       const tendenciasResp = await Promise.all(
         data.slice(0, 30).map(async (indicador) => {
           try {
@@ -142,25 +142,27 @@ export default function TableroIndicadores() {
         })
       );
       setTendencias(Object.fromEntries(tendenciasResp));
-
-      // Cargar PHVA
-      try {
-        const metrics = await dashboardPhvaService.getMetrics();
-        setPhvaMetrics(metrics);
-      } catch {
-        setPhvaMetrics(null);
-      }
-      try {
-        const metrics = await analyticsService.getHumanRiskMetrics();
-        setHumanRiskMetrics(metrics);
-      } catch {
-        setHumanRiskMetrics(null);
-      }
     } catch (error: any) {
       console.error("Error:", error);
       setError(error.message);
+      setIndicadores([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchComplementosTablero = async () => {
+    try {
+      const metrics = await dashboardPhvaService.getMetrics();
+      setPhvaMetrics(metrics);
+    } catch {
+      setPhvaMetrics(null);
+    }
+    try {
+      const metrics = await analyticsService.getHumanRiskMetrics();
+      setHumanRiskMetrics(metrics);
+    } catch {
+      setHumanRiskMetrics(null);
     }
   };
 
