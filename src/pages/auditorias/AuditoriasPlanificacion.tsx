@@ -162,7 +162,11 @@ const auditoriaService = {
       }
     });
 
-    if (!response.ok) throw new Error('Error al eliminar auditoría');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const detail = (errorData as { detail?: string }).detail;
+      throw new Error(typeof detail === "string" ? detail : "Error al eliminar auditoría");
+    }
     return true;
   }
 };

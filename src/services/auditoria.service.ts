@@ -293,7 +293,13 @@ export const auditoriaService = {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
-    if (!response.ok) throw new Error("Error al eliminar auditoría");
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const detail = errorData.detail;
+      throw new Error(
+        typeof detail === "string" ? detail : "Error al eliminar auditoría"
+      );
+    }
   },
 
   // Obtener hallazgos de una auditoría

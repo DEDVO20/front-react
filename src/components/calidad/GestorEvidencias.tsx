@@ -65,7 +65,7 @@ export default function GestorEvidencias({ value, onChange, readOnly = false }: 
                 }]);
             }
         }
-    }, []);
+    }, [value]);
 
     const actualizarEvidencias = (nuevasEvidencias: Evidencia[]) => {
         setEvidencias(nuevasEvidencias);

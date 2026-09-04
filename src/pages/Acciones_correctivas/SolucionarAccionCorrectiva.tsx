@@ -98,16 +98,28 @@ export default function SolucionarAccionCorrectiva() {
     };
 
     const handleMarcarVerificada = async () => {
+        const evidenciasVacias =
+            !evidencias ||
+            !evidencias.trim() ||
+            evidencias.trim() === "[]" ||
+            evidencias.trim() === "null";
+        if (evidenciasVacias) {
+            toast.error("Debe adjuntar evidencia de implementación");
+            return;
+        }
         try {
             setSubmitting(true);
-
-            await accionCorrectivaService.verificar(id!, observaciones);
+            await accionCorrectivaService.update(id!, { evidencias });
+            await accionCorrectivaService.verificar(id!, {
+                observaciones,
+                eficaciaVerificada: 100,
+            });
 
             toast.success("Acción correctiva verificada exitosamente");
             navigate("/Acciones_correctivas_Verificadas");
         } catch (error: any) {
             console.error("Error al verificar acción:", error);
-            toast.error(error.response?.data?.detail || "Error al verificar la acción correctiva");
+            toast.error(error.message || "Error al verificar la acción correctiva");
         } finally {
             setSubmitting(false);
         }
